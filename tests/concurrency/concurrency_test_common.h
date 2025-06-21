@@ -34,14 +34,14 @@ typedef struct {
 
 typedef struct {
     const char *name;
-    int tests_run;
-    int tests_passed;
+    size_t tests_run;
+    size_t tests_passed;
 } AsthraTestContext;
 
 typedef struct {
     const char *name;
-    int tests_run;
-    int tests_passed;
+    size_t tests_run;
+    size_t tests_passed;
     BenchmarkContext benchmark;
 } AsthraV12TestContext;
 

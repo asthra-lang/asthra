@@ -14,8 +14,8 @@
 // TEST FRAMEWORK GLOBALS
 // =============================================================================
 
-int tests_run = 0;
-int tests_passed = 0;
+size_t tests_run = 0;
+size_t tests_passed = 0;
 
 // =============================================================================
 // VALIDATION HELPER FUNCTIONS IMPLEMENTATION
@@ -167,7 +167,7 @@ void init_test_framework(void) {
 
 int print_test_summary(void) {
     printf("\n=============================================================================\n");
-    printf("Validation Test Summary: %d/%d tests passed (%.1f%%)\n", 
+    printf("Validation Test Summary: %zu/%zu tests passed (%.1f%%)\n", 
            tests_passed, tests_run, 
            tests_run > 0 ? (100.0 * tests_passed / tests_run) : 0.0);
     printf("=============================================================================\n");

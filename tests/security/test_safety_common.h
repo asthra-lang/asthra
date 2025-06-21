@@ -18,8 +18,8 @@
 #include <unistd.h>
 
 // Test result tracking (shared across all test modules)
-extern int tests_passed;
-extern int tests_failed;
+extern size_t tests_passed;
+extern size_t tests_failed;
 
 // Common test assertion macro
 #define TEST_ASSERT(condition, message) \

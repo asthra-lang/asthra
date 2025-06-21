@@ -9,8 +9,8 @@
 #include "bridge_test_common.h"
 
 // Global test counters
-int tests_run = 0;
-int tests_passed = 0;
+size_t tests_run = 0;
+size_t tests_passed = 0;
 
 // =============================================================================
 // TEST HELPER FUNCTIONS

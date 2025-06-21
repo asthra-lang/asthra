@@ -28,8 +28,8 @@
 // ============================================================================
 
 // Global test counters (defined in test_annotations_common.c)
-extern int tests_run;
-extern int tests_passed;
+extern size_t tests_run;
+extern size_t tests_passed;
 
 #define ASSERT_TRUE(condition) \
     do { \
@@ -90,7 +90,7 @@ void init_test_counters(void);
  * @param total_tests Output parameter for total tests run
  * @param passed_tests Output parameter for tests passed
  */
-void get_test_stats(int* total_tests, int* passed_tests);
+void get_test_stats(size_t* total_tests, size_t* passed_tests);
 
 /**
  * Print test results summary

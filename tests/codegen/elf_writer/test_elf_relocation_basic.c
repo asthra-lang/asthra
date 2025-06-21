@@ -34,8 +34,8 @@ AsthraTestResult test_relocation_entry_generation(AsthraTestContext* context) {
     }
     
     // Generate relocation table
-    ELFRelocation** relocation_table;
-    size_t relocation_count;
+    ELFRelocation** relocation_table = NULL;
+    size_t relocation_count = 0;
     bool result = elf_relocation_manager_generate_table(fixture->relocation_manager, &relocation_table, &relocation_count);
     if (!asthra_test_assert_bool(context, result, "Failed to generate relocation table")) {
         cleanup_elf_writer_fixture(fixture);

@@ -14,9 +14,9 @@
 // TEST FRAMEWORK GLOBALS
 // =============================================================================
 
-int tests_passed = 0;
-int tests_total = 0;
-int tests_failed = 0;
+size_t tests_passed = 0;
+size_t tests_total = 0;
+size_t tests_failed = 0;
 
 // =============================================================================
 // HELPER FUNCTIONS IMPLEMENTATION
@@ -65,9 +65,9 @@ void init_if_let_test_framework(void) {
 
 int print_if_let_test_summary(void) {
     printf("\n=== Phase 4 Test Results ===\n");
-    printf("Total Tests: %d\n", tests_total);
-    printf("Passed: %d\n", tests_passed);
-    printf("Failed: %d\n", tests_failed);
+    printf("Total Tests: %zu\n", tests_total);
+    printf("Passed: %zu\n", tests_passed);
+    printf("Failed: %zu\n", tests_failed);
     printf("Success Rate: %.1f%%\n", tests_total > 0 ? (100.0 * tests_passed / tests_total) : 0.0);
     
     if (tests_failed == 0) {

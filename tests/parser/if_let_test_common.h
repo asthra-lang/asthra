@@ -32,9 +32,9 @@ extern "C" {
 // TEST FRAMEWORK MACROS
 // =============================================================================
 
-extern int tests_passed;
-extern int tests_total;
-extern int tests_failed;
+extern size_t tests_passed;
+extern size_t tests_total;
+extern size_t tests_failed;
 
 #define TEST_ASSERT(condition, message) do { \
     tests_total++; \

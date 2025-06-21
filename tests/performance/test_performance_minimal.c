@@ -39,8 +39,8 @@ static void test_semaphore_performance_minimal(void);
 // Test Framework Integration
 // ============================================================================
 
-int tests_run = 0;
-int tests_passed = 0;
+size_t tests_run = 0;
+size_t tests_passed = 0;
 
 #define TEST_ASSERT(condition, message) \
     do { \
@@ -209,8 +209,8 @@ int main(void) {
     // Print results
     printf("\n==============================================\n");
     printf("📊 Performance Test Results:\n");
-    printf("   Tests run: %d\n", tests_run);
-    printf("   Tests passed: %d\n", tests_passed);
+    printf("   Tests run: %zu\n", tests_run);
+    printf("   Tests passed: %zu\n", tests_passed);
     printf("   Success rate: %.1f%%\n", tests_run > 0 ? (float)tests_passed / tests_run * 100.0 : 0.0);
     
     if (tests_passed == tests_run && tests_run > 0) {

@@ -15,11 +15,7 @@ struct Parser {
     char error_message[512];
 };
 
-// Basic semantic analyzer structure
-struct SemanticAnalyzer {
-    bool has_error;
-    char error_message[512];
-};
+// SemanticAnalyzer is already defined in semantic_analyzer_core.h
 
 // Basic code generator structure
 struct CodeGenerator {
@@ -91,8 +87,10 @@ ASTNode *parser_parse_string(Parser *parser, const char *source) {
 // CODE GENERATION STUB FUNCTIONS
 // =============================================================================
 
-CodeGenerator *code_generator_create(void) {
+CodeGenerator *code_generator_create(TargetArchitecture arch, CallingConvention conv) {
     // For testing purposes, create a simple stub that indicates success
+    (void)arch;  // Unused in stub
+    (void)conv;  // Unused in stub
     CodeGenerator *generator = calloc(1, sizeof(CodeGenerator));
     return generator;
 }
@@ -173,7 +171,7 @@ bool compile_and_validate_asthra_code(const char *source_code, const char *expec
     }
     
     // Generate C code
-    CodeGenerator *generator = code_generator_create();
+    CodeGenerator *generator = code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
     if (!generator) {
         semantic_analyzer_destroy(analyzer);
         ast_destroy(ast);

@@ -105,7 +105,7 @@ void print_error_test_summary(const char* test_name, const ErrorTestResults* res
 /**
  * Print error handling report
  */
-void print_error_handling_report(const char* category, int tests_run, int tests_passed);
+void print_error_handling_report(const char* category, size_t tests_run, size_t tests_passed);
 
 // ============================================================================
 // ERROR INJECTION AND SIMULATION FUNCTIONS

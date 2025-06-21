@@ -26,8 +26,8 @@
 // Test Framework Macros
 // ============================================================================
 
-extern int tests_run;
-extern int tests_passed;
+extern size_t tests_run;
+extern size_t tests_passed;
 
 #define ASSERT_TRUE(condition) \
     do { \
@@ -107,13 +107,13 @@ void print_test_results(const char* category);
  * Get the current number of tests run
  * @return Current tests run count
  */
-int get_tests_run(void);
+size_t get_tests_run(void);
 
 /**
  * Get the current number of tests passed
  * @return Current tests passed count
  */
-int get_tests_passed(void);
+size_t get_tests_passed(void);
 
 /**
  * Print detailed test summary
@@ -121,7 +121,7 @@ int get_tests_passed(void);
  * @param local_tests_run Number of local tests run
  * @param local_tests_passed Number of local tests passed
  */
-void print_test_summary(const char* test_name, int local_tests_run, int local_tests_passed);
+void print_test_summary(const char* test_name, size_t local_tests_run, size_t local_tests_passed);
 
 /**
  * Validate timing with tolerance

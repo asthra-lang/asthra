@@ -9,8 +9,8 @@
 #include "test_safety_common.h"
 
 // Global test result tracking (shared across all test modules)
-int tests_passed = 0;
-int tests_failed = 0; 
+size_t tests_passed = 0;
+size_t tests_failed = 0; 
 
 // =============================================================================
 // COMMON UTILITIES (no main function - this is a utility file)

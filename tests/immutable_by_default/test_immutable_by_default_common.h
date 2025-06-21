@@ -7,6 +7,9 @@
 #include <assert.h>
 #include <stdbool.h>
 
+// Include the necessary types
+#include "../../src/codegen/code_generator_types.h"
+
 // Use forward declarations that match the real types
 typedef struct ASTNode ASTNode;
 typedef struct Parser Parser;
@@ -25,7 +28,7 @@ void semantic_analyzer_destroy(SemanticAnalyzer *analyzer);
 bool semantic_analyze_program(SemanticAnalyzer *analyzer, ASTNode *ast);
 
 // Code generator functions - will be adapted to real compiler interface
-CodeGenerator *code_generator_create(void);
+CodeGenerator *code_generator_create(TargetArchitecture arch, CallingConvention conv);
 void code_generator_destroy(CodeGenerator *generator);
 bool code_generator_generate_program(CodeGenerator *generator, ASTNode *ast, FILE *output);
 

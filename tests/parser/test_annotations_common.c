@@ -15,8 +15,8 @@
 // Global Test Counters
 // ============================================================================
 
-int tests_run = 0;
-int tests_passed = 0;
+size_t tests_run = 0;
+size_t tests_passed = 0;
 
 // ============================================================================
 // AST Navigation Functions
@@ -83,16 +83,16 @@ void init_test_counters(void) {
     tests_passed = 0;
 }
 
-void get_test_stats(int* total_tests, int* passed_tests) {
+void get_test_stats(size_t* total_tests, size_t* passed_tests) {
     if (total_tests) *total_tests = tests_run;
     if (passed_tests) *passed_tests = tests_passed;
 }
 
 void print_test_results(const char* category_name) {
     printf("\n=== %s Test Results ===\n", category_name);
-    printf("Tests run: %d\n", tests_run);
-    printf("Tests passed: %d\n", tests_passed);
-    printf("Tests failed: %d\n", tests_run - tests_passed);
+    printf("Tests run: %zu\n", tests_run);
+    printf("Tests passed: %zu\n", tests_passed);
+    printf("Tests failed: %zu\n", tests_run - tests_passed);
     
     if (tests_run > 0) {
         printf("Success rate: %.1f%%\n", (float)tests_passed / tests_run * 100.0);

@@ -326,12 +326,12 @@ void loop_analysis_destroy(LoopAnalysis* analysis) {
     free(analysis);
 }
 
-bool loop_analysis_detect_loops(LoopAnalysis* analysis) {
+bool loop_analysis_detect_loops(LoopAnalysis* analysis, ControlFlowGraph* cfg) {
     // Stub - always succeeds
-    return analysis != NULL;
+    return analysis != NULL && cfg != NULL;
 }
 
-size_t loop_analysis_get_max_nesting_depth(LoopAnalysis* analysis) {
+int loop_analysis_get_max_nesting_depth(LoopAnalysis* analysis) {
     // Return a reasonable test value
     return analysis ? 2 : 0;
 }

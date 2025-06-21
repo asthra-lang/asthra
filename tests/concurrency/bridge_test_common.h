@@ -31,8 +31,8 @@ typedef struct {
     double duration_ms;
 } TestCase;
 
-extern int tests_run;
-extern int tests_passed;
+extern size_t tests_run;
+extern size_t tests_passed;
 
 #define ASSERT(condition, message) \
     do { \

@@ -12,8 +12,8 @@
 // Global Test Counters
 // ============================================================================
 
-int tests_run = 0;
-int tests_passed = 0;
+size_t tests_run = 0;
+size_t tests_passed = 0;
 
 // ============================================================================
 // Timing Utilities Implementation

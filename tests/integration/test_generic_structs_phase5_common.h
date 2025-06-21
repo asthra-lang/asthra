@@ -27,8 +27,8 @@
 // TEST FRAMEWORK MACROS
 // ============================================================================
 
-extern int tests_run;
-extern int tests_passed;
+extern size_t tests_run;
+extern size_t tests_passed;
 
 #define TEST_ASSERT(condition, message) do { \
     tests_run++; \
