@@ -137,26 +137,20 @@ bool analyze_call_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
             // Try to get expected type from context (e.g., variable declaration)
             TypeDescriptor *expected_type = analyzer->expected_type;
             
-            if (expected_type) {
-                printf("DEBUG: Expected type found, category=%d\n", expected_type->category);
-                if (expected_type->name) {
-                    printf("DEBUG: Expected type name=%s\n", expected_type->name);
-                }
-            } else {
-                printf("DEBUG: No expected type context\n");
-            }
+            // Expected type context is available for type inference
             
             if (expected_type && expected_type->category == TYPE_GENERIC_INSTANCE &&
                 type_descriptor_equals(expected_type->data.generic_instance.base_type, enum_symbol->type)) {
                 // Use the expected type directly (e.g., Result<i32, string>)
-                printf("DEBUG: Using TYPE_GENERIC_INSTANCE context\n");
+                // Use the expected type directly (e.g., Result<i32, string>)
                 enum_type_to_use = expected_type;
             } else if (expected_type && expected_type->category == TYPE_RESULT &&
                        enum_symbol->type && enum_symbol->type->name &&
                        strcmp(enum_symbol->type->name, "Result") == 0) {
                 // Handle case where expected type is TYPE_RESULT but enum is the Result enum
                 // Create a generic instance equivalent to the TYPE_RESULT
-                printf("DEBUG: Using TYPE_RESULT context, creating generic instance\n");
+                // Handle case where expected type is TYPE_RESULT but enum is the Result enum
+                // Create a generic instance equivalent to the TYPE_RESULT
                 TypeDescriptor *type_args[] = {
                     expected_type->data.result.ok_type,
                     expected_type->data.result.err_type
@@ -164,10 +158,7 @@ bool analyze_call_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
                 TypeDescriptor *generic_instance = type_descriptor_create_generic_instance(
                     enum_symbol->type, type_args, 2);
                 if (generic_instance) {
-                    printf("DEBUG: Generic instance created successfully\n");
                     enum_type_to_use = generic_instance;
-                } else {
-                    printf("DEBUG: Failed to create generic instance\n");
                 }
             } else if (arg_count > 0) {
                 // Fallback: infer what we can from the argument
