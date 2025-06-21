@@ -11,10 +11,7 @@
 
 // Include the actual header for proper type definitions
 #include "../analysis/semantic_analyzer_core.h"
-
-// External functions from semantic analyzer bridge
-extern SemanticAnalyzer *semantic_analyzer_create_internal(void);
-extern void semantic_analyzer_destroy_internal(SemanticAnalyzer *analyzer);
+#include "fast_check_internal.h"
 
 // =============================================================================
 // ENGINE MANAGEMENT

@@ -12,9 +12,6 @@
 #include <string.h>
 #include <strings.h>
 
-// Forward declaration from symbol_hash.c
-extern bool resize_symbol_table(Asthra_SymbolResolver *resolver);
-
 bool asthra_symbol_resolver_add_symbol(Asthra_SymbolResolver *resolver,
                                       const Asthra_ObjectSymbol *symbol,
                                       const char *source_file) {

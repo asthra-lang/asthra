@@ -433,6 +433,14 @@ void asthra_resolution_result_cleanup(Asthra_ResolutionResult *result);
  */
 size_t asthra_symbol_hash(const char *symbol_name, size_t table_size);
 
+/**
+ * Resize symbol table when load factor gets too high
+ * 
+ * @param resolver Symbol resolver with table to resize
+ * @return true on success, false on failure
+ */
+bool resize_symbol_table(Asthra_SymbolResolver *resolver);
+
 #ifdef __cplusplus
 }
 #endif

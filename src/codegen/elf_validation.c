@@ -16,8 +16,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-// External helper functions
-extern ELFSection *find_section_by_name(ELFWriter *writer, const char *name);
+// Note: elf_find_section_by_name is declared in elf_writer.h
 
 // =============================================================================
 // ELF STRUCTURE VALIDATION

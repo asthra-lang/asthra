@@ -9,6 +9,7 @@
 
 // Include the actual header for proper type definitions
 #include "../analysis/semantic_analyzer_core.h"
+#include "fast_check_internal.h"
 
 // =============================================================================
 // SEMANTIC ANALYZER BRIDGE FUNCTIONS
