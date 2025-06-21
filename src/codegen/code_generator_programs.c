@@ -116,7 +116,7 @@ bool code_generate_function(CodeGenerator *generator, ASTNode *function_decl) {
     }
     
     // Generate function prologue
-    Register saved_regs[] = {REG_RBP, REG_RBX, REG_R12, REG_R13, REG_R14, REG_R15};
+    Register saved_regs[] = {ASTHRA_REG_RBP, ASTHRA_REG_RBX, ASTHRA_REG_R12, ASTHRA_REG_R13, ASTHRA_REG_R14, ASTHRA_REG_R15};
     size_t saved_count = sizeof(saved_regs) / sizeof(Register);
     
     if (!generate_function_prologue(generator, DEFAULT_STACK_FRAME_SIZE, saved_regs, saved_count)) {
@@ -129,7 +129,7 @@ bool code_generate_function(CodeGenerator *generator, ASTNode *function_decl) {
     // Add function parameters to local symbol table
     ASTNodeList *params = function_decl->data.function_decl.params;
     if (params) {
-        Register param_regs[] = {REG_RDI, REG_RSI, REG_RDX, REG_RCX, REG_R8, REG_R9};
+        Register param_regs[] = {ASTHRA_REG_RDI, ASTHRA_REG_RSI, ASTHRA_REG_RDX, ASTHRA_REG_RCX, ASTHRA_REG_R8, ASTHRA_REG_R9};
         size_t param_count = ast_node_list_size(params);
         
         // Set the parameter size based on parameter count

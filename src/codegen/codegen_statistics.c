@@ -127,10 +127,10 @@ void code_generator_print_instructions(const CodeGenerator *generator) {
                     break;
                 case OPERAND_MEMORY:
                     printf("MEM[");
-                    if (op->data.memory.base != REG_NONE) {
+                    if (op->data.memory.base != ASTHRA_REG_NONE) {
                         printf("REG(%d)", op->data.memory.base);
                     }
-                    if (op->data.memory.index != REG_NONE) {
+                    if (op->data.memory.index != ASTHRA_REG_NONE) {
                         printf("+REG(%d)*%d", op->data.memory.index, op->data.memory.scale);
                     }
                     if (op->data.memory.displacement != 0) {
@@ -169,7 +169,7 @@ void code_generator_print_register_allocation(const CodeGenerator *generator) {
     
     printf("  Allocated registers: ");
     bool first = true;
-    for (int reg = 0; reg < REG_COUNT; reg++) {
+    for (int reg = 0; reg < ASTHRA_REG_COUNT; reg++) {
         if (allocator->allocated_mask & (1ULL << reg)) {
             if (!first) {
                 printf(", ");

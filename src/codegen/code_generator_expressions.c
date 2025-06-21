@@ -28,7 +28,7 @@
 
 bool code_generate_expression(CodeGenerator *generator, ASTNode *expr, Register target_reg) {
     // ARCHITECTURAL SAFEGUARD: Prevent inappropriate calls during parsing
-    if (!generator || !expr || target_reg == REG_NONE) return false;
+    if (!generator || !expr || target_reg == ASTHRA_REG_NONE) return false;
     
     // Note: Safeguards implemented below to prevent architectural violations
     

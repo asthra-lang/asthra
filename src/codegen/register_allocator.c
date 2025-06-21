@@ -21,12 +21,12 @@ static const struct {
     uint64_t caller_saved;
     uint64_t callee_saved;
 } SYSV_REGISTER_MASKS = {
-    .caller_saved = (1ULL << REG_RAX) | (1ULL << REG_RCX) | (1ULL << REG_RDX) |
-                   (1ULL << REG_RSI) | (1ULL << REG_RDI) | (1ULL << REG_R8) |
-                   (1ULL << REG_R9) | (1ULL << REG_R10) | (1ULL << REG_R11),
-    .callee_saved = (1ULL << REG_RBX) | (1ULL << REG_RSP) | (1ULL << REG_RBP) |
-                   (1ULL << REG_R12) | (1ULL << REG_R13) | (1ULL << REG_R14) |
-                   (1ULL << REG_R15)
+    .caller_saved = (1ULL << ASTHRA_REG_RAX) | (1ULL << ASTHRA_REG_RCX) | (1ULL << ASTHRA_REG_RDX) |
+                   (1ULL << ASTHRA_REG_RSI) | (1ULL << ASTHRA_REG_RDI) | (1ULL << ASTHRA_REG_R8) |
+                   (1ULL << ASTHRA_REG_R9) | (1ULL << ASTHRA_REG_R10) | (1ULL << ASTHRA_REG_R11),
+    .callee_saved = (1ULL << ASTHRA_REG_RBX) | (1ULL << ASTHRA_REG_RSP) | (1ULL << ASTHRA_REG_RBP) |
+                   (1ULL << ASTHRA_REG_R12) | (1ULL << ASTHRA_REG_R13) | (1ULL << ASTHRA_REG_R14) |
+                   (1ULL << ASTHRA_REG_R15)
 };
 
 // =============================================================================
@@ -63,7 +63,7 @@ void register_allocator_destroy(RegisterAllocator *allocator) {
 }
 
 Register register_allocate(RegisterAllocator *allocator, bool prefer_caller_saved) {
-    if (!allocator) return REG_NONE;
+    if (!allocator) return ASTHRA_REG_NONE;
     
     pthread_mutex_lock(&allocator->mutex);
     
@@ -71,7 +71,7 @@ Register register_allocate(RegisterAllocator *allocator, bool prefer_caller_save
     uint64_t fallback_mask = prefer_caller_saved ? allocator->callee_saved_mask : allocator->caller_saved_mask;
     
     // Try preferred registers first
-    for (int reg = 0; reg < REG_COUNT; reg++) {
+    for (int reg = 0; reg < ASTHRA_REG_COUNT; reg++) {
         uint64_t reg_bit = 1ULL << reg;
         if ((preferred_mask & reg_bit) && !(allocator->allocated_mask & reg_bit)) {
             allocator->allocated_mask |= reg_bit;
@@ -89,7 +89,7 @@ Register register_allocate(RegisterAllocator *allocator, bool prefer_caller_save
     }
     
     // Try fallback registers
-    for (int reg = 0; reg < REG_COUNT; reg++) {
+    for (int reg = 0; reg < ASTHRA_REG_COUNT; reg++) {
         uint64_t reg_bit = 1ULL << reg;
         if ((fallback_mask & reg_bit) && !(allocator->allocated_mask & reg_bit)) {
             allocator->allocated_mask |= reg_bit;
@@ -108,11 +108,11 @@ Register register_allocate(RegisterAllocator *allocator, bool prefer_caller_save
     // No registers available - need to spill
     atomic_fetch_add(&allocator->spill_count, 1);
     pthread_mutex_unlock(&allocator->mutex);
-    return REG_NONE;
+    return ASTHRA_REG_NONE;
 }
 
 void register_free(RegisterAllocator *allocator, Register reg) {
-    if (!allocator || reg == REG_NONE || reg >= REG_COUNT) return;
+    if (!allocator || reg == ASTHRA_REG_NONE || reg >= ASTHRA_REG_COUNT) return;
     
     pthread_mutex_lock(&allocator->mutex);
     
@@ -126,7 +126,7 @@ void register_free(RegisterAllocator *allocator, Register reg) {
 }
 
 bool register_is_allocated(RegisterAllocator *allocator, Register reg) {
-    if (!allocator || reg == REG_NONE || reg >= REG_COUNT) return false;
+    if (!allocator || reg == ASTHRA_REG_NONE || reg >= ASTHRA_REG_COUNT) return false;
     
     pthread_mutex_lock(&allocator->mutex);
     bool allocated = (allocator->allocated_mask & (1ULL << reg)) != 0;
@@ -198,7 +198,7 @@ static bool is_float_type(const TypeDescriptor *type) {
 }
 
 bool register_spill_to_stack(CodeGenerator *generator, Register reg, size_t stack_offset) {
-    if (!generator || reg == REG_NONE || reg >= REG_COUNT) {
+    if (!generator || reg == ASTHRA_REG_NONE || reg >= ASTHRA_REG_COUNT) {
         return false;
     }
     
@@ -212,7 +212,7 @@ bool register_spill_to_stack(CodeGenerator *generator, Register reg, size_t stac
 }
 
 bool register_restore_from_stack(CodeGenerator *generator, Register reg, size_t stack_offset) {
-    if (!generator || reg == REG_NONE || reg >= REG_COUNT) {
+    if (!generator || reg == ASTHRA_REG_NONE || reg >= ASTHRA_REG_COUNT) {
         return false;
     }
     

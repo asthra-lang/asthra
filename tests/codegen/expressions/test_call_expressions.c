@@ -42,7 +42,7 @@ AsthraTestResult test_generate_call_expressions_original(AsthraTestContext* cont
         return ASTHRA_TEST_FAIL;
     }
     
-    Register target_reg = REG_RAX;
+    Register target_reg = ASTHRA_REG_RAX;
     bool result = code_generate_expression(fixture->generator, fixture->test_ast, target_reg);
     if (!asthra_test_assert_bool(context, result, "Failed to generate function call code")) {
         cleanup_codegen_fixture(fixture);
@@ -57,7 +57,7 @@ AsthraTestResult test_generate_call_expressions_original(AsthraTestContext* cont
         return ASTHRA_TEST_FAIL;
     }
     
-    result = code_generate_expression(fixture->generator, args_ast, REG_RAX);
+    result = code_generate_expression(fixture->generator, args_ast, ASTHRA_REG_RAX);
     if (!asthra_test_assert_bool(context, result, "Failed to generate function call with arguments code")) {
         ast_free_node(args_ast);
         cleanup_codegen_fixture(fixture);
@@ -73,7 +73,7 @@ AsthraTestResult test_generate_call_expressions_original(AsthraTestContext* cont
         return ASTHRA_TEST_FAIL;
     }
     
-    result = code_generate_expression(fixture->generator, nested_ast, REG_RBX);
+    result = code_generate_expression(fixture->generator, nested_ast, ASTHRA_REG_RBX);
     if (!asthra_test_assert_bool(context, result, "Failed to generate nested function call code")) {
         ast_free_node(args_ast);
         ast_free_node(nested_ast);

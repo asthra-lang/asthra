@@ -38,7 +38,7 @@ bool ffi_generate_match_statement(FFIAssemblyGenerator *generator, ASTNode *matc
     
     // Generate match expression
     Register match_reg = register_allocate(generator->base_generator->register_allocator, true);
-    if (match_reg == REG_NONE) {
+    if (match_reg == ASTHRA_REG_NONE) {
         free(context);
         return false;
     }
@@ -162,12 +162,12 @@ bool ffi_generate_result_pattern_match(FFIAssemblyGenerator *generator,
     // Second word: value
     
     Register tag_reg = register_allocate(generator->base_generator->register_allocator, true);
-    if (tag_reg == REG_NONE) return false;
+    if (tag_reg == ASTHRA_REG_NONE) return false;
     
     // Load tag from result
     emit_instruction(generator, INST_MOV, 2,
                     create_register_operand(tag_reg),
-                    create_memory_operand(result_reg, REG_NONE, 1, 0));
+                    create_memory_operand(result_reg, ASTHRA_REG_NONE, 1, 0));
     
     // Compare tag
     emit_instruction(generator, INST_CMP, 2,

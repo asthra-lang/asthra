@@ -49,7 +49,7 @@ AsthraTestResult test_generate_arithmetic_expressions(AsthraTestContext* context
         return ASTHRA_TEST_FAIL;
     }
     
-    result = code_generate_expression(fixture->generator, mul_ast, REG_RBX);
+    result = code_generate_expression(fixture->generator, mul_ast, ASTHRA_REG_RBX);
     if (!asthra_test_assert_bool(context, result, "Failed to generate multiplication expression code")) {
         ast_free_node(mul_ast);
         cleanup_codegen_fixture(fixture);
@@ -65,7 +65,7 @@ AsthraTestResult test_generate_arithmetic_expressions(AsthraTestContext* context
         return ASTHRA_TEST_FAIL;
     }
     
-    result = code_generate_expression(fixture->generator, div_ast, REG_RCX);
+    result = code_generate_expression(fixture->generator, div_ast, ASTHRA_REG_RCX);
     if (!asthra_test_assert_bool(context, result, "Failed to generate division expression code")) {
         ast_free_node(mul_ast);
         ast_free_node(div_ast);
@@ -83,7 +83,7 @@ AsthraTestResult test_generate_arithmetic_expressions(AsthraTestContext* context
         return ASTHRA_TEST_FAIL;
     }
     
-    result = code_generate_expression(fixture->generator, mod_ast, REG_RDX);
+    result = code_generate_expression(fixture->generator, mod_ast, ASTHRA_REG_RDX);
     if (!asthra_test_assert_bool(context, result, "Failed to generate modulo expression code")) {
         ast_free_node(mul_ast);
         ast_free_node(div_ast);

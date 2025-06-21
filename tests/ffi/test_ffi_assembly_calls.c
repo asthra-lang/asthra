@@ -77,13 +77,13 @@ static bool test_ffi_parameter_marshaling(void) {
     // Test direct marshaling
     bool result = ffi_generate_parameter_marshaling(
         g_generator, param, FFI_MARSHAL_DIRECT, 
-        FFI_OWNERSHIP_COPY, REG_RDI);
+        FFI_OWNERSHIP_COPY, ASTHRA_REG_RDI);
     TEST_ASSERT(result, "Direct parameter marshaling failed");
     
     // Test pointer marshaling
     result = ffi_generate_parameter_marshaling(
         g_generator, param, FFI_MARSHAL_POINTER, 
-        FFI_OWNERSHIP_MOVE, REG_RSI);
+        FFI_OWNERSHIP_MOVE, ASTHRA_REG_RSI);
     TEST_ASSERT(result, "Pointer parameter marshaling failed");
     
     // Cleanup
@@ -98,13 +98,13 @@ static bool test_ffi_return_unmarshaling(void) {
     // Test direct unmarshaling
     bool result = ffi_generate_return_unmarshaling(
         g_generator, FFI_MARSHAL_DIRECT, FFI_OWNERSHIP_COPY, 
-        REG_RAX, REG_RCX);
+        ASTHRA_REG_RAX, ASTHRA_REG_RCX);
     TEST_ASSERT(result, "Direct return unmarshaling failed");
     
     // Test pointer unmarshaling
     result = ffi_generate_return_unmarshaling(
         g_generator, FFI_MARSHAL_POINTER, FFI_OWNERSHIP_MOVE, 
-        REG_RAX, REG_RCX);
+        ASTHRA_REG_RAX, ASTHRA_REG_RCX);
     TEST_ASSERT(result, "Pointer return unmarshaling failed");
     
     TEST_SUCCESS();
@@ -117,8 +117,8 @@ static bool test_ownership_transfer(void) {
     CodeGenerator *code_gen = g_generator->base_generator;
     
     // Test generation of move semantics
-    Register src_reg = REG_RAX;
-    Register dst_reg = REG_RCX;
+    Register src_reg = ASTHRA_REG_RAX;
+    Register dst_reg = ASTHRA_REG_RCX;
     
     bool result = ffi_generate_ownership_transfer(
         g_generator, src_reg, dst_reg, FFI_OWNERSHIP_MOVE);

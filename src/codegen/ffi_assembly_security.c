@@ -76,8 +76,8 @@ bool ffi_generate_volatile_memory_access(FFIAssemblyGenerator *generator,
     if (is_read) {
         // Volatile read with explicit memory ordering
         emit_instruction(generator, INST_MOV, 2,
-                        create_register_operand(REG_RAX),
-                        create_memory_operand(memory_reg, REG_NONE, 1, 0));
+                        create_register_operand(ASTHRA_REG_RAX),
+                        create_memory_operand(memory_reg, ASTHRA_REG_NONE, 1, 0));
         
         // Prevent compiler from optimizing away the read
         emit_instruction(generator, INST_CALL, 1,
@@ -85,8 +85,8 @@ bool ffi_generate_volatile_memory_access(FFIAssemblyGenerator *generator,
     } else {
         // Volatile write with explicit memory ordering
         emit_instruction(generator, INST_MOV, 2,
-                        create_memory_operand(memory_reg, REG_NONE, 1, 0),
-                        create_register_operand(REG_RAX));
+                        create_memory_operand(memory_reg, ASTHRA_REG_NONE, 1, 0),
+                        create_register_operand(ASTHRA_REG_RAX));
         
         // Ensure write is committed before continuing
         emit_instruction(generator, INST_CALL, 1,
@@ -103,7 +103,7 @@ bool ffi_generate_volatile_memory_access(FFIAssemblyGenerator *generator,
         
         // Generate loop for larger volatile operations
         Register counter_reg = register_allocate(generator->base_generator->register_allocator, false);
-        if (counter_reg != REG_NONE) {
+        if (counter_reg != ASTHRA_REG_NONE) {
             // Initialize counter
             emit_instruction(generator, INST_MOV, 2,
                             create_register_operand(counter_reg),
@@ -152,11 +152,11 @@ bool ffi_generate_secure_zero(FFIAssemblyGenerator *generator,
     
     // Call runtime secure zero function
     emit_instruction(generator, INST_MOV, 2,
-                    create_register_operand(REG_RDI),
+                    create_register_operand(ASTHRA_REG_RDI),
                     create_register_operand(memory_reg));
     
     emit_instruction(generator, INST_MOV, 2,
-                    create_register_operand(REG_RSI),
+                    create_register_operand(ASTHRA_REG_RSI),
                     create_register_operand(size_reg));
     
     emit_instruction(generator, INST_CALL, 1,
@@ -192,11 +192,11 @@ bool ffi_generate_ffi_security_boundary(FFIAssemblyGenerator *generator,
                     
                     // Clear sensitive registers
                     emit_instruction(generator, INST_XOR, 2,
-                                    create_register_operand(REG_RAX),
-                                    create_register_operand(REG_RAX));
+                                    create_register_operand(ASTHRA_REG_RAX),
+                                    create_register_operand(ASTHRA_REG_RAX));
                     emit_instruction(generator, INST_XOR, 2,
-                                    create_register_operand(REG_RDX),
-                                    create_register_operand(REG_RDX));
+                                    create_register_operand(ASTHRA_REG_RDX),
+                                    create_register_operand(ASTHRA_REG_RDX));
                 }
             }
         }
@@ -290,7 +290,7 @@ bool ffi_validate_security_annotations_at_boundary(FFIAssemblyGenerator *generat
                 emit_instruction(generator, INST_CALL, 1,
                                 create_label_operand("asthra_validate_ffi_parameter"));
                 emit_instruction(generator, INST_ADD, 2,
-                                create_register_operand(REG_RSP),
+                                create_register_operand(ASTHRA_REG_RSP),
                                 create_immediate_operand(8));
             }
         }

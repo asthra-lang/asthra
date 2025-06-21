@@ -60,7 +60,7 @@ bool ffi_generate_expression_impl(FFIAssemblyGenerator *generator, ASTNode *expr
             // In real code, we'd use symbol table to find the variable location
             emit_instruction(generator, INST_MOV, 2,
                 create_register_operand(result_reg),
-                create_register_operand(REG_RBX)); // Placeholder - pretend value is in RBX
+                create_register_operand(ASTHRA_REG_RBX)); // Placeholder - pretend value is in RBX
             return true;
             
         case AST_BINARY_EXPR:

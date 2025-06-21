@@ -62,24 +62,24 @@ _Static_assert(CALLING_CONV_COUNT <= 8, "Calling conventions must fit in 3 bits"
 // System V AMD64 ABI register definitions
 typedef enum {
     // Integer registers
-    REG_RAX = 0, REG_RCX, REG_RDX, REG_RBX, REG_RSP, REG_RBP, REG_RSI, REG_RDI,
-    REG_R8, REG_R9, REG_R10, REG_R11, REG_R12, REG_R13, REG_R14, REG_R15,
+    ASTHRA_REG_RAX = 0, ASTHRA_REG_RCX, ASTHRA_REG_RDX, ASTHRA_REG_RBX, ASTHRA_REG_RSP, ASTHRA_REG_RBP, ASTHRA_REG_RSI, ASTHRA_REG_RDI,
+    ASTHRA_REG_R8, ASTHRA_REG_R9, ASTHRA_REG_R10, ASTHRA_REG_R11, ASTHRA_REG_R12, ASTHRA_REG_R13, ASTHRA_REG_R14, ASTHRA_REG_R15,
     
     // XMM registers for floating point
-    REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3, REG_XMM4, REG_XMM5, REG_XMM6, REG_XMM7,
-    REG_XMM8, REG_XMM9, REG_XMM10, REG_XMM11, REG_XMM12, REG_XMM13, REG_XMM14, REG_XMM15,
+    ASTHRA_REG_XMM0, ASTHRA_REG_XMM1, ASTHRA_REG_XMM2, ASTHRA_REG_XMM3, ASTHRA_REG_XMM4, ASTHRA_REG_XMM5, ASTHRA_REG_XMM6, ASTHRA_REG_XMM7,
+    ASTHRA_REG_XMM8, ASTHRA_REG_XMM9, ASTHRA_REG_XMM10, ASTHRA_REG_XMM11, ASTHRA_REG_XMM12, ASTHRA_REG_XMM13, ASTHRA_REG_XMM14, ASTHRA_REG_XMM15,
     
-    REG_COUNT,
-    REG_NONE = -1,
-    REG_IMMEDIATE = -2  // Special value for immediate operands
+    ASTHRA_REG_COUNT,
+    ASTHRA_REG_NONE = -1,
+    ASTHRA_REG_IMMEDIATE = -2  // Special value for immediate operands
 } Register;
 
 // C17 static assertion for register enum
-_Static_assert(REG_COUNT <= 64, "Registers must fit in 64-bit bitmask for allocation tracking");
+_Static_assert(ASTHRA_REG_COUNT <= 64, "Registers must fit in 64-bit bitmask for allocation tracking");
 
 // System V AMD64 parameter passing registers
-static const Register SYSV_INT_PARAM_REGS[] = {REG_RDI, REG_RSI, REG_RDX, REG_RCX, REG_R8, REG_R9};
-static const Register SYSV_FLOAT_PARAM_REGS[] = {REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3, REG_XMM4, REG_XMM5, REG_XMM6, REG_XMM7};
+static const Register SYSV_INT_PARAM_REGS[] = {ASTHRA_REG_RDI, ASTHRA_REG_RSI, ASTHRA_REG_RDX, ASTHRA_REG_RCX, ASTHRA_REG_R8, ASTHRA_REG_R9};
+static const Register SYSV_FLOAT_PARAM_REGS[] = {ASTHRA_REG_XMM0, ASTHRA_REG_XMM1, ASTHRA_REG_XMM2, ASTHRA_REG_XMM3, ASTHRA_REG_XMM4, ASTHRA_REG_XMM5, ASTHRA_REG_XMM6, ASTHRA_REG_XMM7};
 
 #define SYSV_INT_PARAM_COUNT (sizeof(SYSV_INT_PARAM_REGS) / sizeof(Register))
 #define SYSV_FLOAT_PARAM_COUNT (sizeof(SYSV_FLOAT_PARAM_REGS) / sizeof(Register))

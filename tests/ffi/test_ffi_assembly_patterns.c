@@ -76,7 +76,7 @@ static bool test_result_pattern_match(void) {
     ok_pattern->data.variant_pattern.binding_name = strdup("value");
     
     // Generate Result pattern matching code
-    bool result = ffi_generate_result_pattern_match(g_generator, ok_pattern, REG_RAX);
+    bool result = ffi_generate_result_pattern_match(g_generator, ok_pattern, ASTHRA_REG_RAX);
     TEST_ASSERT(result, "Result pattern match generation failed");
     
     // Cleanup
@@ -150,7 +150,7 @@ static bool test_pattern_jump_table(void) {
     context.pattern_labels[4] = strdup(".L_case_8");
     
     context.default_label = strdup(".L_default");
-    context.expression_register = REG_RAX;
+    context.expression_register = ASTHRA_REG_RAX;
     
     // Generate pattern jump table
     bool result = ffi_generate_pattern_jump_table(g_generator, &context);

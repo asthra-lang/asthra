@@ -42,7 +42,7 @@ AsthraTestResult test_generate_unary_expressions_original(AsthraTestContext* con
         return ASTHRA_TEST_FAIL;
     }
     
-    Register target_reg = REG_RAX;
+    Register target_reg = ASTHRA_REG_RAX;
     bool result = code_generate_expression(fixture->generator, fixture->test_ast, target_reg);
     if (!asthra_test_assert_bool(context, result, "Failed to generate unary minus expression code")) {
         cleanup_codegen_fixture(fixture);
@@ -57,7 +57,7 @@ AsthraTestResult test_generate_unary_expressions_original(AsthraTestContext* con
         return ASTHRA_TEST_FAIL;
     }
     
-    result = code_generate_expression(fixture->generator, pos_ast, REG_RBX);
+    result = code_generate_expression(fixture->generator, pos_ast, ASTHRA_REG_RBX);
     if (!asthra_test_assert_bool(context, result, "Failed to generate unary plus expression code")) {
         ast_free_node(pos_ast);
         cleanup_codegen_fixture(fixture);
@@ -73,7 +73,7 @@ AsthraTestResult test_generate_unary_expressions_original(AsthraTestContext* con
         return ASTHRA_TEST_FAIL;
     }
     
-    result = code_generate_expression(fixture->generator, bnot_ast, REG_RCX);
+    result = code_generate_expression(fixture->generator, bnot_ast, ASTHRA_REG_RCX);
     if (!asthra_test_assert_bool(context, result, "Failed to generate bitwise NOT expression code")) {
         ast_free_node(pos_ast);
         ast_free_node(bnot_ast);

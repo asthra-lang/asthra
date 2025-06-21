@@ -50,7 +50,7 @@ bool code_generator_validate_instructions(const CodeGenerator *generator) {
             
             switch (operand->type) {
                 case OPERAND_REGISTER:
-                    if (operand->data.reg >= REG_COUNT || operand->data.reg < 0) {
+                    if (operand->data.reg >= ASTHRA_REG_COUNT || operand->data.reg < 0) {
                         return false;  // Invalid register
                     }
                     break;
@@ -61,8 +61,8 @@ bool code_generator_validate_instructions(const CodeGenerator *generator) {
                     
                 case OPERAND_MEMORY:
                     // Validate memory operand registers
-                    if (operand->data.memory.base >= REG_COUNT || 
-                        (operand->data.memory.index != REG_NONE && operand->data.memory.index >= REG_COUNT)) {
+                    if (operand->data.memory.base >= ASTHRA_REG_COUNT || 
+                        (operand->data.memory.index != ASTHRA_REG_NONE && operand->data.memory.index >= ASTHRA_REG_COUNT)) {
                         return false;  // Invalid memory operand register
                     }
                     // Validate scale factor

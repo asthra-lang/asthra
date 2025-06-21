@@ -133,7 +133,7 @@ static bool test_postfix_expression_generation(void) {
     postfix_expr->data.postfix_expr.suffixes = suffixes;
     
     // Generate postfix expression
-    bool result = ffi_generate_postfix_expression(g_generator, postfix_expr, REG_RAX);
+    bool result = ffi_generate_postfix_expression(g_generator, postfix_expr, ASTHRA_REG_RAX);
     TEST_ASSERT(result, "Postfix expression generation failed");
     
     // Cleanup - only free the main node, it will handle the list
@@ -177,7 +177,7 @@ static bool test_conditional_move_optimization(void) {
     conditional->data.conditional_expr.false_expr = false_expr;
     
     // Optimize to conditional move
-    bool result = ffi_optimize_conditional_move(g_generator, conditional, REG_RAX);
+    bool result = ffi_optimize_conditional_move(g_generator, conditional, ASTHRA_REG_RAX);
     TEST_ASSERT(result, "Conditional move optimization failed");
     
     // Cleanup

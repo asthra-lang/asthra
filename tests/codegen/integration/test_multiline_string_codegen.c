@@ -103,7 +103,7 @@ static AsthraTestResult test_basic_multiline_string_codegen(AsthraTestContext *c
     }
     
     // Test code generation for multi-line string
-    Register target_reg = REG_RAX;
+    Register target_reg = ASTHRA_REG_RAX;
     bool result = code_generate_expression(generator, string_node, target_reg);
     
     // Cleanup
@@ -134,7 +134,7 @@ static AsthraTestResult test_multiline_string_special_chars_codegen(AsthraTestCo
     }
     
     // Test code generation
-    Register target_reg = REG_RCX;
+    Register target_reg = ASTHRA_REG_RCX;
     bool result = code_generate_expression(generator, string_node, target_reg);
     
     // Cleanup
@@ -164,7 +164,7 @@ static AsthraTestResult test_empty_string_codegen(AsthraTestContext *context) {
     }
     
     // Test code generation for empty string
-    Register target_reg = REG_RDX;
+    Register target_reg = ASTHRA_REG_RDX;
     bool result = code_generate_expression(generator, string_node, target_reg);
     
     // Cleanup
@@ -195,7 +195,7 @@ static AsthraTestResult test_single_line_string_codegen(AsthraTestContext *conte
     }
     
     // Test code generation for single-line string (should work as before)
-    Register target_reg = REG_RSI;
+    Register target_reg = ASTHRA_REG_RSI;
     bool result = code_generate_expression(generator, string_node, target_reg);
     
     // Cleanup
@@ -230,7 +230,7 @@ static AsthraTestResult test_sql_query_multiline_codegen(AsthraTestContext *cont
     }
     
     // Test code generation for SQL query string
-    Register target_reg = REG_RDI;
+    Register target_reg = ASTHRA_REG_RDI;
     bool result = code_generate_expression(generator, string_node, target_reg);
     
     // Cleanup
@@ -268,7 +268,7 @@ static AsthraTestResult test_config_template_multiline_codegen(AsthraTestContext
     }
     
     // Test code generation for config template string
-    Register target_reg = REG_R8;
+    Register target_reg = ASTHRA_REG_R8;
     bool result = code_generate_expression(generator, string_node, target_reg);
     
     // Cleanup

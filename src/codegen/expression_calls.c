@@ -58,7 +58,7 @@ bool code_generate_associated_function_call(CodeGenerator *generator, ASTNode *c
             ASTNode *arg = ast_node_list_get(args, i);
             arg_regs[i] = register_allocate(generator->register_allocator, true);
             
-            if (arg_regs[i] == REG_NONE || !code_generate_expression(generator, arg, arg_regs[i])) {
+            if (arg_regs[i] == ASTHRA_REG_NONE || !code_generate_expression(generator, arg, arg_regs[i])) {
                 // Free allocated registers on error
                 for (size_t j = 0; j < i; j++) {
                     register_free(generator->register_allocator, arg_regs[j]);
@@ -133,7 +133,7 @@ bool code_generate_function_call(CodeGenerator *generator, ASTNode *call_expr, R
         // Generate code to load the instance into a register
         // This is a simplified implementation
         Register instance_reg = register_allocate(generator->register_allocator, true);
-        if (instance_reg == REG_NONE || !code_generate_expression(generator, object_expr, instance_reg)) {
+        if (instance_reg == ASTHRA_REG_NONE || !code_generate_expression(generator, object_expr, instance_reg)) {
             code_generator_report_error(generator, CODEGEN_ERROR_UNSUPPORTED_OPERATION, 
                                        "Failed to generate instance expression");
             return false;
@@ -189,7 +189,7 @@ bool code_generate_function_call(CodeGenerator *generator, ASTNode *call_expr, R
             ASTNode *arg = ast_node_list_get(args, i);
             arg_regs[arg_index] = register_allocate(generator->register_allocator, true);
             
-            if (arg_regs[arg_index] == REG_NONE || !code_generate_expression(generator, arg, arg_regs[arg_index])) {
+            if (arg_regs[arg_index] == ASTHRA_REG_NONE || !code_generate_expression(generator, arg, arg_regs[arg_index])) {
                 // Free allocated registers on error
                 for (size_t j = 0; j < arg_index; j++) {
                     register_free(generator->register_allocator, arg_regs[j]);
@@ -223,7 +223,7 @@ bool code_generate_function_call(CodeGenerator *generator, ASTNode *call_expr, R
 // =============================================================================
 
 bool code_generate_enum_variant_construction(CodeGenerator *generator, ASTNode *expr, Register target_reg) {
-    if (!generator || !expr || expr->type != AST_ENUM_VARIANT || target_reg == REG_NONE) {
+    if (!generator || !expr || expr->type != AST_ENUM_VARIANT || target_reg == ASTHRA_REG_NONE) {
         return false;
     }
     
@@ -258,7 +258,7 @@ bool code_generate_enum_variant_construction(CodeGenerator *generator, ASTNode *
         }
         
         arg_regs[0] = register_allocate(generator->register_allocator, true);
-        if (arg_regs[0] == REG_NONE) {
+        if (arg_regs[0] == ASTHRA_REG_NONE) {
             free(arg_regs);
             free(constructor_name);
             return false;
@@ -278,11 +278,11 @@ bool code_generate_enum_variant_construction(CodeGenerator *generator, ASTNode *
     bool success = call_inst && instruction_buffer_add(generator->instruction_buffer, call_inst);
     
     // Move result to target register if needed
-    if (success && target_reg != REG_RAX) {
+    if (success && target_reg != ASTHRA_REG_RAX) {
         AssemblyInstruction *mov_inst = create_instruction_empty(INST_MOV, 2);
         if (mov_inst) {
             mov_inst->operands[0] = create_register_operand(target_reg);
-            mov_inst->operands[1] = create_register_operand(REG_RAX);
+            mov_inst->operands[1] = create_register_operand(ASTHRA_REG_RAX);
             success = instruction_buffer_add(generator->instruction_buffer, mov_inst);
         }
     }

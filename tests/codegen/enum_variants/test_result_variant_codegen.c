@@ -33,7 +33,7 @@ static void test_result_ok_codegen(void) {
     printf("DEBUG: Generator's semantic_analyzer=%p\n", (void*)(generator->semantic_analyzer));
     
     // Generate code for the enum variant expression
-    Register target_reg = REG_RAX; // Use a test register
+    Register target_reg = ASTHRA_REG_RAX; // Use a test register
     bool success = code_generate_enum_variant_construction(generator, expr, target_reg);
     
     if (success) {
@@ -109,7 +109,7 @@ static void test_result_err_codegen(void) {
     analyze_expression_for_test(ctx, expr);
     
     // Generate code for the enum variant expression
-    Register target_reg = REG_RCX; // Use another test register
+    Register target_reg = ASTHRA_REG_RCX; // Use another test register
     bool success = code_generate_enum_variant_construction(generator, expr, target_reg);
     
     if (success) {

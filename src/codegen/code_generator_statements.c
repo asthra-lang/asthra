@@ -35,9 +35,9 @@ bool code_generate_statement(CodeGenerator *generator, ASTNode *stmt) {
             const char *var_name = stmt->data.let_stmt.name;
             ASTNode *init_expr = stmt->data.let_stmt.initializer;
             
-            // Generate initializer expression - use REG_NONE for target
-            Register value_reg = code_generate_expression(generator, init_expr, REG_NONE);
-            if (value_reg == REG_NONE) {
+            // Generate initializer expression - use ASTHRA_REG_NONE for target
+            Register value_reg = code_generate_expression(generator, init_expr, ASTHRA_REG_NONE);
+            if (value_reg == ASTHRA_REG_NONE) {
                 return false;
             }
             
@@ -66,7 +66,7 @@ bool code_generate_statement(CodeGenerator *generator, ASTNode *stmt) {
             
             // Allocate a register for the condition
             Register cond_reg = register_allocate(generator->register_allocator, true);
-            if (cond_reg == REG_NONE) {
+            if (cond_reg == ASTHRA_REG_NONE) {
                 return false;
             }
             
@@ -154,7 +154,7 @@ bool code_generate_statement(CodeGenerator *generator, ASTNode *stmt) {
             Register counter_reg = register_allocate(generator->register_allocator, true);
             Register limit_reg = register_allocate(generator->register_allocator, true);
             
-            if (counter_reg == REG_NONE || limit_reg == REG_NONE) {
+            if (counter_reg == ASTHRA_REG_NONE || limit_reg == ASTHRA_REG_NONE) {
                 // Restore loop context
                 generator->loop_context.exit_label = saved_exit;
                 generator->loop_context.continue_label = saved_continue;
@@ -337,15 +337,15 @@ bool code_generate_statement(CodeGenerator *generator, ASTNode *stmt) {
             ASTNode *return_value = stmt->data.return_stmt.expression;
             
             if (return_value) {
-                // Generate return value - use REG_NONE for target
-                Register value_reg = code_generate_expression(generator, return_value, REG_NONE);
-                if (value_reg == REG_NONE) {
+                // Generate return value - use ASTHRA_REG_NONE for target
+                Register value_reg = code_generate_expression(generator, return_value, ASTHRA_REG_NONE);
+                if (value_reg == ASTHRA_REG_NONE) {
                     return false;
                 }
                 
                 // Move to return register if needed
-                if (value_reg != REG_RAX) {
-                    AssemblyInstruction *mov = create_mov_instruction(REG_RAX, value_reg);
+                if (value_reg != ASTHRA_REG_RAX) {
+                    AssemblyInstruction *mov = create_mov_instruction(ASTHRA_REG_RAX, value_reg);
                     if (!mov || !instruction_buffer_add(generator->instruction_buffer, mov)) {
                         register_free(generator->register_allocator, value_reg);
                         return false;
@@ -370,7 +370,7 @@ bool code_generate_statement(CodeGenerator *generator, ASTNode *stmt) {
             
             // Allocate a register for the result
             Register result = register_allocate(generator->register_allocator, true);
-            if (result == REG_NONE) {
+            if (result == ASTHRA_REG_NONE) {
                 return false;
             }
             
@@ -403,7 +403,7 @@ bool code_generate_statement(CodeGenerator *generator, ASTNode *stmt) {
             // Assignment as a statement (not wrapped in expression statement)
             // Allocate a register for the result
             Register result = register_allocate(generator->register_allocator, true);
-            if (result == REG_NONE) {
+            if (result == ASTHRA_REG_NONE) {
                 return false;
             }
             
@@ -506,8 +506,8 @@ bool code_generate_if_let_statement(CodeGenerator *generator, ASTNode *stmt) {
     ASTNode *else_block = stmt->data.if_let_stmt.else_block;
     
     // Generate the expression to match against
-    Register value_reg = code_generate_expression(generator, expr, REG_NONE);
-    if (value_reg == REG_NONE) {
+    Register value_reg = code_generate_expression(generator, expr, ASTHRA_REG_NONE);
+    if (value_reg == ASTHRA_REG_NONE) {
         return false;
     }
     
@@ -585,7 +585,7 @@ bool code_generate_pattern_test(CodeGenerator *generator, ASTNode *pattern, Regi
                                char *match_label, char *no_match_label) {
     // For now, use no_match_label as the fail label
     const char *fail_label = no_match_label;
-    if (!generator || !pattern || value_reg == REG_NONE || !fail_label) {
+    if (!generator || !pattern || value_reg == ASTHRA_REG_NONE || !fail_label) {
         return false;
     }
     
@@ -604,7 +604,7 @@ bool code_generate_pattern_test(CodeGenerator *generator, ASTNode *pattern, Regi
         case AST_ENUM_PATTERN: {
             // Load variant tag from the value
             Register tag_reg = register_allocate(generator->register_allocator, true);
-            if (tag_reg == REG_NONE) {
+            if (tag_reg == ASTHRA_REG_NONE) {
                 return false;
             }
             
@@ -621,7 +621,7 @@ bool code_generate_pattern_test(CodeGenerator *generator, ASTNode *pattern, Regi
             
             // Load expected tag into register
             Register expected_reg = register_allocate(generator->register_allocator, true);
-            if (expected_reg == REG_NONE) {
+            if (expected_reg == ASTHRA_REG_NONE) {
                 register_free(generator->register_allocator, tag_reg);
                 return false;
             }
@@ -667,7 +667,7 @@ bool code_generate_pattern_test(CodeGenerator *generator, ASTNode *pattern, Regi
  * Extracts values from matched patterns and binds them to variables
  */
 bool code_generate_pattern_bindings(CodeGenerator *generator, ASTNode *pattern, Register value_reg) {
-    if (!generator || !pattern || value_reg == REG_NONE) {
+    if (!generator || !pattern || value_reg == ASTHRA_REG_NONE) {
         return false;
     }
     
@@ -722,7 +722,7 @@ bool code_generate_enum_pattern_bindings(CodeGenerator *generator, ASTNode *patt
     if (binding_name) {
         // Extract data from enum value (skip the tag)
         Register data_reg = register_allocate(generator->register_allocator, true);
-        if (data_reg == REG_NONE) {
+        if (data_reg == ASTHRA_REG_NONE) {
             return false;
         }
         

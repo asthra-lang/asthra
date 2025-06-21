@@ -173,7 +173,7 @@ bool ffi_generate_annotated_return(FFIAssemblyGenerator *generator,
     
     // Apply annotation-based transfer semantics
     // Return values typically use RAX register in System V AMD64 ABI
-    Register return_reg = REG_RAX;
+    Register return_reg = ASTHRA_REG_RAX;
     
     return ffi_generate_annotation_based_transfer(generator, result_reg, return_reg, annotation_type);
 }
@@ -226,7 +226,7 @@ bool ffi_generate_annotated_function_call(FFIAssemblyGenerator *generator, ASTNo
     size_t arg_count = args ? args->count : 0;
     
     // Generate parameters with annotation support
-    Register param_registers[] = {REG_RDI, REG_RSI, REG_RDX, REG_RCX, REG_R8, REG_R9};
+    Register param_registers[] = {ASTHRA_REG_RDI, ASTHRA_REG_RSI, ASTHRA_REG_RDX, ASTHRA_REG_RCX, ASTHRA_REG_R8, ASTHRA_REG_R9};
     size_t max_register_params = sizeof(param_registers) / sizeof(param_registers[0]);
     
     for (size_t i = 0; i < arg_count && i < max_register_params; i++) {
@@ -234,7 +234,7 @@ bool ffi_generate_annotated_function_call(FFIAssemblyGenerator *generator, ASTNo
         
         // Generate argument value
         Register arg_reg = register_allocate(generator->base_generator->register_allocator, true);
-        if (arg_reg == REG_NONE) {
+        if (arg_reg == ASTHRA_REG_NONE) {
             return false;
         }
         

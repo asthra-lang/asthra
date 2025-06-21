@@ -96,7 +96,7 @@ bool ffi_generate_extern_call(FFIAssemblyGenerator *generator, ASTNode *call_exp
         context->parameters[i].marshal_type = marshal_type;
         
         // Allocate register or stack space
-        Register param_reg = REG_NONE;
+        Register param_reg = ASTHRA_REG_NONE;
         
         switch (marshal_type) {
             case FFI_MARSHAL_DIRECT:
@@ -157,7 +157,7 @@ bool ffi_generate_extern_call(FFIAssemblyGenerator *generator, ASTNode *call_exp
     // Adjust stack pointer if needed
     if (context->total_stack_size > 0) {
         emit_instruction(generator, INST_SUB, 2,
-                        create_register_operand(REG_RSP),
+                        create_register_operand(ASTHRA_REG_RSP),
                         create_immediate_operand((int64_t)context->total_stack_size));
     }
     
@@ -168,7 +168,7 @@ bool ffi_generate_extern_call(FFIAssemblyGenerator *generator, ASTNode *call_exp
     // Restore stack pointer
     if (context->total_stack_size > 0) {
         emit_instruction(generator, INST_ADD, 2,
-                        create_register_operand(REG_RSP),
+                        create_register_operand(ASTHRA_REG_RSP),
                         create_immediate_operand((int64_t)context->total_stack_size));
     }
     
@@ -177,7 +177,7 @@ bool ffi_generate_extern_call(FFIAssemblyGenerator *generator, ASTNode *call_exp
         // Return value is in RAX for integers, XMM0 for floats
         Register return_reg = (is_float_type(call_expr->type_info) || 
                               is_double_type(call_expr->type_info)) ? 
-                              REG_XMM0 : REG_RAX;
+                              ASTHRA_REG_XMM0 : ASTHRA_REG_RAX;
         
         context->return_reg = return_reg;
         context->return_marshal_type = ffi_determine_return_marshaling_type(generator, call_expr);
@@ -254,7 +254,7 @@ bool ffi_generate_variadic_call(FFIAssemblyGenerator *generator,
         context->parameters[i].is_variadic = false;
         
         // Allocate register or stack space
-        Register param_reg = REG_NONE;
+        Register param_reg = ASTHRA_REG_NONE;
         
         switch (marshal_type) {
             case FFI_MARSHAL_DIRECT:
@@ -308,11 +308,11 @@ bool ffi_generate_variadic_call(FFIAssemblyGenerator *generator,
         
         // Variadic arguments are always passed on stack in System V AMD64
         context->parameters[i].stack_offset = stack_offset;
-        context->parameters[i].allocated_reg = REG_NONE;
+        context->parameters[i].allocated_reg = ASTHRA_REG_NONE;
         
         // Generate variadic argument marshaling
         if (!ffi_generate_parameter_marshaling(generator, arg, FFI_MARSHAL_VARIADIC, 
-                                              FFI_OWNERSHIP_NONE, REG_NONE)) {
+                                              FFI_OWNERSHIP_NONE, ASTHRA_REG_NONE)) {
             free(context->parameters);
             free(context->function_name);
             free(context);
@@ -339,7 +339,7 @@ bool ffi_generate_variadic_call(FFIAssemblyGenerator *generator,
     // Adjust stack pointer if needed
     if (context->total_stack_size > 0) {
         emit_instruction(generator, INST_SUB, 2,
-                        create_register_operand(REG_RSP),
+                        create_register_operand(ASTHRA_REG_RSP),
                         create_immediate_operand((int64_t)context->total_stack_size));
     }
     
@@ -350,13 +350,13 @@ bool ffi_generate_variadic_call(FFIAssemblyGenerator *generator,
     // Restore stack pointer
     if (context->total_stack_size > 0) {
         emit_instruction(generator, INST_ADD, 2,
-                        create_register_operand(REG_RSP),
+                        create_register_operand(ASTHRA_REG_RSP),
                         create_immediate_operand((int64_t)context->total_stack_size));
     }
     
     // Handle return value
     if (call_expr->type_info && !is_void_type(call_expr->type_info)) {
-        context->return_reg = REG_RAX;
+        context->return_reg = ASTHRA_REG_RAX;
         context->return_marshal_type = ffi_determine_return_marshaling_type(generator, call_expr);
     }
     

@@ -72,9 +72,9 @@ bool generate_binary_expression(CodeGenerator *generator, ASTNode *expr, Registe
     Register left_reg = register_allocate(generator->register_allocator, true);
     Register right_reg = register_allocate(generator->register_allocator, true);
     
-    if (left_reg == REG_NONE || right_reg == REG_NONE) {
-        if (left_reg != REG_NONE) register_free(generator->register_allocator, left_reg);
-        if (right_reg != REG_NONE) register_free(generator->register_allocator, right_reg);
+    if (left_reg == ASTHRA_REG_NONE || right_reg == ASTHRA_REG_NONE) {
+        if (left_reg != ASTHRA_REG_NONE) register_free(generator->register_allocator, left_reg);
+        if (right_reg != ASTHRA_REG_NONE) register_free(generator->register_allocator, right_reg);
         return false;
     }
     
@@ -119,7 +119,7 @@ bool generate_assignment_expression(CodeGenerator *generator, ASTNode *expr, Reg
     
     // Generate value first
     Register value_reg = register_allocate(generator->register_allocator, true);
-    if (value_reg == REG_NONE) {
+    if (value_reg == ASTHRA_REG_NONE) {
         return false;
     }
     
@@ -153,7 +153,7 @@ bool generate_assignment_expression(CodeGenerator *generator, ASTNode *expr, Reg
         
         // Get object address
         Register obj_reg = register_allocate(generator->register_allocator, true);
-        if (obj_reg == REG_NONE) {
+        if (obj_reg == ASTHRA_REG_NONE) {
             register_free(generator->register_allocator, value_reg);
             return false;
         }
@@ -178,7 +178,7 @@ bool generate_assignment_expression(CodeGenerator *generator, ASTNode *expr, Reg
         // Store to field: mov [obj_reg + offset], value_reg
         AssemblyInstruction *store_inst = create_instruction_empty(INST_MOV, 2);
         if (store_inst) {
-            store_inst->operands[0] = create_memory_operand(obj_reg, field_offset, REG_NONE, 1);
+            store_inst->operands[0] = create_memory_operand(obj_reg, field_offset, ASTHRA_REG_NONE, 1);
             store_inst->operands[1] = create_register_operand(value_reg);
             success = instruction_buffer_add(generator->instruction_buffer, store_inst);
         }

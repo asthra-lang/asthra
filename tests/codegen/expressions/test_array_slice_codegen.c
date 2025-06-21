@@ -40,7 +40,7 @@ AsthraTestResult test_generate_array_slice_expressions(AsthraTestContext* contex
         return ASTHRA_TEST_FAIL;
     }
     
-    bool result = code_generate_expression(fixture->generator, repeated_ast, REG_RAX);
+    bool result = code_generate_expression(fixture->generator, repeated_ast, ASTHRA_REG_RAX);
     if (!asthra_test_assert_bool(context, result, "Failed to generate repeated array expression code")) {
         ast_free_node(repeated_ast);
         cleanup_codegen_fixture(fixture);

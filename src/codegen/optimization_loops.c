@@ -265,7 +265,7 @@ bool optimize_loop_unrolling(Optimizer *optimizer, ASTNode *for_stmt, CodeGenera
         for (size_t i = 0; i < loop->iteration_count; i++) {
             // Set induction variable value
             Register ind_reg = register_allocate(generator->register_allocator, true);
-            if (ind_reg != REG_NONE) {
+            if (ind_reg != ASTHRA_REG_NONE) {
                 AssemblyInstruction *mov_inst = create_mov_immediate(ind_reg, 
                     loop->start_value + (int64_t)i * loop->step_value);
                 instruction_buffer_add(generator->instruction_buffer, mov_inst);
@@ -287,7 +287,7 @@ bool optimize_loop_unrolling(Optimizer *optimizer, ASTNode *for_stmt, CodeGenera
         Register ind_reg = register_allocate(generator->register_allocator, true);
         Register limit_reg = register_allocate(generator->register_allocator, true);
         
-        if (ind_reg != REG_NONE && limit_reg != REG_NONE) {
+        if (ind_reg != ASTHRA_REG_NONE && limit_reg != ASTHRA_REG_NONE) {
             // Initialize induction variable
             AssemblyInstruction *init_inst = create_mov_immediate(ind_reg, loop->start_value);
             instruction_buffer_add(generator->instruction_buffer, init_inst);

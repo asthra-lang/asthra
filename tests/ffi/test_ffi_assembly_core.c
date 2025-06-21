@@ -69,14 +69,14 @@ static bool test_ffi_parameter_marshaling(void) {
     ASTNode *int_param = create_test_integer_literal(123);
     bool result = ffi_generate_parameter_marshaling(g_generator, int_param, 
                                                    FFI_MARSHAL_DIRECT, 
-                                                   FFI_OWNERSHIP_NONE, REG_RDI);
+                                                   FFI_OWNERSHIP_NONE, ASTHRA_REG_RDI);
     TEST_ASSERT(result, "Direct parameter marshaling failed");
     
     // Test string marshaling
     ASTNode *string_param = create_test_string_literal("test string");
     result = ffi_generate_parameter_marshaling(g_generator, string_param,
                                               FFI_MARSHAL_STRING,
-                                              FFI_OWNERSHIP_MOVE, REG_RSI);
+                                              FFI_OWNERSHIP_MOVE, ASTHRA_REG_RSI);
     TEST_ASSERT(result, "String parameter marshaling failed");
     
     // Cleanup
@@ -90,11 +90,11 @@ static bool test_ownership_transfer(void) {
     printf("Testing ownership transfer...\n");
     
     // Test full ownership transfer
-    bool result = ffi_generate_ownership_transfer(g_generator, REG_RDI, REG_RSI, FFI_OWNERSHIP_MOVE);
+    bool result = ffi_generate_ownership_transfer(g_generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI, FFI_OWNERSHIP_MOVE);
     TEST_ASSERT(result, "Full ownership transfer failed");
     
     // Test no ownership transfer
-    result = ffi_generate_ownership_transfer(g_generator, REG_RDI, REG_RSI, FFI_OWNERSHIP_NONE);
+    result = ffi_generate_ownership_transfer(g_generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI, FFI_OWNERSHIP_NONE);
     TEST_ASSERT(result, "No ownership transfer failed");
     
     TEST_SUCCESS();

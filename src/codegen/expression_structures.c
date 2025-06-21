@@ -47,7 +47,7 @@ bool generate_struct_literal(CodeGenerator *generator, ASTNode *expr, Register t
         return false;
     }
     
-    sub_inst->operands[0] = create_register_operand(REG_RSP);
+    sub_inst->operands[0] = create_register_operand(ASTHRA_REG_RSP);
     sub_inst->operands[1] = create_immediate_operand(struct_size);
     
     bool success = instruction_buffer_add(generator->instruction_buffer, sub_inst);
@@ -57,7 +57,7 @@ bool generate_struct_literal(CodeGenerator *generator, ASTNode *expr, Register t
         AssemblyInstruction *mov_inst = create_instruction_empty(INST_MOV, 2);
         if (mov_inst) {
             mov_inst->operands[0] = create_register_operand(target_reg);
-            mov_inst->operands[1] = create_register_operand(REG_RSP);
+            mov_inst->operands[1] = create_register_operand(ASTHRA_REG_RSP);
             success = instruction_buffer_add(generator->instruction_buffer, mov_inst);
         }
     }
@@ -65,7 +65,7 @@ bool generate_struct_literal(CodeGenerator *generator, ASTNode *expr, Register t
     // Initialize fields
     if (success && fields) {
         Register field_reg = register_allocate(generator->register_allocator, true);
-        if (field_reg != REG_NONE) {
+        if (field_reg != ASTHRA_REG_NONE) {
             for (size_t i = 0; i < ast_node_list_size(fields) && success; i++) {
                 ASTNode *field_init = ast_node_list_get(fields, i);
                 if (field_init && field_init->type == AST_ASSIGNMENT) {
@@ -87,7 +87,7 @@ bool generate_struct_literal(CodeGenerator *generator, ASTNode *expr, Register t
                         // Store field: mov [rsp + offset], field_reg
                         AssemblyInstruction *store_inst = create_instruction_empty(INST_MOV, 2);
                         if (store_inst) {
-                            store_inst->operands[0] = create_memory_operand(REG_RSP, field_offset, REG_NONE, 1);
+                            store_inst->operands[0] = create_memory_operand(ASTHRA_REG_RSP, field_offset, ASTHRA_REG_NONE, 1);
                             store_inst->operands[1] = create_register_operand(field_reg);
                             success = instruction_buffer_add(generator->instruction_buffer, store_inst);
                         }
@@ -117,7 +117,7 @@ bool generate_field_access(CodeGenerator *generator, ASTNode *expr, Register tar
     
     // Generate the object address
     Register obj_reg = register_allocate(generator->register_allocator, true);
-    if (obj_reg == REG_NONE) {
+    if (obj_reg == ASTHRA_REG_NONE) {
         return false;
     }
     
@@ -135,7 +135,7 @@ bool generate_field_access(CodeGenerator *generator, ASTNode *expr, Register tar
             AssemblyInstruction *mov_inst = create_instruction_empty(INST_MOV, 2);
             if (mov_inst) {
                 mov_inst->operands[0] = create_register_operand(target_reg);
-                mov_inst->operands[1] = create_memory_operand(obj_reg, field_offset, REG_NONE, 1);
+                mov_inst->operands[1] = create_memory_operand(obj_reg, field_offset, ASTHRA_REG_NONE, 1);
                 success = instruction_buffer_add(generator->instruction_buffer, mov_inst);
             }
             
@@ -206,7 +206,7 @@ bool generate_array_literal(CodeGenerator *generator, ASTNode *expr, Register ta
                 return false;
             }
             
-            sub_inst->operands[0] = create_register_operand(REG_RSP);
+            sub_inst->operands[0] = create_register_operand(ASTHRA_REG_RSP);
             sub_inst->operands[1] = create_immediate_operand(total_size);
             
             bool success = instruction_buffer_add(generator->instruction_buffer, sub_inst);
@@ -216,14 +216,14 @@ bool generate_array_literal(CodeGenerator *generator, ASTNode *expr, Register ta
                 AssemblyInstruction *mov_inst = create_instruction_empty(INST_MOV, 2);
                 if (mov_inst) {
                     mov_inst->operands[0] = create_register_operand(target_reg);
-                    mov_inst->operands[1] = create_register_operand(REG_RSP);
+                    mov_inst->operands[1] = create_register_operand(ASTHRA_REG_RSP);
                     success = instruction_buffer_add(generator->instruction_buffer, mov_inst);
                 }
             }
             
             // Generate the value expression once
             Register value_reg = register_allocate(generator->register_allocator, true);
-            if (value_reg != REG_NONE && success) {
+            if (value_reg != ASTHRA_REG_NONE && success) {
                 success = code_generate_expression(generator, value_expr, value_reg);
                 
                 // Initialize all elements with the same value
@@ -232,7 +232,7 @@ bool generate_array_literal(CodeGenerator *generator, ASTNode *expr, Register ta
                         // Store element: mov [rsp + i*element_size], value_reg
                         AssemblyInstruction *store_inst = create_instruction_empty(INST_MOV, 2);
                         if (store_inst) {
-                            store_inst->operands[0] = create_memory_operand(REG_RSP, i * element_size, REG_NONE, 1);
+                            store_inst->operands[0] = create_memory_operand(ASTHRA_REG_RSP, i * element_size, ASTHRA_REG_NONE, 1);
                             store_inst->operands[1] = create_register_operand(value_reg);
                             success = instruction_buffer_add(generator->instruction_buffer, store_inst);
                         } else {
@@ -258,7 +258,7 @@ bool generate_array_literal(CodeGenerator *generator, ASTNode *expr, Register ta
         return false;
     }
     
-    sub_inst->operands[0] = create_register_operand(REG_RSP);
+    sub_inst->operands[0] = create_register_operand(ASTHRA_REG_RSP);
     sub_inst->operands[1] = create_immediate_operand(elem_count * 8); // 8 bytes per element
     
     bool success = instruction_buffer_add(generator->instruction_buffer, sub_inst);
@@ -268,7 +268,7 @@ bool generate_array_literal(CodeGenerator *generator, ASTNode *expr, Register ta
         AssemblyInstruction *mov_inst = create_instruction_empty(INST_MOV, 2);
         if (mov_inst) {
             mov_inst->operands[0] = create_register_operand(target_reg);
-            mov_inst->operands[1] = create_register_operand(REG_RSP);
+            mov_inst->operands[1] = create_register_operand(ASTHRA_REG_RSP);
             success = instruction_buffer_add(generator->instruction_buffer, mov_inst);
         }
     }
@@ -276,7 +276,7 @@ bool generate_array_literal(CodeGenerator *generator, ASTNode *expr, Register ta
     // Initialize elements (simplified)
     if (success && elements) {
         Register elem_reg = register_allocate(generator->register_allocator, true);
-        if (elem_reg != REG_NONE) {
+        if (elem_reg != ASTHRA_REG_NONE) {
             for (size_t i = 0; i < elem_count && success; i++) {
                 ASTNode *elem = ast_node_list_get(elements, i);
                 if (elem) {
@@ -285,7 +285,7 @@ bool generate_array_literal(CodeGenerator *generator, ASTNode *expr, Register ta
                         // Store element: mov [rsp + i*8], elem_reg
                         AssemblyInstruction *store_inst = create_instruction_empty(INST_MOV, 2);
                         if (store_inst) {
-                            store_inst->operands[0] = create_memory_operand(REG_RSP, i * 8, REG_NONE, 1);
+                            store_inst->operands[0] = create_memory_operand(ASTHRA_REG_RSP, i * 8, ASTHRA_REG_NONE, 1);
                             store_inst->operands[1] = create_register_operand(elem_reg);
                             success = instruction_buffer_add(generator->instruction_buffer, store_inst);
                         }
@@ -331,7 +331,7 @@ bool generate_tuple_literal(CodeGenerator *generator, ASTNode *expr, Register ta
         return false;
     }
     
-    sub_inst->operands[0] = create_register_operand(REG_RSP);
+    sub_inst->operands[0] = create_register_operand(ASTHRA_REG_RSP);
     sub_inst->operands[1] = create_immediate_operand(tuple_size);
     
     bool success = instruction_buffer_add(generator->instruction_buffer, sub_inst);
@@ -341,7 +341,7 @@ bool generate_tuple_literal(CodeGenerator *generator, ASTNode *expr, Register ta
         AssemblyInstruction *mov_inst = create_instruction_empty(INST_MOV, 2);
         if (mov_inst) {
             mov_inst->operands[0] = create_register_operand(target_reg);
-            mov_inst->operands[1] = create_register_operand(REG_RSP);
+            mov_inst->operands[1] = create_register_operand(ASTHRA_REG_RSP);
             success = instruction_buffer_add(generator->instruction_buffer, mov_inst);
         }
     }
@@ -349,7 +349,7 @@ bool generate_tuple_literal(CodeGenerator *generator, ASTNode *expr, Register ta
     // Initialize elements at their proper offsets
     if (success) {
         Register elem_reg = register_allocate(generator->register_allocator, true);
-        if (elem_reg != REG_NONE) {
+        if (elem_reg != ASTHRA_REG_NONE) {
             for (size_t i = 0; i < elem_count && success; i++) {
                 ASTNode *elem = ast_node_list_get(elements, i);
                 if (elem) {
@@ -362,7 +362,7 @@ bool generate_tuple_literal(CodeGenerator *generator, ASTNode *expr, Register ta
                         // Store element at proper offset: mov [rsp + offset], elem_reg
                         AssemblyInstruction *store_inst = create_instruction_empty(INST_MOV, 2);
                         if (store_inst) {
-                            store_inst->operands[0] = create_memory_operand(REG_RSP, elem_offset, REG_NONE, 1);
+                            store_inst->operands[0] = create_memory_operand(ASTHRA_REG_RSP, elem_offset, ASTHRA_REG_NONE, 1);
                             store_inst->operands[1] = create_register_operand(elem_reg);
                             
                             // Note: In a complete implementation, we would set operand size
@@ -402,9 +402,9 @@ bool generate_index_access(CodeGenerator *generator, ASTNode *expr, Register tar
     Register array_reg = register_allocate(generator->register_allocator, true);
     Register index_reg = register_allocate(generator->register_allocator, true);
     
-    if (array_reg == REG_NONE || index_reg == REG_NONE) {
-        if (array_reg != REG_NONE) register_free(generator->register_allocator, array_reg);
-        if (index_reg != REG_NONE) register_free(generator->register_allocator, index_reg);
+    if (array_reg == ASTHRA_REG_NONE || index_reg == ASTHRA_REG_NONE) {
+        if (array_reg != ASTHRA_REG_NONE) register_free(generator->register_allocator, array_reg);
+        if (index_reg != ASTHRA_REG_NONE) register_free(generator->register_allocator, index_reg);
         return false;
     }
     
@@ -461,7 +461,7 @@ bool generate_index_access(CodeGenerator *generator, ASTNode *expr, Register tar
             AssemblyInstruction *mov_inst = create_instruction_empty(INST_MOV, 2);
             if (mov_inst) {
                 mov_inst->operands[0] = create_register_operand(target_reg);
-                mov_inst->operands[1] = create_memory_operand(array_reg, 0, REG_NONE, 1);
+                mov_inst->operands[1] = create_memory_operand(array_reg, 0, ASTHRA_REG_NONE, 1);
                 success = instruction_buffer_add(generator->instruction_buffer, mov_inst);
             } else {
                 success = false;
@@ -526,11 +526,11 @@ bool generate_slice_expr(CodeGenerator *generator, ASTNode *expr, Register targe
     Register end_reg = register_allocate(generator->register_allocator, true);
     Register temp_reg = register_allocate(generator->register_allocator, true);
     
-    if (array_reg == REG_NONE || start_reg == REG_NONE || end_reg == REG_NONE || temp_reg == REG_NONE) {
-        if (array_reg != REG_NONE) register_free(generator->register_allocator, array_reg);
-        if (start_reg != REG_NONE) register_free(generator->register_allocator, start_reg);
-        if (end_reg != REG_NONE) register_free(generator->register_allocator, end_reg);
-        if (temp_reg != REG_NONE) register_free(generator->register_allocator, temp_reg);
+    if (array_reg == ASTHRA_REG_NONE || start_reg == ASTHRA_REG_NONE || end_reg == ASTHRA_REG_NONE || temp_reg == ASTHRA_REG_NONE) {
+        if (array_reg != ASTHRA_REG_NONE) register_free(generator->register_allocator, array_reg);
+        if (start_reg != ASTHRA_REG_NONE) register_free(generator->register_allocator, start_reg);
+        if (end_reg != ASTHRA_REG_NONE) register_free(generator->register_allocator, end_reg);
+        if (temp_reg != ASTHRA_REG_NONE) register_free(generator->register_allocator, temp_reg);
         type_descriptor_release(array_type);
         return false;
     }
@@ -578,7 +578,7 @@ bool generate_slice_expr(CodeGenerator *generator, ASTNode *expr, Register targe
                 AssemblyInstruction *mov_inst = create_instruction_empty(INST_MOV, 2);
                 if (mov_inst) {
                     mov_inst->operands[0] = create_register_operand(end_reg);
-                    mov_inst->operands[1] = create_memory_operand(array_reg, 8, REG_NONE, 1);
+                    mov_inst->operands[1] = create_memory_operand(array_reg, 8, ASTHRA_REG_NONE, 1);
                     success = instruction_buffer_add(generator->instruction_buffer, mov_inst);
                 } else {
                     success = false;
@@ -591,7 +591,7 @@ bool generate_slice_expr(CodeGenerator *generator, ASTNode *expr, Register targe
     if (success) {
         AssemblyInstruction *sub_inst = create_instruction_empty(INST_SUB, 2);
         if (sub_inst) {
-            sub_inst->operands[0] = create_register_operand(REG_RSP);
+            sub_inst->operands[0] = create_register_operand(ASTHRA_REG_RSP);
             sub_inst->operands[1] = create_immediate_operand(16);
             success = instruction_buffer_add(generator->instruction_buffer, sub_inst);
         } else {
@@ -631,7 +631,7 @@ bool generate_slice_expr(CodeGenerator *generator, ASTNode *expr, Register targe
         AssemblyInstruction *mov_inst = create_instruction_empty(INST_MOV, 2);
         if (mov_inst) {
             mov_inst->operands[0] = create_register_operand(temp_reg);
-            mov_inst->operands[1] = create_memory_operand(array_reg, 0, REG_NONE, 1);
+            mov_inst->operands[1] = create_memory_operand(array_reg, 0, ASTHRA_REG_NONE, 1);
             success = instruction_buffer_add(generator->instruction_buffer, mov_inst);
         } else {
             success = false;
@@ -666,7 +666,7 @@ bool generate_slice_expr(CodeGenerator *generator, ASTNode *expr, Register targe
     if (success) {
         AssemblyInstruction *mov_inst = create_instruction_empty(INST_MOV, 2);
         if (mov_inst) {
-            mov_inst->operands[0] = create_memory_operand(REG_RSP, 0, REG_NONE, 1);
+            mov_inst->operands[0] = create_memory_operand(ASTHRA_REG_RSP, 0, ASTHRA_REG_NONE, 1);
             mov_inst->operands[1] = create_register_operand(array_reg);
             success = instruction_buffer_add(generator->instruction_buffer, mov_inst);
         } else {
@@ -690,7 +690,7 @@ bool generate_slice_expr(CodeGenerator *generator, ASTNode *expr, Register targe
     if (success) {
         AssemblyInstruction *mov_inst = create_instruction_empty(INST_MOV, 2);
         if (mov_inst) {
-            mov_inst->operands[0] = create_memory_operand(REG_RSP, 8, REG_NONE, 1);
+            mov_inst->operands[0] = create_memory_operand(ASTHRA_REG_RSP, 8, ASTHRA_REG_NONE, 1);
             mov_inst->operands[1] = create_register_operand(end_reg);
             success = instruction_buffer_add(generator->instruction_buffer, mov_inst);
         } else {
@@ -703,7 +703,7 @@ bool generate_slice_expr(CodeGenerator *generator, ASTNode *expr, Register targe
         AssemblyInstruction *mov_inst = create_instruction_empty(INST_MOV, 2);
         if (mov_inst) {
             mov_inst->operands[0] = create_register_operand(target_reg);
-            mov_inst->operands[1] = create_register_operand(REG_RSP);
+            mov_inst->operands[1] = create_register_operand(ASTHRA_REG_RSP);
             success = instruction_buffer_add(generator->instruction_buffer, mov_inst);
         } else {
             success = false;

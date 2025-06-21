@@ -66,7 +66,7 @@ static bool test_instruction_buffer(void) {
     }
     
     // Create some test instructions
-    AssemblyInstruction *mov = create_mov_instruction(REG_RAX, REG_RBX);
+    AssemblyInstruction *mov = create_mov_instruction(ASTHRA_REG_RAX, ASTHRA_REG_RBX);
     AssemblyInstruction *ret = create_ret_instruction();
     
     if (!mov || !ret) {
@@ -113,7 +113,7 @@ static bool test_register_allocator(void) {
     
     // Allocate a register
     Register reg1 = register_allocate(allocator, true);
-    if (reg1 == REG_NONE) {
+    if (reg1 == ASTHRA_REG_NONE) {
         printf("FAIL: Failed to allocate register\n");
         register_allocator_destroy(allocator);
         return false;
@@ -188,7 +188,7 @@ static bool test_instruction_creation(void) {
     printf("Testing instruction creation...\n");
     
     // Test MOV instruction
-    AssemblyInstruction *mov = create_mov_instruction(REG_RAX, REG_RBX);
+    AssemblyInstruction *mov = create_mov_instruction(ASTHRA_REG_RAX, ASTHRA_REG_RBX);
     if (!mov) {
         printf("FAIL: Failed to create MOV instruction\n");
         return false;
@@ -206,13 +206,13 @@ static bool test_instruction_creation(void) {
         return false;
     }
     
-    if (mov->operands[0].type != OPERAND_REGISTER || mov->operands[0].data.reg != REG_RAX) {
+    if (mov->operands[0].type != OPERAND_REGISTER || mov->operands[0].data.reg != ASTHRA_REG_RAX) {
         printf("FAIL: MOV instruction has incorrect destination operand\n");
         free(mov);
         return false;
     }
     
-    if (mov->operands[1].type != OPERAND_REGISTER || mov->operands[1].data.reg != REG_RBX) {
+    if (mov->operands[1].type != OPERAND_REGISTER || mov->operands[1].data.reg != ASTHRA_REG_RBX) {
         printf("FAIL: MOV instruction has incorrect source operand\n");
         free(mov);
         return false;
@@ -221,7 +221,7 @@ static bool test_instruction_creation(void) {
     free(mov);
     
     // Test MOV immediate instruction
-    AssemblyInstruction *mov_imm = create_mov_immediate(REG_RAX, 42);
+    AssemblyInstruction *mov_imm = create_mov_immediate(ASTHRA_REG_RAX, 42);
     if (!mov_imm) {
         printf("FAIL: Failed to create MOV immediate instruction\n");
         return false;
@@ -239,7 +239,7 @@ static bool test_instruction_creation(void) {
         return false;
     }
     
-    if (mov_imm->operands[0].type != OPERAND_REGISTER || mov_imm->operands[0].data.reg != REG_RAX) {
+    if (mov_imm->operands[0].type != OPERAND_REGISTER || mov_imm->operands[0].data.reg != ASTHRA_REG_RAX) {
         printf("FAIL: MOV immediate instruction has incorrect destination operand\n");
         free(mov_imm);
         return false;

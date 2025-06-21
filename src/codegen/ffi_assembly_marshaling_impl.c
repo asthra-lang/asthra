@@ -27,10 +27,10 @@ bool ffi_marshal_slice_parameter(FFIAssemblyGenerator *generator, ASTNode *param
     Register ptr_reg = register_allocate(generator->base_generator->register_allocator, true);
     Register len_reg = register_allocate(generator->base_generator->register_allocator, true);
     
-    if (slice_reg == REG_NONE || ptr_reg == REG_NONE || len_reg == REG_NONE) {
-        if (slice_reg != REG_NONE) register_free(generator->base_generator->register_allocator, slice_reg);
-        if (ptr_reg != REG_NONE) register_free(generator->base_generator->register_allocator, ptr_reg);
-        if (len_reg != REG_NONE) register_free(generator->base_generator->register_allocator, len_reg);
+    if (slice_reg == ASTHRA_REG_NONE || ptr_reg == ASTHRA_REG_NONE || len_reg == ASTHRA_REG_NONE) {
+        if (slice_reg != ASTHRA_REG_NONE) register_free(generator->base_generator->register_allocator, slice_reg);
+        if (ptr_reg != ASTHRA_REG_NONE) register_free(generator->base_generator->register_allocator, ptr_reg);
+        if (len_reg != ASTHRA_REG_NONE) register_free(generator->base_generator->register_allocator, len_reg);
         return false;
     }
     
@@ -45,12 +45,12 @@ bool ffi_marshal_slice_parameter(FFIAssemblyGenerator *generator, ASTNode *param
     // Extract pointer from slice (offset 0)
     emit_instruction(generator, INST_MOV, 2,
                     create_register_operand(ptr_reg),
-                    create_memory_operand(slice_reg, REG_NONE, 1, 0));
+                    create_memory_operand(slice_reg, ASTHRA_REG_NONE, 1, 0));
     
     // Extract length from slice (offset 8)
     emit_instruction(generator, INST_MOV, 2,
                     create_register_operand(len_reg),
-                    create_memory_operand(slice_reg, REG_NONE, 1, 8));
+                    create_memory_operand(slice_reg, ASTHRA_REG_NONE, 1, 8));
     
     // Move pointer to target register (first parameter)
     emit_instruction(generator, INST_MOV, 2,
@@ -75,7 +75,7 @@ bool ffi_marshal_string_parameter(FFIAssemblyGenerator *generator, ASTNode *para
     
     // Allocate register for string
     Register string_reg = register_allocate(generator->base_generator->register_allocator, true);
-    if (string_reg == REG_NONE) return false;
+    if (string_reg == ASTHRA_REG_NONE) return false;
     
     // Generate code to load the string
     if (!code_generate_expression(generator->base_generator, param, string_reg)) {
@@ -86,7 +86,7 @@ bool ffi_marshal_string_parameter(FFIAssemblyGenerator *generator, ASTNode *para
     // Call runtime function to convert Asthra string to C string
     // Set up parameter for runtime call
     emit_instruction(generator, INST_MOV, 2,
-                    create_register_operand(REG_RDI),
+                    create_register_operand(ASTHRA_REG_RDI),
                     create_register_operand(string_reg));
     
     // Call asthra_string_to_cstr
@@ -94,10 +94,10 @@ bool ffi_marshal_string_parameter(FFIAssemblyGenerator *generator, ASTNode *para
                     create_label_operand("asthra_string_to_cstr"));
     
     // Move result to target register
-    if (target_reg != REG_RAX) {
+    if (target_reg != ASTHRA_REG_RAX) {
         emit_instruction(generator, INST_MOV, 2,
                         create_register_operand(target_reg),
-                        create_register_operand(REG_RAX));
+                        create_register_operand(ASTHRA_REG_RAX));
     }
     
     register_free(generator->base_generator->register_allocator, string_reg);
@@ -111,7 +111,7 @@ bool ffi_marshal_result_parameter(FFIAssemblyGenerator *generator, ASTNode *para
     
     // Allocate register for result
     Register result_reg = register_allocate(generator->base_generator->register_allocator, true);
-    if (result_reg == REG_NONE) return false;
+    if (result_reg == ASTHRA_REG_NONE) return false;
     
     // Generate code to load the result
     if (!code_generate_expression(generator->base_generator, param, result_reg)) {
@@ -137,7 +137,7 @@ bool ffi_marshal_option_parameter(FFIAssemblyGenerator *generator, ASTNode *para
     
     // Allocate register for option
     Register option_reg = register_allocate(generator->base_generator->register_allocator, true);
-    if (option_reg == REG_NONE) return false;
+    if (option_reg == ASTHRA_REG_NONE) return false;
     
     // Generate code to load the option
     if (!code_generate_expression(generator->base_generator, param, option_reg)) {
@@ -153,7 +153,7 @@ bool ffi_marshal_option_parameter(FFIAssemblyGenerator *generator, ASTNode *para
     
     // Check if this is None (tag == 1) or Some (tag == 0)
     Register tag_reg = register_allocate(generator->base_generator->register_allocator, true);
-    if (tag_reg == REG_NONE) {
+    if (tag_reg == ASTHRA_REG_NONE) {
         register_free(generator->base_generator->register_allocator, option_reg);
         return false;
     }
@@ -161,7 +161,7 @@ bool ffi_marshal_option_parameter(FFIAssemblyGenerator *generator, ASTNode *para
     // Load tag from option struct (offset 0)
     emit_instruction(generator, INST_MOV, 2,
                     create_register_operand(tag_reg),
-                    create_memory_operand(option_reg, REG_NONE, 1, 0));
+                    create_memory_operand(option_reg, ASTHRA_REG_NONE, 1, 0));
     
     // Create labels for branching
     char *none_label = generate_unique_label(generator, "option_none");
@@ -179,7 +179,7 @@ bool ffi_marshal_option_parameter(FFIAssemblyGenerator *generator, ASTNode *para
     // Some case: Load pointer to value
     emit_instruction(generator, INST_LEA, 2,
                     create_register_operand(target_reg),
-                    create_memory_operand(option_reg, REG_NONE, 1, 8)); // Value at offset 8
+                    create_memory_operand(option_reg, ASTHRA_REG_NONE, 1, 8)); // Value at offset 8
     emit_instruction(generator, INST_JMP, 1,
                     create_label_operand(end_label));
     

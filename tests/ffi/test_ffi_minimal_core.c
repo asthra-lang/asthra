@@ -203,7 +203,7 @@ static bool test_generator_basic_operations(void) {
     }
     
     // Test string operation
-    bool result = minimal_generate_string_concatenation(generator, REG_RDI, REG_RSI, REG_RAX);
+    bool result = minimal_generate_string_concatenation(generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI, ASTHRA_REG_RAX);
     if (!result) {
         printf("String concatenation generation failed\n");
         minimal_ffi_generator_destroy(generator);
@@ -211,7 +211,7 @@ static bool test_generator_basic_operations(void) {
     }
     
     // Test security operation
-    result = minimal_generate_secure_zero(generator, REG_RDI, REG_RSI);
+    result = minimal_generate_secure_zero(generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI);
     if (!result) {
         printf("Secure zero generation failed\n");
         minimal_ffi_generator_destroy(generator);

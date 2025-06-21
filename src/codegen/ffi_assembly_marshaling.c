@@ -31,7 +31,7 @@ bool ffi_generate_parameter_marshaling(FFIAssemblyGenerator *generator,
     // Phase 4: FFI Annotation Ambiguity Fix - Use annotation-aware parameter handling
     // First check if this is a parameter declaration with FFI annotations
     if (param->type == AST_PARAM_DECL) {
-        return ffi_generate_annotated_parameter(generator, param, REG_NONE, target_reg);
+        return ffi_generate_annotated_parameter(generator, param, ASTHRA_REG_NONE, target_reg);
     }
     
     // For expressions, use the provided transfer type or extract from context
@@ -60,7 +60,7 @@ bool ffi_generate_parameter_marshaling(FFIAssemblyGenerator *generator,
                 
                 // Allocate register for the argument
                 Register arg_reg = register_allocate(generator->base_generator->register_allocator, true);
-                if (arg_reg == REG_NONE) return false;
+                if (arg_reg == ASTHRA_REG_NONE) return false;
                 
                 // Generate code to load the argument
                 if (!code_generate_expression(generator->base_generator, param, arg_reg)) {
@@ -88,10 +88,10 @@ bool ffi_generate_parameter_marshaling(FFIAssemblyGenerator *generator,
                 emit_comment(generator, "Marshal direct parameter with FFI annotation support");
                 
                 // Direct marshaling with FFI annotation support
-                if (target_reg == REG_NONE) {
+                if (target_reg == ASTHRA_REG_NONE) {
                     // If no target register, push onto stack
                     Register temp_reg = register_allocate(generator->base_generator->register_allocator, true);
-                    if (temp_reg == REG_NONE) return false;
+                    if (temp_reg == ASTHRA_REG_NONE) return false;
                     
                     if (!code_generate_expression(generator->base_generator, param, temp_reg)) {
                         register_free(generator->base_generator->register_allocator, temp_reg);
@@ -100,7 +100,7 @@ bool ffi_generate_parameter_marshaling(FFIAssemblyGenerator *generator,
                     
                     // Apply FFI annotation-based transfer before pushing
                     Register transfer_reg = register_allocate(generator->base_generator->register_allocator, true);
-                    if (transfer_reg == REG_NONE) {
+                    if (transfer_reg == ASTHRA_REG_NONE) {
                         register_free(generator->base_generator->register_allocator, temp_reg);
                         return false;
                     }
@@ -120,7 +120,7 @@ bool ffi_generate_parameter_marshaling(FFIAssemblyGenerator *generator,
                 } else {
                     // Generate expression and apply FFI annotation-based transfer
                     Register temp_reg = register_allocate(generator->base_generator->register_allocator, true);
-                    if (temp_reg == REG_NONE) return false;
+                    if (temp_reg == ASTHRA_REG_NONE) return false;
                     
                     if (!code_generate_expression(generator->base_generator, param, temp_reg)) {
                         register_free(generator->base_generator->register_allocator, temp_reg);

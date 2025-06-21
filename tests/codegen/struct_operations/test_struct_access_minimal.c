@@ -17,7 +17,7 @@
 // Stub types for minimal testing
 typedef struct CodeGenerator CodeGenerator;
 typedef struct ASTNode ASTNode;
-typedef enum { REG_RAX, REG_RBX, REG_RCX, REG_RDX } Register;
+typedef enum { ASTHRA_REG_RAX, ASTHRA_REG_RBX, ASTHRA_REG_RCX, ASTHRA_REG_RDX } Register;
 
 // Stub functions for code generation
 static inline CodeGenerator* code_generator_create(int arch, int conv) {
@@ -57,7 +57,7 @@ DEFINE_TEST(test_simple_struct_access) {
     TEST_ASSERT_NOT_NULL(ast, "Parse struct field access");
     
     // Generate code for field access
-    bool result = code_generate_expression(generator, ast, REG_RAX);
+    bool result = code_generate_expression(generator, ast, ASTHRA_REG_RAX);
     TEST_ASSERT(result, "Generate struct field access code");
     
     printf("  ✓ Simple struct field access code generation successful\n");
@@ -76,7 +76,7 @@ DEFINE_TEST(test_nested_struct_access) {
     ASTNode* ast = parse_struct_access("obj.inner.field");
     TEST_ASSERT_NOT_NULL(ast, "Parse nested field access");
     
-    bool result = code_generate_expression(generator, ast, REG_RBX);
+    bool result = code_generate_expression(generator, ast, ASTHRA_REG_RBX);
     TEST_ASSERT(result, "Generate nested field access code");
     
     printf("  ✓ Nested struct field access code generation successful\n");
@@ -95,7 +95,7 @@ DEFINE_TEST(test_pointer_struct_access) {
     ASTNode* ast = parse_struct_access("ptr->field");
     TEST_ASSERT_NOT_NULL(ast, "Parse pointer field access");
     
-    bool result = code_generate_expression(generator, ast, REG_RCX);
+    bool result = code_generate_expression(generator, ast, ASTHRA_REG_RCX);
     TEST_ASSERT(result, "Generate pointer field access code");
     
     printf("  ✓ Pointer struct field access code generation successful\n");
@@ -114,7 +114,7 @@ DEFINE_TEST(test_array_field_access) {
     ASTNode* ast = parse_struct_access("obj.array[index]");
     TEST_ASSERT_NOT_NULL(ast, "Parse array field access");
     
-    bool result = code_generate_expression(generator, ast, REG_RDX);
+    bool result = code_generate_expression(generator, ast, ASTHRA_REG_RDX);
     TEST_ASSERT(result, "Generate array field access code");
     
     printf("  ✓ Array field access code generation successful\n");

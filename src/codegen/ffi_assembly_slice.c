@@ -38,7 +38,7 @@ bool ffi_generate_slice_length_access(FFIAssemblyGenerator *generator,
     // Length is at offset 8 from slice pointer
     emit_instruction(generator, INST_MOV, 2,
                     create_register_operand(result_reg),
-                    create_memory_operand(slice_reg, REG_NONE, 1, 8));
+                    create_memory_operand(slice_reg, ASTHRA_REG_NONE, 1, 8));
     
     return true;
 }
@@ -54,11 +54,11 @@ bool ffi_generate_slice_bounds_check(FFIAssemblyGenerator *generator,
     
     // Load slice length
     Register len_reg = register_allocate(generator->base_generator->register_allocator, true);
-    if (len_reg == REG_NONE) return false;
+    if (len_reg == ASTHRA_REG_NONE) return false;
     
     emit_instruction(generator, INST_MOV, 2,
                     create_register_operand(len_reg),
-                    create_memory_operand(slice_reg, REG_NONE, 1, 8));
+                    create_memory_operand(slice_reg, ASTHRA_REG_NONE, 1, 8));
     
     // Compare index with length
     emit_instruction(generator, INST_CMP, 2,
@@ -82,12 +82,12 @@ bool ffi_generate_slice_to_ffi(FFIAssemblyGenerator *generator,
     // Load pointer from slice
     emit_instruction(generator, INST_MOV, 2,
                     create_register_operand(ptr_reg),
-                    create_memory_operand(slice_reg, REG_NONE, 1, 0));
+                    create_memory_operand(slice_reg, ASTHRA_REG_NONE, 1, 0));
     
     // Load length from slice
     emit_instruction(generator, INST_MOV, 2,
                     create_register_operand(len_reg),
-                    create_memory_operand(slice_reg, REG_NONE, 1, 8));
+                    create_memory_operand(slice_reg, ASTHRA_REG_NONE, 1, 8));
     
     return true;
 } 

@@ -67,7 +67,7 @@ bool enhanced_generate_string_concatenation(EnhancedFFIGenerator *gen, const cha
     }
     
     // Use real string operation generation with proper registers
-    bool success = ffi_generate_string_concatenation(gen->real_generator, REG_RAX, REG_RBX, REG_RCX);
+    bool success = ffi_generate_string_concatenation(gen->real_generator, ASTHRA_REG_RAX, ASTHRA_REG_RBX, ASTHRA_REG_RCX);
     update_generation_stats(gen, success);
     
     if (success) {
@@ -84,7 +84,7 @@ bool enhanced_generate_slice_length_access(EnhancedFFIGenerator *gen, void *slic
     }
     
     // Use real slice operation generation with proper register parameters
-    bool success = ffi_generate_slice_length_access(gen->real_generator, REG_RAX, target_reg);
+    bool success = ffi_generate_slice_length_access(gen->real_generator, ASTHRA_REG_RAX, target_reg);
     update_generation_stats(gen, success);
     
     if (success) {
@@ -102,7 +102,7 @@ bool enhanced_generate_slice_bounds_check(EnhancedFFIGenerator *gen, void *slice
     
     // Use real bounds checking generation with proper parameters
     char bounds_error_label[] = "bounds_error";
-    bool success = ffi_generate_slice_bounds_check(gen->real_generator, REG_RAX, index_reg, bounds_error_label);
+    bool success = ffi_generate_slice_bounds_check(gen->real_generator, ASTHRA_REG_RAX, index_reg, bounds_error_label);
     update_generation_stats(gen, success);
     
     if (success) {
@@ -119,7 +119,7 @@ bool enhanced_generate_slice_to_ffi(EnhancedFFIGenerator *gen, void *slice_ptr, 
     }
     
     // Use real slice-to-FFI marshaling with correct function name
-    bool success = ffi_generate_slice_to_ffi(gen->real_generator, REG_RAX, ptr_reg, len_reg);
+    bool success = ffi_generate_slice_to_ffi(gen->real_generator, ASTHRA_REG_RAX, ptr_reg, len_reg);
     update_generation_stats(gen, success);
     
     if (success) {
@@ -136,7 +136,7 @@ bool enhanced_generate_volatile_memory_access(EnhancedFFIGenerator *gen, void *m
     }
     
     // Use real volatile memory access generation with correct parameters
-    bool success = ffi_generate_volatile_memory_access(gen->real_generator, REG_RAX, size, true);
+    bool success = ffi_generate_volatile_memory_access(gen->real_generator, ASTHRA_REG_RAX, size, true);
     update_generation_stats(gen, success);
     
     if (success) {
@@ -153,7 +153,7 @@ bool enhanced_generate_secure_zero(EnhancedFFIGenerator *gen, void *memory_ptr, 
     }
     
     // Use real secure zeroing generation with proper register parameters
-    bool success = ffi_generate_secure_zero(gen->real_generator, REG_RAX, REG_RBX);
+    bool success = ffi_generate_secure_zero(gen->real_generator, ASTHRA_REG_RAX, ASTHRA_REG_RBX);
     update_generation_stats(gen, success);
     
     if (success) {
@@ -207,17 +207,17 @@ bool minimal_generate_string_concatenation(MinimalFFIGenerator *gen) {
 
 bool minimal_generate_slice_length_access(MinimalFFIGenerator *gen) {
     static char dummy_slice[10] = {0};
-    return enhanced_generate_slice_length_access((EnhancedFFIGenerator*)gen, dummy_slice, REG_RAX);
+    return enhanced_generate_slice_length_access((EnhancedFFIGenerator*)gen, dummy_slice, ASTHRA_REG_RAX);
 }
 
 bool minimal_generate_slice_bounds_check(MinimalFFIGenerator *gen) {
     static char dummy_slice[10] = {0};
-    return enhanced_generate_slice_bounds_check((EnhancedFFIGenerator*)gen, dummy_slice, 5, REG_RCX);
+    return enhanced_generate_slice_bounds_check((EnhancedFFIGenerator*)gen, dummy_slice, 5, ASTHRA_REG_RCX);
 }
 
 bool minimal_generate_slice_to_ffi(MinimalFFIGenerator *gen) {
     static char dummy_slice[10] = {0};
-    return enhanced_generate_slice_to_ffi((EnhancedFFIGenerator*)gen, dummy_slice, REG_RDI, REG_RSI);
+    return enhanced_generate_slice_to_ffi((EnhancedFFIGenerator*)gen, dummy_slice, ASTHRA_REG_RDI, ASTHRA_REG_RSI);
 }
 
 bool minimal_generate_volatile_memory_access(MinimalFFIGenerator *gen) {

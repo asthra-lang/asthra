@@ -320,9 +320,9 @@ static bool generate_optimized_jump_table(FFIAssemblyGenerator *generator,
     // Generate bounds check
     Register match_reg = context->match_value_reg;
     Register temp_reg = register_allocate(generator->base_generator->register_allocator, true); // Prefer caller-saved
-    if (temp_reg == REG_NONE) {
+    if (temp_reg == ASTHRA_REG_NONE) {
         // Handle register allocation failure - fallback to a fixed register
-        temp_reg = REG_RAX;
+        temp_reg = ASTHRA_REG_RAX;
     }
     
     // Check if value is in range [min_value, max_value]
@@ -349,9 +349,9 @@ static bool generate_optimized_jump_table(FFIAssemblyGenerator *generator,
     
     // Load jump table base address
     Register table_base_reg = register_allocate(generator->base_generator->register_allocator, false); // Prefer callee-saved
-    if (table_base_reg == REG_NONE) {
+    if (table_base_reg == ASTHRA_REG_NONE) {
         // Handle register allocation failure - fallback to a fixed register
-        table_base_reg = REG_RBX;
+        table_base_reg = ASTHRA_REG_RBX;
     }
     
     emit_instruction(generator, INST_LEA, 2,
@@ -369,7 +369,7 @@ static bool generate_optimized_jump_table(FFIAssemblyGenerator *generator,
     
     // Jump through table
     emit_instruction(generator, INST_JMP, 1,
-                    create_memory_operand(temp_reg, REG_NONE, 1, 0));
+                    create_memory_operand(temp_reg, ASTHRA_REG_NONE, 1, 0));
     
     // Generate jump table in data section
     // TODO: Set data section flag when implemented
@@ -399,10 +399,10 @@ static bool generate_optimized_jump_table(FFIAssemblyGenerator *generator,
     emit_label(generator, default_label);
     
     // Cleanup registers
-    if (temp_reg != REG_NONE && temp_reg != REG_RAX) {
+    if (temp_reg != ASTHRA_REG_NONE && temp_reg != ASTHRA_REG_RAX) {
         register_free(generator->base_generator->register_allocator, temp_reg);
     }
-    if (table_base_reg != REG_NONE && table_base_reg != REG_RBX) {
+    if (table_base_reg != ASTHRA_REG_NONE && table_base_reg != ASTHRA_REG_RBX) {
         register_free(generator->base_generator->register_allocator, table_base_reg);
     }
     

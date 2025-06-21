@@ -17,7 +17,7 @@
 // Stub types for minimal testing
 typedef struct CodeGenerator CodeGenerator;
 typedef struct ASTNode ASTNode;
-typedef enum { REG_RAX, REG_RBX, REG_RCX, REG_RDX } Register;
+typedef enum { ASTHRA_REG_RAX, ASTHRA_REG_RBX, ASTHRA_REG_RCX, ASTHRA_REG_RDX } Register;
 
 // Stub functions for code generation
 static inline CodeGenerator* code_generator_create(int arch, int conv) {
@@ -57,7 +57,7 @@ DEFINE_TEST(test_simple_struct_instantiation) {
     TEST_ASSERT_NOT_NULL(ast, "Parse struct instantiation");
     
     // Generate code for struct instantiation
-    bool result = code_generate_expression(generator, ast, REG_RAX);
+    bool result = code_generate_expression(generator, ast, ASTHRA_REG_RAX);
     TEST_ASSERT(result, "Generate struct instantiation code");
     
     printf("  ✓ Simple struct instantiation code generation successful\n");
@@ -77,7 +77,7 @@ DEFINE_TEST(test_nested_struct_instantiation) {
     ASTNode* ast = parse_struct_instantiation(nested_source);
     TEST_ASSERT_NOT_NULL(ast, "Parse nested struct instantiation");
     
-    bool result = code_generate_expression(generator, ast, REG_RBX);
+    bool result = code_generate_expression(generator, ast, ASTHRA_REG_RBX);
     TEST_ASSERT(result, "Generate nested struct instantiation code");
     
     printf("  ✓ Nested struct instantiation code generation successful\n");
@@ -96,7 +96,7 @@ DEFINE_TEST(test_empty_struct_instantiation) {
     ASTNode* ast = parse_struct_instantiation("Empty {}");
     TEST_ASSERT_NOT_NULL(ast, "Parse empty struct instantiation");
     
-    bool result = code_generate_expression(generator, ast, REG_RCX);
+    bool result = code_generate_expression(generator, ast, ASTHRA_REG_RCX);
     TEST_ASSERT(result, "Generate empty struct instantiation code");
     
     printf("  ✓ Empty struct instantiation code generation successful\n");
@@ -115,7 +115,7 @@ DEFINE_TEST(test_struct_with_expressions) {
     ASTNode* ast = parse_struct_instantiation("Point { x: a + b, y: func() }");
     TEST_ASSERT_NOT_NULL(ast, "Parse struct with expressions");
     
-    bool result = code_generate_expression(generator, ast, REG_RDX);
+    bool result = code_generate_expression(generator, ast, ASTHRA_REG_RDX);
     TEST_ASSERT(result, "Generate struct with expressions code");
     
     printf("  ✓ Struct instantiation with expressions code generation successful\n");

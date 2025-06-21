@@ -22,7 +22,7 @@ static bool test_arithmetic_instruction_generation(void) {
     }
     
     // Test generating MOV instruction (available function)
-    AssemblyInstruction *mov_inst = create_mov_instruction(REG_RAX, REG_RBX);
+    AssemblyInstruction *mov_inst = create_mov_instruction(ASTHRA_REG_RAX, ASTHRA_REG_RBX);
     if (!mov_inst) {
         printf("FAIL: Failed to create MOV instruction\n");
         code_generator_destroy(generator);
@@ -72,16 +72,16 @@ static bool test_expression_register_allocation(void) {
     Register right_reg = register_allocate(generator->register_allocator, true);
     Register result_reg = register_allocate(generator->register_allocator, true);
     
-    if (left_reg == REG_NONE || right_reg == REG_NONE || result_reg == REG_NONE) {
+    if (left_reg == ASTHRA_REG_NONE || right_reg == ASTHRA_REG_NONE || result_reg == ASTHRA_REG_NONE) {
         printf("FAIL: Failed to allocate registers for expression\n");
         code_generator_destroy(generator);
         return false;
     }
     
     // Generate simple MOV instructions to test register usage
-    AssemblyInstruction *mov1 = create_mov_instruction(left_reg, REG_RAX);
-    AssemblyInstruction *mov2 = create_mov_instruction(right_reg, REG_RBX);
-    AssemblyInstruction *mov3 = create_mov_instruction(result_reg, REG_RCX);
+    AssemblyInstruction *mov1 = create_mov_instruction(left_reg, ASTHRA_REG_RAX);
+    AssemblyInstruction *mov2 = create_mov_instruction(right_reg, ASTHRA_REG_RBX);
+    AssemblyInstruction *mov3 = create_mov_instruction(result_reg, ASTHRA_REG_RCX);
     
     if (!mov1 || !mov2 || !mov3) {
         printf("FAIL: Failed to create expression instructions\n");

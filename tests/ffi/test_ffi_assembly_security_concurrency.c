@@ -39,11 +39,11 @@ static bool test_volatile_memory_access(void) {
     printf("Testing volatile memory access...\n");
     
     // Test volatile read
-    bool result = ffi_generate_volatile_memory_access(g_generator, REG_RDI, 8, true);
+    bool result = ffi_generate_volatile_memory_access(g_generator, ASTHRA_REG_RDI, 8, true);
     TEST_ASSERT(result, "Volatile memory read generation failed");
     
     // Test volatile write
-    result = ffi_generate_volatile_memory_access(g_generator, REG_RDI, 8, false);
+    result = ffi_generate_volatile_memory_access(g_generator, ASTHRA_REG_RDI, 8, false);
     TEST_ASSERT(result, "Volatile memory write generation failed");
     
     TEST_SUCCESS();
@@ -53,7 +53,7 @@ static bool test_secure_memory_zeroing(void) {
     printf("Testing secure memory zeroing...\n");
     
     // Generate secure zero
-    bool result = ffi_generate_secure_zero(g_generator, REG_RDI, REG_RSI);
+    bool result = ffi_generate_secure_zero(g_generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI);
     TEST_ASSERT(result, "Secure memory zeroing generation failed");
     
     TEST_SUCCESS();
@@ -116,11 +116,11 @@ static bool test_spawn_statement_generation(void) {
 static bool test_task_creation(void) {
     printf("Testing task creation...\n");
     
-    Register arg_regs[] = {REG_RDI, REG_RSI};
+    Register arg_regs[] = {ASTHRA_REG_RDI, ASTHRA_REG_RSI};
     
     // Generate task creation
     bool result = ffi_generate_task_creation(g_generator, "test_function", 
-                                            arg_regs, 2, REG_RAX);
+                                            arg_regs, 2, ASTHRA_REG_RAX);
     TEST_ASSERT(result, "Task creation generation failed");
     
     TEST_SUCCESS();
@@ -152,11 +152,11 @@ static bool test_mutex_operations(void) {
     printf("Testing mutex operations...\n");
     
     // Generate mutex lock
-    bool result = ffi_generate_mutex_lock(g_generator, REG_RDI);
+    bool result = ffi_generate_mutex_lock(g_generator, ASTHRA_REG_RDI);
     TEST_ASSERT(result, "Mutex lock generation failed");
     
     // Generate mutex unlock
-    result = ffi_generate_mutex_unlock(g_generator, REG_RDI);
+    result = ffi_generate_mutex_unlock(g_generator, ASTHRA_REG_RDI);
     TEST_ASSERT(result, "Mutex unlock generation failed");
     
     TEST_SUCCESS();
@@ -166,11 +166,11 @@ static bool test_atomic_operations(void) {
     printf("Testing atomic operations...\n");
     
     // Generate atomic compare and swap
-    bool result = ffi_generate_atomic_cas(g_generator, REG_RDI, REG_RSI, REG_RDX, REG_RAX);
+    bool result = ffi_generate_atomic_cas(g_generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI, ASTHRA_REG_RDX, ASTHRA_REG_RAX);
     TEST_ASSERT(result, "Atomic CAS generation failed");
     
     // Generate atomic increment
-    result = ffi_generate_atomic_increment(g_generator, REG_RDI, REG_RAX);
+    result = ffi_generate_atomic_increment(g_generator, ASTHRA_REG_RDI, ASTHRA_REG_RAX);
     TEST_ASSERT(result, "Atomic increment generation failed");
     
     TEST_SUCCESS();
@@ -180,7 +180,7 @@ static bool test_thread_local_storage(void) {
     printf("Testing thread-local storage...\n");
     
     // Generate TLS access
-    bool result = ffi_generate_tls_access(g_generator, "thread_local_var", REG_RAX);
+    bool result = ffi_generate_tls_access(g_generator, "thread_local_var", ASTHRA_REG_RAX);
     TEST_ASSERT(result, "TLS access generation failed");
     
     TEST_SUCCESS();

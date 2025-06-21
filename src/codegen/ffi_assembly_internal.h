@@ -28,7 +28,7 @@ extern "C" {
 #include "../../runtime/core/asthra_runtime_core.h"
 
 // Add missing register definitions
-#define REG_AL REG_RAX  // Use RAX for AL register access
+#define REG_AL ASTHRA_REG_RAX  // Use RAX for AL register access
 
 // =============================================================================
 // CORE FUNCTIONS (ffi_assembly_core.c)

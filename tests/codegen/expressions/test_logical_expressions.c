@@ -43,7 +43,7 @@ AsthraTestResult test_generate_logical_expressions_original(AsthraTestContext* c
         return ASTHRA_TEST_FAIL;
     }
     
-    Register target_reg = REG_RAX;
+    Register target_reg = ASTHRA_REG_RAX;
     bool result = code_generate_expression(fixture->generator, fixture->test_ast, target_reg);
     if (!asthra_test_assert_bool(context, result, "Failed to generate logical expression code")) {
         cleanup_codegen_fixture(fixture);
@@ -65,7 +65,7 @@ AsthraTestResult test_generate_logical_expressions_original(AsthraTestContext* c
         return ASTHRA_TEST_FAIL;
     }
     
-    result = code_generate_expression(fixture->generator, or_ast, REG_RCX);
+    result = code_generate_expression(fixture->generator, or_ast, ASTHRA_REG_RCX);
     if (!asthra_test_assert_bool(context, result, "Failed to generate logical OR expression code")) {
         ast_free_node(or_ast);
         cleanup_codegen_fixture(fixture);
@@ -81,7 +81,7 @@ AsthraTestResult test_generate_logical_expressions_original(AsthraTestContext* c
         return ASTHRA_TEST_FAIL;
     }
     
-    result = code_generate_expression(fixture->generator, not_ast, REG_RDX);
+    result = code_generate_expression(fixture->generator, not_ast, ASTHRA_REG_RDX);
     if (!asthra_test_assert_bool(context, result, "Failed to generate logical NOT expression code")) {
         ast_free_node(or_ast);
         ast_free_node(not_ast);

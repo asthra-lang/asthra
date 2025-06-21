@@ -36,8 +36,8 @@ bool generate_function_prologue(CodeGenerator *generator, size_t stack_size,
     
     // Push RBP and set up stack frame
     AssemblyInstruction *push_rbp = create_instruction(INST_PUSH, 1,
-        create_register_operand(REG_RBP));
-    AssemblyInstruction *mov_rbp = create_mov_instruction(REG_RBP, REG_RSP);
+        create_register_operand(ASTHRA_REG_RBP));
+    AssemblyInstruction *mov_rbp = create_mov_instruction(ASTHRA_REG_RBP, ASTHRA_REG_RSP);
     
     if (!push_rbp || !mov_rbp) return false;
     
@@ -49,7 +49,7 @@ bool generate_function_prologue(CodeGenerator *generator, size_t stack_size,
     // Allocate stack space
     if (stack_size > 0) {
         AssemblyInstruction *sub_rsp = create_instruction(INST_SUB, 2,
-            create_register_operand(REG_RSP),
+            create_register_operand(ASTHRA_REG_RSP),
             create_immediate_operand((int64_t)stack_size));
         
         if (!sub_rsp || !instruction_buffer_add(generator->instruction_buffer, sub_rsp)) {
@@ -59,7 +59,7 @@ bool generate_function_prologue(CodeGenerator *generator, size_t stack_size,
     
     // Save callee-saved registers
     for (size_t i = 0; i < saved_count; i++) {
-        if (saved_regs[i] != REG_RBP) { // RBP already handled
+        if (saved_regs[i] != ASTHRA_REG_RBP) { // RBP already handled
             AssemblyInstruction *push_reg = create_instruction(INST_PUSH, 1,
                 create_register_operand(saved_regs[i]));
             
@@ -79,7 +79,7 @@ bool generate_function_epilogue(CodeGenerator *generator, size_t stack_size __at
     
     // Restore callee-saved registers (in reverse order)
     for (size_t i = saved_count; i > 0; i--) {
-        if (saved_regs[i-1] != REG_RBP) { // RBP handled separately
+        if (saved_regs[i-1] != ASTHRA_REG_RBP) { // RBP handled separately
             AssemblyInstruction *pop_reg = create_instruction(INST_POP, 1,
                 create_register_operand(saved_regs[i-1]));
             
@@ -90,9 +90,9 @@ bool generate_function_epilogue(CodeGenerator *generator, size_t stack_size __at
     }
     
     // Restore stack pointer and RBP
-    AssemblyInstruction *mov_rsp = create_mov_instruction(REG_RSP, REG_RBP);
+    AssemblyInstruction *mov_rsp = create_mov_instruction(ASTHRA_REG_RSP, ASTHRA_REG_RBP);
     AssemblyInstruction *pop_rbp = create_instruction(INST_POP, 1,
-        create_register_operand(REG_RBP));
+        create_register_operand(ASTHRA_REG_RBP));
     
     if (!mov_rsp || !pop_rbp) return false;
     
@@ -243,9 +243,9 @@ bool generate_function_call(CodeGenerator *generator, const char *function_name,
     }
     
     // System V AMD64 calling convention register allocation
-    const Register int_param_regs[] = {REG_RDI, REG_RSI, REG_RDX, REG_RCX, REG_R8, REG_R9};
-    const Register float_param_regs[] = {REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3, 
-                                        REG_XMM4, REG_XMM5, REG_XMM6, REG_XMM7};
+    const Register int_param_regs[] = {ASTHRA_REG_RDI, ASTHRA_REG_RSI, ASTHRA_REG_RDX, ASTHRA_REG_RCX, ASTHRA_REG_R8, ASTHRA_REG_R9};
+    const Register float_param_regs[] = {ASTHRA_REG_XMM0, ASTHRA_REG_XMM1, ASTHRA_REG_XMM2, ASTHRA_REG_XMM3, 
+                                        ASTHRA_REG_XMM4, ASTHRA_REG_XMM5, ASTHRA_REG_XMM6, ASTHRA_REG_XMM7};
     
     const size_t max_int_params = sizeof(int_param_regs) / sizeof(Register);
     const size_t max_float_params = sizeof(float_param_regs) / sizeof(Register);
@@ -276,7 +276,7 @@ bool generate_function_call(CodeGenerator *generator, const char *function_name,
         
         // Allocate a temporary register to evaluate the argument
         Register temp_reg = register_allocate(generator->register_allocator, true);
-        if (temp_reg == REG_NONE) {
+        if (temp_reg == ASTHRA_REG_NONE) {
             return false;
         }
         
@@ -342,7 +342,7 @@ bool generate_function_call(CodeGenerator *generator, const char *function_name,
     if (stack_offset % 16 != 0) {
         size_t padding = 16 - (stack_offset % 16);
         AssemblyInstruction *sub_rsp = create_instruction(INST_SUB, 2,
-            create_register_operand(REG_RSP),
+            create_register_operand(ASTHRA_REG_RSP),
             create_immediate_operand((int64_t)padding));
         
         if (!sub_rsp || !instruction_buffer_add(generator->instruction_buffer, sub_rsp)) {
@@ -361,7 +361,7 @@ bool generate_function_call(CodeGenerator *generator, const char *function_name,
     // Clean up stack if we pushed arguments
     if (stack_offset > 0) {
         AssemblyInstruction *add_rsp = create_instruction(INST_ADD, 2,
-            create_register_operand(REG_RSP),
+            create_register_operand(ASTHRA_REG_RSP),
             create_immediate_operand((int64_t)stack_offset));
         
         if (!add_rsp || !instruction_buffer_add(generator->instruction_buffer, add_rsp)) {
@@ -386,10 +386,10 @@ bool generate_return_value(CodeGenerator *generator, ASTNode *return_expr, TypeD
     
     if (return_type && is_float_type(return_type)) {
         // Floating point return in XMM0
-        return_reg = REG_XMM0;
+        return_reg = ASTHRA_REG_XMM0;
     } else {
         // Integer/pointer return in RAX
-        return_reg = REG_RAX;
+        return_reg = ASTHRA_REG_RAX;
     }
     
     if (!code_generate_expression(generator, return_expr, return_reg)) {

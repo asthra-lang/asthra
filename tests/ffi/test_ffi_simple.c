@@ -175,7 +175,7 @@ static AsthraTestResult test_string_operations(AsthraTestContext *context) {
     }
     
     // Test string concatenation
-    bool result = ffi_generate_string_concatenation(generator, REG_RDI, REG_RSI, REG_RAX);
+    bool result = ffi_generate_string_concatenation(generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI, ASTHRA_REG_RAX);
     if (!ASTHRA_TEST_ASSERT_BOOL(context, result, "String concatenation generation failed")) {
         ffi_assembly_generator_destroy(generator);
         return ASTHRA_TEST_FAIL;
@@ -208,7 +208,7 @@ static AsthraTestResult test_slice_operations(AsthraTestContext *context) {
     }
     
     // Test slice length access
-    bool result = ffi_generate_slice_length_access(generator, REG_RDI, REG_RAX);
+    bool result = ffi_generate_slice_length_access(generator, ASTHRA_REG_RDI, ASTHRA_REG_RAX);
     if (!ASTHRA_TEST_ASSERT_BOOL(context, result, "Slice length access generation failed")) {
         ffi_assembly_generator_destroy(generator);
         return ASTHRA_TEST_FAIL;
@@ -216,14 +216,14 @@ static AsthraTestResult test_slice_operations(AsthraTestContext *context) {
     
     // Test slice bounds checking
     char bounds_error[] = "bounds_error";
-    result = ffi_generate_slice_bounds_check(generator, REG_RDI, REG_RSI, bounds_error);
+    result = ffi_generate_slice_bounds_check(generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI, bounds_error);
     if (!ASTHRA_TEST_ASSERT_BOOL(context, result, "Slice bounds check generation failed")) {
         ffi_assembly_generator_destroy(generator);
         return ASTHRA_TEST_FAIL;
     }
     
     // Test slice to FFI conversion
-    result = ffi_generate_slice_to_ffi(generator, REG_RDI, REG_RSI, REG_RDX);
+    result = ffi_generate_slice_to_ffi(generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI, ASTHRA_REG_RDX);
     if (!ASTHRA_TEST_ASSERT_BOOL(context, result, "Slice to FFI conversion failed")) {
         ffi_assembly_generator_destroy(generator);
         return ASTHRA_TEST_FAIL;
@@ -256,20 +256,20 @@ static AsthraTestResult test_security_operations(AsthraTestContext *context) {
     }
     
     // Test volatile memory access
-    bool result = ffi_generate_volatile_memory_access(generator, REG_RDI, 8, true);
+    bool result = ffi_generate_volatile_memory_access(generator, ASTHRA_REG_RDI, 8, true);
     if (!ASTHRA_TEST_ASSERT_BOOL(context, result, "Volatile memory read generation failed")) {
         ffi_assembly_generator_destroy(generator);
         return ASTHRA_TEST_FAIL;
     }
     
-    result = ffi_generate_volatile_memory_access(generator, REG_RDI, 8, false);
+    result = ffi_generate_volatile_memory_access(generator, ASTHRA_REG_RDI, 8, false);
     if (!ASTHRA_TEST_ASSERT_BOOL(context, result, "Volatile memory write generation failed")) {
         ffi_assembly_generator_destroy(generator);
         return ASTHRA_TEST_FAIL;
     }
     
     // Test secure memory zeroing
-    result = ffi_generate_secure_zero(generator, REG_RDI, REG_RSI);
+    result = ffi_generate_secure_zero(generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI);
     if (!ASTHRA_TEST_ASSERT_BOOL(context, result, "Secure memory zeroing generation failed")) {
         ffi_assembly_generator_destroy(generator);
         return ASTHRA_TEST_FAIL;
@@ -294,10 +294,10 @@ static AsthraTestResult test_concurrency_operations(AsthraTestContext *context) 
     }
     
     // Test task creation
-    Register arg_regs[] = {REG_RDI, REG_RSI};
+    Register arg_regs[] = {ASTHRA_REG_RDI, ASTHRA_REG_RSI};
     char function_name[] = "test_function";
     bool result = ffi_generate_task_creation(generator, function_name, 
-                                            arg_regs, 2, REG_RAX);
+                                            arg_regs, 2, ASTHRA_REG_RAX);
     if (!ASTHRA_TEST_ASSERT_BOOL(context, result, "Task creation generation failed")) {
         ffi_assembly_generator_destroy(generator);
         return ASTHRA_TEST_FAIL;
@@ -322,8 +322,8 @@ static AsthraTestResult test_assembly_validation(AsthraTestContext *context) {
     }
     
     // Generate some operations first
-    ffi_generate_string_concatenation(generator, REG_RDI, REG_RSI, REG_RAX);
-    ffi_generate_slice_length_access(generator, REG_RDI, REG_RAX);
+    ffi_generate_string_concatenation(generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI, ASTHRA_REG_RAX);
+    ffi_generate_slice_length_access(generator, ASTHRA_REG_RDI, ASTHRA_REG_RAX);
     
     // Validate generated assembly
     bool result = ffi_validate_generated_assembly(generator);
@@ -351,8 +351,8 @@ static AsthraTestResult test_nasm_output(AsthraTestContext *context) {
     }
     
     // Generate some operations
-    ffi_generate_string_concatenation(generator, REG_RDI, REG_RSI, REG_RAX);
-    ffi_generate_slice_length_access(generator, REG_RDI, REG_RBX);
+    ffi_generate_string_concatenation(generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI, ASTHRA_REG_RAX);
+    ffi_generate_slice_length_access(generator, ASTHRA_REG_RDI, ASTHRA_REG_RBX);
     
     // Test NASM output
     char output_buffer[4096];

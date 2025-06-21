@@ -73,7 +73,7 @@ bool test_string_operations(void) {
     TEST_ASSERT(generator != NULL, "Failed to create FFI assembly generator");
     
     // Test string concatenation
-    bool result = minimal_generate_string_concatenation(generator, REG_RDI, REG_RSI, REG_RAX);
+    bool result = minimal_generate_string_concatenation(generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI, ASTHRA_REG_RAX);
     TEST_ASSERT(result == true, "String concatenation generation failed");
     
     // Check statistics
@@ -97,15 +97,15 @@ bool test_slice_operations(void) {
     TEST_ASSERT(generator != NULL, "Failed to create FFI assembly generator");
     
     // Test slice length access
-    bool result = minimal_generate_slice_length_access(generator, REG_RDI, REG_RAX);
+    bool result = minimal_generate_slice_length_access(generator, ASTHRA_REG_RDI, ASTHRA_REG_RAX);
     TEST_ASSERT(result == true, "Slice length access generation failed");
     
     // Test slice bounds checking
-    result = minimal_generate_slice_bounds_check(generator, REG_RDI, REG_RSI, "bounds_error");
+    result = minimal_generate_slice_bounds_check(generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI, "bounds_error");
     TEST_ASSERT(result == true, "Slice bounds check generation failed");
     
     // Test slice to FFI conversion
-    result = minimal_generate_slice_to_ffi(generator, REG_RDI, REG_RSI, REG_RDX);
+    result = minimal_generate_slice_to_ffi(generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI, ASTHRA_REG_RDX);
     TEST_ASSERT(result == true, "Slice to FFI conversion failed");
     
     // Check statistics
@@ -129,14 +129,14 @@ bool test_security_operations(void) {
     TEST_ASSERT(generator != NULL, "Failed to create FFI assembly generator");
     
     // Test volatile memory access
-    bool result = minimal_generate_volatile_memory_access(generator, REG_RDI, 8, true);
+    bool result = minimal_generate_volatile_memory_access(generator, ASTHRA_REG_RDI, 8, true);
     TEST_ASSERT(result == true, "Volatile memory read generation failed");
     
-    result = minimal_generate_volatile_memory_access(generator, REG_RDI, 8, false);
+    result = minimal_generate_volatile_memory_access(generator, ASTHRA_REG_RDI, 8, false);
     TEST_ASSERT(result == true, "Volatile memory write generation failed");
     
     // Test secure memory zeroing
-    result = minimal_generate_secure_zero(generator, REG_RDI, REG_RSI);
+    result = minimal_generate_secure_zero(generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI);
     TEST_ASSERT(result == true, "Secure memory zeroing generation failed");
     
     // Check statistics
@@ -160,9 +160,9 @@ bool test_concurrency_operations(void) {
     TEST_ASSERT(generator != NULL, "Failed to create FFI assembly generator");
     
     // Test task creation
-    Register arg_regs[] = {REG_RDI, REG_RSI};
+    Register arg_regs[] = {ASTHRA_REG_RDI, ASTHRA_REG_RSI};
     bool result = minimal_generate_task_creation(generator, "test_function", 
-                                                arg_regs, 2, REG_RAX);
+                                                arg_regs, 2, ASTHRA_REG_RAX);
     TEST_ASSERT(result == true, "Task creation generation failed");
     
     // Check statistics
@@ -186,8 +186,8 @@ bool test_assembly_validation(void) {
     TEST_ASSERT(generator != NULL, "Failed to create FFI assembly generator");
     
     // Generate some operations first
-    minimal_generate_string_concatenation(generator, REG_RDI, REG_RSI, REG_RAX);
-    minimal_generate_slice_length_access(generator, REG_RDI, REG_RAX);
+    minimal_generate_string_concatenation(generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI, ASTHRA_REG_RAX);
+    minimal_generate_slice_length_access(generator, ASTHRA_REG_RDI, ASTHRA_REG_RAX);
     
     // Validate generated assembly
     bool result = minimal_validate_generated_assembly(generator);
@@ -209,8 +209,8 @@ bool test_nasm_output(void) {
     TEST_ASSERT(generator != NULL, "Failed to create FFI assembly generator");
     
     // Generate some operations
-    minimal_generate_string_concatenation(generator, REG_RDI, REG_RSI, REG_RAX);
-    minimal_generate_slice_length_access(generator, REG_RDI, REG_RBX);
+    minimal_generate_string_concatenation(generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI, ASTHRA_REG_RAX);
+    minimal_generate_slice_length_access(generator, ASTHRA_REG_RDI, ASTHRA_REG_RBX);
     
     // Test NASM output
     char output_buffer[4096];
@@ -238,12 +238,12 @@ bool test_generation_statistics(void) {
     TEST_ASSERT(generator != NULL, "Failed to create FFI assembly generator");
     
     // Generate various operations
-    minimal_generate_string_concatenation(generator, REG_RDI, REG_RSI, REG_RAX);
-    minimal_generate_slice_length_access(generator, REG_RDI, REG_RBX);
-    minimal_generate_secure_zero(generator, REG_RDI, REG_RSI);
+    minimal_generate_string_concatenation(generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI, ASTHRA_REG_RAX);
+    minimal_generate_slice_length_access(generator, ASTHRA_REG_RDI, ASTHRA_REG_RBX);
+    minimal_generate_secure_zero(generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI);
     
-    Register arg_regs[] = {REG_RDI, REG_RSI};
-    minimal_generate_task_creation(generator, "worker", arg_regs, 2, REG_RAX);
+    Register arg_regs[] = {ASTHRA_REG_RDI, ASTHRA_REG_RSI};
+    minimal_generate_task_creation(generator, "worker", arg_regs, 2, ASTHRA_REG_RAX);
     
     // Get statistics
     size_t ffi_calls, pattern_matches, string_ops, slice_ops, security_ops, spawn_stmts;

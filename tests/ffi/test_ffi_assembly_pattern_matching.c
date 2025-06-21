@@ -60,7 +60,7 @@ static bool test_result_pattern_match(void) {
     ASTNode *pattern = create_test_identifier("Result.Ok");
     
     // Generate Result pattern match
-    bool result = ffi_generate_result_pattern_match(g_generator, pattern, REG_RAX);
+    bool result = ffi_generate_result_pattern_match(g_generator, pattern, ASTHRA_REG_RAX);
     TEST_ASSERT(result, "Result pattern match generation failed");
     
     // Cleanup
@@ -73,11 +73,11 @@ static bool test_result_construction(void) {
     printf("Testing Result<T,E> construction...\n");
     
     // Test Ok construction
-    bool result = ffi_generate_result_construction(g_generator, true, REG_RDI, NULL, REG_RAX);
+    bool result = ffi_generate_result_construction(g_generator, true, ASTHRA_REG_RDI, NULL, ASTHRA_REG_RAX);
     TEST_ASSERT(result, "Result.Ok construction failed");
     
     // Test Err construction
-    result = ffi_generate_result_construction(g_generator, false, REG_RDI, NULL, REG_RAX);
+    result = ffi_generate_result_construction(g_generator, false, ASTHRA_REG_RDI, NULL, ASTHRA_REG_RAX);
     TEST_ASSERT(result, "Result.Err construction failed");
     
     TEST_SUCCESS();

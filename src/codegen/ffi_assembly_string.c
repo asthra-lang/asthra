@@ -32,11 +32,11 @@ bool ffi_generate_string_concatenation(FFIAssemblyGenerator *generator,
     
     // Set up parameters according to System V AMD64 ABI
     emit_instruction(generator, INST_MOV, 2,
-                    create_register_operand(REG_RDI),
+                    create_register_operand(ASTHRA_REG_RDI),
                     create_register_operand(left_reg));
     
     emit_instruction(generator, INST_MOV, 2,
-                    create_register_operand(REG_RSI),
+                    create_register_operand(ASTHRA_REG_RSI),
                     create_register_operand(right_reg));
     
     // Call runtime function
@@ -44,10 +44,10 @@ bool ffi_generate_string_concatenation(FFIAssemblyGenerator *generator,
                     create_label_operand(generator->runtime_functions.string_concat));
     
     // Move result to target register
-    if (result_reg != REG_RAX) {
+    if (result_reg != ASTHRA_REG_RAX) {
         emit_instruction(generator, INST_MOV, 2,
                         create_register_operand(result_reg),
-                        create_register_operand(REG_RAX));
+                        create_register_operand(ASTHRA_REG_RAX));
     }
     
     return true;

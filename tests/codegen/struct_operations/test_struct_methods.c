@@ -17,7 +17,7 @@
 // Stub types for minimal testing
 typedef struct CodeGenerator CodeGenerator;
 typedef struct ASTNode ASTNode;
-typedef enum { REG_RAX, REG_RBX, REG_RCX, REG_RDX } Register;
+typedef enum { ASTHRA_REG_RAX, ASTHRA_REG_RBX, ASTHRA_REG_RCX, ASTHRA_REG_RDX } Register;
 
 // Stub functions for code generation
 static inline CodeGenerator* code_generator_create(int arch, int conv) {
@@ -57,7 +57,7 @@ DEFINE_TEST(test_simple_method_call) {
     TEST_ASSERT_NOT_NULL(ast, "Parse method call");
     
     // Generate code for method call
-    bool result = code_generate_expression(generator, ast, REG_RAX);
+    bool result = code_generate_expression(generator, ast, ASTHRA_REG_RAX);
     TEST_ASSERT(result, "Generate method call code");
     
     printf("  ✓ Simple method call code generation successful\n");
@@ -76,7 +76,7 @@ DEFINE_TEST(test_method_with_arguments) {
     ASTNode* ast = parse_struct_method("obj.method(arg1, arg2)");
     TEST_ASSERT_NOT_NULL(ast, "Parse method call with arguments");
     
-    bool result = code_generate_expression(generator, ast, REG_RBX);
+    bool result = code_generate_expression(generator, ast, ASTHRA_REG_RBX);
     TEST_ASSERT(result, "Generate method call with arguments code");
     
     printf("  ✓ Method call with arguments code generation successful\n");
@@ -95,7 +95,7 @@ DEFINE_TEST(test_chained_method_calls) {
     ASTNode* ast = parse_struct_method("obj.method1().method2().method3()");
     TEST_ASSERT_NOT_NULL(ast, "Parse chained method calls");
     
-    bool result = code_generate_expression(generator, ast, REG_RCX);
+    bool result = code_generate_expression(generator, ast, ASTHRA_REG_RCX);
     TEST_ASSERT(result, "Generate chained method calls code");
     
     printf("  ✓ Chained method calls code generation successful\n");
@@ -114,7 +114,7 @@ DEFINE_TEST(test_static_method_call) {
     ASTNode* ast = parse_struct_method("Type::static_method()");
     TEST_ASSERT_NOT_NULL(ast, "Parse static method call");
     
-    bool result = code_generate_expression(generator, ast, REG_RDX);
+    bool result = code_generate_expression(generator, ast, ASTHRA_REG_RDX);
     TEST_ASSERT(result, "Generate static method call code");
     
     printf("  ✓ Static method call code generation successful\n");

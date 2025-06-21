@@ -22,9 +22,9 @@ static bool test_string_concatenation(void) {
     printf("Testing string concatenation generation...\n");
     
     // Test string concatenation
-    Register left_reg = REG_RAX;
-    Register right_reg = REG_RCX;
-    Register result_reg = REG_RDX;
+    Register left_reg = ASTHRA_REG_RAX;
+    Register right_reg = ASTHRA_REG_RCX;
+    Register result_reg = ASTHRA_REG_RDX;
     
     bool result = ffi_generate_string_concatenation(g_generator, left_reg, right_reg, result_reg);
     TEST_ASSERT(result, "String concatenation generation failed");
@@ -43,8 +43,8 @@ static bool test_deterministic_string_operations(void) {
     printf("Testing deterministic string operations...\n");
     
     // Setup operands
-    Register operand_regs[2] = {REG_RAX, REG_RCX};
-    Register result_reg = REG_RDX;
+    Register operand_regs[2] = {ASTHRA_REG_RAX, ASTHRA_REG_RCX};
+    Register result_reg = ASTHRA_REG_RDX;
     
     // Test deterministic string operations
     bool result = ffi_generate_deterministic_string_op(
@@ -66,8 +66,8 @@ static bool test_slice_length_access(void) {
     printf("Testing slice length access generation...\n");
     
     // Test slice length access
-    Register slice_reg = REG_RAX;
-    Register result_reg = REG_RCX;
+    Register slice_reg = ASTHRA_REG_RAX;
+    Register result_reg = ASTHRA_REG_RCX;
     
     bool result = ffi_generate_slice_length_access(g_generator, slice_reg, result_reg);
     TEST_ASSERT(result, "Slice length access generation failed");
@@ -84,8 +84,8 @@ static bool test_slice_bounds_checking(void) {
     printf("Testing slice bounds checking generation...\n");
     
     // Test slice bounds checking
-    Register slice_reg = REG_RAX;
-    Register index_reg = REG_RCX;
+    Register slice_reg = ASTHRA_REG_RAX;
+    Register index_reg = ASTHRA_REG_RCX;
     const char *error_label = ".L_bounds_error";
     
     bool result = ffi_generate_slice_bounds_check(g_generator, slice_reg, index_reg, error_label);
@@ -98,9 +98,9 @@ static bool test_slice_to_ffi_conversion(void) {
     printf("Testing slice to FFI conversion generation...\n");
     
     // Test slice to FFI conversion
-    Register slice_reg = REG_RAX;
-    Register ptr_reg = REG_RCX;
-    Register len_reg = REG_RDX;
+    Register slice_reg = ASTHRA_REG_RAX;
+    Register ptr_reg = ASTHRA_REG_RCX;
+    Register len_reg = ASTHRA_REG_RDX;
     
     bool result = ffi_generate_slice_to_ffi(g_generator, slice_reg, ptr_reg, len_reg);
     TEST_ASSERT(result, "Slice to FFI conversion generation failed");
@@ -119,9 +119,9 @@ static bool test_slice_creation(void) {
     ASTNode *call_expr = create_test_call_expr("slice_create", args);
     
     // Generate slice creation code
-    Register data_reg = REG_RAX;
-    Register len_reg = REG_RCX;
-    Register result_reg = REG_RDX;
+    Register data_reg = ASTHRA_REG_RAX;
+    Register len_reg = ASTHRA_REG_RCX;
+    Register result_reg = ASTHRA_REG_RDX;
     bool is_mutable = true;
     
     bool result = ffi_generate_slice_creation(g_generator, data_reg, len_reg, result_reg, is_mutable);

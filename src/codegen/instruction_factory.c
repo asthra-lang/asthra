@@ -115,7 +115,7 @@ AssemblyInstruction *create_load_instruction(Register dest_reg, Register base_re
         (AssemblyOperand){.type = OPERAND_REGISTER, .data.reg = dest_reg},
         (AssemblyOperand){.type = OPERAND_MEMORY, .data.memory = {
             .base = base_reg,
-            .index = REG_NONE,
+            .index = ASTHRA_REG_NONE,
             .scale = 1,
             .displacement = offset
         }}
@@ -165,7 +165,7 @@ AssemblyInstruction *create_store_local(Register src_reg, int32_t offset) {
     AssemblyInstruction *inst = create_instruction_empty(INST_MOV, 2);
     if (!inst) return NULL;
     
-    inst->operands[0] = create_memory_operand(REG_RBP, REG_NONE, 1, offset);
+    inst->operands[0] = create_memory_operand(ASTHRA_REG_RBP, ASTHRA_REG_NONE, 1, offset);
     inst->operands[1] = create_register_operand(src_reg);
     
     return inst;
@@ -176,7 +176,7 @@ AssemblyInstruction *create_load_local(Register dest_reg, int32_t offset) {
     if (!inst) return NULL;
     
     inst->operands[0] = create_register_operand(dest_reg);
-    inst->operands[1] = create_memory_operand(REG_RBP, REG_NONE, 1, offset);
+    inst->operands[1] = create_memory_operand(ASTHRA_REG_RBP, ASTHRA_REG_NONE, 1, offset);
     
     return inst;
 }
@@ -186,7 +186,7 @@ AssemblyInstruction *create_lea_local(Register dest_reg, int32_t offset) {
     if (!inst) return NULL;
     
     inst->operands[0] = create_register_operand(dest_reg);
-    inst->operands[1] = create_memory_operand(REG_RBP, REG_NONE, 1, offset);
+    inst->operands[1] = create_memory_operand(ASTHRA_REG_RBP, ASTHRA_REG_NONE, 1, offset);
     
     return inst;
 }
@@ -195,7 +195,7 @@ AssemblyInstruction *create_store_indirect(Register src_reg, Register base_reg, 
     AssemblyInstruction *inst = create_instruction_empty(INST_MOV, 2);
     if (!inst) return NULL;
     
-    inst->operands[0] = create_memory_operand(base_reg, REG_NONE, 1, offset);
+    inst->operands[0] = create_memory_operand(base_reg, ASTHRA_REG_NONE, 1, offset);
     inst->operands[1] = create_register_operand(src_reg);
     
     return inst;
@@ -206,7 +206,7 @@ AssemblyInstruction *create_load_indirect(Register dest_reg, Register base_reg, 
     if (!inst) return NULL;
     
     inst->operands[0] = create_register_operand(dest_reg);
-    inst->operands[1] = create_memory_operand(base_reg, REG_NONE, 1, offset);
+    inst->operands[1] = create_memory_operand(base_reg, ASTHRA_REG_NONE, 1, offset);
     
     return inst;
 }

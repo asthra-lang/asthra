@@ -17,7 +17,7 @@
 // Stub types for minimal testing
 typedef struct CodeGenerator CodeGenerator;
 typedef struct ASTNode ASTNode;
-typedef enum { REG_RAX, REG_RBX, REG_RCX, REG_RDX } Register;
+typedef enum { ASTHRA_REG_RAX, ASTHRA_REG_RBX, ASTHRA_REG_RCX, ASTHRA_REG_RDX } Register;
 
 // Stub functions for code generation
 static inline CodeGenerator* code_generator_create(int arch, int conv) {
@@ -62,7 +62,7 @@ DEFINE_TEST(test_struct_with_array_field) {
     TEST_ASSERT_NOT_NULL(ast, "Parse struct with array field");
     
     // Generate code for array field access
-    bool result = code_generate_expression(generator, ast, REG_RAX);
+    bool result = code_generate_expression(generator, ast, ASTHRA_REG_RAX);
     TEST_ASSERT(result, "Generate struct with array field code");
     
     printf("  ✓ Struct with array field code generation successful\n");
@@ -81,7 +81,7 @@ DEFINE_TEST(test_struct_with_function_pointer) {
     ASTNode* ast = parse_struct_complex("obj.callback(arg)");
     TEST_ASSERT_NOT_NULL(ast, "Parse struct with function pointer");
     
-    bool result = code_generate_expression(generator, ast, REG_RBX);
+    bool result = code_generate_expression(generator, ast, ASTHRA_REG_RBX);
     TEST_ASSERT(result, "Generate struct with function pointer code");
     
     printf("  ✓ Struct with function pointer code generation successful\n");
@@ -100,7 +100,7 @@ DEFINE_TEST(test_struct_pointer_dereference) {
     ASTNode* ast = parse_struct_complex("*obj.ptr");
     TEST_ASSERT_NOT_NULL(ast, "Parse struct pointer dereference");
     
-    bool result = code_generate_expression(generator, ast, REG_RCX);
+    bool result = code_generate_expression(generator, ast, ASTHRA_REG_RCX);
     TEST_ASSERT(result, "Generate struct pointer dereference code");
     
     printf("  ✓ Struct pointer dereference code generation successful\n");
@@ -119,7 +119,7 @@ DEFINE_TEST(test_struct_address_operations) {
     ASTNode* ast = parse_struct_complex("&obj.field");
     TEST_ASSERT_NOT_NULL(ast, "Parse struct address operation");
     
-    bool result = code_generate_expression(generator, ast, REG_RDX);
+    bool result = code_generate_expression(generator, ast, ASTHRA_REG_RDX);
     TEST_ASSERT(result, "Generate struct address operation code");
     
     printf("  ✓ Struct address operations code generation successful\n");
@@ -138,7 +138,7 @@ DEFINE_TEST(test_struct_with_nested_complex_types) {
     ASTNode* ast = parse_struct_complex("obj.inner.array[index].callback(arg)");
     TEST_ASSERT_NOT_NULL(ast, "Parse nested complex types");
     
-    bool result = code_generate_expression(generator, ast, REG_RAX);
+    bool result = code_generate_expression(generator, ast, ASTHRA_REG_RAX);
     TEST_ASSERT(result, "Generate nested complex types code");
     
     printf("  ✓ Struct with nested complex types code generation successful\n");

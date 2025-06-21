@@ -32,7 +32,7 @@ void run_enhanced_ffi_tests(void) {
     EnhancedFFIGenerator *ffi_gen = enhanced_ffi_generator_create();
     if (ffi_gen) {
         enhanced_generate_string_concatenation(ffi_gen, "Hello", "World");
-        enhanced_generate_slice_length_access(ffi_gen, "test_slice", REG_RAX);
+        enhanced_generate_slice_length_access(ffi_gen, "test_slice", ASTHRA_REG_RAX);
         enhanced_generate_volatile_memory_access(ffi_gen, "test_memory", 64);
         enhanced_ffi_generator_destroy(ffi_gen);
         printf("   ✓ FFI Generator tests completed\n");
@@ -60,7 +60,7 @@ void run_enhanced_ffi_tests(void) {
     printf("\n3. Testing Enhanced FFI Marshaling...\n");
     char test_param[] = "test parameter";
     bool marshaling_success = enhanced_ffi_generate_parameter_marshaling(
-        test_param, strlen(test_param), FFI_OWNERSHIP_COPY, REG_RDI
+        test_param, strlen(test_param), FFI_OWNERSHIP_COPY, ASTHRA_REG_RDI
     );
     if (marshaling_success) {
         printf("   ✓ FFI Marshaling tests completed\n");

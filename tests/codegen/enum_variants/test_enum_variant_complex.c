@@ -28,7 +28,7 @@ static void test_enum_variant_complex_expression_codegen(void) {
     analyze_expression_for_test(ctx, expr);
     
     // Generate code for the enum variant expression
-    Register target_reg = REG_RSI; // Use another test register
+    Register target_reg = ASTHRA_REG_RSI; // Use another test register
     bool success = code_generate_enum_variant_construction(generator, expr, target_reg);
     
     if (success) {
@@ -106,7 +106,7 @@ static void test_enum_variant_switch_case_exists(void) {
     CodeGenerator *generator = ctx->generator;
     
     // Try to generate code - this should NOT produce "Unsupported expression type" error
-    Register target_reg = REG_RAX;
+    Register target_reg = ASTHRA_REG_RAX;
     bool success = code_generate_expression(generator, expr, target_reg);
     
     // The test passes if we don't get an "unsupported expression type" error
@@ -142,7 +142,7 @@ static void test_enum_variant_with_integer(void) {
     analyze_expression_for_test(ctx, expr);
     
     // Generate code for the enum variant expression
-    Register target_reg = REG_RDI; // Use another test register
+    Register target_reg = ASTHRA_REG_RDI; // Use another test register
     bool success = code_generate_enum_variant_construction(generator, expr, target_reg);
     
     if (success) {

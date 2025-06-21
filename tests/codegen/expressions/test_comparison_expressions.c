@@ -42,7 +42,7 @@ AsthraTestResult test_generate_comparison_expressions_original(AsthraTestContext
         return ASTHRA_TEST_FAIL;
     }
     
-    Register target_reg = REG_RAX;
+    Register target_reg = ASTHRA_REG_RAX;
     bool result = code_generate_expression(fixture->generator, fixture->test_ast, target_reg);
     if (!asthra_test_assert_bool(context, result, "Failed to generate comparison expression code")) {
         cleanup_codegen_fixture(fixture);
@@ -57,7 +57,7 @@ AsthraTestResult test_generate_comparison_expressions_original(AsthraTestContext
         return ASTHRA_TEST_FAIL;
     }
     
-    result = code_generate_expression(fixture->generator, lt_ast, REG_RDX);
+    result = code_generate_expression(fixture->generator, lt_ast, ASTHRA_REG_RDX);
     if (!asthra_test_assert_bool(context, result, "Failed to generate less than expression code")) {
         ast_free_node(lt_ast);
         cleanup_codegen_fixture(fixture);
@@ -73,7 +73,7 @@ AsthraTestResult test_generate_comparison_expressions_original(AsthraTestContext
         return ASTHRA_TEST_FAIL;
     }
     
-    result = code_generate_expression(fixture->generator, gte_ast, REG_RBX);
+    result = code_generate_expression(fixture->generator, gte_ast, ASTHRA_REG_RBX);
     if (!asthra_test_assert_bool(context, result, "Failed to generate greater than or equal expression code")) {
         ast_free_node(lt_ast);
         ast_free_node(gte_ast);
@@ -91,7 +91,7 @@ AsthraTestResult test_generate_comparison_expressions_original(AsthraTestContext
         return ASTHRA_TEST_FAIL;
     }
     
-    result = code_generate_expression(fixture->generator, ne_ast, REG_RSI);
+    result = code_generate_expression(fixture->generator, ne_ast, ASTHRA_REG_RSI);
     if (!asthra_test_assert_bool(context, result, "Failed to generate not equal expression code")) {
         ast_free_node(lt_ast);
         ast_free_node(gte_ast);

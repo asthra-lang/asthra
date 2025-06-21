@@ -55,7 +55,7 @@ bool ffi_generate_spawn_statement(FFIAssemblyGenerator *generator, ASTNode *spaw
         // Generate arguments
         for (size_t i = 0; i < context->argument_count; i++) {
             Register arg_reg = register_allocate(generator->base_generator->register_allocator, true);
-            if (arg_reg == REG_NONE) {
+            if (arg_reg == ASTHRA_REG_NONE) {
                 // Cleanup
                 for (size_t j = 0; j < i; j++) {
                     register_free(generator->base_generator->register_allocator, 
@@ -87,7 +87,7 @@ bool ffi_generate_spawn_statement(FFIAssemblyGenerator *generator, ASTNode *spaw
     // Generate task creation call
     bool result = ffi_generate_task_creation(generator, context->function_name,
                                             context->argument_regs, context->argument_count,
-                                            REG_RAX);
+                                            ASTHRA_REG_RAX);
     
     // Cleanup
     if (context->argument_regs) {
@@ -119,17 +119,17 @@ bool ffi_generate_task_creation(FFIAssemblyGenerator *generator,
     
     // Function name/pointer in RDI
     emit_instruction(generator, INST_LEA, 2,
-                    create_register_operand(REG_RDI),
+                    create_register_operand(ASTHRA_REG_RDI),
                     create_label_operand(function_name));
     
     // Arguments array in RSI (simplified)
     emit_instruction(generator, INST_MOV, 2,
-                    create_register_operand(REG_RSI),
+                    create_register_operand(ASTHRA_REG_RSI),
                     create_immediate_operand(0)); // NULL for now
     
     // Argument count in RDX
     emit_instruction(generator, INST_MOV, 2,
-                    create_register_operand(REG_RDX),
+                    create_register_operand(ASTHRA_REG_RDX),
                     create_immediate_operand((int64_t)arg_count));
     
     // Call runtime spawn function
@@ -137,10 +137,10 @@ bool ffi_generate_task_creation(FFIAssemblyGenerator *generator,
                     create_label_operand(generator->runtime_functions.spawn_task));
     
     // Move task handle to target register
-    if (handle_reg != REG_RAX) {
+    if (handle_reg != ASTHRA_REG_RAX) {
         emit_instruction(generator, INST_MOV, 2,
                         create_register_operand(handle_reg),
-                        create_register_operand(REG_RAX));
+                        create_register_operand(ASTHRA_REG_RAX));
     }
     
     return true;
@@ -225,7 +225,7 @@ bool ffi_generate_spawn_with_handle_statement(FFIAssemblyGenerator *generator, A
     
     // Function name/pointer in RDI (System V ABI) or RCX (Windows ABI)
     Register func_reg = (generator->base_generator->calling_conv == CALLING_CONV_SYSTEM_V_AMD64) ? 
-                       REG_RDI : REG_RCX;
+                       ASTHRA_REG_RDI : ASTHRA_REG_RCX;
     
     emit_instruction(generator, INST_LEA, 2,
                     create_register_operand(func_reg),
@@ -233,7 +233,7 @@ bool ffi_generate_spawn_with_handle_statement(FFIAssemblyGenerator *generator, A
     
     // Arguments array in RSI/RDX (simplified for now)
     Register args_reg = (generator->base_generator->calling_conv == CALLING_CONV_SYSTEM_V_AMD64) ? 
-                       REG_RSI : REG_RDX;
+                       ASTHRA_REG_RSI : ASTHRA_REG_RDX;
     
     emit_instruction(generator, INST_MOV, 2,
                     create_register_operand(args_reg),
@@ -241,7 +241,7 @@ bool ffi_generate_spawn_with_handle_statement(FFIAssemblyGenerator *generator, A
     
     // Argument count in RDX/R8
     Register count_reg = (generator->base_generator->calling_conv == CALLING_CONV_SYSTEM_V_AMD64) ? 
-                        REG_RDX : REG_R8;
+                        ASTHRA_REG_RDX : ASTHRA_REG_R8;
     
     emit_instruction(generator, INST_MOV, 2,
                     create_register_operand(count_reg),
@@ -262,8 +262,8 @@ bool ffi_generate_spawn_with_handle_statement(FFIAssemblyGenerator *generator, A
     // Create a symbolic memory operand - using RBP (frame pointer) with offset
     // This is a simplified approach; production code would use proper symbol resolution
     emit_instruction(generator, INST_MOV, 2,
-                    create_memory_operand(REG_RBP, REG_NONE, 1, -16), // Store at [rbp-16]
-                    create_register_operand(REG_RAX));
+                    create_memory_operand(ASTHRA_REG_RBP, ASTHRA_REG_NONE, 1, -16), // Store at [rbp-16]
+                    create_register_operand(ASTHRA_REG_RAX));
     
     return true;
 }
@@ -287,7 +287,7 @@ bool ffi_generate_await_expression(FFIAssemblyGenerator *generator,
     }
     
     // Generate code to load the handle
-    Register handle_reg = REG_RBX; // Use RBX directly instead of allocation
+    Register handle_reg = ASTHRA_REG_RBX; // Use RBX directly instead of allocation
     if (!ffi_generate_expression_impl(generator, handle_expr, handle_reg)) {
         return false;
     }
@@ -319,16 +319,16 @@ bool ffi_generate_await_expression(FFIAssemblyGenerator *generator,
     // Save the handle register to the stack if needed
     if (generator->base_generator->calling_conv == CALLING_CONV_SYSTEM_V_AMD64) {
         // Handle goes in RDI for System V ABI
-        if (handle_reg != REG_RDI) {
+        if (handle_reg != ASTHRA_REG_RDI) {
             emit_instruction(generator, INST_MOV, 2,
-                create_register_operand(REG_RDI),
+                create_register_operand(ASTHRA_REG_RDI),
                 create_register_operand(handle_reg));
         }
     } else {
         // Handle goes in RCX for Windows ABI
-        if (handle_reg != REG_RCX) {
+        if (handle_reg != ASTHRA_REG_RCX) {
             emit_instruction(generator, INST_MOV, 2,
-                create_register_operand(REG_RCX),
+                create_register_operand(ASTHRA_REG_RCX),
                 create_register_operand(handle_reg));
         }
     }
@@ -338,10 +338,10 @@ bool ffi_generate_await_expression(FFIAssemblyGenerator *generator,
         create_label_operand(await_function));
     
     // Result is in RAX, move it to the result register if needed
-    if (result_reg != REG_RAX) {
+    if (result_reg != ASTHRA_REG_RAX) {
         emit_instruction(generator, INST_MOV, 2,
             create_register_operand(result_reg),
-            create_register_operand(REG_RAX));
+            create_register_operand(ASTHRA_REG_RAX));
     }
     
     // Update statistics
@@ -403,7 +403,7 @@ bool ffi_generate_task_creation_with_handle(FFIAssemblyGenerator *generator,
     
     // Function name/pointer setup
     Register func_ptr_reg = (generator->base_generator->calling_conv == CALLING_CONV_SYSTEM_V_AMD64) ? 
-                           REG_RDI : REG_RCX;
+                           ASTHRA_REG_RDI : ASTHRA_REG_RCX;
     
     emit_instruction(generator, INST_LEA, 2,
                     create_register_operand(func_ptr_reg),
@@ -411,7 +411,7 @@ bool ffi_generate_task_creation_with_handle(FFIAssemblyGenerator *generator,
     
     // Arguments array setup (enhanced for future argument passing)
     Register args_array_reg = (generator->base_generator->calling_conv == CALLING_CONV_SYSTEM_V_AMD64) ? 
-                             REG_RSI : REG_RDX;
+                             ASTHRA_REG_RSI : ASTHRA_REG_RDX;
     
     if (arg_count > 0) {
         // For future implementation: properly pack arguments
@@ -427,7 +427,7 @@ bool ffi_generate_task_creation_with_handle(FFIAssemblyGenerator *generator,
     
     // Argument count
     Register count_reg = (generator->base_generator->calling_conv == CALLING_CONV_SYSTEM_V_AMD64) ? 
-                        REG_RDX : REG_R8;
+                        ASTHRA_REG_RDX : ASTHRA_REG_R8;
     
     emit_instruction(generator, INST_MOV, 2,
                     create_register_operand(count_reg),
@@ -438,10 +438,10 @@ bool ffi_generate_task_creation_with_handle(FFIAssemblyGenerator *generator,
                     create_label_operand("asthra_spawn_task_with_handle_enhanced"));
     
     // Move task handle to target register (result is in RAX)
-    if (handle_reg != REG_RAX) {
+    if (handle_reg != ASTHRA_REG_RAX) {
         emit_instruction(generator, INST_MOV, 2,
                         create_register_operand(handle_reg),
-                        create_register_operand(REG_RAX));
+                        create_register_operand(ASTHRA_REG_RAX));
     }
     
     return true;

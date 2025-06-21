@@ -28,7 +28,7 @@ static void test_option_some_codegen(void) {
     analyze_expression_for_test(ctx, expr);
     
     // Generate code for the enum variant expression
-    Register target_reg = REG_RBX; // Use a different test register
+    Register target_reg = ASTHRA_REG_RBX; // Use a different test register
     bool success = code_generate_enum_variant_construction(generator, expr, target_reg);
     
     if (success) {
@@ -102,7 +102,7 @@ static void test_option_none_codegen(void) {
     analyze_expression_for_test(ctx, expr);
     
     // Generate code for the enum variant expression
-    Register target_reg = REG_RDX; // Use another test register
+    Register target_reg = ASTHRA_REG_RDX; // Use another test register
     bool success = code_generate_enum_variant_construction(generator, expr, target_reg);
     
     if (success) {

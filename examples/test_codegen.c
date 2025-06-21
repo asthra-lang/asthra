@@ -27,7 +27,7 @@ int main(void) {
     printf("Testing C17 instruction creation...\n");
     
     // Create a simple MOV instruction using C17 compound literals
-    AssemblyInstruction *mov_inst = create_mov_immediate(REG_RAX, 42);
+    AssemblyInstruction *mov_inst = create_mov_immediate(ASTHRA_REG_RAX, 42);
     if (mov_inst) {
         printf("✅ MOV instruction created: MOV RAX, 42\n");
         printf("   Operand count: %zu\n", mov_inst->operand_count);
@@ -49,7 +49,7 @@ int main(void) {
     Register reg1 = register_allocate(generator->register_allocator, true);
     Register reg2 = register_allocate(generator->register_allocator, false);
     
-    if (reg1 != REG_NONE && reg2 != REG_NONE) {
+    if (reg1 != ASTHRA_REG_NONE && reg2 != ASTHRA_REG_NONE) {
         printf("✅ Registers allocated successfully\n");
         printf("   Caller-saved register: %d\n", reg1);
         printf("   Callee-saved register: %d\n", reg2);

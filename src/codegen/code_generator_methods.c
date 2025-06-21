@@ -106,7 +106,7 @@ bool code_generate_method(CodeGenerator *generator, ASTNode *method_decl, const 
     }
     
     // Generate function prologue
-    Register saved_regs[] = {REG_RBP, REG_RBX, REG_R12, REG_R13, REG_R14, REG_R15};
+    Register saved_regs[] = {ASTHRA_REG_RBP, ASTHRA_REG_RBX, ASTHRA_REG_R12, ASTHRA_REG_R13, ASTHRA_REG_R14, ASTHRA_REG_R15};
     size_t saved_count = sizeof(saved_regs) / sizeof(Register);
     
     if (!generate_function_prologue(generator, DEFAULT_STACK_FRAME_SIZE, saved_regs, saved_count)) {
