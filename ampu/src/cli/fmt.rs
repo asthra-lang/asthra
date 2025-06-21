@@ -20,7 +20,7 @@ pub async fn handle_fmt(
 
     // Get current working directory
     let current_dir = env::current_dir()
-        .map_err(|e| crate::error::BuildError::Io(format!("Failed to get current directory: {}", e)))?;
+        .map_err(|e| crate::error::BuildError::IoString(format!("Failed to get current directory: {}", e)))?;
 
     // Load configuration from project
     let mut config = load_config_from_project(&current_dir).await?;
@@ -110,7 +110,7 @@ async fn report_results(
 /// Validate that we're in an Asthra project
 async fn validate_asthra_project() -> Result<()> {
     let current_dir = env::current_dir()
-        .map_err(|e| crate::error::BuildError::Io(format!("Failed to get current directory: {}", e)))?;
+        .map_err(|e| crate::error::BuildError::IoString(format!("Failed to get current directory: {}", e)))?;
     
     crate::validate_project(&current_dir).await
 }
@@ -185,7 +185,7 @@ pub async fn handle_fmt_enhanced(
 
     // Get current working directory
     let current_dir = env::current_dir()
-        .map_err(|e| crate::error::BuildError::Io(format!("Failed to get current directory: {}", e)))?;
+        .map_err(|e| crate::error::BuildError::IoString(format!("Failed to get current directory: {}", e)))?;
 
     // Load configuration
     let mut config = if use_project_mode {
@@ -233,7 +233,7 @@ pub async fn check_formatting_in_build() -> Result<bool> {
     info!("Checking code formatting as part of build");
     
     let current_dir = env::current_dir()
-        .map_err(|e| crate::error::BuildError::Io(format!("Failed to get current directory: {}", e)))?;
+        .map_err(|e| crate::error::BuildError::IoString(format!("Failed to get current directory: {}", e)))?;
 
     let config = load_config_from_project(&current_dir).await?;
     let formatter = Formatter::with_config(config);

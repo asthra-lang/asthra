@@ -1,10 +1,10 @@
 //! Fast check command for ampu
 //! Provides lightning-fast feedback for AI development cycles
 
-use std::path::{Path, PathBuf};
+use crate::error::AmpuError;
+use std::path::PathBuf;
 use std::time::Instant;
 use clap::Args;
-use crate::error::AmpuError;
 
 /// Fast check command arguments
 #[derive(Args)]
@@ -141,7 +141,7 @@ extern "C" {
 
 impl FastCheckEngine {
     /// Create a new fast check engine
-    pub fn new() -> Result<Self, AmpuError> {
+    pub fn new() -> std::result::Result<Self, AmpuError> {
         let engine_ptr = unsafe { fast_check_engine_create() };
         if engine_ptr.is_null() {
             return Err(AmpuError::EngineCreationFailed);
@@ -151,7 +151,7 @@ impl FastCheckEngine {
     }
     
     /// Clear the engine cache
-    pub fn clear_cache(&mut self) -> Result<(), AmpuError> {
+    pub fn clear_cache(&mut self) -> std::result::Result<(), AmpuError> {
         unsafe {
             fast_check_engine_clear_cache(self.engine_ptr);
         }
@@ -159,7 +159,7 @@ impl FastCheckEngine {
     }
     
     /// Check a single file
-    pub fn check_file(&self, file_path: &str, config: &CheckConfig) -> Result<FileResult, AmpuError> {
+    pub fn check_file(&self, file_path: &str, config: &CheckConfig) -> std::result::Result<FileResult, AmpuError> {
         let c_file_path = std::ffi::CString::new(file_path)
             .map_err(|_| AmpuError::InvalidPath(file_path.to_string()))?;
         
@@ -190,9 +190,9 @@ impl FastCheckEngine {
     }
     
     /// Check multiple files
-    pub fn check_files(&self, files: &[String], config: &CheckConfig) -> Result<CheckResult, AmpuError> {
+    pub fn check_files(&self, files: &[String], config: &CheckConfig) -> std::result::Result<CheckResult, AmpuError> {
         // Convert Rust strings to C strings
-        let c_strings: Result<Vec<_>, _> = files.iter()
+        let c_strings: std::result::Result<Vec<std::ffi::CString>, std::ffi::NulError> = files.iter()
             .map(|s| std::ffi::CString::new(s.as_str()))
             .collect();
         
@@ -236,7 +236,7 @@ impl FastCheckEngine {
     }
     
     /// Check all files in a directory
-    pub fn check_directory(&self, directory: &str, config: &CheckConfig) -> Result<CheckResult, AmpuError> {
+    pub fn check_directory(&self, directory: &str, config: &CheckConfig) -> std::result::Result<CheckResult, AmpuError> {
         let c_directory = std::ffi::CString::new(directory)
             .map_err(|_| AmpuError::InvalidPath(directory.to_string()))?;
         
@@ -283,7 +283,7 @@ pub struct CheckConfig {
 }
 
 impl CheckConfig {
-    pub fn new() -> Result<Self, AmpuError> {
+    pub fn new() -> std::result::Result<Self, AmpuError> {
         let config_ptr = unsafe { fast_check_config_create() };
         if config_ptr.is_null() {
             return Err(AmpuError::ConfigCreationFailed);
@@ -310,7 +310,7 @@ impl CheckConfig {
         }
     }
     
-    pub fn set_output_format(&self, format: &str) -> Result<(), AmpuError> {
+    pub fn set_output_format(&self, format: &str) -> std::result::Result<(), AmpuError> {
         let c_format = std::ffi::CString::new(format)
             .map_err(|_| AmpuError::InvalidInput(format.to_string()))?;
         
@@ -321,7 +321,7 @@ impl CheckConfig {
         Ok(())
     }
     
-    pub fn add_include_pattern(&self, pattern: &str) -> Result<(), AmpuError> {
+    pub fn add_include_pattern(&self, pattern: &str) -> std::result::Result<(), AmpuError> {
         let c_pattern = std::ffi::CString::new(pattern)
             .map_err(|_| AmpuError::InvalidInput(pattern.to_string()))?;
         
@@ -332,7 +332,7 @@ impl CheckConfig {
         Ok(())
     }
     
-    pub fn add_exclude_pattern(&self, pattern: &str) -> Result<(), AmpuError> {
+    pub fn add_exclude_pattern(&self, pattern: &str) -> std::result::Result<(), AmpuError> {
         let c_pattern = std::ffi::CString::new(pattern)
             .map_err(|_| AmpuError::InvalidInput(pattern.to_string()))?;
         
@@ -354,12 +354,12 @@ impl Drop for CheckConfig {
 
 impl CheckCommand {
     /// Execute the fast check command
-    pub async fn execute(&self) -> Result<(), AmpuError> {
+    pub async fn execute(&self) -> std::result::Result<(), AmpuError> {
         let start_time = Instant::now();
         
         // Initialize fast check engine
         let mut engine = FastCheckEngine::new()?;
-        let mut config = CheckConfig::new()?;
+        let config = CheckConfig::new()?;
         
         // Configure engine
         config.set_watch_mode(self.watch);
@@ -431,9 +431,10 @@ impl CheckCommand {
     }
     
     /// Get list of modified files
-    async fn get_modified_files(&self) -> Result<Vec<String>, AmpuError> {
+    async fn get_modified_files(&self) -> std::result::Result<Vec<String>, AmpuError> {
+        let default_path = PathBuf::from(".");
         let base_dir = self.base_dir.as_ref()
-            .unwrap_or(&PathBuf::from("."))
+            .unwrap_or(&default_path)
             .to_str()
             .ok_or_else(|| AmpuError::InvalidPath("Base directory".to_string()))?;
         
@@ -470,7 +471,7 @@ impl CheckCommand {
     }
     
     /// Report individual file result
-    fn report_file_result(&self, result: &FileResult) -> Result<(), AmpuError> {
+    fn report_file_result(&self, result: &FileResult) -> std::result::Result<(), AmpuError> {
         match self.format.as_str() {
             "json" => self.report_json_file(result),
             "compact" => self.report_compact_file(result),
@@ -478,7 +479,7 @@ impl CheckCommand {
         }
     }
     
-    fn report_human_file(&self, result: &FileResult) -> Result<(), AmpuError> {
+    fn report_human_file(&self, result: &FileResult) -> std::result::Result<(), AmpuError> {
         let status = match result.status {
             FileStatus::Ok => "OK",
             FileStatus::Warning => "WARN",
@@ -506,7 +507,7 @@ impl CheckCommand {
         Ok(())
     }
     
-    fn report_json_file(&self, result: &FileResult) -> Result<(), AmpuError> {
+    fn report_json_file(&self, result: &FileResult) -> std::result::Result<(), AmpuError> {
         let json = serde_json::json!({
             "file_path": result.file_path,
             "status": result.status as u8,
@@ -521,7 +522,7 @@ impl CheckCommand {
         Ok(())
     }
     
-    fn report_compact_file(&self, result: &FileResult) -> Result<(), AmpuError> {
+    fn report_compact_file(&self, result: &FileResult) -> std::result::Result<(), AmpuError> {
         println!("{}:{}:E{}:W{}:{:.0}ms",
                  result.file_path,
                  result.status as u8,
@@ -532,7 +533,7 @@ impl CheckCommand {
     }
     
     /// Print command summary
-    fn print_summary(&self, result: &CheckResult, total_time: std::time::Duration) -> Result<(), AmpuError> {
+    fn print_summary(&self, result: &CheckResult, _total_time: std::time::Duration) -> std::result::Result<(), AmpuError> {
         match self.format.as_str() {
             "json" => {
                 let json = serde_json::json!({
@@ -572,7 +573,7 @@ impl CheckCommand {
     }
     
     /// Start watch mode
-    async fn start_watch_mode(&self, _engine: FastCheckEngine, _config: CheckConfig) -> Result<(), AmpuError> {
+    async fn start_watch_mode(&self, _engine: FastCheckEngine, _config: CheckConfig) -> std::result::Result<(), AmpuError> {
         // Simplified implementation - would use file system watchers
         println!("Watch mode not yet implemented in this version");
         Ok(())

@@ -10,7 +10,8 @@ use std::collections::HashMap;
 use std::time::SystemTime;
 use tokio::sync::Semaphore;
 use std::sync::Arc;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
+use std::ffi::OsString;
 
 #[derive(Debug, Clone)]
 pub struct BuildConfig {
@@ -357,7 +358,7 @@ impl BuildOrchestrator {
     }
     
     fn topological_sort_packages(&self, packages: Vec<PackageInfo>) -> Result<Vec<PackageInfo>> {
-        use std::collections::{HashMap, HashSet, VecDeque};
+        use std::collections::{HashMap, VecDeque};
         
         // Build dependency graph
         let mut graph: HashMap<String, Vec<String>> = HashMap::new();
@@ -522,44 +523,46 @@ impl BuildOrchestrator {
         Ok(import_paths)
     }
     
-    fn build_additional_compiler_args(&self, package: &PackageInfo) -> Result<Vec<String>> {
+    fn build_additional_compiler_args(&self, package: &PackageInfo) -> Result<Vec<OsString>> {
         let mut args = Vec::new();
         
         // Add debug information if enabled
         if self.config.debug_info {
-            args.push("--debug".to_string());
+            args.push(OsString::from("--debug"));
         }
         
         // Add optimization level
         match self.config.optimization {
-            crate::config::OptimizationLevel::None => args.push("--opt=0".to_string()),
-            crate::config::OptimizationLevel::Standard => args.push("--opt=1".to_string()),
-            crate::config::OptimizationLevel::Aggressive => args.push("--opt=2".to_string()),
+            crate::config::OptimizationLevel::None => args.push(OsString::from("--opt=0")),
+            crate::config::OptimizationLevel::Basic => args.push(OsString::from("--opt=1")),
+            crate::config::OptimizationLevel::Standard => args.push(OsString::from("--opt=1")),
+            crate::config::OptimizationLevel::Aggressive => args.push(OsString::from("--opt=2")),
         }
         
         // Add target architecture
         match self.config.target {
             crate::config::Target::Native => {}, // Default, no flag needed
-            crate::config::Target::X86_64 => args.push("--target=x86_64".to_string()),
-            crate::config::Target::Arm64 => args.push("--target=arm64".to_string()),
-            crate::config::Target::Wasm32 => args.push("--target=wasm32".to_string()),
+            crate::config::Target::X86_64 => args.push(OsString::from("--target=x86_64")),
+            crate::config::Target::Arm64 => args.push(OsString::from("--target=arm64")),
+            crate::config::Target::Wasm32 => args.push(OsString::from("--target=wasm32")),
         }
         
         // Add library type preference
         match self.config.library_type {
-            crate::storage::LibraryType::Static => args.push("--library-type=static".to_string()),
-            crate::storage::LibraryType::Dynamic => args.push("--library-type=dynamic".to_string()),
+            crate::storage::LibraryType::Static => args.push(OsString::from("--library-type=static")),
+            crate::storage::LibraryType::Dynamic => args.push(OsString::from("--library-type=dynamic")),
+            crate::storage::LibraryType::Object => args.push(OsString::from("--library-type=object")),
         }
         
         // Add package-specific flags
         if package.name.starts_with("stdlib/") {
-            args.push("--stdlib-mode".to_string());
+            args.push(OsString::from("--stdlib-mode"));
         }
         
         Ok(args)
     }
     
-    async fn create_library_artifact(&self, package: &PackageInfo, output: &asthra_compiler::CompilerOutput) -> Result<Option<crate::storage::LibraryArtifact>> {
+    async fn create_library_artifact(&self, package: &PackageInfo, _output: &asthra_compiler::CompilerOutput) -> Result<Option<crate::storage::LibraryArtifact>> {
         // Only create library artifacts for library packages
         if package.name == "main" || package.main_file.file_name().map_or(false, |n| n == "main.asthra") {
             return Ok(None);
@@ -712,33 +715,35 @@ impl BuildOrchestrator {
         Ok(import_paths)
     }
     
-    fn build_additional_compiler_args_static(config: &BuildConfig, package: &PackageInfo) -> Result<Vec<String>> {
+    fn build_additional_compiler_args_static(config: &BuildConfig, package: &PackageInfo) -> Result<Vec<OsString>> {
         let mut args = Vec::new();
         
         if config.debug_info {
-            args.push("--debug".to_string());
+            args.push(OsString::from("--debug"));
         }
         
         match config.optimization {
-            crate::config::OptimizationLevel::None => args.push("--opt=0".to_string()),
-            crate::config::OptimizationLevel::Standard => args.push("--opt=1".to_string()),
-            crate::config::OptimizationLevel::Aggressive => args.push("--opt=2".to_string()),
+            crate::config::OptimizationLevel::None => args.push(OsString::from("--opt=0")),
+            crate::config::OptimizationLevel::Basic => args.push(OsString::from("--opt=1")),
+            crate::config::OptimizationLevel::Standard => args.push(OsString::from("--opt=1")),
+            crate::config::OptimizationLevel::Aggressive => args.push(OsString::from("--opt=2")),
         }
         
         match config.target {
             crate::config::Target::Native => {},
-            crate::config::Target::X86_64 => args.push("--target=x86_64".to_string()),
-            crate::config::Target::Arm64 => args.push("--target=arm64".to_string()),
-            crate::config::Target::Wasm32 => args.push("--target=wasm32".to_string()),
+            crate::config::Target::X86_64 => args.push(OsString::from("--target=x86_64")),
+            crate::config::Target::Arm64 => args.push(OsString::from("--target=arm64")),
+            crate::config::Target::Wasm32 => args.push(OsString::from("--target=wasm32")),
         }
         
         match config.library_type {
-            crate::storage::LibraryType::Static => args.push("--library-type=static".to_string()),
-            crate::storage::LibraryType::Dynamic => args.push("--library-type=dynamic".to_string()),
+            crate::storage::LibraryType::Static => args.push(OsString::from("--library-type=static")),
+            crate::storage::LibraryType::Dynamic => args.push(OsString::from("--library-type=dynamic")),
+            crate::storage::LibraryType::Object => args.push(OsString::from("--library-type=object")),
         }
         
         if package.name.starts_with("stdlib/") {
-            args.push("--stdlib-mode".to_string());
+            args.push(OsString::from("--stdlib-mode"));
         }
         
         Ok(args)

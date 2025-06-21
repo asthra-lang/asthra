@@ -199,8 +199,6 @@ optimization/benchmark_keywords*
 # Clang static analyzer
 scan-build/
 analysis-output/
-.clang-tidy
-.clang-format
 
 # CMake
 CMakeCache.txt

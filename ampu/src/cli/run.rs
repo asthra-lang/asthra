@@ -1,8 +1,5 @@
 use crate::error::Result;
-use std::env;
-use std::process::Stdio;
-use tokio::process::Command;
-use tracing::{info, debug, warn};
+use tracing::{info, warn};
 
 pub async fn handle_run(release: bool, args: Vec<String>) -> Result<()> {
     info!("Building and running project...");

@@ -1,6 +1,5 @@
 use crate::error::Result;
 use std::env;
-use std::path::PathBuf;
 use tracing::{info, warn};
 
 pub async fn handle_build(release: bool, target: Option<String>, jobs: Option<usize>) -> Result<()> {
