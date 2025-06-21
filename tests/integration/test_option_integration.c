@@ -92,9 +92,45 @@ static bool compile_option_program(const char* source, char* assembly_output, si
  * Tests parsing, semantic analysis, and code generation for Option types
  */
 static AsthraTestResult test_option_basic_integration(AsthraTestContext* context) {
-    // TODO: Fix generic enum variant type inference  
-    // Currently Option.Some(x) returns "Option" instead of "Option<i32>"
-    // Skip until fixed
+    const char* source = 
+        "package test;\n"
+        "\n"
+        "pub fn test_option_some(none) -> Option<i32> {\n"
+        "    return Option.Some(42);\n"
+        "}\n"
+        "\n"
+        "pub fn test_option_none(none) -> Option<i32> {\n"
+        "    return Option.None;\n"
+        "}\n"
+        "\n"
+        "pub fn test_option_usage(none) -> void {\n"
+        "    let some_val: Option<i32> = Option.Some(123);\n"
+        "    let none_val: Option<i32> = Option.None;\n"
+        "    let string_opt: Option<string> = Option.Some(\"hello\");\n"
+        "    return ();\n"
+        "}\n";
+    
+    char assembly[8192];
+    bool success = compile_option_program(source, assembly, sizeof(assembly));
+    
+    if (!asthra_test_assert_bool_eq(context, success, true,
+                                   "Option basic integration should succeed")) {
+        return ASTHRA_TEST_FAIL;
+    }
+    
+    // Verify that functions are in assembly
+    if (!asthra_test_assert_bool_eq(context,
+                                   strstr(assembly, "test_option_some") != NULL, true,
+                                   "Assembly should contain test_option_some function")) {
+        return ASTHRA_TEST_FAIL;
+    }
+    
+    if (!asthra_test_assert_bool_eq(context,
+                                   strstr(assembly, "test_option_none") != NULL, true,
+                                   "Assembly should contain test_option_none function")) {
+        return ASTHRA_TEST_FAIL;
+    }
+    
     return ASTHRA_TEST_PASS;
 }
 
@@ -140,8 +176,25 @@ static AsthraTestResult test_option_struct_integration(AsthraTestContext* contex
  * Tests Option<Option<T>> through the complete pipeline
  */
 static AsthraTestResult test_nested_option_integration(AsthraTestContext* context) {
-    // TODO: Fix generic enum variant type inference
-    // Skip until Option.Some works with proper type inference
+    const char* source = 
+        "package test;\n"
+        "\n"
+        "pub fn test_nested_option(none) -> void {\n"
+        "    let nested: Option<Option<i32>>;\n"
+        "    // TODO: Enable when nested generic inference works\n"
+        "    // let some_nested: Option<Option<i32>> = Option.Some(Option.Some(42));\n"
+        "    // let none_nested: Option<Option<i32>> = Option.None;\n"
+        "    return ();\n"
+        "}\n";
+    
+    char assembly[8192];
+    bool success = compile_option_program(source, assembly, sizeof(assembly));
+    
+    if (!asthra_test_assert_bool_eq(context, success, true,
+                                   "Nested Option integration should succeed")) {
+        return ASTHRA_TEST_FAIL;
+    }
+    
     return ASTHRA_TEST_PASS;
 }
 
@@ -150,8 +203,26 @@ static AsthraTestResult test_nested_option_integration(AsthraTestContext* contex
  * Tests Option with various inner types
  */
 static AsthraTestResult test_option_multiple_types_integration(AsthraTestContext* context) {
-    // TODO: Fix generic enum variant type inference
-    // Skip until Option.Some works with proper type inference
+    const char* source = 
+        "package test;\n"
+        "\n"
+        "pub fn test_option_types(none) -> void {\n"
+        "    let int_opt: Option<i32> = Option.Some(42);\n"
+        "    let string_opt: Option<string> = Option.Some(\"hello\");\n"
+        "    let bool_opt: Option<bool> = Option.Some(true);\n"
+        "    let none_int: Option<i32> = Option.None;\n"
+        "    let none_string: Option<string> = Option.None;\n"
+        "    return ();\n"
+        "}\n";
+    
+    char assembly[8192];
+    bool success = compile_option_program(source, assembly, sizeof(assembly));
+    
+    if (!asthra_test_assert_bool_eq(context, success, true,
+                                   "Multiple Option types integration should succeed")) {
+        return ASTHRA_TEST_FAIL;
+    }
+    
     return ASTHRA_TEST_PASS;
 }
 

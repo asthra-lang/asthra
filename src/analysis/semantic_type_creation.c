@@ -191,7 +191,12 @@ TypeDescriptor *type_descriptor_create_option(TypeDescriptor *value_type) {
     // Option size is a tagged union - size of value plus tag
     option_type->size = value_type->size + sizeof(int);
     option_type->alignment = _Alignof(void*);
-    option_type->name = NULL;
+    
+    // Create name like "Option<i32>"
+    char name_buffer[256];
+    const char *value_name = value_type->name ? value_type->name : "unknown";
+    snprintf(name_buffer, sizeof(name_buffer), "Option<%s>", value_name);
+    option_type->name = strdup(name_buffer);
     
     option_type->data.option.value_type = value_type;
     type_descriptor_retain(value_type); // Retain the value type
@@ -355,6 +360,10 @@ TypeDescriptor *type_descriptor_create_generic_instance(TypeDescriptor *base_typ
         instance_type->name = canonical_name;  // Note: This points to the same memory as canonical_name
                                                // The generic instance cleanup will free canonical_name
                                                // So we must not free name separately
+    } else {
+        // Fallback: use base type name if malloc fails
+        instance_type->data.generic_instance.canonical_name = NULL;
+        instance_type->name = base_type->name ? strdup(base_type->name) : NULL;
     }
     
     // Initialize reference count to 1

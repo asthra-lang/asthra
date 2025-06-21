@@ -9,8 +9,6 @@
 static void test_option_type_integration(void) {
     printf("Testing Option type integration...\n");
     
-    // TODO: Fix generic enum variant type inference
-    // Currently Option.Some(x) returns "Option" instead of "Option<i32>"
     const char* source = 
         "package test;\n\n"
         "pub fn test_option_types(none) -> void {\n"
@@ -20,10 +18,14 @@ static void test_option_type_integration(void) {
         "    let opt3: Option<bool>;\n"
         "    // Nested Option types\n"
         "    let nested: Option<Option<i32>>;\n"
-        "    // TODO: Enable when variant constructors work\n"
-        "    // let some_val: Option<i32> = Option.Some(42);\n"
-        "    // let none_val: Option<i32> = Option.None;\n"
+        "    // Test Option constructors with type inference\n"
+        "    let some_val: Option<i32> = Option.Some(42);\n"
+        "    let none_val: Option<i32> = Option.None;\n"
+        "    let string_some: Option<string> = Option.Some(\"test\");\n"
         "    return ();\n"
+        "}\n"
+        "pub fn test_option_returns(none) -> Option<i32> {\n"
+        "    return Option.Some(999);\n"
         "}\n";
     
     printf("Source code:\n%s\n", source);
@@ -35,14 +37,19 @@ static void test_option_type_integration(void) {
     
     printf("✓ Option program parsed successfully\n");
     
-    // Verify that the function was parsed
+    // Verify that the functions were parsed
     assert(program->data.program.declarations != NULL);
-    assert(ast_node_list_size(program->data.program.declarations) == 1);
+    assert(ast_node_list_size(program->data.program.declarations) == 2);
     
-    ASTNode *func = ast_node_list_get(program->data.program.declarations, 0);
-    assert(func != NULL);
-    assert(func->type == AST_FUNCTION_DECL);
-    assert(strcmp(func->data.function_decl.name, "test_option_types") == 0);
+    ASTNode *func1 = ast_node_list_get(program->data.program.declarations, 0);
+    assert(func1 != NULL);
+    assert(func1->type == AST_FUNCTION_DECL);
+    assert(strcmp(func1->data.function_decl.name, "test_option_types") == 0);
+    
+    ASTNode *func2 = ast_node_list_get(program->data.program.declarations, 1);
+    assert(func2 != NULL);
+    assert(func2->type == AST_FUNCTION_DECL);
+    assert(strcmp(func2->data.function_decl.name, "test_option_returns") == 0);
     
     // Verify Option.Some and Option.None constructions through semantic analysis
     SemanticAnalyzer *analyzer = semantic_analyzer_create();
@@ -71,7 +78,7 @@ static void test_option_type_integration(void) {
     bool codegen_success = code_generate_program(generator, program);
     assert(codegen_success);
     
-    printf("✓ Option type declarations validated\n");
+    printf("✓ Option.Some and Option.None constructions with type inference validated\n");
     
     printf("✓ Option integration test structure validated\n");
     

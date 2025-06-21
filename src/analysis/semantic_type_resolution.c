@@ -58,6 +58,7 @@ TypeDescriptor *analyze_type_node(SemanticAnalyzer *analyzer, ASTNode *type_node
             if (!type_name) return NULL;
             
             
+            
             // Look up the type in the symbol table
             SymbolEntry *type_symbol = symbol_table_lookup_safe(analyzer->current_scope, type_name);
             if (!type_symbol || (type_symbol->kind != SYMBOL_TYPE && type_symbol->kind != SYMBOL_TYPE_PARAMETER)) {
@@ -184,7 +185,8 @@ TypeDescriptor *analyze_type_node(SemanticAnalyzer *analyzer, ASTNode *type_node
             // Note: The parser uses a heuristic where types with type arguments
             // are parsed as AST_ENUM_TYPE, but they could actually be generic structs
             const char *type_name = type_node->data.enum_type.name;
-if (!type_name) return NULL;
+            if (!type_name) return NULL;
+            
             
             // Look up the type in the symbol table
             SymbolEntry *type_symbol = symbol_table_lookup_safe(analyzer->current_scope, type_name);
@@ -421,7 +423,7 @@ TypeDescriptor *arg_type = analyze_type_node(analyzer, type_arg);
         }
         
         case AST_OPTION_TYPE: {
-            // Handle Option<T> types
+            // Handle Option<T> types - treat as generic enum instance for consistency
             ASTNode *value_type_node = type_node->data.option_type.value_type;
             
             if (!value_type_node) return NULL;
@@ -429,8 +431,23 @@ TypeDescriptor *arg_type = analyze_type_node(analyzer, type_arg);
             TypeDescriptor *value_type = analyze_type_node(analyzer, value_type_node);
             if (!value_type) return NULL;
             
-            TypeDescriptor *option_type = type_descriptor_create_option(value_type);
-            type_descriptor_release(value_type);   // create_option retains it
+            // Look up the base Option enum type
+            SymbolEntry *option_symbol = semantic_resolve_identifier(analyzer, "Option");
+            if (!option_symbol || option_symbol->kind != SYMBOL_TYPE || 
+                !option_symbol->type || option_symbol->type->category != TYPE_ENUM) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_TYPE,
+                                     type_node->location,
+                                     "Option type not found or not an enum");
+                type_descriptor_release(value_type);
+                return NULL;
+            }
+            
+            // Create generic instance: Option<T> where T is the value type
+            TypeDescriptor *type_args[] = {value_type};
+            TypeDescriptor *option_type = type_descriptor_create_generic_instance(
+                option_symbol->type, type_args, 1);
+            
+            type_descriptor_release(value_type);
             
             return option_type;
         }

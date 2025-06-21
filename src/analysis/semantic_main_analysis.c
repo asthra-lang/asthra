@@ -299,6 +299,8 @@ bool semantic_analyze_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
         return false;
     }
     
+    // DEBUG: printf("DEBUG: semantic_analyze_expression - expr type: %d\n", expr->type);
+    
     ATOMIC_FETCH_ADD(&analyzer->stats.nodes_analyzed, 1);
     
     bool result = false;

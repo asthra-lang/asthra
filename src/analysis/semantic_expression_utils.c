@@ -140,8 +140,29 @@ bool analyze_enum_variant(SemanticAnalyzer *analyzer, ASTNode *expr) {
             }
         }
         
-        // Set the type of the enum variant expression to the enum type
-        semantic_set_expression_type(analyzer, expr, enum_symbol->type);
+        // Handle generic type inference for generic enums like Option<T>
+        TypeDescriptor *enum_type_to_use = enum_symbol->type;
+        
+        if (enum_symbol->is_generic && expr->data.enum_variant.value) {
+            // For generic enums like Option.Some(value), infer T from the value type
+            TypeDescriptor *value_type = semantic_get_expression_type(analyzer, expr->data.enum_variant.value);
+            
+            if (value_type) {
+                // Create generic instance: Option<T> where T is the value type
+                TypeDescriptor *type_args[] = {value_type};
+                TypeDescriptor *generic_instance = type_descriptor_create_generic_instance(
+                    enum_symbol->type, type_args, 1);
+                
+                if (generic_instance) {
+                    enum_type_to_use = generic_instance;
+                }
+                
+                type_descriptor_release(value_type);
+            }
+        }
+        
+        // Set the type of the enum variant expression to the (possibly specialized) enum type
+        semantic_set_expression_type(analyzer, expr, enum_type_to_use);
         
         return true;
     }

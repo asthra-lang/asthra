@@ -182,7 +182,12 @@ static AsthraTestResult test_option_constructor_inference(AsthraTestContext* con
         "package test;\n"
         "pub fn test_some_inference(none) -> void {\n"
         "    let value: Option<i32> = Option.Some(42);\n"
+        "    let string_val: Option<string> = Option.Some(\"hello\");\n"
+        "    let none_val: Option<i32> = Option.None;\n"
         "    return ();\n"
+        "}\n"
+        "pub fn test_return_inference(none) -> Option<i32> {\n"
+        "    return Option.Some(123);\n"
         "}\n";
     
     // Parse the program
@@ -196,6 +201,8 @@ static AsthraTestResult test_option_constructor_inference(AsthraTestContext* con
         destroy_test_parser(parser);
         return ASTHRA_TEST_FAIL;
     }
+    
+    // DEBUG: removed
     
     // Perform semantic analysis
     SemanticAnalyzer *analyzer = semantic_analyzer_create();
