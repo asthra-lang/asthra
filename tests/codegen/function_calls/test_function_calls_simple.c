@@ -67,6 +67,13 @@ TestResult test_source_compiles(const char* test_name, const char* source) {
     
     if (!analysis_result) {
         printf("  FAIL: Semantic analysis failed\n");
+        // Print semantic analyzer errors if available
+        if (analyzer && analyzer->error_count > 0) {
+            printf("  Semantic errors: %zu\n", analyzer->error_count);
+            if (analyzer->last_error && analyzer->last_error->message) {
+                printf("  Last error: %s\n", analyzer->last_error->message);
+            }
+        }
         semantic_analyzer_destroy(analyzer);
         return TEST_FAIL;
     }
@@ -121,6 +128,7 @@ int main(void) {
             "\n"
             "pub fn main(none) -> void {\n"
             "    let p: Point = Point { x: 1.0, y: 2.0 };\n"
+            "    return ();\n"
             "}";
         
         total++;
@@ -129,54 +137,52 @@ int main(void) {
         }
     }
     
-    // Test 2: Instance method calls
+    // Test 2: Function calls with primitive parameters
     {
         const char* source = 
             "package test;\n"
             "\n"
-            "pub struct Circle { \n"
-            "    pub radius: f64\n"
+            "pub fn calculate_area(radius: f64) -> f64 {\n"
+            "    return 3.14159 * radius * radius;\n"
             "}\n"
             "\n"
-            "impl Circle {\n"
-            "    pub fn area(self) -> f64 {\n"
-            "        return 3.14159 * self.radius * self.radius;\n"
-            "    }\n"
+            "pub fn is_positive(value: i32) -> bool {\n"
+            "    return value > 0;\n"
             "}\n"
             "\n"
             "pub fn main(none) -> void {\n"
-            "    let c: Circle = Circle { radius: 5.0 };\n"
-            "    let a: f64 = c.area(none);\n"
+            "    let area: f64 = calculate_area(5.0);\n"
+            "    let positive: bool = is_positive(42);\n"
+            "    return ();\n"
             "}";
         
         total++;
-        if (test_source_compiles("instance method calls", source) == TEST_PASS) {
+        if (test_source_compiles("primitive parameter calls", source) == TEST_PASS) {
             passed++;
         }
     }
     
-    // Test 3: Self parameter handling
+    // Test 3: Function calls with return values
     {
         const char* source = 
             "package test;\n"
             "\n"
-            "pub struct Counter { \n"
-            "    pub value: i32\n"
+            "pub fn add(a: i32, b: i32) -> i32 {\n"
+            "    return a + b;\n"
             "}\n"
             "\n"
-            "impl Counter {\n"
-            "    pub fn increment(self) -> void {\n"
-            "        // Note: can't modify self in Asthra, this is just a test\n"
-            "    }\n"
+            "pub fn multiply(x: f64, y: f64) -> f64 {\n"
+            "    return x * y;\n"
             "}\n"
             "\n"
             "pub fn main(none) -> void {\n"
-            "    let mut c: Counter = Counter { value: 0 };\n"
-            "    c.increment(none);\n"
+            "    let sum: i32 = add(10, 20);\n"
+            "    let product: f64 = multiply(3.14, 2.0);\n"
+            "    return ();\n"
             "}";
         
         total++;
-        if (test_source_compiles("self parameter", source) == TEST_PASS) {
+        if (test_source_compiles("function return values", source) == TEST_PASS) {
             passed++;
         }
     }

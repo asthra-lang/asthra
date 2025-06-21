@@ -15,6 +15,19 @@
 #include <pthread.h>
 #include "semantic_symbols_aliases.h"
 
+// Local hash function to avoid dependency issues
+static uint32_t symbol_hash(const char *key) {
+    if (!key) return 0;
+    
+    // FNV-1a hash
+    uint32_t hash = 2166136261u;
+    while (*key) {
+        hash ^= (uint8_t)*key++;
+        hash *= 16777619u;
+    }
+    return hash;
+}
+
 // ===============================
 // MODULE ALIAS MANAGEMENT
 // ===============================
@@ -74,12 +87,25 @@ bool symbol_table_add_alias(SymbolTable *table, const char *alias_name,
                            const char *module_path, SymbolTable *module_symbols) {
     if (!table || !alias_name || !module_path) return false;
     
+    // First check for conflicts with existing symbols without holding the lock
+    // This is safe because we'll re-check under the write lock
+    if (symbol_table_lookup_safe(table, alias_name)) {
+        return false; // Alias conflicts with existing symbol
+    }
+    
     pthread_rwlock_wrlock(&table->rwlock);
     
-    // Check for conflicts with existing symbols
-    if (symbol_table_lookup_safe(table, alias_name)) {
-        pthread_rwlock_unlock(&table->rwlock);
-        return false; // Alias conflicts with existing symbol
+    // Re-check for conflicts with existing symbols using local lookup only
+    // to avoid deadlock from recursive locking
+    uint32_t hash = symbol_hash(alias_name);
+    size_t bucket = hash % table->bucket_count;
+    SymbolEntry *entry = table->buckets[bucket];
+    while (entry) {
+        if (strcmp(entry->name, alias_name) == 0) {
+            pthread_rwlock_unlock(&table->rwlock);
+            return false; // Alias conflicts with existing symbol
+        }
+        entry = entry->next;
     }
     
     // Check for conflicts with existing aliases
