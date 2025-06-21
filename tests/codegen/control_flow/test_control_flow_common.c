@@ -25,7 +25,7 @@ ControlFlowAnalysisTestFixture* setup_control_flow_analysis_fixture(void) {
         return NULL;
     }
     
-    fixture->dominator_analysis = dominator_analysis_create();
+    fixture->dominator_analysis = dominator_analysis_create(fixture->cfg);
     if (!fixture->dominator_analysis) {
         instruction_buffer_destroy(fixture->instruction_buffer);
         control_flow_graph_destroy(fixture->cfg);
@@ -33,7 +33,7 @@ ControlFlowAnalysisTestFixture* setup_control_flow_analysis_fixture(void) {
         return NULL;
     }
     
-    fixture->loop_analysis = loop_analysis_create();
+    fixture->loop_analysis = loop_analysis_create(fixture->cfg);
     if (!fixture->loop_analysis) {
         dominator_analysis_destroy(fixture->dominator_analysis);
         instruction_buffer_destroy(fixture->instruction_buffer);

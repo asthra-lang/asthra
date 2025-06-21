@@ -71,9 +71,9 @@ BasicBlock* control_flow_graph_get_entry_block(ControlFlowGraph* cfg);
 size_t basic_block_get_successor_count(BasicBlock* block);
 bool control_flow_graph_has_back_edges(ControlFlowGraph* cfg);
 
-DominatorAnalysis* dominator_analysis_create(void);
+DominatorAnalysis* dominator_analysis_create(ControlFlowGraph* cfg);
 void dominator_analysis_destroy(DominatorAnalysis* da);
-LoopAnalysis* loop_analysis_create(void);
+LoopAnalysis* loop_analysis_create(ControlFlowGraph* cfg);
 void loop_analysis_destroy(LoopAnalysis* la);
 size_t loop_analysis_get_loop_count(LoopAnalysis* la);
 bool loop_analysis_has_natural_loops(LoopAnalysis* la);
