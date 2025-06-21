@@ -1,0 +1,84 @@
+package handlers;
+
+import "models";
+import "utils";
+
+pub struct ApiResponse {
+    pub status: i32,
+    pub message: string,
+    pub data: string,
+}
+
+pub fn handle_get_user(user_id: i32) -> ApiResponse {
+    utils.log_info("Handling GET user request for ID: " + string(user_id));
+    
+    if user_id <= 0 {
+        return ApiResponse {
+            status: 400,
+            message: "Invalid user ID",
+            data: "",
+        };
+    }
+    
+    // Simulate successful user retrieval
+    return ApiResponse {
+        status: 200,
+        message: "User found",
+        data: "user_" + string(user_id),
+    };
+}
+
+pub fn handle_create_user(username: string, email: string) -> ApiResponse {
+    utils.log_info("Handling CREATE user request for: " + username);
+    
+    if username.len == 0 || email.len == 0 {
+        return ApiResponse {
+            status: 400,
+            message: "Username and email are required",
+            data: "",
+        };
+    }
+    
+    let new_user: models.User = models.create_user(username, email);
+    let is_valid: bool = models.validate_user(new_user);
+    
+    if !is_valid {
+        return ApiResponse {
+            status: 400,
+            message: "Invalid user data",
+            data: "",
+        };
+    }
+    
+    return ApiResponse {
+        status: 201,
+        message: "User created successfully",
+        data: "user_" + string(models.get_user_id(new_user)),
+    };
+}
+
+pub fn handle_update_user(user_id: i32, username: string, email: string) -> ApiResponse {
+    utils.log_info("Handling UPDATE user request for ID: " + string(user_id));
+    
+    if user_id <= 0 {
+        return create_error_response(400, "Invalid user ID");
+    }
+    
+    if username.len == 0 && email.len == 0 {
+        return create_error_response(400, "At least one field must be provided");
+    }
+    
+    return ApiResponse {
+        status: 200,
+        message: "User updated successfully",
+        data: "user_" + string(user_id),
+    };
+}
+
+fn create_error_response(status: i32, message: string) -> ApiResponse {
+    return ApiResponse {
+        status: status,
+        message: message,
+        data: "",
+    };
+} 

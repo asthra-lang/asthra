@@ -1,0 +1,435 @@
+// Asthra Hash Package Demo
+// Comprehensive demonstration of stdlib/hash functionality
+package main;
+
+import "stdlib/hash";
+
+// Demo data structures
+pub struct User {
+    pub id: u32,
+    pub username: string,
+    pub email: string,
+}
+
+pub struct Document {
+    pub title: string,
+    pub content: string,
+    pub tags: []string,
+}
+
+// =============================================================================
+// Basic Hashing Examples
+// =============================================================================
+
+pub fn demo_basic_hashing(none) -> void {
+    log("=== Basic Hashing Demo ===");
+    
+    // Simple string hashing with default settings
+    let simple_hash: u64 = hash.hash_string("Hello, Asthra!");
+    log("Simple hash: " + string(simple_hash));
+    
+    // Hash binary data
+    let data: []u8 = [72, 101, 108, 108, 111]; // "Hello" in bytes
+    let data_hash: u64 = hash.hash(data);
+    log("Binary data hash: " + string(data_hash));
+    
+    // Demonstrate deterministic vs random hashing
+    let deterministic_key: hash.SipHashKey = hash.key_from_u64(0x123456789ABCDEF0ULL, 0xFEDCBA9876543210ULL);
+    let det_hash1: u64 = hash.hash_string("test", deterministic_key);
+    let det_hash2: u64 = hash.hash_string("test", deterministic_key);
+    log("Deterministic hash 1: " + string(det_hash1));
+    log("Deterministic hash 2: " + string(det_hash2));
+    log("Hashes match: " + string(det_hash1 == det_hash2));
+    
+    log("");
+}
+
+// =============================================================================
+// SipHash Variants Demo
+// =============================================================================
+
+pub fn demo_siphash_variants(none) -> void {
+    log("=== SipHash Variants Demo ===");
+    
+    let key: hash.SipHashKey = hash.generate_key(none);
+    let test_data: string = "Performance test data for SipHash variants";
+    let test_bytes: []u8 = string_to_bytes(test_data);
+    
+    // Test different SipHash variants
+    let hash_13: u64 = hash.siphash_13(test_bytes, key);
+    let hash_24: u64 = hash.siphash_24(test_bytes, key);
+    let hash_48: u64 = hash.siphash_48(test_bytes, key);
+    
+    log("SipHash-1-3 (fast): " + string(hash_13));
+    log("SipHash-2-4 (standard): " + string(hash_24));
+    log("SipHash-4-8 (high-security): " + string(hash_48));
+    
+    // Show they produce different results
+    log("Variants produce different hashes: " + string(hash_13 != hash_24 && hash_24 != hash_48));
+    
+    log("");
+}
+
+// =============================================================================
+// Configuration-Based Hashing Demo
+// =============================================================================
+
+pub fn demo_configuration_hashing(none) -> void {
+    log("=== Configuration-Based Hashing Demo ===");
+    
+    let test_data: string = "Configuration test data";
+    
+    // Test different hash function configurations
+    let siphash_config: hash.HashConfig = hash.config_with_function(hash.HashFunction.SipHash_2_4);
+    let fnv_config: hash.HashConfig = hash.config_with_function(hash.HashFunction.FNV_1a);
+    let custom_seed_config: hash.HashConfig = hash.config_with_seed(hash.HashFunction.SipHash_2_4, 0xDEADBEEFULL);
+    
+    // Hash with different configurations
+    match hash.hash_string_config(test_data, siphash_config) {
+        hash.HashResult.Ok(result) => {
+            log("SipHash-2-4 result: " + string(result));
+        },
+        hash.HashResult.InvalidInput(msg) => {
+            log("SipHash error: " + msg);
+        },
+        hash.HashResult.InternalError(msg) => {
+            log("SipHash internal error: " + msg);
+        },
+    }
+    
+    match hash.hash_string_config(test_data, fnv_config) {
+        hash.HashResult.Ok(result) => {
+            log("FNV-1a result: " + string(result));
+        },
+        hash.HashResult.InvalidInput(msg) => {
+            log("FNV error: " + msg);
+        },
+        hash.HashResult.InternalError(msg) => {
+            log("FNV internal error: " + msg);
+        },
+    }
+    
+    match hash.hash_string_config(test_data, custom_seed_config) {
+        hash.HashResult.Ok(result) => {
+            log("Custom seed result: " + string(result));
+        },
+        hash.HashResult.InvalidInput(msg) => {
+            log("Custom seed error: " + msg);
+        },
+        hash.HashResult.InternalError(msg) => {
+            log("Custom seed internal error: " + msg);
+        },
+    }
+    
+    log("");
+}
+
+// =============================================================================
+// Hash Table Usage Demo
+// =============================================================================
+
+pub fn demo_hash_table_usage(none) -> void {
+    log("=== Hash Table Usage Demo ===");
+    
+    // Create hash table hasher with DoS protection
+    let secure_hasher: hash.TableHasher = hash.new_table_hasher(none);
+    let fast_hasher: hash.TableHasher = hash.new_table_hasher_fast(none);
+    let mut stats: hash.TableHashStats = hash.new_table_stats(none);
+    
+    // Sample users for hash table keys
+    let users: []User = [
+        User { id: 1, username: "alice", email: "alice@example.com" },
+        User { id: 2, username: "bob", email: "bob@example.com" },
+        User { id: 3, username: "charlie", email: "charlie@example.com" },
+    ];
+    
+    log("Hashing user data for hash table storage:");
+    
+    for i in 0..users.len {
+        let user_key: string = users[i].username;
+        
+        // Hash with secure hasher (DoS protected)
+        let secure_hash: u64 = hash.table_hash_with_stats(
+            secure_hasher,
+            string_to_bytes(user_key),
+            &mut stats
+        );
+        
+        // Hash with fast hasher (no DoS protection)
+        let fast_hash: u64 = hash.table_hash_string(fast_hasher, user_key);
+        
+        log("User '" + user_key + "' - Secure: " + string(secure_hash) + ", Fast: " + string(fast_hash));
+    }
+    
+    // Show DoS protection statistics
+    log("Hash table statistics:");
+    log("  Total hashes: " + string(stats.total_hashes));
+    log("  Protected hashes: " + string(stats.protected_hashes));
+    log("  DoS protection ratio: " + string(hash.get_protection_ratio(stats)));
+    
+    // Test DoS attack detection
+    if hash.detect_dos_attack(stats, 0.75) {
+        log("  ⚠️  Potential DoS attack detected!");
+    } else {
+        log("  ✅ No DoS attack detected");
+    }
+    
+    log("");
+}
+
+// =============================================================================
+// Streaming Interface Demo
+// =============================================================================
+
+pub fn demo_streaming_interface(none) -> void {
+    log("=== Streaming Interface Demo ===");
+    
+    let key: hash.SipHashKey = hash.generate_key(none);
+    
+    // Create streaming context
+    let mut ctx: hash.SipHashContext = hash.new_context(key, hash.SipHashVariant.SipHash_2_4);
+    
+    // Simulate processing a large document in chunks
+    let document_chunks: []string = [
+        "The quick brown fox ",
+        "jumps over the lazy dog. ",
+        "This is a test of the ",
+        "streaming hash interface ",
+        "in the Asthra programming language."
+    ];
+    
+    log("Processing document in chunks:");
+    for i in 0..document_chunks.len {
+        log("  Chunk " + string(i + 1) + ": '" + document_chunks[i] + "'");
+        hash.update(&mut ctx, string_to_bytes(document_chunks[i]));
+    }
+    
+    // Finalize and get the hash
+    let streaming_hash: u64 = hash.finalize(&mut ctx);
+    log("Final streaming hash: " + string(streaming_hash));
+    
+    // Compare with one-shot hashing
+    let full_document: string = "The quick brown fox jumps over the lazy dog. This is a test of the streaming hash interface in the Asthra programming language.";
+    let oneshot_hash: u64 = hash.hash_string(full_document, key);
+    log("One-shot hash: " + string(oneshot_hash));
+    log("Hashes match: " + string(streaming_hash == oneshot_hash));
+    
+    log("");
+}
+
+// =============================================================================
+// FNV Hashing Demo
+// =============================================================================
+
+pub fn demo_fnv_hashing(none) -> void {
+    log("=== FNV Hashing Demo ===");
+    
+    let test_strings: []string = [
+        "hello",
+        "world",
+        "asthra",
+        "programming",
+        "language"
+    ];
+    
+    log("FNV-1a hash results:");
+    for i in 0..test_strings.len {
+        let fnv64: u64 = hash.fnv1a_64_string(test_strings[i]);
+        let fnv32: u32 = hash.fnv1a_32_string(test_strings[i]);
+        log("  '" + test_strings[i] + "' - FNV64: " + string(fnv64) + ", FNV32: " + string(fnv32));
+    }
+    
+    // Test FNV with custom offset basis
+    let custom_basis: u64 = 0xAAAAAAAAAAAAAAAAULL;
+    let custom_hash: u64 = hash.fnv1a_64_with_basis(string_to_bytes("custom"), custom_basis);
+    log("Custom basis hash: " + string(custom_hash));
+    
+    log("");
+}
+
+// =============================================================================
+// Batch Processing Demo
+// =============================================================================
+
+pub fn demo_batch_processing(none) -> void {
+    log("=== Batch Processing Demo ===");
+    
+    let documents: []Document = [
+        Document { 
+            title: "Introduction to Asthra",
+            content: "Asthra is a modern systems programming language...",
+            tags: ["programming", "systems", "tutorial"]
+        },
+        Document {
+            title: "Hash Functions in Cryptography", 
+            content: "Hash functions are fundamental to modern cryptography...",
+            tags: ["cryptography", "security", "hashing"]
+        },
+        Document {
+            title: "Performance Optimization",
+            content: "Optimizing software performance requires careful analysis...",
+            tags: ["performance", "optimization", "engineering"]
+        }
+    ];
+    
+    // Prepare data for batch hashing
+    let mut doc_titles: []string = [];
+    for i in 0..documents.len {
+        doc_titles.push(documents[i].title);
+    }
+    
+    // Batch hash the titles
+    let config: hash.HashConfig = hash.config_with_function(hash.HashFunction.SipHash_2_4);
+    
+    match hash.hash_string_batch(doc_titles, config) {
+        Result.Ok(hashes) => {
+            log("Batch hashing results:");
+            for i in 0..hashes.len {
+                log("  Document " + string(i + 1) + " ('" + doc_titles[i] + "'): " + string(hashes[i]));
+            }
+        },
+        Result.Err(error) => {
+            log("Batch hashing failed: " + error);
+        },
+    }
+    
+    log("");
+}
+
+// =============================================================================
+// Hash Validation Demo
+// =============================================================================
+
+pub fn demo_hash_validation(none) -> void {
+    log("=== Hash Validation Demo ===");
+    
+    let test_data: []u8 = string_to_bytes("validation test data");
+    let config: hash.HashConfig = hash.config_with_seed(hash.HashFunction.SipHash_2_4, 0x123456789ABCDEF0ULL);
+    
+    // Compute expected hash
+    match hash.hash_with_config(test_data, config) {
+        hash.HashResult.Ok(expected_hash) => {
+            log("Expected hash: " + string(expected_hash));
+            
+            // Validate against the same data (should pass)
+            let is_valid: bool = hash.validate_hash(test_data, expected_hash, config);
+            log("Validation result (same data): " + string(is_valid));
+            
+            // Validate against different data (should fail)
+            let different_data: []u8 = string_to_bytes("different data");
+            let is_invalid: bool = hash.validate_hash(different_data, expected_hash, config);
+            log("Validation result (different data): " + string(is_invalid));
+            
+            // Demonstrate constant-time comparison
+            let hash1: u64 = expected_hash;
+            let hash2: u64 = expected_hash;
+            let hash3: u64 = expected_hash + 1;
+            
+            log("Hash comparison (same): " + string(hash.compare_hashes(hash1, hash2)));
+            log("Hash comparison (different): " + string(hash.compare_hashes(hash1, hash3)));
+        },
+        hash.HashResult.InvalidInput(msg) => {
+            log("Validation demo failed: " + msg);
+        },
+        hash.HashResult.InternalError(msg) => {
+            log("Validation demo internal error: " + msg);
+        },
+    }
+    
+    log("");
+}
+
+// =============================================================================
+// Performance Benchmarking Demo
+// =============================================================================
+
+pub fn demo_performance_benchmarking(none) -> void {
+    log("=== Performance Benchmarking Demo ===");
+    
+    // Benchmark different hash functions
+    let data_size: usize = 1024;  // 1KB test data
+    let iterations: u32 = 1000;   // 1000 iterations
+    
+    log("Benchmarking hash functions (1KB data, 1000 iterations):");
+    
+    // Benchmark SipHash-1-3 (fast)
+    let siphash13_result: hash.BenchmarkResult = hash.benchmark_hash_function(
+        hash.HashFunction.SipHash_1_3,
+        data_size,
+        iterations
+    );
+    
+    log("SipHash-1-3 Performance:");
+    log("  Hashes/second: " + string(siphash13_result.hashes_per_second));
+    log("  MB/second: " + string(siphash13_result.bytes_per_second / 1_000_000.0));
+    log("  Total time: " + string(siphash13_result.total_time_ns / 1_000_000) + " ms");
+    
+    // Benchmark SipHash-2-4 (standard)
+    let siphash24_result: hash.BenchmarkResult = hash.benchmark_hash_function(
+        hash.HashFunction.SipHash_2_4,
+        data_size,
+        iterations
+    );
+    
+    log("SipHash-2-4 Performance:");
+    log("  Hashes/second: " + string(siphash24_result.hashes_per_second));
+    log("  MB/second: " + string(siphash24_result.bytes_per_second / 1_000_000.0));
+    log("  Total time: " + string(siphash24_result.total_time_ns / 1_000_000) + " ms");
+    
+    // Benchmark FNV-1a
+    let fnv_result: hash.BenchmarkResult = hash.benchmark_hash_function(
+        hash.HashFunction.FNV_1a,
+        data_size,
+        iterations
+    );
+    
+    log("FNV-1a Performance:");
+    log("  Hashes/second: " + string(fnv_result.hashes_per_second));
+    log("  MB/second: " + string(fnv_result.bytes_per_second / 1_000_000.0));
+    log("  Total time: " + string(fnv_result.total_time_ns / 1_000_000) + " ms");
+    
+    // Performance comparison
+    log("Performance Comparison:");
+    log("  SipHash-1-3 vs SipHash-2-4: " + string(siphash13_result.hashes_per_second / siphash24_result.hashes_per_second) + "x faster");
+    log("  FNV-1a vs SipHash-2-4: " + string(fnv_result.hashes_per_second / siphash24_result.hashes_per_second) + "x faster");
+    
+    log("");
+}
+
+// =============================================================================
+// Main Function
+// =============================================================================
+
+pub fn main(none) -> i32 {
+    log("======================================================================");
+    log("Asthra Hash Package Comprehensive Demo");
+    log("Demonstrating stdlib/hash functionality");
+    log("======================================================================");
+    log("");
+    
+    // Run all demos
+    demo_basic_hashing(none);
+    demo_siphash_variants(none);
+    demo_configuration_hashing(none);
+    demo_hash_table_usage(none);
+    demo_streaming_interface(none);
+    demo_fnv_hashing(none);
+    demo_batch_processing(none);
+    demo_hash_validation(none);
+    demo_performance_benchmarking(none);
+    
+    log("======================================================================");
+    log("Hash Package Demo Complete!");
+    log("======================================================================");
+    
+    return 0;
+}
+
+// External function declarations
+extern fn log(message: string) -> void;
+extern fn string(value: u64) -> string;
+extern fn string(value: u32) -> string;
+extern fn string(value: f64) -> string;
+extern fn string(value: usize) -> string;
+extern fn string(value: bool) -> string;
+extern fn string_to_bytes(s: string) -> []u8; 

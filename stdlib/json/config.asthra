@@ -1,0 +1,76 @@
+// Asthra Standard Library - JSON Configuration Module
+// Configuration structures for parsing and serialization
+
+package stdlib::json;
+
+// ============================================================================
+// Configuration Structures
+// ============================================================================
+
+// JSON parsing configuration (maintained for compatibility)
+pub struct JSONConfig {
+    max_depth: usize,                    // Maximum nesting depth (default: 64)
+    max_size: usize,                     // Maximum total size in bytes (default: 16MB)
+    allow_comments: bool,                // Allow // and /* */ comments (default: false)
+    allow_trailing_commas: bool,         // Allow trailing commas (default: false)
+    strict_numbers: bool,                // Strict number parsing (default: true)
+    preserve_order: bool                 // Preserve object key order (default: false)
+}
+
+// JSON serialization configuration (maintained for compatibility)
+pub struct JSONSerializeConfig {
+    pretty_print: bool,                  // Pretty print with indentation (default: false)
+    indent_size: usize,                  // Spaces per indent level (default: 2)
+    escape_unicode: bool,                // Escape non-ASCII as \uXXXX (default: false)
+    sort_keys: bool,                     // Sort object keys (default: false)
+    compact_arrays: bool                 // Compact array formatting (default: false)
+}
+
+// ============================================================================
+// Default Configuration Functions
+// ============================================================================
+
+// Default parsing configuration
+pub fn default_config(none) -> JSONConfig {
+    return JSONConfig {
+        max_depth: 64,
+        max_size: 16777216,              // 16MB
+        allow_comments: false,
+        allow_trailing_commas: false,
+        strict_numbers: true,
+        preserve_order: false
+    };
+}
+
+// Default serialization configuration
+pub fn default_serialize_config(none) -> JSONSerializeConfig {
+    return JSONSerializeConfig {
+        pretty_print: false,
+        indent_size: 2,
+        escape_unicode: false,
+        sort_keys: false,
+        compact_arrays: false
+    };
+}
+
+// Create pretty print configuration
+pub fn pretty_print_config(none) -> JSONSerializeConfig {
+    return JSONSerializeConfig {
+        pretty_print: true,
+        indent_size: 2,
+        escape_unicode: false,
+        sort_keys: false,
+        compact_arrays: false
+    };
+}
+
+// Create compact configuration
+pub fn compact_config(none) -> JSONSerializeConfig {
+    return JSONSerializeConfig {
+        pretty_print: false,
+        indent_size: 0,
+        escape_unicode: false,
+        sort_keys: false,
+        compact_arrays: true
+    };
+} 

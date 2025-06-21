@@ -1,0 +1,10 @@
+// Asthra Standard Library - Hash Package Entry Point
+package stdlib::hash;
+
+// Package metadata
+pub const PACKAGE_NAME: string = "stdlib::hash";
+pub const PACKAGE_VERSION: string = "1.0.0";
+pub const PACKAGE_DESCRIPTION: string = "Hash functions for data structures and security";
+
+// NOTE: All types and functions are accessible directly through the hash module
+// No re-exports needed - everything is in the same package stdlib::hash 

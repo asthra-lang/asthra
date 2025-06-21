@@ -1,0 +1,535 @@
+// Asthra File System Module Example
+// Demonstrates comprehensive file and directory operations with robust error handling
+
+package main;
+
+// Import the improved File System module
+import "stdlib/fs";
+import "stdlib/io";
+
+fn main(none) -> i32 {
+    io.print_line("=== Asthra File System Module Example ===");
+    
+    // Example 1: Basic file operations with comprehensive error handling
+    let basic_result: auto  // Manual review needed = demonstrate_basic_file_operations();
+    match basic_result {
+        Result.Ok(_) => {
+            io.print_line("✅ Basic file operations completed successfully");
+        },
+        Result.Err(error) => {
+            let error_msg: auto  // Manual review needed = fs.handle_fs_error(error);
+            io.eprint_line("❌ Basic file operations failed: " + error_msg);
+            return 1;
+        }
+    }
+    
+    // Example 2: Advanced file handling with options
+    let advanced_result: auto  // Manual review needed = demonstrate_advanced_file_handling();
+    match advanced_result {
+        Result.Ok(_) => {
+            io.print_line("✅ Advanced file handling completed successfully");
+        },
+        Result.Err(error) => {
+            let error_msg: auto  // Manual review needed = fs.handle_fs_error(error);
+            io.eprint_line("❌ Advanced file handling failed: " + error_msg);
+            return 1;
+        }
+    }
+    
+    // Example 3: Directory operations and traversal
+    let directory_result: auto  // Manual review needed = demonstrate_directory_operations();
+    match directory_result {
+        Result.Ok(_) => {
+            io.print_line("✅ Directory operations completed successfully");
+        },
+        Result.Err(error) => {
+            let error_msg: auto  // Manual review needed = fs.handle_fs_error(error);
+            io.eprint_line("❌ Directory operations failed: " + error_msg);
+            return 1;
+        }
+    }
+    
+    // Example 4: Error handling patterns
+    demonstrate_error_handling_patterns();
+    
+    io.print_line("\n=== File System Example Complete ===");
+    return 0;
+}
+
+// Demonstrate basic file operations with improved error handling
+fn demonstrate_basic_file_operations(none) -> Result<void, fs.FSError> {
+    io.print_line("\n--- Basic File Operations ---");
+    
+    // Write content to file with explicit error handling
+    let content: string = "Hello, Asthra File System!\nThis is a test file with multiple lines.\nLine 3 with special characters: áéíóú";
+    let write_result: Result<void, FSError> = fs.write_string("test_basic.txt", content);
+    match write_result {
+        Result.Ok(_) => {
+            io.print_line("✓ File written successfully");
+        },
+        Result.Err(error) => {
+            return Result.Err(error);
+        }
+    }
+    
+    // Read content back with UTF-8 validation
+    let read_result: Result<string, FSError> = fs.read_to_string("test_basic.txt");
+    match read_result {
+        Result.Ok(read_content) => {
+            io.print_line("✓ File read successfully");
+            io.print_line("Content preview: " + read_content.substring(0, 50) + "...");
+        },
+        Result.Err(fs.FSError.InvalidUtf8(bytes)) => {
+            io.eprint_line("⚠️ File contains invalid UTF-8 sequences");
+            return Result.Err(fs.FSError.InvalidUtf8(bytes));
+        },
+        Result.Err(error) => {
+            return Result.Err(error);
+        }
+    }
+    
+    // Copy file with options
+    let copy_options: auto  // Manual review needed = fs.CopyOptions {;
+        overwrite: true,
+        preserve_permissions: true,
+        preserve_timestamps: true,
+        follow_symlinks: true,
+        verify_checksum: false
+    };
+    
+    let copy_result: auto  // Manual review needed = fs.copy_with_options("test_basic.txt", "test_basic_copy.txt", copy_options);
+    match copy_result {
+        Result.Ok(bytes_copied) => {
+            io.print_line("✓ File copied successfully (" + bytes_copied + " bytes)");
+        },
+        Result.Err(error) => {
+            return Result.Err(error);
+        }
+    }
+    
+    // Get file metadata
+    let metadata_result: Result<FileMetadata, FSError> = fs.metadata("test_basic.txt");
+    match metadata_result {
+        Result.Ok(metadata) => {
+            io.print_line("✓ File metadata retrieved:");
+            io.print_line("  Size: " + metadata.size + " bytes");
+            io.print_line("  Type: " + format_file_type(metadata.file_type));
+            io.print_line("  Read-only: " + metadata.readonly);
+            io.print_line("  Permissions: " + format_permissions(metadata.permissions));
+        },
+        Result.Err(error) => {
+            return Result.Err(error);
+        }
+    }
+    
+    // Append to file
+    let append_result: auto  // Manual review needed = fs.append_string("test_basic.txt", "\nAppended line");
+    match append_result {
+        Result.Ok(_) => {
+            io.print_line("✓ Content appended successfully");
+        },
+        Result.Err(error) => {
+            return Result.Err(error);
+        }
+    }
+    
+    // Clean up
+    match fs.remove_file("test_basic.txt") {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    match fs.remove_file("test_basic_copy.txt") {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    io.print_line("✓ Cleanup completed");
+    
+    return Result.Ok(());
+}
+
+// Demonstrate advanced file handling with File handles and options
+fn demonstrate_advanced_file_handling(none) -> Result<void, fs.FSError> {
+    io.print_line("\n--- Advanced File Handling ---");
+    
+    // Open file with advanced options
+    let open_options: auto  // Manual review needed = fs.OpenOptions {;
+        mode: fs.OpenMode.ReadWrite,
+        create: true,
+        create_new: false,
+        truncate: false,
+        append: false,
+        sync: false,
+        permissions: Some(fs.permissions_readwrite())
+    };
+    
+    let file_result: auto  // Manual review needed = fs.open_with_options("test_advanced.txt", open_options);
+    match file_result {
+        Result.Ok(file) => {
+            io.print_line("✓ File opened with advanced options");
+            
+            // Write data using file handle
+            let write_result: Result<void, FSError> = file.write_string("Line 1: Initial content\n");
+            match write_result {
+                Result.Ok(bytes_written) => {
+                    io.print_line("✓ Wrote " + bytes_written + " bytes");
+                },
+                Result.Err(error) => {
+                    file.close();
+                    return Result.Err(error);
+                }
+            }
+            
+            // Write more data
+            match file.write_string("Line 2: Additional content\n") {
+                Result.Ok(_) => {}
+                Result.Err(e) => return Result.Err(e)
+            }
+            match file.write_string("Line 3: Final content\n") {
+                Result.Ok(_) => {}
+                Result.Err(e) => return Result.Err(e)
+            }
+            
+            // Flush to ensure data is written
+            match file.flush() {
+                Result.Ok(_) => {}
+                Result.Err(e) => return Result.Err(e)
+            }
+            
+            // Seek to beginning
+            let seek_result: auto  // Manual review needed = file.seek(fs.SeekFrom.Start(0));
+            match seek_result {
+                Result.Ok(position) => {
+                    io.print_line("✓ Seeked to position: " + position);
+                },
+                Result.Err(error) => {
+                    file.close();
+                    return Result.Err(error);
+                }
+            }
+            
+            // Read content using file handle
+            let content_result: Result<string, FSError> = file.read_to_string();
+            match content_result {
+                Result.Ok(content) => {
+                    io.print_line("✓ Read content from file handle:");
+                    let lines: auto  // Manual review needed = content.split("\n");
+                    for line in lines {
+                        if line.len > 0 {
+                            io.print_line("  " + line);
+                        }
+                    }
+                },
+                Result.Err(error) => {
+                    file.close();
+                    return Result.Err(error);
+                }
+            }
+            
+            // Close file explicitly
+            let close_result: auto  // Manual review needed = file.close();
+            match close_result {
+                Result.Ok(_) => {
+                    io.print_line("✓ File closed successfully");
+                },
+                Result.Err(error) => {
+                    return Result.Err(error);
+                }
+            }
+        },
+        Result.Err(error) => {
+            return Result.Err(error);
+        }
+    }
+    
+    // Demonstrate byte operations
+    let binary_data: []u8 = [0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x20, 0x57, 0x6F, 0x72, 0x6C, 0x64]; // "Hello World"
+    match fs.write_bytes("test_binary.bin", binary_data) {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    
+    let read_binary_result: Result<[]u8, FSError> = fs.read_to_bytes("test_binary.bin");
+    match read_binary_result {
+        Result.Ok(read_data) => {
+            io.print_line("✓ Binary file operations successful");
+            io.print_line("  Original size: " + binary_data.len + " bytes");
+            io.print_line("  Read size: " + read_data.len + " bytes");
+            
+            // Verify data integrity
+            let mut data_matches = true;
+            if binary_data.len == read_data.len {
+                let mut i: usize = 0;
+                while i < binary_data.len {
+                    if binary_data[i] != read_data[i] {
+                        data_matches = false;
+                        break;
+                    }
+                    i = i + 1;
+                }
+            } else {
+                data_matches = false;
+            }
+            
+            if data_matches {
+                io.print_line("  ✓ Data integrity verified");
+            } else {
+                io.print_line("  ❌ Data integrity check failed");
+            }
+        },
+        Result.Err(error) => {
+            return Result.Err(error);
+        }
+    }
+    
+    // Clean up
+    match fs.remove_file("test_advanced.txt") {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    match fs.remove_file("test_binary.bin") {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    io.print_line("✓ Advanced file handling cleanup completed");
+    
+    return Result.Ok(());
+}
+
+// Demonstrate directory operations and traversal
+fn demonstrate_directory_operations(none) -> Result<void, fs.FSError> {
+    io.print_line("\n--- Directory Operations ---");
+    
+    // Create directory structure
+    match fs.create_dir_all("test_dir/nested/deep/structure") {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    io.print_line("✓ Created nested directory structure");
+    
+    // Create files in different directories
+    match fs.write_string("test_dir/file1.txt", "Content of file 1") {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    match fs.write_string("test_dir/file2.txt", "Content of file 2") {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    match fs.write_string("test_dir/nested/file3.txt", "Content of file 3") {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    match fs.write_string("test_dir/nested/deep/file4.txt", "Content of file 4") {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    match fs.write_string("test_dir/nested/deep/structure/file5.txt", "Content of file 5") {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    io.print_line("✓ Created test files in directory structure");
+    
+    // Read directory contents (simple)
+    let entries_result: auto  // Manual review needed = fs.read_dir("test_dir");
+    match entries_result {
+        Result.Ok(entries) => {
+            io.print_line("✓ Directory contents (simple read):");
+            for entry in entries {
+                let type_str: auto  // Manual review needed = format_file_type(entry.file_type);
+                io.print_line("  " + entry.name + " (" + type_str + ")");
+            }
+        },
+        Result.Err(error) => {
+            return Result.Err(error);
+        }
+    }
+    
+    // Read directory with options (recursive)
+    let dir_options: auto  // Manual review needed = fs.DirOptions {;
+        recursive: true,
+        include_hidden: false,
+        follow_symlinks: true,
+        max_depth: Some(10),
+        load_metadata: true
+    };
+    
+    let iterator_result: auto  // Manual review needed = fs.read_dir_with_options("test_dir", dir_options);
+    match iterator_result {
+        Result.Ok(iterator) => {
+            io.print_line("✓ Recursive directory traversal:");
+            
+            while iterator.has_next() {
+                let entry_result: auto  // Manual review needed = iterator.next();
+                match entry_result {
+                    Result.Ok(Some(entry)) => {
+                        let type_str: auto  // Manual review needed = format_file_type(entry.file_type);
+                        let relative_path: auto  // Manual review needed = entry.path.replace("test_dir/", "");
+                        io.print_line("  " + relative_path + " (" + type_str + ")");
+                        
+                        // Show metadata if available
+                        match entry.metadata {
+                            Some(metadata) => {
+                                io.print_line("    Size: " + metadata.size + " bytes");
+                            },
+                            None => {}
+                        }
+                    },
+                    Result.Ok(None) => {
+                        break;
+                    },
+                    Result.Err(error) => {
+                        io.eprint_line("Error reading directory entry: " + fs.handle_fs_error(error));
+                        break;
+                    }
+                }
+            }
+            
+            match iterator.close() {
+                Result.Ok(_) => {}
+                Result.Err(e) => return Result.Err(e)
+            }
+        },
+        Result.Err(error) => {
+            return Result.Err(error);
+        }
+    }
+    
+    // Demonstrate directory existence checks
+    if fs.exists("test_dir") {
+        io.print_line("✓ Directory existence check passed");
+    }
+    
+    if fs.is_dir("test_dir") {
+        io.print_line("✓ Directory type check passed");
+    }
+    
+    if fs.is_file("test_dir/file1.txt") {
+        io.print_line("✓ File type check passed");
+    }
+    
+    // Clean up (remove directory recursively)
+    match fs.remove_dir_all("test_dir") {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    io.print_line("✓ Directory cleanup completed");
+    
+    return Result.Ok(());
+}
+
+// Demonstrate comprehensive error handling patterns
+fn demonstrate_error_handling_patterns(none) -> void {
+    io.print_line("\n--- Error Handling Patterns ---");
+    
+    // Example 1: Handling file not found
+    let read_result: Result<string, FSError> = fs.read_to_string("nonexistent_file.txt");
+    match read_result {
+        Result.Ok(_) => {
+            io.print_line("Unexpected: File should not exist");
+        },
+        Result.Err(fs.FSError.NotFound(path)) => {
+            io.print_line("✓ Correctly handled file not found: " + path);
+        },
+        Result.Err(error) => {
+            io.print_line("Unexpected error: " + fs.handle_fs_error(error));
+        }
+    }
+    
+    // Example 2: Handling permission denied (simulated)
+    io.print_line("✓ Permission denied errors would be handled similarly");
+    
+    // Example 3: Handling invalid UTF-8
+    io.print_line("✓ Invalid UTF-8 errors include problematic byte sequences");
+    
+    // Example 4: Handling directory vs file confusion
+    fs.write_string("test_file.txt", "test content");
+    let dir_result: auto  // Manual review needed = fs.create_dir("test_file.txt");
+    match dir_result {
+        Result.Ok(_) => {
+            io.print_line("Unexpected: Should not create directory over file");
+        },
+        Result.Err(fs.FSError.IsFile(path)) => {
+            io.print_line("✓ Correctly detected file vs directory conflict: " + path);
+        },
+        Result.Err(error) => {
+            io.print_line("Different error: " + fs.handle_fs_error(error));
+        }
+    }
+    
+    // Example 5: Safe file operations with automatic cleanup
+    let safe_result: auto  // Manual review needed = safe_file_operation("test_file.txt", fn(file: fs.File) -> Result<string, fs.FSError> {;
+        return file.read_to_string();
+    });
+    
+    match safe_result {
+        Result.Ok(content) => {
+            io.print_line("✓ Safe file operation completed: " + content.len + " bytes read");
+        },
+        Result.Err(error) => {
+            io.print_line("Safe file operation failed: " + fs.handle_fs_error(error));
+        }
+    }
+    
+    // Clean up
+    fs.remove_file("test_file.txt");
+    
+    io.print_line("✓ Error handling patterns demonstration completed");
+}
+
+// Helper function for safe file operations with automatic cleanup
+fn safe_file_operation<T>(path: string, operation: fn(fs.File) -> Result<T, fs.FSError>) -> Result<T, fs.FSError> {
+    let file_result: Result<File, FSError> = fs.open(path, fs.OpenMode.Read);
+    match file_result {
+        Result.Ok(file) => {
+            let result: auto  // Manual review needed = operation(file);
+            
+            // Always attempt to close the file
+            let close_result: auto  // Manual review needed = file.close();
+            match close_result {
+                Result.Err(close_error) => {
+                    // Log close error but return original result
+                    io.eprint_line("Warning: Failed to close file: " + fs.handle_fs_error(close_error));
+                },
+                Result.Ok(_) => {}
+            }
+            
+            return result;
+        },
+        Result.Err(error) => return Result.Err(error)
+    }
+}
+
+// Helper functions for formatting output
+fn format_file_type(file_type: fs.FileType) -> string {
+    match file_type {
+        fs.FileType.File => return "File"
+        fs.FileType.Directory => return "Directory"
+        fs.FileType.Symlink => return "Symlink"
+        fs.FileType.Pipe => return "Pipe"
+        fs.FileType.Socket => return "Socket"
+        fs.FileType.BlockDevice => return "Block Device"
+        fs.FileType.CharDevice => return "Char Device"
+        fs.FileType.Unknown => return "Unknown"
+    }
+}
+
+fn format_permissions(perms: fs.Permissions) -> string {
+    let mut result = "";
+    
+    // Owner permissions
+    result = result + (if perms.owner_read { "r" } else { "-" });
+    result = result + (if perms.owner_write { "w" } else { "-" });
+    result = result + (if perms.owner_execute { "x" } else { "-" });
+    
+    // Group permissions
+    result = result + (if perms.group_read { "r" } else { "-" });
+    result = result + (if perms.group_write { "w" } else { "-" });
+    result = result + (if perms.group_execute { "x" } else { "-" });
+    
+    // Other permissions
+    result = result + (if perms.other_read { "r" } else { "-" });
+    result = result + (if perms.other_write { "w" } else { "-" });
+    result = result + (if perms.other_execute { "x" } else { "-" });
+    
+    return result;
+} 

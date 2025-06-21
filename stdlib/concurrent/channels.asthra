@@ -1,0 +1,392 @@
+/**
+ * Asthra Standard Library - Concurrent Channels
+ * 
+ * This module provides advanced channel-based communication primitives
+ * for the Asthra programming language. These are Tier 2/3 concurrency features
+ * that require explicit #[non_deterministic] annotation.
+ * 
+ * Part of Phase 6: Standard Library Migration
+ * From the Pragmatic Concurrency Balance Plan
+ */
+
+package concurrent::channels;
+
+import ffi::runtime::{AsthraConcurrencyChannel, AsthraResult, AsthraConcurrencyChannelInfo};
+
+// =============================================================================
+// CHANNEL TYPES AND STRUCTURES
+// =============================================================================
+
+/**
+ * Represents a typed channel for inter-task communication
+ * This is a Tier 2 feature requiring #[non_deterministic] annotation
+ */
+pub struct Channel<T> {
+    inner: *AsthraConcurrencyChannel,
+    element_size: usize,
+    phantom: T, // Phantom data for type safety
+}
+
+/**
+ * Channel send operation result
+ */
+pub enum SendResult<T> {
+    Ok(()),
+    Full(T),        // Channel is full, returns the value back
+    Closed(T),      // Channel is closed, returns the value back
+    Error(string),  // Runtime error occurred
+}
+
+/**
+ * Channel receive operation result
+ */
+pub enum RecvResult<T> {
+    Ok(T),          // Successfully received value
+    Empty(),        // Channel is empty (non-blocking)
+    Closed(),       // Channel is closed
+    Error(string),  // Runtime error occurred
+}
+
+/**
+ * Channel creation options
+ */
+pub struct ChannelOptions {
+    pub buffer_size: usize,     // 0 for unbuffered, >0 for buffered
+    pub allow_overflow: bool,   // Whether to allow buffer overflow
+    pub timeout_ms: i64,        // Default timeout (-1 for infinite)
+}
+
+// =============================================================================
+// CHANNEL CREATION FUNCTIONS
+// =============================================================================
+
+/**
+ * Create a new unbuffered channel (synchronous)
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[ffi("Asthra_channel_create")]
+extern fn create_unbuffered_channel<T>() -> Result<Channel<T>, string>;
+
+/**
+ * Create a new buffered channel with specified capacity
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[ffi("Asthra_channel_create_buffered")]
+extern fn create_buffered_channel<T>(capacity: usize) -> Result<Channel<T>, string>;
+
+/**
+ * Create a channel with custom options
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[non_deterministic]
+pub fn create_channel<T>(options: ChannelOptions) -> Result<Channel<T>, string> {
+    if options.buffer_size == 0 {
+        create_unbuffered_channel<T>()
+    } else {
+        create_buffered_channel<T>(options.buffer_size)
+    }
+}
+
+/**
+ * Create a simple buffered channel (convenience function)
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[non_deterministic]
+pub fn channel<T>(capacity: usize) -> Result<Channel<T>, string> {
+    create_buffered_channel<T>(capacity)
+}
+
+// =============================================================================
+// CHANNEL OPERATIONS
+// =============================================================================
+
+/**
+ * Send a value through the channel (blocking)
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[ffi("Asthra_channel_send")]
+extern fn channel_send_blocking<T>(channel: *Channel<T>, value: T) -> SendResult<T>;
+
+/**
+ * Send a value through the channel (non-blocking)
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[ffi("Asthra_channel_try_send")]
+extern fn channel_send_nonblocking<T>(channel: *Channel<T>, value: T) -> SendResult<T>;
+
+/**
+ * Receive a value from the channel (blocking)
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[ffi("Asthra_channel_recv")]
+extern fn channel_recv_blocking<T>(channel: *Channel<T>) -> RecvResult<T>;
+
+/**
+ * Receive a value from the channel (non-blocking)
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[ffi("Asthra_channel_try_recv")]
+extern fn channel_recv_nonblocking<T>(channel: *Channel<T>) -> RecvResult<T>;
+
+/**
+ * Receive a value with timeout
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[ffi("Asthra_channel_recv_timeout")]
+extern fn channel_recv_timeout<T>(channel: *Channel<T>, timeout_ms: i64) -> RecvResult<T>;
+
+// =============================================================================
+// CHANNEL MANAGEMENT
+// =============================================================================
+
+/**
+ * Close the channel (no more sends allowed)
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[ffi("Asthra_channel_close")]
+extern fn close_channel<T>(channel: *Channel<T>) -> Result<(), string>;
+
+/**
+ * Check if channel is closed
+ */
+#[ffi("Asthra_channel_is_closed")]
+extern fn is_channel_closed<T>(channel: *Channel<T>) -> bool;
+
+/**
+ * Get channel length (number of queued items)
+ */
+#[ffi("Asthra_channel_len")]
+extern fn channel_length<T>(channel: *Channel<T>) -> usize;
+
+/**
+ * Get channel capacity
+ */
+#[ffi("Asthra_channel_cap")]
+extern fn channel_capacity<T>(channel: *Channel<T>) -> usize;
+
+/**
+ * Check if channel is empty
+ */
+#[ffi("Asthra_channel_is_empty")]
+extern fn is_channel_empty<T>(channel: *Channel<T>) -> bool;
+
+/**
+ * Check if channel is full
+ */
+#[ffi("Asthra_channel_is_full")]
+extern fn is_channel_full<T>(channel: *Channel<T>) -> bool;
+
+// =============================================================================
+// HIGH-LEVEL CHANNEL PATTERNS
+// =============================================================================
+
+/**
+ * Send multiple values at once
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[non_deterministic]
+pub fn send_batch<T>(channel: *Channel<T>, values: []T) -> Result<(), string> {
+    for value in values {
+        match channel_send_blocking(channel, value) {
+            SendResult.Ok(_) => continue
+            SendResult.Full(v) => return Result.Err("Channel full, could not send batch")
+            SendResult.Closed(v) => return Result.Err("Channel closed during batch send")
+            SendResult.Error(msg) => return Result.Err(msg)
+        }
+    }
+    Result.Ok(())
+}
+
+/**
+ * Receive multiple values into a slice
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[non_deterministic]
+pub fn recv_batch<T>(channel: *Channel<T>, count: usize) -> Result<[]T, string> {
+    let mut results: []T = [];
+    
+    for i in 0..count {
+        match channel_recv_blocking(channel) {
+            RecvResult.Ok(value) => results.push(value)
+            RecvResult.Empty() => break
+            RecvResult.Closed() => break
+            RecvResult.Error(msg) => return Result.Err(msg)
+        }
+    }
+    
+    Result.Ok(results)
+}
+
+/**
+ * Create a channel pair (sender/receiver views)
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[non_deterministic]
+pub fn channel_pair<T>(capacity: usize) -> Result<(Sender<T>, Receiver<T>), string> {
+    let channel_result: /* TODO: specify type */ auto = channel<T>(capacity);
+    let channel: auto  // Match unwrap - manual review needed = match channel_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    let sender: /* TODO: specify type */ auto = Sender { channel: channel };
+    let receiver: /* TODO: specify type */ auto = Receiver { channel: channel };
+    Result.Ok((sender, receiver))
+}
+
+// =============================================================================
+// TYPED CHANNEL VIEWS
+// =============================================================================
+
+/**
+ * Send-only view of a channel
+ */
+pub struct Sender<T> {
+    channel: Channel<T>,
+}
+
+impl Sender<T> {
+    #[non_deterministic]
+    pub fn send(self, value: T) -> SendResult<T> {
+        channel_send_blocking(&self.channel, value)
+    }
+    
+    #[non_deterministic]
+    pub fn try_send(self, value: T) -> SendResult<T> {
+        channel_send_nonblocking(&self.channel, value)
+    }
+    
+    #[non_deterministic]
+    pub fn close(self) -> Result<(), string> {
+        close_channel(&self.channel)
+    }
+}
+
+/**
+ * Receive-only view of a channel
+ */
+pub struct Receiver<T> {
+    channel: Channel<T>,
+}
+
+impl Receiver<T> {
+    #[non_deterministic]
+    pub fn recv(self) -> RecvResult<T> {
+        channel_recv_blocking(&self.channel)
+    }
+    
+    #[non_deterministic]
+    pub fn try_recv(self) -> RecvResult<T> {
+        channel_recv_nonblocking(&self.channel)
+    }
+    
+    #[non_deterministic]
+    pub fn recv_timeout(self, timeout_ms: i64) -> RecvResult<T> {
+        channel_recv_timeout(&self.channel, timeout_ms)
+    }
+    
+    pub fn is_empty(self) -> bool {
+        is_channel_empty(&self.channel)
+    }
+    
+    pub fn len(self) -> usize {
+        channel_length(&self.channel)
+    }
+}
+
+// =============================================================================
+// CHANNEL DIAGNOSTICS AND MONITORING
+// =============================================================================
+
+/**
+ * Get detailed channel information for monitoring
+ */
+#[ffi("Asthra_channel_get_info")]
+extern fn get_channel_info<T>(channel: *Channel<T>) -> AsthraConcurrencyChannelInfo;
+
+/**
+ * Get channel statistics for performance monitoring
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[non_deterministic]
+pub fn channel_stats<T>(channel: *Channel<T>) -> ChannelStats {
+    let info: /* TODO: specify type */ auto = get_channel_info(channel);
+    ChannelStats {
+        current_count: info.current_count,
+        buffer_capacity: info.buffer_capacity,
+        total_sends: info.total_sends,
+        total_receives: info.total_receives,
+        utilization_percent: info.utilization_percent,
+        is_closed: info.is_closed,
+    }
+}
+
+/**
+ * Channel statistics structure
+ */
+pub struct ChannelStats {
+    pub current_count: usize,
+    pub buffer_capacity: usize,
+    pub total_sends: u64,
+    pub total_receives: u64,
+    pub utilization_percent: f64,
+    pub is_closed: bool,
+}
+
+// =============================================================================
+// USAGE EXAMPLES AND DOCUMENTATION
+// =============================================================================
+
+/**
+ * Example: Simple producer-consumer pattern
+ * 
+ * ```asthra
+ * #[non_deterministic]
+ * fn producer_consumer_example(none) -> Result<(), string> {
+ *     use concurrent::channels::{channel, Sender, Receiver};
+ *     
+ *     let channel_pair_result = channel_pair<i32>(10);
+ *     let (sender, receiver) = match channel_pair_result {
+ *         Result.Ok(value) => value
+ *         Result.Err(e) => return Result.Err(e)
+ *     };
+ *     
+ *     // Producer task
+ *     let producer_handle = spawn_with_handle(move || {
+ *         for i in 0..5 {
+ match *             sender.send(i * 2) {
+     Result.Ok(_) => {}
+     Result.Err(e) => return Result.Err(e)
+ }
+ *         }
+ match *         sender.close() {
+     Result.Ok(_) => {}
+     Result.Err(e) => return Result.Err(e)
+ }
+ *         Result.Ok(())
+ *     });
+ *     
+ *     // Consumer task  
+ *     let consumer_handle = spawn_with_handle(move || {
+ *         let mut results = [];
+ *         loop {
+ *             match receiver.recv() {
+ *                 RecvResult.Ok(value) => results.push(value)
+ *                 RecvResult.Closed() => break
+ *                 RecvResult.Error(msg) => return Result.Err(msg)
+ *                 _ => continue
+ *             }
+ *         }
+ *         Result.Ok(results)
+ *     });
+ *     
+ match *     await producer_handle {
+     Result.Ok(_) => {}
+     Result.Err(e) => return Result.Err(e)
+ }
+ *     let results = await consumer_handle?;
+ *     println("Received: {}", results);
+ *     
+ *     Result.Ok(())
+ * }
+ * ```
+ */ 

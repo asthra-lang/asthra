@@ -1,0 +1,174 @@
+// Asthra Standard Library - JSON Values Module
+// JSON value creation, type checking, and extraction functions
+
+package stdlib::json;
+
+import "stdlib/string";
+
+// ============================================================================
+// JSON Value Creation Functions
+// ============================================================================
+
+// Create null value
+pub fn null(none) -> JSONValue {
+    let handle: *void = asthra_stdlib_json_null();
+    return JSONValue { handle: handle };
+}
+
+// Create boolean value
+pub fn bool_value(value: bool) -> JSONValue {
+    let handle: *void = asthra_stdlib_json_bool(value);
+    return JSONValue { handle: handle };
+}
+
+// Create number value
+pub fn number(value: f64) -> JSONValue {
+    let handle: *void = asthra_stdlib_json_number(value);
+    return JSONValue { handle: handle };
+}
+
+// Create string value
+pub fn string_value(value: string) -> JSONValue {
+    let c_str: *const u8 = string::as_ptr(value);
+    let handle: *void = asthra_stdlib_json_string(c_str);
+    return JSONValue { handle: handle };
+}
+
+// Create empty array
+pub fn array(none) -> JSONValue {
+    let handle: *void = asthra_stdlib_json_array();
+    return JSONValue { handle: handle };
+}
+
+// Create empty object
+pub fn object(none) -> JSONValue {
+    let handle: *void = asthra_stdlib_json_object();
+    return JSONValue { handle: handle };
+}
+
+// ============================================================================
+// Type Checking Functions (Direct FFI mapping)
+// ============================================================================
+
+// Check if value is null
+pub fn is_null(value: JSONValue) -> bool {
+    return asthra_stdlib_json_is_null(value.handle);
+}
+
+// Check if value is boolean
+pub fn is_bool(value: JSONValue) -> bool {
+    return asthra_stdlib_json_is_bool(value.handle);
+}
+
+// Check if value is number
+pub fn is_number(value: JSONValue) -> bool {
+    return asthra_stdlib_json_is_number(value.handle);
+}
+
+// Check if value is string
+pub fn is_string(value: JSONValue) -> bool {
+    return asthra_stdlib_json_is_string(value.handle);
+}
+
+// Check if value is array
+pub fn is_array(value: JSONValue) -> bool {
+    return asthra_stdlib_json_is_array(value.handle);
+}
+
+// Check if value is object
+pub fn is_object(value: JSONValue) -> bool {
+    return asthra_stdlib_json_is_object(value.handle);
+}
+
+// ============================================================================
+// Value Extraction Functions
+// ============================================================================
+
+// Extract boolean value
+pub fn get_bool(value: JSONValue) -> Result<bool, JSONError> {
+    if !is_bool(value) {
+        return Result.Err(JSONError.TypeError("Value is not a boolean"));
+    }
+    
+    return Result.Ok(asthra_stdlib_json_get_bool(value.handle));
+}
+
+// Extract number value
+pub fn get_number(value: JSONValue) -> Result<f64, JSONError> {
+    if !is_number(value) {
+        return Result.Err(JSONError.TypeError("Value is not a number"));
+    }
+    
+    return Result.Ok(asthra_stdlib_json_get_number(value.handle));
+}
+
+// Extract string value
+pub fn get_string(value: JSONValue) -> Result<string, JSONError> {
+    if !is_string(value) {
+        return Result.Err(JSONError.TypeError("Value is not a string"));
+    }
+    
+    let c_str: *const u8 = asthra_stdlib_json_get_string(value.handle);
+    if c_str == null {
+        return Result.Err(JSONError.OutOfMemory("Failed to extract string"));
+    }
+    
+    return Result.Ok(string::from_c_str(c_str));
+}
+
+// ============================================================================
+// Type Conversion Helpers
+// ============================================================================
+
+// Convert Asthra types to JSON
+pub fn from_bool(value: bool) -> JSONValue {
+    return bool_value(value);
+}
+
+pub fn from_i32(value: i32) -> JSONValue {
+    return number(value as f64);
+}
+
+pub fn from_i64(value: i64) -> JSONValue {
+    return number(value as f64);
+}
+
+pub fn from_f32(value: f32) -> JSONValue {
+    return number(value as f64);
+}
+
+pub fn from_f64(value: f64) -> JSONValue {
+    return number(value);
+}
+
+pub fn from_string(value: string) -> JSONValue {
+    return string_value(value);
+}
+
+// ============================================================================
+// Safe Extraction with Defaults
+// ============================================================================
+
+// Extract boolean with default value
+pub fn get_bool_or(value: JSONValue, default: bool) -> bool {
+    match get_bool(value) {
+        Result.Ok(val) => return val,
+        Result.Err(_) => return default
+    }
+}
+
+// Extract number with default value
+pub fn get_number_or(value: JSONValue, default: f64) -> f64 {
+    match get_number(value) {
+        Result.Ok(val) => return val,
+        Result.Err(_) => return default
+    }
+}
+
+// Extract string with default value
+pub fn get_string_or(value: JSONValue, default: string) -> string {
+    match get_string(value) {
+        Result.Ok(val) => return val,
+        Result.Err(_) => return default
+    }
+} 

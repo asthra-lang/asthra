@@ -1,0 +1,93 @@
+// Asthra Standard Library - JSON Compatibility Module
+// Backward compatibility aliases for the old single-file API
+
+package stdlib::json;
+
+// ============================================================================
+// Legacy Function Names for Backward Compatibility
+// ============================================================================
+
+// Legacy parsing functions
+pub fn json_parse(input: string) -> Result<JSONValue, JSONError> {
+    return parse(input);
+}
+
+// Legacy serialization functions
+pub fn json_stringify(value: JSONValue) -> Result<string, JSONError> {
+    return stringify(value);
+}
+
+// Legacy validation function
+pub fn json_is_valid(input: string) -> bool {
+    return is_valid_json(input);
+}
+
+// Legacy pretty printing
+pub fn json_stringify_pretty(value: JSONValue) -> Result<string, JSONError> {
+    return stringify_pretty(value);
+}
+
+// ============================================================================
+// Legacy Type Aliases
+// ============================================================================
+
+// Type alias for backward compatibility (already in same package)
+// pub type JSONValue = JSONValue;
+// pub type JSONError = JSONError;
+
+// ============================================================================
+// Legacy Value Creation Functions
+// ============================================================================
+
+// Legacy value creation (using simplified names)
+pub fn json_null(none) -> JSONValue {
+    return null();
+}
+
+pub fn json_bool(value: bool) -> JSONValue {
+    return bool_value(value);
+}
+
+pub fn json_number(value: f64) -> JSONValue {
+    return number(value);
+}
+
+pub fn json_string(value: string) -> JSONValue {
+    return string_value(value);
+}
+
+pub fn json_array(none) -> JSONValue {
+    return array();
+}
+
+pub fn json_object(none) -> JSONValue {
+    return object();
+}
+
+// ============================================================================
+// Legacy Type Checking Functions
+// ============================================================================
+
+pub fn json_is_null(value: JSONValue) -> bool {
+    return is_null(value);
+}
+
+pub fn json_is_bool(value: JSONValue) -> bool {
+    return is_bool(value);
+}
+
+pub fn json_is_number(value: JSONValue) -> bool {
+    return is_number(value);
+}
+
+pub fn json_is_string(value: JSONValue) -> bool {
+    return is_string(value);
+}
+
+pub fn json_is_array(value: JSONValue) -> bool {
+    return is_array(value);
+}
+
+pub fn json_is_object(value: JSONValue) -> bool {
+    return is_object(value);
+} 

@@ -1,0 +1,479 @@
+// Asthra Standard Library - TOML Example Usage
+package stdlib::toml;
+
+import "stdlib/asthra/core";
+
+// =============================================================================
+// Example 1: Basic TOML Parsing
+// =============================================================================
+
+pub fn example_basic_parsing() -> TomlResult<void> {
+    let toml_content: string = "
+        # Configuration file example
+        [database]
+        host = \"localhost\"
+        port = 5432
+        username = \"admin\"
+        password = \"secret\"
+        
+        [features]
+        enabled = true
+        debug_mode = false
+        max_connections = 100
+        timeout = 30.5
+    ";
+    
+    // Parse TOML string
+    let parse_result: TomlResult<TomlDocument> = parse_string(toml_content);
+    match parse_result {
+        TomlResult.Ok(document) => {
+            log("Successfully parsed TOML document");
+            
+            // Access values using table operations
+            let host_result: TomlResult<string> = table_get_string(document.root_table, "database.host");
+            match host_result {
+                TomlResult.Ok(host) => {
+                    log("Database host: " + host);
+                },
+                TomlResult.Err(_) => {
+                    log("Failed to get database host");
+                },
+            }
+            
+            return TomlResult.Ok(void);
+        },
+        TomlResult.Err(error) => {
+            return TomlResult.Err(error);
+        },
+    }
+}
+
+// =============================================================================
+// Example 2: TOML Generation and Pretty Printing
+// =============================================================================
+
+pub fn example_toml_generation() -> TomlResult<void> {
+    // Create a new TOML document
+    let mut document: TomlDocument = new_document();
+    
+    // Add database configuration
+    table_set(&mut document.root_table, "database.host", TomlValue.String("localhost"));
+    table_set(&mut document.root_table, "database.port", TomlValue.Integer(5432));
+    table_set(&mut document.root_table, "database.ssl", TomlValue.Boolean(true));
+    
+    // Add application settings
+    table_set(&mut document.root_table, "app.name", TomlValue.String("MyApp"));
+    table_set(&mut document.root_table, "app.version", TomlValue.String("1.0.0"));
+    table_set(&mut document.root_table, "app.timeout", TomlValue.Float(30.5));
+    
+    // Add feature flags as array
+    let features: []TomlValue = [
+        TomlValue.String("authentication"),
+        TomlValue.String("logging"),
+        TomlValue.String("monitoring")
+    ];
+    table_set(&mut document.root_table, "features", TomlValue.Array(features));
+    
+    // Generate TOML string with different formats
+    let compact_toml: string = generate_compact(document);
+    let pretty_toml: string = generate_pretty(document);
+    
+    log("Compact TOML:");
+    log(compact_toml);
+    log("Pretty TOML:");
+    log(pretty_toml);
+    
+    return TomlResult.Ok(void);
+}
+
+// =============================================================================
+// Example 3: Configuration File Loading with Defaults
+// =============================================================================
+
+pub fn example_config_loading() -> TomlResult<TomlTable> {
+    // Create configuration loader
+    let mut loader: ConfigLoader = new_config_loader();
+    
+    // Set default values
+    config_loader_add_default(&mut loader, "server.host", TomlValue.String("127.0.0.1"));
+    config_loader_add_default(&mut loader, "server.port", TomlValue.Integer(8080));
+    config_loader_add_default(&mut loader, "server.ssl", TomlValue.Boolean(false));
+    config_loader_add_default(&mut loader, "database.pool_size", TomlValue.Integer(10));
+    config_loader_add_default(&mut loader, "debug", TomlValue.Boolean(false));
+    
+    // Add configuration file paths (in order of precedence)
+    config_loader_add_path(&mut loader, "/etc/myapp/config.toml");
+    config_loader_add_path(&mut loader, "./config.toml");
+    config_loader_add_path(&mut loader, "./local.toml");
+    
+    // Load configuration with defaults and file overrides
+    let config_result: TomlResult<TomlTable> = config_loader_load(loader);
+    match config_result {
+        TomlResult.Ok(config) => {
+            log("Configuration loaded successfully");
+            
+            // Access configuration values with type safety
+            let host: string = table_get_string(config, "server.host").unwrap_or("localhost");
+            let port: i64 = table_get_integer(config, "server.port").unwrap_or(3000);
+            let ssl: bool = table_get_boolean(config, "server.ssl").unwrap_or(false);
+            
+            log("Server configuration:");
+            log("  Host: " + host);
+            log("  Port: " + string(port));
+            log("  SSL: " + string(ssl));
+            
+            return TomlResult.Ok(config);
+        },
+        TomlResult.Err(error) => {
+            return TomlResult.Err(error);
+        },
+    }
+}
+
+// =============================================================================
+// Example 4: TOML Schema Validation
+// =============================================================================
+
+pub fn example_schema_validation() -> TomlResult<void> {
+    // Define a schema for server configuration
+    let mut schema: TomlSchema = new_schema();
+    
+    // Add required fields
+    schema_add_required(&mut schema, "server.host", TomlValueType.String);
+    schema_add_required(&mut schema, "server.port", TomlValueType.Integer);
+    
+    // Add optional fields
+    schema_add_optional(&mut schema, "server.ssl", TomlValueType.Boolean);
+    schema_add_optional(&mut schema, "server.timeout", TomlValueType.Float);
+    schema_add_optional(&mut schema, "features", TomlValueType.Array);
+    
+    // Disallow extra keys for strict validation
+    schema.allow_extra_keys = false;
+    
+    // Test with valid configuration
+    let valid_config: string = "
+        [server]
+        host = \"example.com\"
+        port = 443
+        ssl = true
+        timeout = 30.0
+        
+        features = [\"auth\", \"logging\"]
+    ";
+    
+    let parse_result: TomlResult<TomlDocument> = parse_string(valid_config);
+    match parse_result {
+        TomlResult.Ok(document) => {
+            let validation_result: TomlResult<void> = validate_against_schema(document, schema);
+            match validation_result {
+                TomlResult.Ok(_) => {
+                    log("✓ Configuration is valid according to schema");
+                    return TomlResult.Ok(void);
+                },
+                TomlResult.Err(error) => {
+                    log("✗ Schema validation failed");
+                    return TomlResult.Err(error);
+                },
+            }
+        },
+        TomlResult.Err(error) => {
+            return TomlResult.Err(error);
+        },
+    }
+}
+
+// =============================================================================
+// Example 5: Working with Complex Data Structures
+// =============================================================================
+
+pub fn example_complex_structures() -> TomlResult<void> {
+    let complex_toml: string = "
+        # Application configuration
+        [app]
+        name = \"Advanced TOML App\"
+        version = \"2.1.0\"
+        
+        # Database clusters
+        [[databases]]
+        name = \"primary\"
+        host = \"db1.example.com\"
+        port = 5432
+        replica = false
+        
+        [[databases]]
+        name = \"replica1\"
+        host = \"db2.example.com\"
+        port = 5432
+        replica = true
+        
+        [[databases]]
+        name = \"replica2\"
+        host = \"db3.example.com\"
+        port = 5432
+        replica = true
+        
+        # Service endpoints
+        [services.auth]
+        url = \"https://auth.example.com\"
+        timeout = 10.0
+        retries = 3
+        
+        [services.storage]
+        url = \"https://storage.example.com\"
+        timeout = 30.0
+        retries = 1
+        
+        # Feature flags with metadata
+        [features]
+        authentication = { enabled = true, rollout = 100.0 }
+        new_ui = { enabled = false, rollout = 25.0 }
+        analytics = { enabled = true, rollout = 90.0 }
+    ";
+    
+    let parse_result: TomlResult<TomlDocument> = parse_string(complex_toml);
+    match parse_result {
+        TomlResult.Ok(document) => {
+            // Extract application info
+            let app_name: string = table_get_string(document.root_table, "app.name").unwrap_or("Unknown");
+            let app_version: string = table_get_string(document.root_table, "app.version").unwrap_or("0.0.0");
+            
+            log("Application: " + app_name + " v" + app_version);
+            
+            // Process database configurations
+            let databases_result: TomlResult<[]TomlValue> = table_get_array(document.root_table, "databases");
+            match databases_result {
+                TomlResult.Ok(databases) => {
+                    log("Database configurations:");
+                    
+                    for i in 0..databases.len {
+                        match databases[i] {
+                            TomlValue.Table(db_table) => {
+                                let db_name: string = table_get_string(db_table, "name").unwrap_or("unknown");
+                                let db_host: string = table_get_string(db_table, "host").unwrap_or("unknown");
+                                let db_replica: bool = table_get_boolean(db_table, "replica").unwrap_or(false);
+                                
+                                let db_type: string = if db_replica { "replica" } else { "primary" };
+                                log("  " + db_name + " (" + db_type + "): " + db_host);
+                            },
+                            _ => {
+                                log("  Invalid database configuration");
+                            },
+                        }
+                    }
+                },
+                TomlResult.Err(_) => {
+                    log("No database configurations found");
+                },
+            }
+            
+            // Process feature flags
+            let features_result: TomlResult<TomlTable> = table_get_table(document.root_table, "features");
+            match features_result {
+                TomlResult.Ok(features_table) => {
+                    log("Feature flags:");
+                    
+                    let feature_keys: []string = table_keys(features_table);
+                    for i in 0..feature_keys.len {
+                        let feature_name: string = feature_keys[i];
+                        let feature_config_result: TomlResult<TomlTable> = table_get_table(features_table, feature_name);
+                        
+                        match feature_config_result {
+                            TomlResult.Ok(feature_config) => {
+                                let enabled: bool = table_get_boolean(feature_config, "enabled").unwrap_or(false);
+                                let rollout: f64 = table_get_float(feature_config, "rollout").unwrap_or(0.0);
+                                
+                                let status: string = if enabled { "enabled" } else { "disabled" };
+                                log("  " + feature_name + ": " + status + " (" + string(rollout) + "% rollout)");
+                            },
+                            TomlResult.Err(_) => {
+                                log("  " + feature_name + ": invalid configuration");
+                            },
+                        }
+                    }
+                },
+                TomlResult.Err(_) => {
+                    log("No feature flags found");
+                },
+            }
+            
+            return TomlResult.Ok(void);
+        },
+        TomlResult.Err(error) => {
+            return TomlResult.Err(error);
+        },
+    }
+}
+
+// =============================================================================
+// Example 6: TOML File Operations
+// =============================================================================
+
+pub fn example_file_operations() -> TomlResult<void> {
+    // Create configuration data
+    let mut config: TomlTable = new_table();
+    
+    // Add server settings
+    table_set(&mut config, "server.host", TomlValue.String("production.example.com"));
+    table_set(&mut config, "server.port", TomlValue.Integer(443));
+    table_set(&mut config, "server.ssl", TomlValue.Boolean(true));
+    
+    // Add database settings
+    table_set(&mut config, "database.url", TomlValue.String("postgresql://user:pass@db.example.com:5432/myapp"));
+    table_set(&mut config, "database.pool_size", TomlValue.Integer(20));
+    table_set(&mut config, "database.timeout", TomlValue.Float(30.0));
+    
+    // Add logging configuration
+    table_set(&mut config, "logging.level", TomlValue.String("info"));
+    table_set(&mut config, "logging.file", TomlValue.String("/var/log/myapp.log"));
+    
+    // Create document and save to file
+    let document: TomlDocument = TomlDocument {
+        root_table: config,
+        metadata: TomlMetadata {
+            version: "1.0",
+            generated_by: "stdlib::toml example",
+            creation_time: current_timestamp(),
+        },
+        has_errors: false,
+    };
+    
+    // Save as different formats
+    let save_pretty_result: Result<void, string> = generate_file(document, "config_pretty.toml");
+    match save_pretty_result {
+        Result.Ok(_) => {
+            log("✓ Saved pretty-formatted configuration to config_pretty.toml");
+        },
+        Result.Err(error) => {
+            log("✗ Failed to save pretty configuration: " + error);
+        },
+    }
+    
+    // Load configuration back from file
+    let load_result: TomlResult<TomlDocument> = parse_file("config_pretty.toml");
+    match load_result {
+        TomlResult.Ok(loaded_doc) => {
+            log("✓ Successfully loaded configuration from file");
+            
+            // Validate loaded configuration
+            let host: string = table_get_string(loaded_doc.root_table, "server.host").unwrap_or("unknown");
+            let ssl: bool = table_get_boolean(loaded_doc.root_table, "server.ssl").unwrap_or(false);
+            
+            log("Loaded configuration:");
+            log("  Host: " + host);
+            log("  SSL: " + string(ssl));
+            
+            return TomlResult.Ok(void);
+        },
+        TomlResult.Err(error) => {
+            return TomlResult.Err(error);
+        },
+    }
+}
+
+// =============================================================================
+// Example 7: TOML Utilities and Convenience Functions
+// =============================================================================
+
+pub fn example_utilities() -> TomlResult<void> {
+    let config_content: string = "
+        [app]
+        name = \"Utility Demo\"
+        debug = true
+        
+        [database]
+        hosts = [\"db1.example.com\", \"db2.example.com\", \"db3.example.com\"]
+        ports = [5432, 5433, 5434]
+        
+        [nested.deep.config]
+        value = \"deeply nested value\"
+        number = 42
+    ";
+    
+    // Quick validation
+    let is_valid: bool = is_valid_toml(config_content);
+    log("TOML is valid: " + string(is_valid));
+    
+    // Get specific values using path notation
+    let app_name_result: TomlResult<TomlValue> = get_value_from_string(config_content, "app.name");
+    match app_name_result {
+        TomlResult.Ok(value) => {
+            let name: string = value_to_string(value);
+            log("App name: " + name);
+        },
+        TomlResult.Err(_) => {
+            log("Failed to get app name");
+        },
+    }
+    
+    // Extract string arrays
+    let hosts_result: TomlResult<TomlValue> = get_value_from_string(config_content, "database.hosts");
+    match hosts_result {
+        TomlResult.Ok(hosts_value) => {
+            let hosts_array_result: TomlResult<[]string> = extract_string_array(hosts_value);
+            match hosts_array_result {
+                TomlResult.Ok(hosts) => {
+                    log("Database hosts:");
+                    for i in 0..hosts.len {
+                        log("  " + hosts[i]);
+                    }
+                },
+                TomlResult.Err(_) => {
+                    log("Failed to extract hosts array");
+                },
+            }
+        },
+        TomlResult.Err(_) => {
+            log("Failed to get database hosts");
+        },
+    }
+    
+    // Access deeply nested values
+    let deep_value_result: TomlResult<TomlValue> = get_value_from_string(config_content, "nested.deep.config.value");
+    match deep_value_result {
+        TomlResult.Ok(value) => {
+            let deep_value: string = value_to_string(value);
+            log("Deep nested value: " + deep_value);
+        },
+        TomlResult.Err(_) => {
+            log("Failed to get deeply nested value");
+        },
+    }
+    
+    return TomlResult.Ok(void);
+}
+
+// =============================================================================
+// Main Example Runner
+// =============================================================================
+
+pub fn run_toml_examples() -> TomlResult<void> {
+    log("=== TOML Package Examples ===");
+    
+    log("\n1. Basic Parsing:");
+    example_basic_parsing();
+    
+    log("\n2. TOML Generation:");
+    example_toml_generation();
+    
+    log("\n3. Configuration Loading:");
+    example_config_loading();
+    
+    log("\n4. Schema Validation:");
+    example_schema_validation();
+    
+    log("\n5. Complex Structures:");
+    example_complex_structures();
+    
+    log("\n6. File Operations:");
+    example_file_operations();
+    
+    log("\n7. Utilities:");
+    example_utilities();
+    
+    log("\n=== Examples Complete ===");
+    return TomlResult.Ok(void);
+}
+
+// External functions (implemented in runtime)
+extern fn log(message: string) -> void;
+extern fn current_timestamp() -> string; 

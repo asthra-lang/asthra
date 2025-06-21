@@ -1,0 +1,323 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Date and Timestamp Management for Asthra Project
+
+## Overview
+
+This rule establishes standards for handling dates and timestamps in Markdown files across the Asthra project. Accurate date information is crucial for documentation maintenance, version tracking, and project management.
+
+## Current Date Retrieval
+
+### Getting Current Date with Terminal Command
+
+**ALWAYS** use the `date` command to get the current date when updating documentation:
+
+```bash
+# Get current date in ISO format (YYYY-MM-DD)
+date +"%Y-%m-%d"
+
+# Get current date with time (YYYY-MM-DD HH:MM:SS)
+date +"%Y-%m-%d %H:%M:%S"
+
+# Get current date in readable format
+date +"%B %d, %Y"
+
+# Get current date for documentation headers
+date +"%Y-%m-%d"
+```
+
+**Example Usage in Documentation Updates**:
+```markdown
+<!-- Before updating a document, get current date -->
+<!-- Run: date +"%Y-%m-%d" -->
+<!-- Result: 2025-01-07 -->
+
+Last Updated: 2025-01-07
+```
+
+### Platform-Specific Date Commands
+
+**macOS/Linux**:
+```bash
+date +"%Y-%m-%d"           # 2025-01-07
+date +"%B %d, %Y"          # January 07, 2025
+date +"%Y-%m-%d %H:%M:%S"  # 2025-01-07 14:30:45
+```
+
+**Windows (PowerShell)**:
+```powershell
+Get-Date -Format "yyyy-MM-dd"           # 2025-01-07
+Get-Date -Format "MMMM dd, yyyy"        # January 07, 2025
+Get-Date -Format "yyyy-MM-dd HH:mm:ss"  # 2025-01-07 14:30:45
+```
+
+## Date Format Standards
+
+### 1. Documentation Headers
+
+**REQUIRED** format for all Markdown files:
+```markdown
+---
+title: "Document Title"
+last_updated: "2025-01-07"
+version: "1.0"
+---
+```
+
+### 2. Inline Date References
+
+**Use ISO format** (YYYY-MM-DD) for consistency:
+```markdown
+✅ DO: Consistent ISO format
+- Last Updated: 2025-01-07
+- Created: 2025-01-01
+- Version 1.2 released on 2025-01-05
+
+❌ DON'T: Inconsistent date formats
+- Last Updated: Jan 7, 2025
+- Created: 1/1/25
+- Version 1.2 released on 01-05-2025
+```
+
+### 3. Changelog and Version History
+
+**Standard format** for changelog entries:
+```markdown
+## Changelog
+
+### [1.2.0] - 2025-01-07
+- Added new feature X
+- Fixed bug Y
+- Updated documentation
+
+### [1.1.0] - 2025-01-01
+- Initial release
+```
+
+### 4. Meeting Notes and Status Updates
+
+**Format for meeting notes**:
+```markdown
+# Meeting Notes - 2025-01-07
+
+**Date**: January 7, 2025  
+**Time**: 14:00-15:00 UTC  
+**Attendees**: [List of attendees]
+
+## Agenda
+...
+```
+
+## Automated Date Management
+
+### 1. Using Cursor AI for Date Updates
+
+**When updating documentation**, always:
+
+1. **Get current date first**:
+   ```bash
+   date +"%Y-%m-%d"
+   ```
+
+2. **Update the "Last Updated" field**:
+   ```markdown
+   Last Updated: 2025-01-07
+   ```
+
+3. **Update any version-specific dates**:
+   ```markdown
+   Version 1.2 (2025-01-07)
+   ```
+
+### 2. Template for New Documents
+
+**Use this template** for new Markdown files:
+```markdown
+# Document Title
+
+**Created**: 2025-01-07  
+**Last Updated**: 2025-01-07  
+**Version**: 1.0
+
+## Overview
+[Document content here]
+
+---
+*Last Updated: 2025-01-07*
+```
+
+### 3. Batch Date Updates
+
+**For updating multiple files**, use this pattern:
+```bash
+# Get current date
+CURRENT_DATE=$(date +"%Y-%m-%d")
+
+# Update multiple files (example with sed)
+find docs/ -name "*.md" -exec sed -i "s/Last Updated: [0-9-]*/Last Updated: $CURRENT_DATE/g" {} \;
+```
+
+## Date Validation and Quality Assurance
+
+### 1. Common Date Issues to Fix
+
+**ALWAYS check for and fix**:
+- Inconsistent date formats
+- Future dates (unless intentional)
+- Missing "Last Updated" fields
+- Outdated version dates
+- Incorrect timezone information
+
+### 2. Date Validation Checklist
+
+**Before committing documentation changes**:
+- [ ] All dates use ISO format (YYYY-MM-DD)
+- [ ] "Last Updated" field reflects current date
+- [ ] No future dates (unless planned releases)
+- [ ] Changelog dates are in chronological order
+- [ ] Version dates match actual release dates
+
+### 3. Automated Date Checking
+
+**Script to validate dates** in documentation:
+```bash
+#!/bin/bash
+# validate_dates.sh
+
+echo "Checking for date format consistency..."
+
+# Find files with inconsistent date formats
+grep -r "Last Updated:" docs/ | grep -v "[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}"
+
+# Find files missing "Last Updated" field
+find docs/ -name "*.md" -exec grep -L "Last Updated:" {} \;
+
+echo "Date validation complete."
+```
+
+## Project-Specific Date Requirements
+
+### 1. Asthra Documentation Standards
+
+**For Asthra project documentation**:
+- Use UTC timezone for all timestamps
+- Include date in all major documentation files
+- Update dates when making significant changes
+- Maintain version history with accurate dates
+
+### 2. Implementation Status Tracking
+
+**When updating implementation status**:
+```markdown
+## Implementation Status
+
+| Feature | Status | Last Updated |
+|---------|--------|--------------|
+| Parser  | ✅ Complete | 2025-01-07 |
+| Codegen | 🔧 Partial  | 2025-01-05 |
+| Runtime | ❌ Planned  | 2025-01-01 |
+```
+
+### 3. Release Planning
+
+**For release documentation**:
+```markdown
+## Release Schedule
+
+- **v1.0.0**: 2025-01-15 (Target)
+- **v0.9.0**: 2025-01-07 (Released)
+- **v0.8.0**: 2025-01-01 (Released)
+```
+
+## Best Practices
+
+### 1. When to Update Dates
+
+**ALWAYS update dates when**:
+- Making significant content changes
+- Adding new sections or features
+- Fixing errors or updating information
+- Changing implementation status
+- Publishing new versions
+
+### 2. Date Consistency Across Documents
+
+**Ensure consistency**:
+- Use same date format across all related documents
+- Update cross-referenced documents simultaneously
+- Maintain chronological order in changelogs
+- Verify dates match actual implementation timeline
+
+### 3. Documentation Maintenance
+
+**Regular maintenance tasks**:
+- Monthly review of "Last Updated" dates
+- Quarterly validation of all dates in documentation
+- Annual cleanup of outdated date references
+- Continuous monitoring during active development
+
+## Integration with Cursor AI
+
+### 1. Using Date Commands in Cursor
+
+**When Cursor AI needs current date**:
+1. Run `date +"%Y-%m-%d"` command
+2. Use the output to update documentation
+3. Ensure consistency across all modified files
+
+### 2. Automated Date Insertion
+
+**Template for Cursor AI**:
+```markdown
+<!-- To get current date, run: date +"%Y-%m-%d" -->
+<!-- Current date: [INSERT_CURRENT_DATE_HERE] -->
+
+Last Updated: [INSERT_CURRENT_DATE_HERE]
+```
+
+### 3. Date-Aware Documentation Updates
+
+**When updating documentation**:
+1. **Check current date**: `date +"%Y-%m-%d"`
+2. **Update "Last Updated" field**
+3. **Update any version-specific dates**
+4. **Verify chronological consistency**
+5. **Update related cross-references**
+
+## Error Prevention
+
+### 1. Common Date Mistakes
+
+**AVOID these common errors**:
+- Using inconsistent date formats
+- Forgetting to update "Last Updated" fields
+- Using future dates accidentally
+- Mixing timezones without specification
+- Copying old dates to new documents
+
+### 2. Quality Checks
+
+**Before finalizing documentation**:
+- Verify all dates are current and accurate
+- Check for consistent formatting
+- Ensure chronological order
+- Validate against actual implementation timeline
+- Cross-check with version control history
+
+### 3. Rollback Procedures
+
+**If incorrect dates are committed**:
+1. Identify affected files
+2. Get correct dates from version control
+3. Update all affected documentation
+4. Verify consistency across project
+5. Document the correction in changelog
+
+## Conclusion
+
+Proper date and timestamp management is essential for maintaining accurate, professional documentation in the Asthra project. Always use the `date` command to get current dates, maintain consistent ISO formatting, and regularly validate date accuracy across all documentation files.
+
+**Remember**: When in doubt, run `date +"%Y-%m-%d"` to get the current date in the correct format.

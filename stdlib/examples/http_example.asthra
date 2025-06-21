@@ -1,0 +1,490 @@
+// Asthra HTTP Module Example
+// Demonstrates HTTP client functionality with comprehensive error handling
+
+package main;
+
+// Import the HTTP module and dependencies
+import "stdlib/http";
+import "stdlib/io";
+import "stdlib/string" as str;
+
+fn main(none) -> i32 {
+    println("=== Asthra HTTP Module Example ===");
+    
+    // Example 1: Simple GET request
+    example_simple_get();
+    
+    // Example 2: GET request with custom headers
+    example_get_with_headers();
+    
+    // Example 3: POST request with JSON data
+    example_post_json();
+    
+    // Example 4: POST request with form data
+    example_post_form();
+    
+    // Example 5: PUT request
+    example_put_request();
+    
+    // Example 6: DELETE request
+    example_delete_request();
+    
+    // Example 7: Custom HTTP client configuration
+    example_custom_client();
+    
+    // Example 8: Error handling demonstration
+    example_error_handling();
+    
+    // Example 9: Response processing
+    example_response_processing();
+    
+    return 0;
+}
+
+// Example 1: Simple GET request using module-level convenience function
+fn example_simple_get(none) -> void {
+    println("\n--- Example 1: Simple GET Request ---");
+    
+    let url: string = "https://httpbin.org/get";
+    let response_result: Result<http::HTTPResponse, http::HTTPError> = http::get(url);
+    
+    match response_result {
+        Result.Ok(response) => {
+            println("✅ GET request successful!");
+            println("Status: " + response.status_code + " " + response.status_text);
+            println("Content Length: " + response.content_length);
+            
+            // Get response body as string
+            let body_result: auto  // Manual review needed = response.body_as_string();
+            match body_result {
+                Result.Ok(body) => {
+                    println("Response body preview: " + str::substring(body, 0, 200) + "...");
+                },
+                Result.Err(error) => {
+                    println("❌ Failed to parse response body: " + http::format_http_error(error));
+                }
+            }
+        },
+        Result.Err(error) => {
+            println("❌ GET request failed: " + http::format_http_error(error));
+        }
+    }
+}
+
+// Example 2: GET request with custom headers
+fn example_get_with_headers(none) -> void {
+    println("\n--- Example 2: GET Request with Custom Headers ---");
+    
+    let client: auto  // Function call - manual review needed = http::HTTPClient::new();
+    let url: string = "https://httpbin.org/headers";
+    
+    // Create custom headers
+    let headers: []http::HTTPHeader = [
+        http::HTTPHeader { name: "User-Agent", value: "Asthra-Example/1.0" },
+        http::HTTPHeader { name: "Accept", value: "application/json" },
+        http::HTTPHeader { name: "X-Custom-Header", value: "Asthra-Test" }
+    ];
+    
+    let response_result: auto  // Manual review needed = client.get_with_headers(url, headers);
+    
+    match response_result {
+        Result.Ok(response) => {
+            println("✅ GET with headers successful!");
+            println("Status: " + response.status_code + " " + response.status_text);
+            
+            // Check content type
+            let content_type_result: auto  // Manual review needed = response.content_type();
+            match content_type_result {
+                Result.Ok(content_type) => {
+                    println("Content-Type: " + content_type);
+                },
+                Result.Err(_) => {
+                    println("No Content-Type header found");
+                }
+            }
+        },
+        Result.Err(error) => {
+            println("❌ GET with headers failed: " + http::format_http_error(error));
+        }
+    }
+}
+
+// Example 3: POST request with JSON data
+fn example_post_json(none) -> void {
+    println("\n--- Example 3: POST Request with JSON Data ---");
+    
+    let url: string = "https://httpbin.org/post";
+    let json_data: string = '{"name": "Asthra", "version": "1.2", "type": "programming_language"}';
+    
+    let response_result: auto  // Function call - manual review needed = http::post_json(url, json_data);
+    
+    match response_result {
+        Result.Ok(response) => {
+            println("✅ POST JSON request successful!");
+            println("Status: " + response.status_code + " " + response.status_text);
+            
+            if response.is_success() {
+                println("✅ Request was successful (2xx status)");
+            } else if response.is_client_error() {
+                println("⚠️ Client error (4xx status)");
+            } else if response.is_server_error() {
+                println("❌ Server error (5xx status)");
+            }
+            
+            // Show some response headers
+            let server_result: auto  // Manual review needed = response.get_header("Server");
+            match server_result {
+                Result.Ok(server) => println("Server: " + server)
+                Result.Err(_) => {}
+            }
+        },
+        Result.Err(error) => {
+            println("❌ POST JSON request failed: " + http::format_http_error(error));
+        }
+    }
+}
+
+// Example 4: POST request with form data
+fn example_post_form(none) -> void {
+    println("\n--- Example 4: POST Request with Form Data ---");
+    
+    let url: string = "https://httpbin.org/post";
+    
+    // Create form data (using HTTPHeader structure for key-value pairs)
+    let form_data: []http::HTTPHeader = [
+        http::HTTPHeader { name: "username", value: "asthra_user" },
+        http::HTTPHeader { name: "email", value: "user@asthra-lang.org" },
+        http::HTTPHeader { name: "language", value: "Asthra" }
+    ];
+    
+    let response_result: auto  // Function call - manual review needed = http::post_form(url, form_data);
+    
+    match response_result {
+        Result.Ok(response) => {
+            println("✅ POST form request successful!");
+            println("Status: " + response.status_code + " " + response.status_text);
+            println("Final URL: " + response.final_url);
+            println("Redirect count: " + response.redirect_count);
+        },
+        Result.Err(error) => {
+            println("❌ POST form request failed: " + http::format_http_error(error));
+        }
+    }
+}
+
+// Example 5: PUT request
+fn example_put_request(none) -> void {
+    println("\n--- Example 5: PUT Request ---");
+    
+    let url: string = "https://httpbin.org/put";
+    let data: string = "This is updated content from Asthra";
+    let data_bytes: auto  // Function call - manual review needed = str::to_bytes(data);
+    let content_type: string = "text/plain";
+    
+    let response_result: auto  // Function call - manual review needed = http::put(url, data_bytes, content_type);
+    
+    match response_result {
+        Result.Ok(response) => {
+            println("✅ PUT request successful!");
+            println("Status: " + response.status_code + " " + response.status_text);
+            
+            // Check content length header vs actual
+            let header_length_result: auto  // Manual review needed = response.content_length_header();
+            match header_length_result {
+                Result.Ok(header_length) => {
+                    println("Content-Length header: " + header_length);
+                    println("Actual body length: " + response.content_length);
+                    
+                    if header_length != response.content_length {
+                        println("⚠️ Content length mismatch detected!");
+                    }
+                },
+                Result.Err(_) => {
+                    println("No Content-Length header found");
+                }
+            }
+        },
+        Result.Err(error) => {
+            println("❌ PUT request failed: " + http::format_http_error(error));
+        }
+    }
+}
+
+// Example 6: DELETE request
+fn example_delete_request(none) -> void {
+    println("\n--- Example 6: DELETE Request ---");
+    
+    let url: string = "https://httpbin.org/delete";
+    
+    let response_result: auto  // Function call - manual review needed = http::delete(url);
+    
+    match response_result {
+        Result.Ok(response) => {
+            println("✅ DELETE request successful!");
+            println("Status: " + response.status_code + " " + response.status_text);
+            
+            // Print all response headers
+            println("Response headers:");
+            let mut i: usize = 0;
+            while i < response.headers.len {
+                let header: auto  // Manual review needed = response.headers[i];
+                println("  " + header.name + ": " + header.value);
+                i = i + 1;
+            }
+        },
+        Result.Err(error) => {
+            println("❌ DELETE request failed: " + http::format_http_error(error));
+        }
+    }
+}
+
+// Example 7: Custom HTTP client configuration
+fn example_custom_client(none) -> void {
+    println("\n--- Example 7: Custom HTTP Client Configuration ---");
+    
+    // Create client with custom configuration
+    let client_result: auto  // Function call - manual review needed = http::HTTPClient::with_config(;
+        10000,                    // 10 second timeout
+        "Asthra-Custom/1.0",     // Custom user agent
+        false,                   // Don't follow redirects
+        5,                       // Max 5 redirects (if enabled)
+        true                     // Verify TLS certificates
+    );
+    
+    match client_result {
+        Result.Ok(client) => {
+            let url: string = "https://httpbin.org/redirect/3";  // This will redirect 3 times
+            
+            let response_result: auto  // Manual review needed = client.get(url);
+            match response_result {
+                Result.Ok(response) => {
+                    println("✅ Custom client request successful!");
+                    println("Status: " + response.status_code + " " + response.status_text);
+                    println("Final URL: " + response.final_url);
+                    
+                    // Since we disabled redirects, we should get a 302 status
+                    if response.status_code == 302 {
+                        println("✅ Redirect not followed as expected");
+                        
+                        let location_result: auto  // Manual review needed = response.get_header("Location");
+                        match location_result {
+                            Result.Ok(location) => {
+                                println("Redirect location: " + location);
+                            },
+                            Result.Err(_) => {
+                                println("No Location header found");
+                            }
+                        }
+                    }
+                },
+                Result.Err(error) => {
+                    println("❌ Custom client request failed: " + http::format_http_error(error));
+                }
+            }
+        },
+        Result.Err(error) => {
+            println("❌ Failed to create custom client: " + http::format_http_error(error));
+        }
+    }
+}
+
+// Example 8: Error handling demonstration
+fn example_error_handling(none) -> void {
+    println("\n--- Example 8: Error Handling Demonstration ---");
+    
+    // Test various error conditions
+    
+    // 1. Invalid URL
+    println("Testing invalid URL...");
+    let invalid_url_result: auto  // Function call - manual review needed = http::get("not-a-valid-url");
+    match invalid_url_result {
+        Result.Ok(_) => println("❌ Expected error for invalid URL")
+        Result.Err(error) => println("✅ Caught invalid URL error: " + http::format_http_error(error))
+    }
+    
+    // 2. Non-existent domain
+    println("Testing non-existent domain...");
+    let nonexistent_result: auto  // Function call - manual review needed = http::get("https://this-domain-definitely-does-not-exist-12345.com");
+    match nonexistent_result {
+        Result.Ok(_) => println("❌ Expected error for non-existent domain")
+        Result.Err(error) => println("✅ Caught DNS error: " + http::format_http_error(error))
+    }
+    
+    // 3. 404 Not Found (this is a successful HTTP response, just with 404 status)
+    println("Testing 404 Not Found...");
+    let not_found_result: auto  // Function call - manual review needed = http::get("https://httpbin.org/status/404");
+    match not_found_result {
+        Result.Ok(response) => {
+            println("✅ Received 404 response: " + response.status_code + " " + response.status_text);
+            if response.is_client_error() {
+                println("✅ Correctly identified as client error");
+            }
+        },
+        Result.Err(error) => println("❌ Unexpected error: " + http::format_http_error(error))
+    }
+    
+    // 4. 500 Internal Server Error
+    println("Testing 500 Internal Server Error...");
+    let server_error_result: auto  // Function call - manual review needed = http::get("https://httpbin.org/status/500");
+    match server_error_result {
+        Result.Ok(response) => {
+            println("✅ Received 500 response: " + response.status_code + " " + response.status_text);
+            if response.is_server_error() {
+                println("✅ Correctly identified as server error");
+            }
+        },
+        Result.Err(error) => println("❌ Unexpected error: " + http::format_http_error(error))
+    }
+}
+
+// Example 9: Response processing and analysis
+fn example_response_processing(none) -> void {
+    println("\n--- Example 9: Response Processing and Analysis ---");
+    
+    let url: string = "https://httpbin.org/json";
+    let response_result: auto  // Function call - manual review needed = http::get(url);
+    
+    match response_result {
+        Result.Ok(response) => {
+            println("✅ Response received successfully!");
+            
+            // Analyze response
+            println("=== Response Analysis ===");
+            println("Status: " + response.status_code + " " + response.status_text);
+            println("HTTP Version: " + format_http_version(response.version));
+            println("Content Length: " + response.content_length + " bytes");
+            println("Header Count: " + response.headers.len);
+            
+            // Check if response is successful
+            if response.is_success() {
+                println("✅ Response indicates success");
+                
+                // Try to get response body as string
+                let body_result: auto  // Manual review needed = response.body_as_string();
+                match body_result {
+                    Result.Ok(body) => {
+                        println("✅ Response body is valid UTF-8");
+                        println("Body length: " + str::len(body) + " characters");
+                        
+                        // Show first 500 characters
+                        let preview_length: auto  // Function call - manual review needed = if str::len(body) > 500 { 500 } else { str::len(body) };
+                        let preview: auto  // Function call - manual review needed = str::substring(body, 0, preview_length);
+                        println("Body preview:");
+                        println(preview);
+                        
+                        if str::len(body) > 500 {
+                            println("... (truncated)");
+                        }
+                    },
+                    Result.Err(error) => {
+                        println("❌ Response body contains invalid UTF-8: " + http::format_http_error(error));
+                        println("Raw body length: " + response.body.len + " bytes");
+                    }
+                }
+                
+                // Analyze headers
+                println("\n=== Header Analysis ===");
+                analyze_response_headers(response);
+                
+            } else {
+                println("❌ Response indicates failure");
+            }
+        },
+        Result.Err(error) => {
+            println("❌ Failed to get response: " + http::format_http_error(error));
+        }
+    }
+}
+
+// Helper function to analyze response headers
+fn analyze_response_headers(response: http::HTTPResponse) -> void {
+    // Look for common headers
+    let common_headers: []string = [
+        "Content-Type",
+        "Content-Length",
+        "Server",
+        "Date",
+        "Cache-Control",
+        "Set-Cookie",
+        "Location",
+        "ETag",
+        "Last-Modified"
+    ];
+    
+    let mut i: usize = 0;
+    while i < common_headers.len {
+        let header_name: auto  // Manual review needed = common_headers[i];
+        let header_result: auto  // Manual review needed = response.get_header(header_name);
+        
+        match header_result {
+            Result.Ok(value) => {
+                println("  " + header_name + ": " + value);
+            },
+            Result.Err(_) => {
+                // Header not present, skip
+            }
+        }
+        
+        i = i + 1;
+    }
+    
+    // Count total headers
+    println("  Total headers: " + response.headers.len);
+    
+    // Check for security headers
+    println("\n=== Security Header Check ===");
+    check_security_headers(response);
+}
+
+// Helper function to check for security headers
+fn check_security_headers(response: http::HTTPResponse) -> void {
+    let security_headers: []string = [
+        "Strict-Transport-Security",
+        "Content-Security-Policy",
+        "X-Frame-Options",
+        "X-Content-Type-Options",
+        "X-XSS-Protection"
+    ];
+    
+    let mut found_count: usize = 0;
+    let mut i: usize = 0;
+    
+    while i < security_headers.len {
+        let header_name: auto  // Manual review needed = security_headers[i];
+        let header_result: auto  // Manual review needed = response.get_header(header_name);
+        
+        match header_result {
+            Result.Ok(value) => {
+                println("  ✅ " + header_name + ": " + value);
+                found_count = found_count + 1;
+            },
+            Result.Err(_) => {
+                println("  ❌ " + header_name + ": Not present");
+            }
+        }
+        
+        i = i + 1;
+    }
+    
+    println("  Security headers found: " + found_count + "/" + security_headers.len);
+}
+
+// Helper function to format HTTP version
+fn format_http_version(version: http::HTTPVersion) -> string {
+    match version {
+        http::HTTPVersion.HTTP_1_0 => return "HTTP/1.0"
+        http::HTTPVersion.HTTP_1_1 => return "HTTP/1.1"
+        http::HTTPVersion.HTTP_2_0 => return "HTTP/2.0"
+    }
+}
+
+// Helper function for printing with newline
+fn println(message: string) -> void {
+    let print_result: auto  // Function call - manual review needed = io::print_line(message);
+    match print_result {
+        Result.Ok(_) => {}
+        Result.Err(_) => {
+            // If we can't print, there's not much we can do
+        }
+    }
+} 

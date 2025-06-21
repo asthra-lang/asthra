@@ -1,0 +1,41 @@
+// Worker Pool Demo
+// This demonstrates basic worker pool functionality
+
+package main;
+
+fn main(none) -> i32 {
+    log("Starting worker pool demo");
+    
+    // Create a worker pool with 4 workers
+    worker_pool my_pool(4, 10);
+    
+    // Submit some tasks to the pool
+    for i in range(0, 5) {
+        my_pool.submit(process_data, i * 10);
+        log("Submitted task");
+    }
+    
+    log("All tasks submitted, main thread continuing");
+    
+    // Sleep to allow tasks to complete
+    sleep_ms(500);
+    
+    log("Worker pool demo completed");
+    return 0;
+}
+
+fn process_data(n: i32) -> i32 {
+    log("Processing data");
+    
+    // Simulate work
+    sleep_ms(100);
+    
+    log("Completed processing");
+    return n * 2;
+}
+
+fn sleep_ms(ms: i32) -> void {
+    // This is just a placeholder - in a real program 
+    // this would call a system sleep function
+    log("Sleeping...");
+} 

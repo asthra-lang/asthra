@@ -1,0 +1,175 @@
+{
+  "models": [
+    {
+      "title": "Asthra Gemma 3 4B (Fine-tuned)",
+      "provider": "openai",
+      "model": "asthra-gemma3-4b",
+      "apiKey": "not-required",
+      "apiBase": "http://localhost:8000/v1",
+      "contextLength": 32768,
+      "description": "Fine-tuned Gemma 3 4B model specialized for Asthra programming language",
+      "systemMessage": "You are an expert Asthra programmer. Asthra is a modern systems programming language designed for AI code generation. Always provide idiomatic, safe, and efficient Asthra code.",
+      "completionOptions": {
+        "temperature": 0.3,
+        "topP": 0.9,
+        "presencePenalty": 0.1,
+        "frequencyPenalty": 0.1,
+        "maxTokens": 1024
+      },
+      "capabilities": [
+        "chat",
+        "autocomplete",
+        "edit"
+      ],
+      "tags": [
+        "asthra",
+        "systems-programming",
+        "ai-optimized",
+        "fine-tuned"
+      ]
+    }
+  ],
+  "tabAutocompleteModel": {
+    "title": "Asthra Autocomplete",
+    "provider": "openai", 
+    "model": "asthra-gemma3-4b",
+    "apiKey": "not-required",
+    "apiBase": "http://localhost:8000/v1",
+    "completionOptions": {
+      "temperature": 0.1,
+      "maxTokens": 256,
+      "stop": ["\n\n", "fn ", "struct ", "enum ", "impl "]
+    }
+  },
+  "customCommands": [
+    {
+      "name": "asthra-explain",
+      "prompt": "Explain this Asthra code in detail. Cover what it does, how it works, and any important language features being used:\n\n{{{ input }}}",
+      "description": "Explain selected Asthra code"
+    },
+    {
+      "name": "asthra-optimize", 
+      "prompt": "Optimize this Asthra code for performance and memory efficiency while maintaining the same functionality. Explain the optimizations made:\n\n{{{ input }}}",
+      "description": "Optimize Asthra code performance"
+    },
+    {
+      "name": "asthra-debug",
+      "prompt": "Help debug this Asthra code. Identify potential issues, suggest fixes, and explain common pitfalls:\n\n{{{ input }}}",
+      "description": "Debug Asthra code issues"
+    },
+    {
+      "name": "asthra-refactor",
+      "prompt": "Refactor this Asthra code to improve readability, maintainability, and follow best practices:\n\n{{{ input }}}",
+      "description": "Refactor Asthra code"
+    },
+    {
+      "name": "asthra-test",
+      "prompt": "Generate comprehensive unit tests for this Asthra code. Include edge cases and follow Asthra testing patterns:\n\n{{{ input }}}",
+      "description": "Generate tests for Asthra code"
+    },
+    {
+      "name": "asthra-doc",
+      "prompt": "Generate comprehensive documentation for this Asthra code including function signatures, parameters, return values, and usage examples:\n\n{{{ input }}}",
+      "description": "Generate documentation for Asthra code"
+    },
+    {
+      "name": "asthra-convert",
+      "prompt": "Convert this code to idiomatic Asthra. Follow Asthra's design principles and best practices:\n\n{{{ input }}}",
+      "description": "Convert code to Asthra"
+    }
+  ],
+  "contextProviders": [
+    {
+      "name": "diff",
+      "params": {}
+    },
+    {
+      "name": "open",
+      "params": {}
+    },
+    {
+      "name": "terminal",
+      "params": {}
+    },
+    {
+      "name": "problems", 
+      "params": {}
+    },
+    {
+      "name": "folder",
+      "params": {
+        "nRetrieve": 25,
+        "nFinal": 10
+      }
+    },
+    {
+      "name": "codebase",
+      "params": {
+        "nRetrieve": 25,
+        "nFinal": 10,
+        "useReranking": true
+      }
+    }
+  ],
+  "slashCommands": [
+    {
+      "name": "edit",
+      "description": "Edit selected code"
+    },
+    {
+      "name": "comment",
+      "description": "Add comments to code"
+    },
+    {
+      "name": "share",
+      "description": "Share code snippet"
+    },
+    {
+      "name": "cmd",
+      "description": "Execute terminal command"
+    }
+  ],
+  "allowAnonymousTelemetry": false,
+  "embeddingsProvider": {
+    "provider": "transformers.js",
+    "model": "Xenova/all-MiniLM-L6-v2",
+    "maxChunkSize": 512
+  },
+  "reranker": {
+    "name": "free-trial"
+  },
+  "experimental": {
+    "enableCodebaseIndexing": true,
+    "enableTabAutocomplete": true,
+    "enableLocalIndexing": true
+  },
+  "docs": [
+    {
+      "title": "Asthra Language Documentation",
+      "startUrl": "https://asthra-lang.org/docs/",
+      "rootUrl": "https://asthra-lang.org/"
+    },
+    {
+      "title": "Asthra Grammar Specification", 
+      "startUrl": "https://asthra-lang.org/spec/grammar",
+      "rootUrl": "https://asthra-lang.org/spec/"
+    },
+    {
+      "title": "Asthra Standard Library",
+      "startUrl": "https://asthra-lang.org/stdlib/",
+      "rootUrl": "https://asthra-lang.org/stdlib/"
+    }
+  ],
+  "rules": [
+    "Always write memory-safe Asthra code",
+    "Use explicit type annotations where helpful for clarity",
+    "Prefer immutable variables by default, use 'mut' only when necessary",
+    "Follow Asthra's naming conventions (snake_case for variables, PascalCase for types)",
+    "Use Result<T, E> for error handling instead of exceptions",
+    "Leverage Asthra's concurrency features (spawn, channels) for parallel processing",
+    "Write self-documenting code with clear variable and function names",
+    "Include appropriate visibility modifiers (pub/priv) for APIs",
+    "Use pattern matching extensively for control flow",
+    "Optimize for both human readability and AI code generation"
+  ]
+} 

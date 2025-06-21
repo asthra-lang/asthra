@@ -1,0 +1,29 @@
+ai-programming:
+  label: AI Programming
+  permalink: /ai-programming
+  description: Posts about AI-assisted programming and code generation
+
+language-design:
+  label: Language Design
+  permalink: /language-design
+  description: Posts about programming language design and philosophy
+
+systems-programming:
+  label: Systems Programming
+  permalink: /systems-programming
+  description: Posts about systems programming with Asthra
+
+performance:
+  label: Performance
+  permalink: /performance
+  description: Posts about performance optimization and compiler improvements
+
+announcement:
+  label: Announcement
+  permalink: /announcement
+  description: Official announcements about Asthra development
+
+tutorial:
+  label: Tutorial
+  permalink: /tutorial
+  description: Tutorials and guides for learning Asthra

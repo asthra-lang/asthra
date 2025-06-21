@@ -1,0 +1,80 @@
+/**
+ * CSS files with the .module.css suffix will be treated as CSS modules
+ * and scoped locally.
+ */
+
+.heroBanner {
+  padding: 4rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+@media screen and (max-width: 996px) {
+  .heroBanner {
+    padding: 2rem;
+  }
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.stats {
+  padding: 4rem 0;
+  background-color: var(--ifm-color-emphasis-100);
+}
+
+.statNumber {
+  font-size: 3rem;
+  font-weight: bold;
+  color: var(--ifm-color-primary);
+  margin-bottom: 0.5rem;
+}
+
+.statLabel {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.statSubtext {
+  font-size: 0.9rem;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.codeExample {
+  padding: 4rem 0;
+}
+
+.codeBlock {
+  background-color: var(--ifm-code-background);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-code-border-radius);
+  padding: 1rem;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--ifm-code-color);
+}
+
+@media screen and (max-width: 996px) {
+  .buttons {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .statNumber {
+    font-size: 2rem;
+  }
+  
+  .codeBlock {
+    font-size: 0.75rem;
+  }
+}

@@ -1,0 +1,47 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect x="15" y="15" width="170" height="170" rx="10" fill="#f5f5dc" stroke="#8b4513" stroke-width="2"/>
+  
+  <!-- Clock/deterministic symbol -->
+  <circle cx="100" cy="80" r="30" fill="#8b4513" stroke="#654321" stroke-width="2"/>
+  <circle cx="100" cy="80" r="25" fill="#daa520"/>
+  
+  <!-- Clock hands -->
+  <line x1="100" y1="80" x2="100" y2="65" stroke="#8b4513" stroke-width="3" stroke-linecap="round"/>
+  <line x1="100" y1="80" x2="115" y2="80" stroke="#8b4513" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="100" cy="80" r="3" fill="#8b4513"/>
+  
+  <!-- Clock markers -->
+  <circle cx="100" cy="55" r="2" fill="#8b4513"/>
+  <circle cx="125" cy="80" r="2" fill="#8b4513"/>
+  <circle cx="100" cy="105" r="2" fill="#8b4513"/>
+  <circle cx="75" cy="80" r="2" fill="#8b4513"/>
+  
+  <!-- Predictable pattern indicators -->
+  <rect x="30" y="120" width="15" height="15" fill="#32cd32"/>
+  <rect x="50" y="120" width="15" height="15" fill="#32cd32"/>
+  <rect x="70" y="120" width="15" height="15" fill="#32cd32"/>
+  <rect x="90" y="120" width="15" height="15" fill="#32cd32"/>
+  <rect x="110" y="120" width="15" height="15" fill="#32cd32"/>
+  <rect x="130" y="120" width="15" height="15" fill="#32cd32"/>
+  <rect x="150" y="120" width="15" height="15" fill="#32cd32"/>
+  
+  <!-- Pattern arrows -->
+  <path d="M25 127 L45 127 L40 122 M45 127 L40 132" stroke="#32cd32" stroke-width="2" fill="none"/>
+  <path d="M155 127 L175 127 L170 122 M175 127 L170 132" stroke="#32cd32" stroke-width="2" fill="none"/>
+  
+  <!-- Reproducible builds indicator -->
+  <rect x="40" y="145" width="120" height="20" rx="10" fill="#4169e1"/>
+  <text x="100" y="158" text-anchor="middle" font-family="Arial" font-size="10" fill="#ffffff" font-weight="bold">REPRODUCIBLE BUILDS</text>
+  
+  <!-- Non-deterministic annotation -->
+  <rect x="20" y="30" width="160" height="15" rx="3" fill="#ff6347"/>
+  <text x="25" y="40" font-family="monospace" font-size="8" fill="#ffffff">#[non_deterministic] fn random()</text>
+  
+  <!-- Deterministic by default -->
+  <rect x="20" y="50" width="160" height="15" rx="3" fill="#32cd32"/>
+  <text x="25" y="60" font-family="monospace" font-size="8" fill="#ffffff">fn hash(data) -> u64 // deterministic</text>
+  
+  <!-- Label -->
+  <text x="100" y="185" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#8b4513" font-weight="bold">DETERMINISTIC</text>
+</svg> 

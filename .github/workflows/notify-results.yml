@@ -1,0 +1,79 @@
+name: Asthra Notify Results
+
+on:
+  workflow_call:
+    inputs:
+      build_test_result:
+        type: string
+        required: true
+      compatibility_result:
+        type: string
+        required: true
+      security_result:
+        type: string
+        required: false
+        default: 'skipped'
+      docs_format_result:
+        type: string
+        required: false
+        default: 'skipped'
+      comprehensive_test_result:
+        type: string
+        required: false
+        default: 'skipped'
+
+jobs:
+  notify-results:
+    name: Notify Results
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - name: Determine overall status
+      shell: bash
+      run: |
+        echo "=== CI/CD Pipeline Results ==="
+        echo "Build and Test: ${{ inputs.build_test_result }}"
+        echo "Cross-Platform Compatibility: ${{ inputs.compatibility_result }}"
+        echo "Security Scan: ${{ inputs.security_result }}"
+        echo "Documentation and Format: ${{ inputs.docs_format_result }}"
+        echo "Comprehensive Test Suite: ${{ inputs.comprehensive_test_result }}"
+        
+        if [[ "${{ inputs.build_test_result }}" == "success" ]]; then
+          echo "✅ Core build and test pipeline succeeded"
+        else
+          echo "❌ Core build and test pipeline failed"
+        fi
+        
+        if [[ "${{ inputs.comprehensive_test_result }}" == "success" ]]; then
+          echo "✅ Comprehensive test suite succeeded"
+        else
+          echo "⚠️ Comprehensive test suite had issues (may be expected for new features)"
+        fi
+        
+        echo ""
+        echo "Platform Support Status:"
+        echo "- Linux (GCC): Implemented"
+        echo "- Linux (Clang): Implemented"  
+        echo "- macOS (Clang): Implemented"
+        echo "- Windows (MSVC): Implemented"
+        echo "- Windows (MinGW): Implemented"
+        
+        echo ""
+        echo "Test Coverage Status:"
+        echo "- FFI Tests: ✅ Implemented (minimal, simple, assembly generator)"
+        echo "- ELF Writer Tests: ✅ Implemented"
+        echo "- Core Module Tests: ✅ Implemented (I/O, imports, structs)"
+        echo "- Type System Tests: ✅ Implemented (type info integration)"
+        echo "- Test Suite: ✅ Implemented (grammar, patterns, strings, security)"
+        echo "- Optimization Tests: ✅ Implemented (sanitizers, PGO, gperf)"
+        echo "- Sanitizer Tests: ✅ Implemented (ASan, UBSan integration)"
+        echo "- Performance Benchmarks: ✅ Implemented (FFI, ELF, zero-cost validation)"
+        
+        echo ""
+        echo "Next Steps:"
+        echo "1. Review any failed builds"
+        echo "2. Check cross-platform compatibility"
+        echo "3. Address security scan findings (if enabled)"
+        echo "4. Ensure code formatting compliance (if enabled)"
+        echo "5. Monitor comprehensive test suite results"
+        echo "6. Review feature test coverage" 

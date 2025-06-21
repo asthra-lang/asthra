@@ -1,0 +1,78 @@
+name: Asthra CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    inputs:
+      run_performance_tests:
+        description: 'Run performance benchmarks'
+        required: false
+        default: false
+        type: boolean
+      run_sanitizer_tests:
+        description: 'Run sanitizer tests'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  # Global environment variables
+  ASTHRA_VERSION: "0.1.0"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # =============================================================================
+  # BUILD AND TEST MATRIX - Core CI functionality
+  # =============================================================================
+  build-and-test:
+    name: Build and Test Matrix
+    uses: ./.github/workflows/build-and-test.yml
+    with:
+      run_performance_tests: ${{ github.event.inputs.run_performance_tests == 'true' }}
+      run_sanitizer_tests: ${{ github.event.inputs.run_sanitizer_tests != 'false' }}
+
+  # =============================================================================
+  # COMPREHENSIVE TEST SUITE - Only on main branch pushes or scheduled runs
+  # =============================================================================
+  comprehensive-tests:
+    name: Comprehensive Tests
+    needs: build-and-test
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'schedule'
+    uses: ./.github/workflows/comprehensive-tests.yml
+
+  # =============================================================================
+  # CROSS-PLATFORM COMPATIBILITY - Always run after build
+  # =============================================================================
+  cross-platform-check:
+    name: Cross-Platform Compatibility Check
+    needs: build-and-test
+    if: always()
+    uses: ./.github/workflows/cross-platform-check.yml
+
+  # =============================================================================
+  # RELEASE PREPARATION - Only on main branch pushes
+  # =============================================================================
+  release-prep:
+    name: Release Preparation
+    needs: [build-and-test, cross-platform-check]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    uses: ./.github/workflows/release-prep.yml
+
+  # =============================================================================
+  # NOTIFICATION AND REPORTING - Always run to summarize results
+  # =============================================================================
+  notify-results:
+    name: Notify Results
+    needs: [build-and-test, cross-platform-check, comprehensive-tests]
+    if: always()
+    uses: ./.github/workflows/notify-results.yml
+    with:
+      build_test_result: ${{ needs.build-and-test.result }}
+      compatibility_result: ${{ needs.cross-platform-check.result }}
+      comprehensive_test_result: ${{ needs.comprehensive-tests.result || 'skipped' }} 

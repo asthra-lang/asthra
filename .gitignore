@@ -1,0 +1,513 @@
+# Asthra Programming Language - Git Ignore File
+# Last updated: 2025-06-15 - Added comprehensive CMake build system ignores
+
+# Build directories
+build/
+build-*/
+bin/
+lib/
+target/
+dist/
+out/
+Release/
+Debug/
+MinSizeRel/
+RelWithDebInfo/
+
+# Object files
+*.o
+*.obj
+*.lo
+*.slo
+*.ko
+
+# Shared libraries
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# Static libraries
+*.a
+*.la
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Asthra executables (without extension)
+asthra
+asthra-benchmark
+asthra-link
+ast-visualizer
+formatter
+formatter_new
+formatter_simple
+fuzzing-harness
+grammar-validator
+language-server
+linter
+performance-profiler
+symbol-inspector
+test-generator
+test_framework
+test_runner
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Debug and testing artifacts
+debug_*
+debug_*.c
+debug_*.h
+*_debug
+*_debug.c
+*_debug.h
+*_test
+parser_test
+lexer_test
+ast_test
+
+# Dependency files
+*.d
+
+# Core dumps
+core.*
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.#*
+\#*#
+
+# Editor files
+*.sublime-*
+.atom/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Log files
+*.log
+logs/
+
+# Test artifacts
+test_results/
+*_test_*
+!*_test_*.c
+!*_test_*.h
+coverage/
+coverage_output/
+coverage_html/
+coverage_data/
+*.gcov
+*.gcda
+*.gcno
+*.profraw
+*.profdata
+default.profraw
+default.profdata
+*.info
+lcov.info
+coverage.info
+coverage_*.info
+coverage_*.txt
+*_coverage.txt
+*_coverage.csv
+*/summary.csv
+summary.txt
+
+# Documentation build
+docs/build/
+docs/_build/
+docs/api/
+doxygen-output/
+html/
+latex/
+
+# Doxygen generated files (but preserve source docs)
+docs/api/html/
+docs/api/latex/
+docs/api/xml/
+docs/api/man/
+docs/api/rtf/
+
+# Doxygen temporary files
+doxygen_sqlite3.db
+*.tag
+
+# Additional Doxygen output files
+docs/api/*.pdf
+docs/api/*.ps
+docs/api/*.dvi
+docs/api/Doxyfile.bak
+
+# Package manager files
+node_modules/
+.npm/
+.yarn/
+
+# Asthra specific
+*.asthra.o
+*.asthra.out
+examples/*.out
+examples/build/
+
+# Profiling data
+*.prof
+gmon.out
+callgrind.out.*
+
+# Modern optimization artifacts
+optimization/profile_data/
+optimization/pgo_profiles/
+optimization/*.profdata
+optimization/*.profraw
+optimization/instruments_*.trace
+optimization/sanitizer_*.log
+optimization/gperf_*.c
+optimization/gperf_*.h
+optimization/enhanced_gperf_*.c
+optimization/enhanced_gperf_*.h
+optimization/pgo_profile_*.profdata
+optimization/*_compiler_*.log
+optimization/instruments_trace_*.trace
+optimization/asthra_keywords_hash.*
+optimization/asthra_keywords.gperf
+optimization/test_keywords*
+optimization/benchmark_keywords*
+
+# Clang static analyzer
+scan-build/
+analysis-output/
+.clang-tidy
+.clang-format
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CMakeDoxyfile.in
+CMakeDoxygenDefaults.cmake
+DartConfiguration.tcl
+CTestTestfile.cmake
+CPackConfig.cmake
+CPackSourceConfig.cmake
+
+# CMake generated files in root (but keep cmake/ directory files)
+/*.cmake
+!/cmake/*.cmake
+AshtraConfig*.cmake
+AsthraConfig*.cmake
+**/cmake_install.cmake
+**/CTestTestfile.cmake
+
+# CMake build directories
+build-cmake/
+
+# CMake generated files
+include/platform_config.h
+
+# CMake testing artifacts
+Testing/
+test-results/
+test-report*.html
+test-report*.xml
+test-report*.json
+
+# Generated Makefiles
+Makefile
+runtime/Makefile
+src/Makefile
+tests/Makefile
+tools/Makefile
+**/Makefile
+
+# Autotools
+autom4te.cache/
+config.log
+config.status
+configure
+Makefile.in
+aclocal.m4
+
+# Tags files
+tags
+TAGS
+.tags
+.TAGS
+
+# Local configuration
+.env
+.env.local
+config.local.toml
+CLAUDE.md.local
+.asthra-config.local
+
+# Third-party build artifacts
+third-party/*/build/
+third-party/*/Build/
+vendor/
+external/
+
+# IDE specific
+.cproject
+.project
+.settings/
+compile_commands.json
+.cache/
+.clangd/
+
+# Rust (if using Rust tools)
+Cargo.lock
+target/
+
+# Python (if using Python tools)
+.Python
+env/
+venv/
+.venv/
+
+# Archives
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.zip
+*.rar
+*.7z 
+asthra_v1_2_test_report.md
+
+# Local notes (not to be commited)
+local-notes.txt
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docusaurus (if used for documentation site)
+.docusaurus/
+
+# Generated files
+.cache-loader
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directories
+coverage/
+coverage-html/
+coverage-xml/
+coverage-report/
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+
+# Temporary folders
+tmp/
+temp/
+
+# Python cache (for transformation scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# AI/Fast-check artifacts
+.fast-check-cache/
+.ai-cache/
+ai-lint-report*.json
+fast-check-results/
+
+# Performance profiling
+perf.data
+perf.data.old
+flamegraph.svg
+*.trace
+
+# Fuzzing artifacts
+fuzz-*.log
+crash-*
+timeout-*
+oom-*
+
+# Language server
+.lsp/
+.lsp-cache/
+
+# Development tools output
+dev-tools-output/
+ast-visualization/
+symbol-inspection/
+
+# Benchmark results
+benchmark-results/
+*.bench.json
+*.bench.csv
+
+# Platform-specific files
+*.ilk
+
+# Package artifacts
+*.deb
+*.rpm
+*.pkg
+*.dmg
+*.msi
+
+# Sanitizer outputs
+asan.log*
+tsan.log*
+ubsan.log*
+msan.log*
+
+# Temporary CMake files
+CMakeLists.txt.user*
+CMakeScripts/
+
+# Valgrind
+valgrind-*.log
+callgrind.out.*
+cachegrind.out.*
+massif.out.*
+
+# Session/workspace files
+*.workspace
+*.session
+.asthra-session
+
+# Lock files (keep package manager lock files in version control)
+.cmake.lock
+
+# Generated by tools
+GPATH
+GRTAGS
+GTAGS
+gtags.files
+
+# Core dumps and crash reports
+/core
+core.*
+vgcore.*
+*.stackdump
+
+# Backup files created by various tools
+*.~*~
+.#*
+
+# Binary patch files
+*.patch
+*.diff
+*.rej
+
+# macOS metadata
+.AppleDouble
+.LSOverride
+Icon
+.DocumentRevisions-V100
+.fseventsd
+.TemporaryItems
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows metadata
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux metadata  
+.directory
+.Trash-*
+
+# JetBrains Rider
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code (keep .vscode/settings.json if needed for project)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Xcode
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+DerivedData/
+*.xcuserstate
+
+tests/tests/
+TODO.local.md
+.cursor/rules/input.mdc
+userinput.py
+err.txt
+
+# Additional patterns based on cleanup
+*_test_output.txt
+*_test_output.log
+debug_*.asthra
+debug_*.astra
+*_error_analysis.md
+*_migration_summary.md
+CMAKE_*.md
+README-*.md
+
+# End of .gitignore

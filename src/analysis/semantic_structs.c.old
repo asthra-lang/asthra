@@ -1,0 +1,24 @@
+/**
+ * Asthra Programming Language Compiler
+ * Semantic Analysis - Struct Declaration Analysis (Main Module)
+ * 
+ * Copyright (c) 2024 Asthra Project
+ * Licensed under the terms specified in LICENSE
+ * 
+ * This file serves as the main entry point for struct analysis,
+ * including all the split implementation files.
+ */
+
+#include "semantic_structs.h"
+
+// Include all the split implementation files
+#include "semantic_structs_declaration.c"
+#include "semantic_structs_literals.c"
+#include "semantic_structs_generics.c"
+#include "semantic_structs_utilities.c"
+#include "semantic_structs_visibility.c"
+
+// Note: This file serves as a unified entry point for the semantic struct
+// analysis functionality that has been split across multiple implementation files.
+// This approach allows the build system to generate semantic_structs.o while
+// maintaining the modular structure of the implementation. 

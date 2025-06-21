@@ -1,0 +1,29 @@
+// Simple Concurrency Demo
+// This demonstrates basic spawn functionality
+
+package main;
+
+import "stdlib/io";
+
+pub fn main(none) -> i32 {
+    log("Starting simple concurrency demo");
+    
+    // Simple spawn example
+    spawn process_data(42);
+    log("Spawned task, continuing...");
+    
+    log("Simple concurrency demo completed");
+    return 0;
+}
+
+pub fn process_data(n: i32) -> i32 {
+    // Simulate some processing
+    log("Processing data");
+    
+    // Simulate work
+    for i in range(0, 3) {
+        log("Working... step");
+    }
+    
+    return n * 2;
+} 

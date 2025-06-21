@@ -1,0 +1,35 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="90" fill="#fff5ee" stroke="#dc143c" stroke-width="2"/>
+  
+  <!-- Shield shape -->
+  <path d="M100 30 L130 50 L130 90 Q130 120, 100 140 Q70 120, 70 90 L70 50 Z" 
+        fill="#dc143c" opacity="0.8"/>
+  
+  <!-- Lock symbol in center of shield -->
+  <rect x="90" y="75" width="20" height="25" rx="2" fill="#ffffff"/>
+  <path d="M85 75 Q85 65, 95 65 Q105 65, 105 75" stroke="#ffffff" stroke-width="3" fill="none"/>
+  <circle cx="100" cy="85" r="3" fill="#dc143c"/>
+  
+  <!-- Memory safety indicators around shield -->
+  <circle cx="60" cy="60" r="12" fill="#32cd32" opacity="0.9"/>
+  <text x="60" y="65" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#ffffff" font-weight="bold">M</text>
+  
+  <circle cx="140" cy="60" r="12" fill="#32cd32" opacity="0.9"/>
+  <text x="140" y="65" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#ffffff" font-weight="bold">S</text>
+  
+  <circle cx="60" cy="140" r="12" fill="#32cd32" opacity="0.9"/>
+  <text x="60" y="145" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#ffffff" font-weight="bold">C</text>
+  
+  <circle cx="140" cy="140" r="12" fill="#32cd32" opacity="0.9"/>
+  <text x="140" y="145" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#ffffff" font-weight="bold">F</text>
+  
+  <!-- Connection lines -->
+  <line x1="72" y1="66" x2="88" y2="75" stroke="#32cd32" stroke-width="2" opacity="0.6"/>
+  <line x1="128" y1="66" x2="112" y2="75" stroke="#32cd32" stroke-width="2" opacity="0.6"/>
+  <line x1="72" y1="134" x2="88" y2="125" stroke="#32cd32" stroke-width="2" opacity="0.6"/>
+  <line x1="128" y1="134" x2="112" y2="125" stroke="#32cd32" stroke-width="2" opacity="0.6"/>
+  
+  <!-- Label -->
+  <text x="100" y="170" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#dc143c" font-weight="bold">SAFE</text>
+</svg> 

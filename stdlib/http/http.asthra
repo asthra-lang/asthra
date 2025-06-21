@@ -1,0 +1,1161 @@
+// Asthra Standard Library - HTTP Client Module
+// Provides HTTP client functionality with comprehensive error handling and type safety
+
+package stdlib::http;
+
+// Import core functionality
+import "stdlib/asthra/core";
+import "stdlib/io";
+import "stdlib/string" as str;
+
+// ============================================================================
+// Error Types
+// ============================================================================
+
+// Comprehensive HTTP error enumeration
+enum HTTPError {
+    // Network-level errors
+    ConnectionFailed(string),            // Failed to establish connection
+    ConnectionTimeout(string),           // Connection timed out
+    DNSResolutionFailed(string),         // DNS lookup failed
+    NetworkUnreachable(string),          // Network is unreachable
+    
+    // Protocol-level errors
+    InvalidURL(string),                  // Malformed URL
+    InvalidMethod(string),               // Invalid HTTP method
+    InvalidHeader(string),               // Malformed header
+    ProtocolError(string),               // HTTP protocol violation
+    
+    // Response-level errors
+    InvalidResponse(string),             // Malformed HTTP response
+    InvalidStatusCode(u16),              // Unexpected status code
+    ResponseTooLarge(usize),             // Response exceeds size limit
+    InvalidEncoding(string),             // Unsupported content encoding
+    
+    // Content errors
+    InvalidUtf8([]u8),                   // Invalid UTF-8 in response body
+    JSONParseError(string),              // JSON parsing failed
+    ContentLengthMismatch(usize, usize), // Expected vs actual content length
+    
+    // Security errors
+    TLSError(string),                    // TLS/SSL errors
+    CertificateError(string),            // Certificate validation failed
+    RedirectLoop(string),                // Too many redirects
+    
+    // Client configuration errors
+    InvalidTimeout(u64),                 // Invalid timeout value
+    TooManyHeaders(usize),               // Too many headers
+    HeaderTooLarge(usize),               // Header value too large
+    
+    // System errors
+    OutOfMemory(string),                 // Memory allocation failed
+    IOError(io::IOError),                // Underlying I/O error
+    Other(string)                        // Catch-all for other errors
+}
+
+// ============================================================================
+// Core Types and Structures
+// ============================================================================
+
+// HTTP methods enumeration
+enum HTTPMethod {
+    GET,
+    POST,
+    PUT,
+    DELETE,
+    HEAD,
+    OPTIONS,
+    PATCH,
+    TRACE,
+    CONNECT
+}
+
+// HTTP version enumeration
+enum HTTPVersion {
+    HTTP_1_0,
+    HTTP_1_1,
+    HTTP_2_0
+}
+
+// HTTP header structure
+struct HTTPHeader {
+    name: string,
+    value: string
+}
+
+// HTTP request structure
+struct HTTPRequest {
+    method: HTTPMethod,
+    url: string,
+    version: HTTPVersion,
+    headers: []HTTPHeader,
+    body: []u8,
+    timeout_ms: u64,
+    follow_redirects: bool,
+    max_redirects: u32,
+    verify_tls: bool
+}
+
+// HTTP response structure
+struct HTTPResponse {
+    status_code: u16,
+    status_text: string,
+    version: HTTPVersion,
+    headers: []HTTPHeader,
+    body: []u8,
+    content_length: usize,
+    final_url: string,           // Final URL after redirects
+    redirect_count: u32          // Number of redirects followed
+}
+
+// HTTP client configuration
+struct HTTPClient {
+    default_timeout_ms: u64,
+    default_user_agent: string,
+    follow_redirects: bool,
+    max_redirects: u32,
+    verify_tls: bool,
+    max_response_size: usize,
+    connection_pool_size: u32
+}
+
+// URL components structure
+struct URL {
+    scheme: string,              // http, https
+    host: string,                // domain or IP
+    port: u16,                   // port number
+    path: string,                // path component
+    query: string,               // query string
+    fragment: string             // fragment identifier
+}
+
+// ============================================================================
+// HTTP Client Implementation
+// ============================================================================
+
+impl HTTPClient {
+    // Create a new HTTP client with default configuration
+    fn new(none) -> HTTPClient {
+        return HTTPClient {
+            default_timeout_ms: 30000,  // 30 seconds
+            default_user_agent: "Asthra-HTTP/1.0",
+            follow_redirects: true,
+            max_redirects: 10,
+            verify_tls: true,
+            max_response_size: 10485760, // 10MB
+            connection_pool_size: 10
+        };
+    }
+    
+    // Create HTTP client with custom configuration
+    fn with_config(
+        timeout_ms: u64,
+        user_agent: string,
+        follow_redirects: bool,
+        max_redirects: u32,
+        verify_tls: bool
+    ) -> Result<HTTPClient, HTTPError> {
+        if timeout_ms == 0 {
+            return Result.Err(HTTPError.InvalidTimeout(timeout_ms));
+        }
+        
+        if max_redirects > 50 {
+            return Result.Err(HTTPError.RedirectLoop("Max redirects cannot exceed 50"));
+        }
+        
+        return Result.Ok(HTTPClient {
+            default_timeout_ms: timeout_ms,
+            default_user_agent: user_agent,
+            follow_redirects: follow_redirects,
+            max_redirects: max_redirects,
+            verify_tls: verify_tls,
+            max_response_size: 10485760,
+            connection_pool_size: 10
+        });
+    }
+    
+    // Perform HTTP GET request
+    fn get(self, url: string) -> Result<HTTPResponse, HTTPError> {
+        let request: auto  // Manual review needed = HTTPRequest {;
+            method: HTTPMethod.GET,
+            url: url,
+            version: HTTPVersion.HTTP_1_1,
+            headers: [],
+            body: [],
+            timeout_ms: self.default_timeout_ms,
+            follow_redirects: self.follow_redirects,
+            max_redirects: self.max_redirects,
+            verify_tls: self.verify_tls
+        };
+        
+        return self.execute_request(request);
+    }
+    
+    // Perform HTTP GET request with custom headers
+    fn get_with_headers(self, url: string, headers: []HTTPHeader) -> Result<HTTPResponse, HTTPError> {
+        let request: auto  // Manual review needed = HTTPRequest {;
+            method: HTTPMethod.GET,
+            url: url,
+            version: HTTPVersion.HTTP_1_1,
+            headers: headers,
+            body: [],
+            timeout_ms: self.default_timeout_ms,
+            follow_redirects: self.follow_redirects,
+            max_redirects: self.max_redirects,
+            verify_tls: self.verify_tls
+        };
+        
+        return self.execute_request(request);
+    }
+    
+    // Perform HTTP POST request with JSON body
+    fn post_json(self, url: string, json_body: string) -> Result<HTTPResponse, HTTPError> {
+        let content_type_header: auto  // Manual review needed = HTTPHeader {;
+            name: "Content-Type",
+            value: "application/json"
+        };
+        
+        let headers: auto  // Array - manual review needed = [content_type_header];
+        let body_bytes: auto  // Function call - manual review needed = str::to_bytes(json_body);
+        
+        let request: auto  // Manual review needed = HTTPRequest {;
+            method: HTTPMethod.POST,
+            url: url,
+            version: HTTPVersion.HTTP_1_1,
+            headers: headers,
+            body: body_bytes,
+            timeout_ms: self.default_timeout_ms,
+            follow_redirects: self.follow_redirects,
+            max_redirects: self.max_redirects,
+            verify_tls: self.verify_tls
+        };
+        
+        return self.execute_request(request);
+    }
+    
+    // Perform HTTP POST request with form data
+    fn post_form(self, url: string, form_data: []HTTPHeader) -> Result<HTTPResponse, HTTPError> {
+        let form_body: auto  // Manual review needed = encode_form_data(form_data);
+        let content_type_header: auto  // Manual review needed = HTTPHeader {;
+            name: "Content-Type",
+            value: "application/x-www-form-urlencoded"
+        };
+        
+        let headers: auto  // Array - manual review needed = [content_type_header];
+        
+        let request: auto  // Manual review needed = HTTPRequest {;
+            method: HTTPMethod.POST,
+            url: url,
+            version: HTTPVersion.HTTP_1_1,
+            headers: headers,
+            body: form_body,
+            timeout_ms: self.default_timeout_ms,
+            follow_redirects: self.follow_redirects,
+            max_redirects: self.max_redirects,
+            verify_tls: self.verify_tls
+        };
+        
+        return self.execute_request(request);
+    }
+    
+    // Perform HTTP PUT request
+    fn put(self, url: string, body: []u8, content_type: string) -> Result<HTTPResponse, HTTPError> {
+        let content_type_header: auto  // Manual review needed = HTTPHeader {;
+            name: "Content-Type",
+            value: content_type
+        };
+        
+        let headers: auto  // Array - manual review needed = [content_type_header];
+        
+        let request: auto  // Manual review needed = HTTPRequest {;
+            method: HTTPMethod.PUT,
+            url: url,
+            version: HTTPVersion.HTTP_1_1,
+            headers: headers,
+            body: body,
+            timeout_ms: self.default_timeout_ms,
+            follow_redirects: self.follow_redirects,
+            max_redirects: self.max_redirects,
+            verify_tls: self.verify_tls
+        };
+        
+        return self.execute_request(request);
+    }
+    
+    // Perform HTTP DELETE request
+    fn delete(self, url: string) -> Result<HTTPResponse, HTTPError> {
+        let request: auto  // Manual review needed = HTTPRequest {;
+            method: HTTPMethod.DELETE,
+            url: url,
+            version: HTTPVersion.HTTP_1_1,
+            headers: [],
+            body: [],
+            timeout_ms: self.default_timeout_ms,
+            follow_redirects: self.follow_redirects,
+            max_redirects: self.max_redirects,
+            verify_tls: self.verify_tls
+        };
+        
+        return self.execute_request(request);
+    }
+    
+    // Execute a custom HTTP request
+    fn execute_request(self, request: HTTPRequest) -> Result<HTTPResponse, HTTPError> {
+        // Validate request
+        let validation_result: auto  // Manual review needed = validate_request(request);
+        match validation_result {
+            Result.Err(error) => return Result.Err(error)
+            Result.Ok(_) => {}
+        }
+        
+        // Parse URL
+        let url_result: auto  // Manual review needed = parse_url(request.url);
+        let url_components: auto  // Match unwrap - manual review needed = match url_result {;
+            Result.Ok(url) => url
+            Result.Err(error) => return Result.Err(error)
+        };
+        
+        // Execute the request with potential redirects
+        return execute_with_redirects(self, request, url_components, 0);
+    }
+}
+
+// ============================================================================
+// Convenience Functions (Module-level API)
+// ============================================================================
+
+// Simple GET request (module-level convenience function)
+fn get(url: string) -> Result<HTTPResponse, HTTPError> {
+    let client: auto  // Function call - manual review needed = HTTPClient::new();
+    return client.get(url);
+}
+
+// Simple POST request with JSON body
+fn post_json(url: string, json_body: string) -> Result<HTTPResponse, HTTPError> {
+    let client: auto  // Function call - manual review needed = HTTPClient::new();
+    return client.post_json(url, json_body);
+}
+
+// Simple POST request with form data
+fn post_form(url: string, form_data: []HTTPHeader) -> Result<HTTPResponse, HTTPError> {
+    let client: auto  // Function call - manual review needed = HTTPClient::new();
+    return client.post_form(url, form_data);
+}
+
+// Simple PUT request
+fn put(url: string, body: []u8, content_type: string) -> Result<HTTPResponse, HTTPError> {
+    let client: auto  // Function call - manual review needed = HTTPClient::new();
+    return client.put(url, body, content_type);
+}
+
+// Simple DELETE request
+fn delete(url: string) -> Result<HTTPResponse, HTTPError> {
+    let client: auto  // Function call - manual review needed = HTTPClient::new();
+    return client.delete(url);
+}
+
+// ============================================================================
+// URL Parsing and Validation
+// ============================================================================
+
+// Parse URL into components
+fn parse_url(url: string) -> Result<URL, HTTPError> {
+    // Basic URL validation
+    if str::len(url) == 0 {
+        return Result.Err(HTTPError.InvalidURL("Empty URL"));
+    }
+    
+    // Check for valid scheme
+    if !str::starts_with(url, "http://") && !str::starts_with(url, "https://") {
+        return Result.Err(HTTPError.InvalidURL("URL must start with http:// or https://"));
+    }
+    
+    let scheme: string;
+    let remaining: string;
+    
+    if str::starts_with(url, "https://") {
+        scheme = "https";
+        remaining = str::substring(url, 8, str::len(url));
+    } else {
+        scheme = "http";
+        remaining = str::substring(url, 7, str::len(url));
+    }
+    
+    // Parse host and port
+    let host_port_result: auto  // Manual review needed = parse_host_port(remaining);
+    let (host, port, path_query) = match host_port_result {
+        Result.Ok(components) => components
+        Result.Err(error) => return Result.Err(error)
+    };
+    
+    // Set default ports
+    let final_port: u16;
+    if port == 0 {
+        if scheme == "https" {
+            final_port = 443;
+        } else {
+            final_port = 80;
+        }
+    } else {
+        final_port = port;
+    }
+    
+    // Parse path and query
+    let (path, query, fragment) = parse_path_query_fragment(path_query);
+    
+    return Result.Ok(URL {
+        scheme: scheme,
+        host: host,
+        port: final_port,
+        path: path,
+        query: query,
+        fragment: fragment
+    });
+}
+
+// Parse host and port from URL remainder
+fn parse_host_port(remaining: string) -> Result<(string, u16, string), HTTPError> {
+    let slash_pos: auto  // Function call - manual review needed = str::find(remaining, "/");
+    let host_port: string;
+    let path_query: string;
+    
+    if slash_pos == -1 {
+        host_port = remaining;
+        path_query = "/";
+    } else {
+        host_port = str::substring(remaining, 0, slash_pos);
+        path_query = str::substring(remaining, slash_pos, str::len(remaining));
+    }
+    
+    let colon_pos: auto  // Function call - manual review needed = str::find(host_port, ":");
+    let host: string;
+    let port: u16;
+    
+    if colon_pos == -1 {
+        host = host_port;
+        port = 0; // Will be set to default
+    } else {
+        host = str::substring(host_port, 0, colon_pos);
+        let port_str: auto  // Function call - manual review needed = str::substring(host_port, colon_pos + 1, str::len(host_port));
+        let port_result: auto  // Function call - manual review needed = str::parse_u16(port_str);
+        port = match port_result {
+            Result.Ok(p) => p
+            Result.Err(_) => return Result.Err(HTTPError.InvalidURL("Invalid port number"))
+        };
+    }
+    
+    if str::len(host) == 0 {
+        return Result.Err(HTTPError.InvalidURL("Empty hostname"));
+    }
+    
+    return Result.Ok((host, port, path_query));
+}
+
+// Parse path, query, and fragment
+fn parse_path_query_fragment(path_query: string) -> (string, string, string) {
+    let fragment_pos: auto  // Function call - manual review needed = str::find(path_query, "#");
+    let path_query_only: string;
+    let fragment: string;
+    
+    if fragment_pos == -1 {
+        path_query_only = path_query;
+        fragment = "";
+    } else {
+        path_query_only = str::substring(path_query, 0, fragment_pos);
+        fragment = str::substring(path_query, fragment_pos + 1, str::len(path_query));
+    }
+    
+    let query_pos: auto  // Function call - manual review needed = str::find(path_query_only, "?");
+    let path: string;
+    let query: string;
+    
+    if query_pos == -1 {
+        path = path_query_only;
+        query = "";
+    } else {
+        path = str::substring(path_query_only, 0, query_pos);
+        query = str::substring(path_query_only, query_pos + 1, str::len(path_query_only));
+    }
+    
+    if str::len(path) == 0 {
+        path = "/";
+    }
+    
+    return (path, query, fragment);
+}
+
+// ============================================================================
+// Request Validation
+// ============================================================================
+
+// Validate HTTP request
+fn validate_request(request: HTTPRequest) -> Result<void, HTTPError> {
+    // Validate URL
+    if str::len(request.url) == 0 {
+        return Result.Err(HTTPError.InvalidURL("Empty URL"));
+    }
+    
+    // Validate timeout
+    if request.timeout_ms == 0 {
+        return Result.Err(HTTPError.InvalidTimeout(request.timeout_ms));
+    }
+    
+    // Validate headers
+    if request.headers.len > 100 {
+        return Result.Err(HTTPError.TooManyHeaders(request.headers.len));
+    }
+    
+    let mut i: usize = 0;
+    while i < request.headers.len {
+        let header: auto  // Manual review needed = request.headers[i];
+        
+        // Validate header name
+        if str::len(header.name) == 0 {
+            return Result.Err(HTTPError.InvalidHeader("Empty header name"));
+        }
+        
+        if str::len(header.name) > 1024 {
+            return Result.Err(HTTPError.HeaderTooLarge(str::len(header.name)));
+        }
+        
+        // Validate header value
+        if str::len(header.value) > 8192 {
+            return Result.Err(HTTPError.HeaderTooLarge(str::len(header.value)));
+        }
+        
+        // Check for invalid characters in header name
+        if str::contains(header.name, "\r") || str::contains(header.name, "\n") {
+            return Result.Err(HTTPError.InvalidHeader("Header name contains invalid characters"));
+        }
+        
+        i = i + 1;
+    }
+    
+    // Validate redirect settings
+    if request.max_redirects > 50 {
+        return Result.Err(HTTPError.RedirectLoop("Max redirects cannot exceed 50"));
+    }
+    
+    return Result.Ok(());
+}
+
+// ============================================================================
+// HTTP Request Execution (Core Implementation)
+// ============================================================================
+
+// Execute HTTP request with redirect handling
+fn execute_with_redirects(
+    client: HTTPClient,
+    request: HTTPRequest,
+    url: URL,
+    redirect_count: u32
+) -> Result<HTTPResponse, HTTPError> {
+    if redirect_count > request.max_redirects {
+        return Result.Err(HTTPError.RedirectLoop("Too many redirects"));
+    }
+    
+    // Execute the actual HTTP request
+    let response_result: auto  // Manual review needed = execute_http_request(client, request, url);
+    let response: auto  // Match unwrap - manual review needed = match response_result {;
+        Result.Ok(resp) => resp
+        Result.Err(error) => return Result.Err(error)
+    };
+    
+    // Check if we need to follow redirects
+    if request.follow_redirects && is_redirect_status(response.status_code) {
+        let location_header: auto  // Manual review needed = find_header(response.headers, "Location");
+        match location_header {
+            Result.Ok(location) => {
+                // Create new request for redirect
+                let redirect_request: auto  // Manual review needed = HTTPRequest {;
+                    method: get_redirect_method(request.method, response.status_code),
+                    url: location,
+                    version: request.version,
+                    headers: filter_redirect_headers(request.headers),
+                    body: get_redirect_body(request.method, response.status_code, request.body),
+                    timeout_ms: request.timeout_ms,
+                    follow_redirects: request.follow_redirects,
+                    max_redirects: request.max_redirects,
+                    verify_tls: request.verify_tls
+                };
+                
+                let redirect_url_result: auto  // Manual review needed = parse_url(location);
+                let redirect_url: auto  // Match unwrap - manual review needed = match redirect_url_result {;
+                    Result.Ok(url) => url
+                    Result.Err(error) => return Result.Err(error)
+                };
+                
+                return execute_with_redirects(client, redirect_request, redirect_url, redirect_count + 1);
+            },
+            Result.Err(_) => {
+                // No Location header, return the redirect response
+                return Result.Ok(response);
+            }
+        }
+    }
+    
+    return Result.Ok(response);
+}
+
+// Execute the actual HTTP request (low-level implementation)
+fn execute_http_request(
+    client: HTTPClient,
+    request: HTTPRequest,
+    url: URL
+) -> Result<HTTPResponse, HTTPError> {
+    // This is where the actual HTTP implementation would go
+    // For now, we'll use extern functions to interface with a C HTTP library
+    
+    extern "libcurl" fn curl_easy_init(none) -> *mut void;
+    extern "libcurl" fn curl_easy_setopt(curl: *mut void, option: i32, parameter: *const void) -> i32;
+    extern "libcurl" fn curl_easy_perform(curl: *mut void) -> i32;
+    extern "libcurl" fn curl_easy_cleanup(curl: *mut void) -> void;
+    extern "libcurl" fn curl_easy_getinfo(curl: *mut void, info: i32, parameter: *mut void) -> i32;
+    
+    unsafe {
+        let curl_handle: *mut void = curl_easy_init();
+        if curl_handle == null {
+            return Result.Err(HTTPError.Other("Failed to initialize HTTP client"));
+        }
+        
+        // Set URL
+        let url_cstr: auto  // Function call - manual review needed = str::to_cstr(request.url);
+        curl_easy_setopt(curl_handle, 10002, url_cstr as *const void); // CURLOPT_URL
+        
+        // Set method
+        let method_result: auto  // Manual review needed = set_curl_method(curl_handle, request.method);
+        match method_result {
+            Result.Err(error) => {
+                curl_easy_cleanup(curl_handle);
+                return Result.Err(error);
+            },
+            Result.Ok(_) => {}
+        }
+        
+        // Set headers
+        let headers_result: auto  // Manual review needed = set_curl_headers(curl_handle, request.headers);
+        match headers_result {
+            Result.Err(error) => {
+                curl_easy_cleanup(curl_handle);
+                return Result.Err(error);
+            },
+            Result.Ok(_) => {}
+        }
+        
+        // Set body if present
+        if request.body.len > 0 {
+            curl_easy_setopt(curl_handle, 10015, request.body.ptr as *const void); // CURLOPT_POSTFIELDS
+            curl_easy_setopt(curl_handle, 60, request.body.len as *const void); // CURLOPT_POSTFIELDSIZE
+        }
+        
+        // Set timeout
+        let timeout_seconds: auto  // Manual review needed = request.timeout_ms / 1000;
+        curl_easy_setopt(curl_handle, 13, timeout_seconds as *const void); // CURLOPT_TIMEOUT
+        
+        // Set TLS verification
+        if !request.verify_tls {
+            curl_easy_setopt(curl_handle, 64, 0 as *const void); // CURLOPT_SSL_VERIFYPEER
+            curl_easy_setopt(curl_handle, 81, 0 as *const void); // CURLOPT_SSL_VERIFYHOST
+        }
+        
+        // Setup response capture
+        let response_data: auto  // Function call - manual review needed = ResponseData::new();
+        curl_easy_setopt(curl_handle, 20011, write_callback as *const void); // CURLOPT_WRITEFUNCTION
+        curl_easy_setopt(curl_handle, 10001, &response_data as *const void); // CURLOPT_WRITEDATA
+        
+        // Setup header capture
+        curl_easy_setopt(curl_handle, 20079, header_callback as *const void); // CURLOPT_HEADERFUNCTION
+        curl_easy_setopt(curl_handle, 10029, &response_data as *const void); // CURLOPT_HEADERDATA
+        
+        // Perform the request
+        let perform_result: i32 = curl_easy_perform(curl_handle);
+        if perform_result != 0 {
+            curl_easy_cleanup(curl_handle);
+            return Result.Err(HTTPError.ConnectionFailed("HTTP request failed"));
+        }
+        
+        // Get response code
+        let mut response_code: i64 = 0;
+        curl_easy_getinfo(curl_handle, 2097154, &mut response_code as *mut i64 as *mut void); // CURLINFO_RESPONSE_CODE
+        
+        // Get final URL (after redirects)
+        let mut final_url_ptr: *mut u8 = null;
+        curl_easy_getinfo(curl_handle, 1048577, &mut final_url_ptr as *mut *mut u8 as *mut void); // CURLINFO_EFFECTIVE_URL
+        let final_url: auto  // Manual review needed = if final_url_ptr != null {;
+            str::from_cstr(final_url_ptr)
+        } else {
+            request.url
+        };
+        
+        curl_easy_cleanup(curl_handle);
+        
+        // Build response
+        let response: auto  // Manual review needed = HTTPResponse {;
+            status_code: response_code as u16,
+            status_text: get_status_text(response_code as u16),
+            version: HTTPVersion.HTTP_1_1,
+            headers: response_data.headers,
+            body: response_data.body,
+            content_length: response_data.body.len,
+            final_url: final_url,
+            redirect_count: 0  // Will be set by redirect handler
+        };
+        
+        return Result.Ok(response);
+    }
+}
+
+// ============================================================================
+// Response Data Structure for libcurl callbacks
+// ============================================================================
+
+struct ResponseData {
+    body: []u8,
+    headers: []HTTPHeader
+}
+
+impl ResponseData {
+    fn new(none) -> ResponseData {
+        return ResponseData {
+            body: [],
+            headers: []
+        };
+    }
+}
+
+// Callback function for writing response body
+extern "C" fn write_callback(
+    contents: *const u8,
+    size: usize,
+    nmemb: usize,
+    userdata: *mut ResponseData
+) -> usize {
+    unsafe {
+        let total_size: auto  // Manual review needed = size * nmemb;
+        let response_data: auto  // Manual review needed = userdata as *mut ResponseData;
+        
+        // Append data to body
+        let mut i: usize = 0;
+        while i < total_size {
+            (*response_data).body.push(*(contents + i));
+            i = i + 1;
+        }
+        
+        return total_size;
+    }
+}
+
+// Callback function for writing response headers
+extern "C" fn header_callback(
+    buffer: *const u8,
+    size: usize,
+    nitems: usize,
+    userdata: *mut ResponseData
+) -> usize {
+    unsafe {
+        let total_size: auto  // Manual review needed = size * nitems;
+        let response_data: auto  // Manual review needed = userdata as *mut ResponseData;
+        
+        // Convert header to string
+        let header_str: auto  // Function call - manual review needed = str::from_bytes_with_length(buffer, total_size);
+        
+        // Parse header (skip status line)
+        if str::contains(header_str, ":") {
+            let colon_pos: auto  // Function call - manual review needed = str::find(header_str, ":");
+            if colon_pos > 0 {
+                let name: auto  // Function call - manual review needed = str::trim(str::substring(header_str, 0, colon_pos));
+                let value: auto  // Function call - manual review needed = str::trim(str::substring(header_str, colon_pos + 1, str::len(header_str)));
+                
+                let header: auto  // Manual review needed = HTTPHeader {;
+                    name: name,
+                    value: value
+                };
+                
+                (*response_data).headers.push(header);
+            }
+        }
+        
+        return total_size;
+    }
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+// Convert HTTP method to string
+fn method_to_string(method: HTTPMethod) -> string {
+    match method {
+        HTTPMethod.GET => return "GET"
+        HTTPMethod.POST => return "POST"
+        HTTPMethod.PUT => return "PUT"
+        HTTPMethod.DELETE => return "DELETE"
+        HTTPMethod.HEAD => return "HEAD"
+        HTTPMethod.OPTIONS => return "OPTIONS"
+        HTTPMethod.PATCH => return "PATCH"
+        HTTPMethod.TRACE => return "TRACE"
+        HTTPMethod.CONNECT => return "CONNECT"
+    }
+}
+
+// Get HTTP status text
+fn get_status_text(status_code: u16) -> string {
+    match status_code {
+        200 => return "OK"
+        201 => return "Created"
+        204 => return "No Content"
+        301 => return "Moved Permanently"
+        302 => return "Found"
+        304 => return "Not Modified"
+        400 => return "Bad Request"
+        401 => return "Unauthorized"
+        403 => return "Forbidden"
+        404 => return "Not Found"
+        405 => return "Method Not Allowed"
+        500 => return "Internal Server Error"
+        502 => return "Bad Gateway"
+        503 => return "Service Unavailable"
+        _ => return "Unknown Status"
+    }
+}
+
+// Check if status code indicates a redirect
+fn is_redirect_status(status_code: u16) -> bool {
+    return status_code == 301 || status_code == 302 || status_code == 303 || 
+           status_code == 307 || status_code == 308;
+}
+
+// Get redirect method based on original method and status code
+fn get_redirect_method(original_method: HTTPMethod, status_code: u16) -> HTTPMethod {
+    match status_code {
+        301 | 302 => {
+            // For 301/302, POST becomes GET, others stay the same
+            match original_method {
+                HTTPMethod.POST => return HTTPMethod.GET
+                _ => return original_method
+            }
+        },
+        303 => {
+            // For 303, all methods become GET except HEAD
+            match original_method {
+                HTTPMethod.HEAD => return HTTPMethod.HEAD
+                _ => return HTTPMethod.GET
+            }
+        },
+        307 | 308 => {
+            // For 307/308, method stays the same
+            return original_method;
+        },
+        _ => return original_method
+    }
+}
+
+// Filter headers for redirect (remove hop-by-hop headers)
+fn filter_redirect_headers(headers: []HTTPHeader) -> []HTTPHeader {
+    let mut filtered_headers: []HTTPHeader = [];
+    
+    let mut i: usize = 0;
+    while i < headers.len {
+        let header: auto  // Manual review needed = headers[i];
+        let header_name_lower: auto  // Function call - manual review needed = str::to_lowercase(header.name);
+        
+        // Skip hop-by-hop headers
+        if header_name_lower != "authorization" && 
+           header_name_lower != "content-length" &&
+           header_name_lower != "content-type" &&
+           header_name_lower != "transfer-encoding" {
+            filtered_headers.push(header);
+        }
+        
+        i = i + 1;
+    }
+    
+    return filtered_headers;
+}
+
+// Get redirect body (usually empty for redirects)
+fn get_redirect_body(original_method: HTTPMethod, status_code: u16, original_body: []u8) -> []u8 {
+    match status_code {
+        307 | 308 => {
+            // For 307/308, keep the original body
+            return original_body;
+        },
+        _ => {
+            // For other redirects, no body
+            return [];
+        }
+    }
+}
+
+// Find header by name (case-insensitive)
+fn find_header(headers: []HTTPHeader, name: string) -> Result<string, HTTPError> {
+    let name_lower: auto  // Function call - manual review needed = str::to_lowercase(name);
+    
+    let mut i: usize = 0;
+    while i < headers.len {
+        let header: auto  // Manual review needed = headers[i];
+        let header_name_lower: auto  // Function call - manual review needed = str::to_lowercase(header.name);
+        
+        if header_name_lower == name_lower {
+            return Result.Ok(header.value);
+        }
+        
+        i = i + 1;
+    }
+    
+    return Result.Err(HTTPError.InvalidHeader("Header not found: " + name));
+}
+
+// Encode form data
+fn encode_form_data(form_data: []HTTPHeader) -> []u8 {
+    let mut encoded: string = "";
+    
+    let mut i: usize = 0;
+    while i < form_data.len {
+        let field: auto  // Manual review needed = form_data[i];
+        
+        if i > 0 {
+            encoded = encoded + "&";
+        }
+        
+        let encoded_name: auto  // Manual review needed = url_encode(field.name);
+        let encoded_value: auto  // Manual review needed = url_encode(field.value);
+        encoded = encoded + encoded_name + "=" + encoded_value;
+        
+        i = i + 1;
+    }
+    
+    return str::to_bytes(encoded);
+}
+
+// URL encode string
+fn url_encode(input: string) -> string {
+    let mut encoded: string = "";
+    let bytes: auto  // Function call - manual review needed = str::to_bytes(input);
+    
+    let mut i: usize = 0;
+    while i < bytes.len {
+        let byte: auto  // Manual review needed = bytes[i];
+        
+        if (byte >= 65 && byte <= 90) ||   // A-Z
+           (byte >= 97 && byte <= 122) ||  // a-z
+           (byte >= 48 && byte <= 57) ||   // 0-9
+           byte == 45 || byte == 46 || byte == 95 || byte == 126 { // -._~
+            encoded = encoded + str::from_byte(byte);
+        } else {
+            encoded = encoded + "%" + byte_to_hex(byte);
+        }
+        
+        i = i + 1;
+    }
+    
+    return encoded;
+}
+
+// Convert byte to hex string
+fn byte_to_hex(byte: u8) -> string {
+    let hex_chars: string = "0123456789ABCDEF";
+    let high: auto  // Manual review needed = (byte >> 4) & 0x0F;
+    let low: auto  // Manual review needed = byte & 0x0F;
+    
+    return str::from_byte(str::char_at(hex_chars, high as usize)) + 
+           str::from_byte(str::char_at(hex_chars, low as usize));
+}
+
+// Set curl method
+fn set_curl_method(curl_handle: *mut void, method: HTTPMethod) -> Result<void, HTTPError> {
+    extern "libcurl" fn curl_easy_setopt(curl: *mut void, option: i32, parameter: *const void) -> i32;
+    
+    unsafe {
+        match method {
+            HTTPMethod.GET => {
+                // GET is default, no need to set
+                return Result.Ok(());
+            },
+            HTTPMethod.POST => {
+                curl_easy_setopt(curl_handle, 47, 1 as *const void); // CURLOPT_POST
+                return Result.Ok(());
+            },
+            HTTPMethod.PUT => {
+                curl_easy_setopt(curl_handle, 54, 1 as *const void); // CURLOPT_UPLOAD
+                return Result.Ok(());
+            },
+            HTTPMethod.DELETE => {
+                let method_str: auto  // Function call - manual review needed = str::to_cstr("DELETE");
+                curl_easy_setopt(curl_handle, 10015, method_str as *const void); // CURLOPT_CUSTOMREQUEST
+                return Result.Ok(());
+            },
+            HTTPMethod.HEAD => {
+                curl_easy_setopt(curl_handle, 80, 1 as *const void); // CURLOPT_NOBODY
+                return Result.Ok(());
+            },
+            HTTPMethod.OPTIONS => {
+                let method_str: auto  // Function call - manual review needed = str::to_cstr("OPTIONS");
+                curl_easy_setopt(curl_handle, 10015, method_str as *const void); // CURLOPT_CUSTOMREQUEST
+                return Result.Ok(());
+            },
+            HTTPMethod.PATCH => {
+                let method_str: auto  // Function call - manual review needed = str::to_cstr("PATCH");
+                curl_easy_setopt(curl_handle, 10015, method_str as *const void); // CURLOPT_CUSTOMREQUEST
+                return Result.Ok(());
+            },
+            _ => {
+                return Result.Err(HTTPError.InvalidMethod("Unsupported HTTP method"));
+            }
+        }
+    }
+}
+
+// Set curl headers
+fn set_curl_headers(curl_handle: *mut void, headers: []HTTPHeader) -> Result<void, HTTPError> {
+    extern "libcurl" fn curl_easy_setopt(curl: *mut void, option: i32, parameter: *const void) -> i32;
+    extern "libcurl" fn curl_slist_append(list: *mut void, string: *const u8) -> *mut void;
+    
+    unsafe {
+        let mut header_list: *mut void = null;
+        
+        let mut i: usize = 0;
+        while i < headers.len {
+            let header: auto  // Manual review needed = headers[i];
+            let header_string: auto  // Manual review needed = header.name + ": " + header.value;
+            let header_cstr: auto  // Function call - manual review needed = str::to_cstr(header_string);
+            
+            header_list = curl_slist_append(header_list, header_cstr);
+            
+            i = i + 1;
+        }
+        
+        if header_list != null {
+            curl_easy_setopt(curl_handle, 10023, header_list as *const void); // CURLOPT_HTTPHEADER
+        }
+        
+        return Result.Ok(());
+    }
+}
+
+// ============================================================================
+// Error Handling Utilities
+// ============================================================================
+
+// Format HTTP error for display
+fn format_http_error(error: HTTPError) -> string {
+    match error {
+        HTTPError.ConnectionFailed(msg) => return "Connection failed: " + msg
+        HTTPError.ConnectionTimeout(msg) => return "Connection timeout: " + msg
+        HTTPError.DNSResolutionFailed(msg) => return "DNS resolution failed: " + msg
+        HTTPError.NetworkUnreachable(msg) => return "Network unreachable: " + msg
+        HTTPError.InvalidURL(msg) => return "Invalid URL: " + msg
+        HTTPError.InvalidMethod(msg) => return "Invalid method: " + msg
+        HTTPError.InvalidHeader(msg) => return "Invalid header: " + msg
+        HTTPError.ProtocolError(msg) => return "Protocol error: " + msg
+        HTTPError.InvalidResponse(msg) => return "Invalid response: " + msg
+        HTTPError.InvalidStatusCode(code) => return "Invalid status code: " + code
+        HTTPError.ResponseTooLarge(size) => return "Response too large: " + size + " bytes"
+        HTTPError.InvalidEncoding(msg) => return "Invalid encoding: " + msg
+        HTTPError.InvalidUtf8(bytes) => return "Invalid UTF-8 (length: " + bytes.len + ")"
+        HTTPError.JSONParseError(msg) => return "JSON parse error: " + msg
+        HTTPError.ContentLengthMismatch(expected, actual) => {
+            return "Content length mismatch: expected " + expected + ", got " + actual;
+        },
+        HTTPError.TLSError(msg) => return "TLS error: " + msg
+        HTTPError.CertificateError(msg) => return "Certificate error: " + msg
+        HTTPError.RedirectLoop(msg) => return "Redirect loop: " + msg
+        HTTPError.InvalidTimeout(timeout) => return "Invalid timeout: " + timeout + "ms"
+        HTTPError.TooManyHeaders(count) => return "Too many headers: " + count
+        HTTPError.HeaderTooLarge(size) => return "Header too large: " + size + " bytes"
+        HTTPError.OutOfMemory(msg) => return "Out of memory: " + msg
+        HTTPError.IOError(io_error) => return "I/O error: " + format_io_error(io_error)
+        HTTPError.Other(msg) => return "HTTP error: " + msg
+    }
+}
+
+// Format I/O error (imported from io module)
+fn format_io_error(error: io::IOError) -> string {
+    match error {
+        io::IOError.EndOfFile => return "End of file"
+        io::IOError.PermissionDenied => return "Permission denied"
+        io::IOError.NotFound => return "Not found"
+        io::IOError.Interrupted => return "Interrupted"
+        io::IOError.InvalidInput => return "Invalid input"
+        io::IOError.BrokenPipe => return "Broken pipe"
+        io::IOError.WouldBlock => return "Would block"
+        io::IOError.InvalidUtf8(bytes) => return "Invalid UTF-8 (length: " + bytes.len + ")"
+        io::IOError.BufferTooSmall(size) => return "Buffer too small: " + size
+        io::IOError.WriteError(msg) => return "Write error: " + msg
+        io::IOError.ReadError(msg) => return "Read error: " + msg
+        io::IOError.Other(msg) => return "Other error: " + msg
+    }
+}
+
+// ============================================================================
+// Response Helper Methods
+// ============================================================================
+
+impl HTTPResponse {
+    // Check if response indicates success (2xx status codes)
+    fn is_success(self) -> bool {
+        return self.status_code >= 200 && self.status_code < 300;
+    }
+    
+    // Check if response indicates client error (4xx status codes)
+    fn is_client_error(self) -> bool {
+        return self.status_code >= 400 && self.status_code < 500;
+    }
+    
+    // Check if response indicates server error (5xx status codes)
+    fn is_server_error(self) -> bool {
+        return self.status_code >= 500 && self.status_code < 600;
+    }
+    
+    // Get response body as string (validates UTF-8)
+    fn body_as_string(self) -> Result<string, HTTPError> {
+        let validation_result: auto  // Manual review needed = validate_utf8(self.body);
+        match validation_result {
+            Result.Ok(_) => {
+                return Result.Ok(str::from_bytes(self.body));
+            },
+            Result.Err(invalid_bytes) => {
+                return Result.Err(HTTPError.InvalidUtf8(invalid_bytes));
+            }
+        }
+    }
+    
+    // Get header value by name (case-insensitive)
+    fn get_header(self, name: string) -> Result<string, HTTPError> {
+        return find_header(self.headers, name);
+    }
+    
+    // Get content type from headers
+    fn content_type(self) -> Result<string, HTTPError> {
+        return self.get_header("Content-Type");
+    }
+    
+    // Get content length from headers
+    fn content_length_header(self) -> Result<usize, HTTPError> {
+        let content_length_str_result: auto  // Manual review needed = self.get_header("Content-Length");
+        match content_length_str_result {
+            Result.Ok(length_str) => {
+                let parse_result: auto  // Function call - manual review needed = str::parse_usize(length_str);
+                match parse_result {
+                    Result.Ok(length) => return Result.Ok(length)
+                    Result.Err(_) => return Result.Err(HTTPError.InvalidHeader("Invalid Content-Length"))
+                }
+            },
+            Result.Err(error) => return Result.Err(error)
+        }
+    }
+}
+
+// UTF-8 validation function
+fn validate_utf8(bytes: []u8) -> Result<void, []u8> {
+    extern "asthra_runtime" fn asthra_validate_utf8(bytes: []u8) -> i32;
+    
+    unsafe {
+        let result: i32 = asthra_validate_utf8(bytes);
+        if result == 0 {
+            return Result.Ok(());
+        } else {
+            return Result.Err(bytes);
+        }
+    }
+} 

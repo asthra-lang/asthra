@@ -1,0 +1,189 @@
+/**
+ * Test file for enum variant syntax implementation
+ * Tests parsing of enum variant construction like Result.Ok(value) and Result.Err(error)
+ * Migrated to standardized testing framework
+ */
+
+#include "../framework/test_framework.h"
+
+#include "parser.h"
+#include "lexer.h"
+#include "ast_node.h"
+
+// Test helper function to create a lexer from source code
+static Lexer *create_test_lexer(const char *source) {
+    return lexer_create(source, strlen(source), "test.asthra");
+}
+
+// Test helper function to parse an expression
+static ASTNode *parse_test_expression(const char *source) {
+    Lexer *lexer = create_test_lexer(source);
+    if (!lexer) return NULL;
+    
+    Parser *parser = parser_create(lexer);
+    if (!parser) {
+        lexer_destroy(lexer);
+        return NULL;
+    }
+    
+    ASTNode *expr = parser_parse_expression(parser);
+    
+    if (parser_had_error(parser)) {
+        printf("Parser errors:\n");
+        const ParseError *error = parser_get_errors(parser);
+        while (error) {
+            printf("  %s:%d:%d: %s\n", 
+                   error->location.filename ? error->location.filename : "unknown",
+                   error->location.line, error->location.column, error->message);
+            error = error->next;
+        }
+        if (expr) {
+            ast_free_node(expr);
+            expr = NULL;
+        }
+    }
+    
+    parser_destroy(parser);
+    lexer_destroy(lexer);
+    
+    return expr;
+}
+
+// Test basic enum variant construction without value
+AsthraTestResult test_enum_variant_no_value(AsthraTestContext *context) {
+    ASTNode *expr = parse_test_expression("Result.Ok()");
+    ASTHRA_TEST_ASSERT_NOT_NULL(context, expr, "Should parse Result.Ok()");
+    
+    if (expr) {
+        ASTHRA_TEST_ASSERT_EQ(context, expr->type, AST_ENUM_VARIANT, "Should be enum variant node");
+        ASTHRA_TEST_ASSERT_STR_EQ(context, expr->data.enum_variant.enum_name, "Result", "Enum name should be Result");
+        ASTHRA_TEST_ASSERT_STR_EQ(context, expr->data.enum_variant.variant_name, "Ok", "Variant name should be Ok");
+        ASTHRA_TEST_ASSERT_NULL(context, expr->data.enum_variant.value, "Value should be NULL for empty variant");
+        
+        ast_free_node(expr);
+    }
+    
+    return ASTHRA_TEST_PASS;
+}
+
+// Test enum variant construction with value
+AsthraTestResult test_enum_variant_with_value(AsthraTestContext *context) {
+    ASTNode *expr = parse_test_expression("Result.Ok(42)");
+    ASTHRA_TEST_ASSERT_NOT_NULL(context, expr, "Should parse Result.Ok(42)");
+    
+    if (expr) {
+        ASTHRA_TEST_ASSERT_EQ(context, expr->type, AST_ENUM_VARIANT, "Should be enum variant node");
+        ASTHRA_TEST_ASSERT_STR_EQ(context, expr->data.enum_variant.enum_name, "Result", "Enum name should be Result");
+        ASTHRA_TEST_ASSERT_STR_EQ(context, expr->data.enum_variant.variant_name, "Ok", "Variant name should be Ok");
+        ASTHRA_TEST_ASSERT_NOT_NULL(context, expr->data.enum_variant.value, "Value should not be NULL");
+        
+        if (expr->data.enum_variant.value) {
+            ASTHRA_TEST_ASSERT_EQ(context, expr->data.enum_variant.value->type, AST_INTEGER_LITERAL, "Value should be integer literal");
+            ASTHRA_TEST_ASSERT_EQ(context, expr->data.enum_variant.value->data.integer_literal.value, 42, "Integer value should be 42");
+        }
+        
+        ast_free_node(expr);
+    }
+    
+    return ASTHRA_TEST_PASS;
+}
+
+// Test enum variant with string value
+AsthraTestResult test_enum_variant_with_string(AsthraTestContext *context) {
+    ASTNode *expr = parse_test_expression("Result.Err(\"error message\")");
+    ASTHRA_TEST_ASSERT_NOT_NULL(context, expr, "Should parse Result.Err with string");
+    
+    if (expr) {
+        ASTHRA_TEST_ASSERT_EQ(context, expr->type, AST_ENUM_VARIANT, "Should be enum variant node");
+        ASTHRA_TEST_ASSERT_STR_EQ(context, expr->data.enum_variant.enum_name, "Result", "Enum name should be Result");
+        ASTHRA_TEST_ASSERT_STR_EQ(context, expr->data.enum_variant.variant_name, "Err", "Variant name should be Err");
+        ASTHRA_TEST_ASSERT_NOT_NULL(context, expr->data.enum_variant.value, "Value should not be NULL");
+        
+        if (expr->data.enum_variant.value) {
+            ASTHRA_TEST_ASSERT_EQ(context, expr->data.enum_variant.value->type, AST_STRING_LITERAL, "Value should be string literal");
+            ASTHRA_TEST_ASSERT_STR_EQ(context, expr->data.enum_variant.value->data.string_literal.value, "error message", "String value should match");
+        }
+        
+        ast_free_node(expr);
+    }
+    
+    return ASTHRA_TEST_PASS;
+}
+
+// Test enum variant with complex expression
+AsthraTestResult test_enum_variant_with_expression(AsthraTestContext *context) {
+    ASTNode *expr = parse_test_expression("Result.Ok(x + 1)");
+    ASTHRA_TEST_ASSERT_NOT_NULL(context, expr, "Should parse Result.Ok with expression");
+    
+    if (expr) {
+        ASTHRA_TEST_ASSERT_EQ(context, expr->type, AST_ENUM_VARIANT, "Should be enum variant node");
+        ASTHRA_TEST_ASSERT_STR_EQ(context, expr->data.enum_variant.enum_name, "Result", "Enum name should be Result");
+        ASTHRA_TEST_ASSERT_STR_EQ(context, expr->data.enum_variant.variant_name, "Ok", "Variant name should be Ok");
+        ASTHRA_TEST_ASSERT_NOT_NULL(context, expr->data.enum_variant.value, "Value should not be NULL");
+        
+        if (expr->data.enum_variant.value) {
+            ASTHRA_TEST_ASSERT_EQ(context, expr->data.enum_variant.value->type, AST_BINARY_EXPR, "Value should be binary expression");
+        }
+        
+        ast_free_node(expr);
+    }
+    
+    return ASTHRA_TEST_PASS;
+}
+
+// Test that regular field access still works
+AsthraTestResult test_regular_field_access(AsthraTestContext *context) {
+    ASTNode *expr = parse_test_expression("obj.field");
+    ASTHRA_TEST_ASSERT_NOT_NULL(context, expr, "Should parse regular field access");
+    
+    if (expr) {
+        ASTHRA_TEST_ASSERT_EQ(context, expr->type, AST_FIELD_ACCESS, "Should be field access node");
+        ASTHRA_TEST_ASSERT_NOT_NULL(context, expr->data.field_access.object, "Object should not be NULL");
+        
+        if (expr->data.field_access.object) {
+            ASTHRA_TEST_ASSERT_EQ(context, expr->data.field_access.object->type, AST_IDENTIFIER, "Object should be identifier");
+            ASTHRA_TEST_ASSERT_STR_EQ(context, expr->data.field_access.object->data.identifier.name, "obj", "Object name should be obj");
+        }
+        
+        ASTHRA_TEST_ASSERT_STR_EQ(context, expr->data.field_access.field_name, "field", "Field name should be field");
+        
+        ast_free_node(expr);
+    }
+    
+    return ASTHRA_TEST_PASS;
+}
+
+// Test AST printing for enum variants
+AsthraTestResult test_enum_variant_printing(AsthraTestContext *context) {
+    ASTNode *expr = parse_test_expression("Result.Ok(42)");
+    ASTHRA_TEST_ASSERT_NOT_NULL(context, expr, "Should parse for printing test");
+    
+    if (expr) {
+        // This test mainly ensures printing doesn't crash
+        printf("AST structure:\n");
+        ast_print(expr, 0);
+        
+        ast_free_node(expr);
+    }
+    
+    return ASTHRA_TEST_PASS;
+}
+
+int main() {
+    AsthraTestSuite *suite = asthra_test_suite_create_lightweight("Enum Variant Tests");
+    
+    asthra_test_suite_add_test(suite, "enum_variant_no_value", 
+        "Test enum variant construction without value", test_enum_variant_no_value);
+    asthra_test_suite_add_test(suite, "enum_variant_with_value", 
+        "Test enum variant construction with integer value", test_enum_variant_with_value);
+    asthra_test_suite_add_test(suite, "enum_variant_with_string", 
+        "Test enum variant construction with string value", test_enum_variant_with_string);
+    asthra_test_suite_add_test(suite, "enum_variant_with_expression", 
+        "Test enum variant construction with complex expression", test_enum_variant_with_expression);
+    asthra_test_suite_add_test(suite, "regular_field_access", 
+        "Test that regular field access still works", test_regular_field_access);
+    asthra_test_suite_add_test(suite, "enum_variant_printing", 
+        "Test AST printing for enum variants", test_enum_variant_printing);
+    
+    return asthra_test_suite_run_and_exit(suite);
+} 

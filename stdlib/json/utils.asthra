@@ -1,0 +1,179 @@
+// Asthra Standard Library - JSON Utils Module
+// Utility and convenience functions
+
+package stdlib::json;
+
+// ============================================================================
+// Memory Management Functions
+// ============================================================================
+
+// Memory cleanup for JSONValue (explicit cleanup if needed)
+pub fn free_json_value(value: JSONValue) -> void {
+    if value.handle != null {
+        asthra_stdlib_json_free_handle(value.handle);
+    }
+}
+
+// ============================================================================
+// Convenience Parser Functions
+// ============================================================================
+
+// Parse JSON and extract a specific key from root object
+pub fn parse_and_get(input: string, key: string) -> Result<JSONValue, JSONError> {
+    let root_result: Result<JSONValue, JSONError> = parse(input);
+    match root_result {
+        Result.Err(error) => return Result.Err(error),
+        Result.Ok(root) => {
+            return object_get(root, key);
+        }
+    }
+}
+
+// Parse JSON and extract string value from root object
+pub fn parse_and_get_string(input: string, key: string) -> Result<string, JSONError> {
+    let value_result: Result<JSONValue, JSONError> = parse_and_get(input, key);
+    match value_result {
+        Result.Err(error) => return Result.Err(error),
+        Result.Ok(value) => {
+            return get_string(value);
+        }
+    }
+}
+
+// Parse JSON and extract number value from root object
+pub fn parse_and_get_number(input: string, key: string) -> Result<f64, JSONError> {
+    let value_result: Result<JSONValue, JSONError> = parse_and_get(input, key);
+    match value_result {
+        Result.Err(error) => return Result.Err(error),
+        Result.Ok(value) => {
+            return get_number(value);
+        }
+    }
+}
+
+// Parse JSON and extract boolean value from root object
+pub fn parse_and_get_bool(input: string, key: string) -> Result<bool, JSONError> {
+    let value_result: Result<JSONValue, JSONError> = parse_and_get(input, key);
+    match value_result {
+        Result.Err(error) => return Result.Err(error),
+        Result.Ok(value) => {
+            return get_bool(value);
+        }
+    }
+}
+
+// ============================================================================
+// Builder Helper Functions
+// ============================================================================
+
+// Create JSON object from key-value pairs
+pub fn create_object_from_pairs(pairs: []struct { key: string, value: JSONValue }) -> JSONValue {
+    let obj: JSONValue = object();
+    
+    for pair in pairs {
+        let _ = object_set(obj, pair.key, pair.value);
+    }
+    
+    return obj;
+}
+
+// Create JSON array from values
+pub fn create_array_from_values(values_arr: []JSONValue) -> JSONValue {
+    let arr: JSONValue = array();
+    
+    for value in values_arr {
+        let _ = array_push(arr, value);
+    }
+    
+    return arr;
+}
+
+// Create JSON array from strings
+pub fn create_array_from_strings(strings: []string) -> JSONValue {
+    let arr: JSONValue = array();
+    
+    for str in strings {
+        let json_value: JSONValue = string_value(str);
+        let _ = array_push(arr, json_value);
+    }
+    
+    return arr;
+}
+
+// Create JSON array from numbers
+pub fn create_array_from_numbers(numbers: []f64) -> JSONValue {
+    let arr: JSONValue = array();
+    
+    for num in numbers {
+        let json_value: JSONValue = number(num);
+        let _ = array_push(arr, json_value);
+    }
+    
+    return arr;
+}
+
+// ============================================================================
+// Validation and Inspection Functions
+// ============================================================================
+
+// Get JSON type as string
+pub fn get_type_name(value: JSONValue) -> string {
+    if is_null(value) {
+        return "null";
+    } else if is_bool(value) {
+        return "boolean";
+    } else if is_number(value) {
+        return "number";
+    } else if is_string(value) {
+        return "string";
+    } else if is_array(value) {
+        return "array";
+    } else if is_object(value) {
+        return "object";
+    } else {
+        return "unknown";
+    }
+}
+
+// Deep comparison of JSON values (basic implementation)
+pub fn values_equal(a: JSONValue, b: JSONValue) -> bool {
+    // Get string representations and compare
+    let a_str_result: Result<string, JSONError> = stringify(a);
+    let b_str_result: Result<string, JSONError> = stringify(b);
+    
+    match a_str_result {
+        Result.Err(_) => return false,
+        Result.Ok(a_str) => {
+            match b_str_result {
+                Result.Err(_) => return false,
+                Result.Ok(b_str) => {
+                    return a_str == b_str;
+                }
+            }
+        }
+    }
+}
+
+// ============================================================================
+// Debugging and Inspection Functions
+// ============================================================================
+
+// Pretty print JSON value with indentation
+pub fn pretty_print(value: JSONValue) -> Result<string, JSONError> {
+    return stringify_pretty(value);
+}
+
+// Get a summary of JSON structure
+pub fn get_structure_summary(value: JSONValue) -> string {
+    let type_name: string = get_type_name(value);
+    
+    if is_object(value) {
+        let size: usize = object_size_safe(value);
+        return type_name + " with properties";
+    } else if is_array(value) {
+        let length: usize = array_length_safe(value);
+        return type_name + " with elements";
+    } else {
+        return type_name;
+    }
+} 

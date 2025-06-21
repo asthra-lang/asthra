@@ -1,0 +1,38 @@
+package main;
+
+// Example demonstrating struct declarations in Asthra
+// Updated for v1.18 grammar with explicit syntax requirements
+
+// Basic struct with primitive types
+pub struct Point {
+    x: f64,
+    y: f64
+}
+
+// Struct with complex types
+pub struct Person {
+    id: i32,
+    name: string,
+    age: u8,
+    scores: []f64,
+    address: *const string
+}
+
+// Empty struct - requires explicit void content
+priv struct Empty { none }
+
+// Struct with various pointer types
+pub struct DataBuffer {
+    data: []u8,
+    size: usize,
+    capacity: usize,
+    readonly: *const u8,
+    mutable: *mut u8
+}
+
+priv fn main(void) -> i32 {
+    // Note: Struct instantiation is not yet implemented
+    // This example shows the struct declaration syntax
+    
+    return 0;
+} 

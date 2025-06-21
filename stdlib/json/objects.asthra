@@ -1,0 +1,155 @@
+// Asthra Standard Library - JSON Objects Module
+// JSON object manipulation operations
+
+package stdlib::json;
+
+import "stdlib/string";
+
+// ============================================================================
+// Object Manipulation Functions
+// ============================================================================
+
+// Set object property
+pub fn object_set(obj: JSONValue, key: string, value: JSONValue) -> Result<JSONValue, JSONError> {
+    if !is_object(obj) {
+        return Result.Err(JSONError.TypeError("Value is not an object"));
+    }
+    
+    let key_c_str: *const u8 = string::as_ptr(key);
+    let success: bool = asthra_stdlib_json_object_set(obj.handle, key_c_str, value.handle);
+    
+    if !success {
+        return Result.Err(JSONError.OutOfMemory("Failed to set object property"));
+    }
+    
+    return Result.Ok(obj);
+}
+
+// Get object property
+pub fn object_get(obj: JSONValue, key: string) -> Result<JSONValue, JSONError> {
+    if !is_object(obj) {
+        return Result.Err(JSONError.TypeError("Value is not an object"));
+    }
+    
+    let key_c_str: *const u8 = string::as_ptr(key);
+    let handle: *void = asthra_stdlib_json_object_get(obj.handle, key_c_str);
+    
+    if handle == null {
+        return Result.Err(JSONError.KeyNotFound(key));
+    }
+    
+    return Result.Ok(JSONValue { handle: handle });
+}
+
+// Check if object has key
+pub fn object_has_key(obj: JSONValue, key: string) -> Result<bool, JSONError> {
+    if !is_object(obj) {
+        return Result.Err(JSONError.TypeError("Value is not an object"));
+    }
+    
+    let key_c_str: *const u8 = string::as_ptr(key);
+    return Result.Ok(asthra_stdlib_json_object_has(obj.handle, key_c_str));
+}
+
+// Get object size (number of properties)
+pub fn object_size(obj: JSONValue) -> Result<usize, JSONError> {
+    if !is_object(obj) {
+        return Result.Err(JSONError.TypeError("Value is not an object"));
+    }
+    
+    return Result.Ok(asthra_stdlib_json_object_size(obj.handle));
+}
+
+// Get object size without error (returns 0 if not an object)
+pub fn object_size_safe(obj: JSONValue) -> usize {
+    if !is_object(obj) {
+        return 0;
+    }
+    
+    return asthra_stdlib_json_object_size(obj.handle);
+}
+
+// ============================================================================
+// Convenience Object Functions
+// ============================================================================
+
+// Set string property (convenience function)
+pub fn object_set_string(obj: JSONValue, key: string, value: string) -> Result<JSONValue, JSONError> {
+    let json_value: JSONValue = string_value(value);
+    return object_set(obj, key, json_value);
+}
+
+// Set number property (convenience function)
+pub fn object_set_number(obj: JSONValue, key: string, value: f64) -> Result<JSONValue, JSONError> {
+    let json_value: JSONValue = number(value);
+    return object_set(obj, key, json_value);
+}
+
+// Set boolean property (convenience function)
+pub fn object_set_bool(obj: JSONValue, key: string, value: bool) -> Result<JSONValue, JSONError> {
+    let json_value: JSONValue = bool_value(value);
+    return object_set(obj, key, json_value);
+}
+
+// Set null property (convenience function)
+pub fn object_set_null(obj: JSONValue, key: string) -> Result<JSONValue, JSONError> {
+    let json_value: JSONValue = null();
+    return object_set(obj, key, json_value);
+}
+
+// ============================================================================
+// Safe Object Operations (with defaults)
+// ============================================================================
+
+// Safe object get with default value
+pub fn object_get_or(obj: JSONValue, key: string, default: JSONValue) -> JSONValue {
+    match object_get(obj, key) {
+        Result.Ok(value) => return value,
+        Result.Err(_) => return default
+    }
+}
+
+// Check if object has key (safe version)
+pub fn object_has_key_safe(obj: JSONValue, key: string) -> bool {
+    match object_has_key(obj, key) {
+        Result.Ok(has_key) => return has_key,
+        Result.Err(_) => return false
+    }
+}
+
+// ============================================================================
+// Convenience Functions for Common Types
+// ============================================================================
+
+// Get string property
+pub fn object_get_string(obj: JSONValue, key: string) -> Result<string, JSONError> {
+    let value_result: Result<JSONValue, JSONError> = object_get(obj, key);
+    match value_result {
+        Result.Err(error) => return Result.Err(error),
+        Result.Ok(value) => {
+            return get_string(value);
+        }
+    }
+}
+
+// Get number property
+pub fn object_get_number(obj: JSONValue, key: string) -> Result<f64, JSONError> {
+    let value_result: Result<JSONValue, JSONError> = object_get(obj, key);
+    match value_result {
+        Result.Err(error) => return Result.Err(error),
+        Result.Ok(value) => {
+            return get_number(value);
+        }
+    }
+}
+
+// Get boolean property
+pub fn object_get_bool(obj: JSONValue, key: string) -> Result<bool, JSONError> {
+    let value_result: Result<JSONValue, JSONError> = object_get(obj, key);
+    match value_result {
+        Result.Err(error) => return Result.Err(error),
+        Result.Ok(value) => {
+            return get_bool(value);
+        }
+    }
+} 

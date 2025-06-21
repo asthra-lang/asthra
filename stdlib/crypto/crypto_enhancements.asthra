@@ -1,0 +1,366 @@
+// Asthra Standard Library - Cryptographic Primitives Module Enhancements
+// Potential additions to complement the existing excellent crypto.asthra module
+
+package stdlib::crypto::enhancements;
+
+import "stdlib/asthra/core";
+import "stdlib/crypto";
+
+// ============================================================================
+// Additional Hash Functions
+// ============================================================================
+
+// BLAKE3 hash function (high-performance alternative to SHA-256)
+fn blake3(data: []u8) -> Result<[]u8, CryptoError> {
+    extern "libblake3" fn blake3_hasher_init(hasher: *mut void) -> void;
+    extern "libblake3" fn blake3_hasher_update(hasher: *mut void, input: *const u8, input_len: usize) -> void;
+    extern "libblake3" fn blake3_hasher_finalize(hasher: *mut void, output: *mut u8, output_len: usize) -> void;
+    
+    unsafe {
+        // BLAKE3 hasher context (64 bytes)
+        let mut hasher: [u8; 64] = [0; 64];
+        
+        blake3_hasher_init(&mut hasher[0] as *mut void);
+        blake3_hasher_update(&mut hasher[0] as *mut void, data.ptr, data.len);
+        
+        let mut hash: [32]u8 = [0; 32];
+        blake3_hasher_finalize(&mut hasher[0] as *mut void, &mut hash[0], 32);
+        
+        // Convert array to slice
+        let mut result: []u8 = [];
+        let mut i: usize = 0;
+        while i < 32 {
+            result.push(hash[i]);
+            i = i + 1;
+        }
+        
+        return Result.Ok(result);
+    }
+}
+
+// ============================================================================
+// Enhanced Key Derivation
+// ============================================================================
+
+// Argon2id key derivation (recommended for password hashing)
+fn argon2id(password: []u8, salt: []u8, iterations: u32, memory_kb: u32, parallelism: u32, key_length: usize) -> Result<[]u8, CryptoError> {
+    extern "libargon2" fn argon2id_hash_raw(
+        t_cost: u32,
+        m_cost: u32, 
+        parallelism: u32,
+        pwd: *const u8,
+        pwdlen: usize,
+        salt: *const u8,
+        saltlen: usize,
+        hash: *mut u8,
+        hashlen: usize
+    ) -> i32;
+    
+    if iterations < 3 {
+        return Result.Err(CryptoError.InvalidInput("Iterations too low (minimum 3)"));
+    }
+    
+    if memory_kb < 64 {
+        return Result.Err(CryptoError.InvalidInput("Memory too low (minimum 64KB)"));
+    }
+    
+    if parallelism < 1 || parallelism > 16 {
+        return Result.Err(CryptoError.InvalidInput("Parallelism must be 1-16"));
+    }
+    
+    if salt.len < 16 {
+        return Result.Err(CryptoError.InvalidInput("Salt too short (minimum 16 bytes)"));
+    }
+    
+    unsafe {
+        let output_ptr: *mut u8 = core.alloc(key_length, core.MemoryZone.GC) as *mut u8;
+        if output_ptr == null {
+            return Result.Err(CryptoError.Other("Failed to allocate output buffer"));
+        }
+        
+        let result: i32 = argon2id_hash_raw(
+            iterations,
+            memory_kb,
+            parallelism,
+            password.ptr,
+            password.len,
+            salt.ptr,
+            salt.len,
+            output_ptr,
+            key_length
+        );
+        
+        if result != 0 {
+            return Result.Err(CryptoError.KeyDerivationFailed);
+        }
+        
+        // Create output slice
+        let mut derived_key: []u8 = [];
+        let mut i: usize = 0;
+        while i < key_length {
+            derived_key.push(*(output_ptr + i));
+            i = i + 1;
+        }
+        
+        return Result.Ok(derived_key);
+    }
+}
+
+// ============================================================================
+// Post-Quantum Hybrid Schemes (Future-Ready)
+// ============================================================================
+
+// Hybrid key exchange combining X25519 + ML-KEM-768 (when available)
+struct HybridKeyPair {
+    classical_private: []u8,    // X25519 private key (32 bytes)
+    classical_public: []u8,     // X25519 public key (32 bytes)
+    pq_private: []u8,          // ML-KEM-768 private key
+    pq_public: []u8            // ML-KEM-768 public key
+}
+
+struct HybridCiphertext {
+    classical_shared: []u8,     // X25519 shared secret
+    pq_ciphertext: []u8,       // ML-KEM-768 ciphertext
+    combined_key: []u8         // Final derived key
+}
+
+// Note: This is a placeholder for future post-quantum integration
+// Implementation would depend on standardized ML-KEM availability
+fn generate_hybrid_keypair(none) -> Result<HybridKeyPair, CryptoError> {
+    // Generate X25519 keypair
+    let classical_private_result: Result<[]u8, CryptoError> = random_bytes(32);
+    let classical_private: []u8 = match classical_private_result {
+        Result.Ok(key) => key
+        Result.Err(error) => return Result.Err(error)
+    };
+    
+    // TODO: Implement X25519 public key derivation
+    // TODO: Implement ML-KEM-768 keypair generation when available
+    
+    return Result.Err(CryptoError.UnsupportedAlgorithm("Hybrid schemes not yet implemented"));
+}
+
+// ============================================================================
+// Additional Utility Functions
+// ============================================================================
+
+// Secure comparison with early termination protection
+#[constant_time]
+fn secure_compare_with_length(a: []u8, b: []u8, expected_length: usize) -> bool {
+    // Always compare the expected length to prevent timing attacks
+    // even when input lengths differ
+    
+    let mut result: u8 = 0;
+    let mut i: usize = 0;
+    
+    // Compare length information in constant time
+    result = result | ((a.len ^ expected_length) as u8);
+    result = result | ((b.len ^ expected_length) as u8);
+    
+    // Compare data in constant time, always processing expected_length bytes
+    while i < expected_length {
+        let a_byte: u8 = if i < a.len { a[i] } else { 0 };
+        let b_byte: u8 = if i < b.len { b[i] } else { 0 };
+        result = result | (a_byte ^ b_byte);
+        i = i + 1;
+    }
+    
+    return result == 0;
+}
+
+// Generate cryptographically secure random string
+fn generate_random_string(length: usize, charset: string) -> Result<string, CryptoError> {
+    if charset.len == 0 {
+        return Result.Err(CryptoError.InvalidInput("Charset cannot be empty"));
+    }
+    
+    let random_bytes_result: Result<[]u8, CryptoError> = random_bytes(length);
+    let random_data: []u8 = match random_bytes_result {
+        Result.Ok(data) => data
+        Result.Err(error) => return Result.Err(error)
+    };
+    
+    let mut result: string = "";
+    let mut i: usize = 0;
+    while i < length {
+        let index: usize = (random_data[i] as usize) % charset.len;
+        result = result + charset[index];
+        i = i + 1;
+    }
+    
+    return Result.Ok(result);
+}
+
+// ============================================================================
+// High-Level Security Patterns
+// ============================================================================
+
+// Authenticated encryption with associated data (AEAD) wrapper
+struct AEADResult {
+    ciphertext: []u8,
+    nonce: []u8,
+    tag: []u8
+}
+
+fn aead_encrypt_with_aad(plaintext: []u8, key: []u8, associated_data: []u8) -> Result<AEADResult, CryptoError> {
+    // This would extend the existing AES-GCM implementation to support AAD
+    // For now, delegate to existing implementation
+    let encrypted_result: Result<[]u8, CryptoError> = aes_gcm_encrypt(plaintext, key);
+    let encrypted: []u8 = match encrypted_result {
+        Result.Ok(data) => data
+        Result.Err(error) => return Result.Err(error)
+    };
+    
+    // Extract components (this is simplified - real implementation would handle AAD)
+    let nonce_size: usize = 12;  // AES_GCM_NONCE_SIZE
+    let tag_size: usize = 16;    // AES_GCM_TAG_SIZE
+    
+    let mut nonce: []u8 = [];
+    let mut ciphertext: []u8 = [];
+    let mut tag: []u8 = [];
+    
+    // Extract nonce (first 12 bytes)
+    let mut i: usize = 0;
+    while i < nonce_size {
+        nonce.push(encrypted[i]);
+        i = i + 1;
+    }
+    
+    // Extract ciphertext (middle portion)
+    let ciphertext_len: usize = encrypted.len - nonce_size - tag_size;
+    while i < nonce_size + ciphertext_len {
+        ciphertext.push(encrypted[i]);
+        i = i + 1;
+    }
+    
+    // Extract tag (last 16 bytes)
+    while i < encrypted.len {
+        tag.push(encrypted[i]);
+        i = i + 1;
+    }
+    
+    return Result.Ok(AEADResult {
+        ciphertext: ciphertext,
+        nonce: nonce,
+        tag: tag
+    });
+}
+
+// ============================================================================
+// Performance Monitoring and Metrics
+// ============================================================================
+
+struct CryptoMetrics {
+    operations_count: u64,
+    total_bytes_processed: u64,
+    average_operation_time_ns: u64,
+    last_operation_time_ns: u64
+}
+
+// Global metrics (in a real implementation, this would be thread-safe)
+static mut CRYPTO_METRICS: CryptoMetrics = CryptoMetrics {
+    operations_count: 0,
+    total_bytes_processed: 0,
+    average_operation_time_ns: 0,
+    last_operation_time_ns: 0
+};
+
+fn get_crypto_metrics(none) -> CryptoMetrics {
+    unsafe {
+        return CRYPTO_METRICS;
+    }
+}
+
+// Wrapper function that measures performance
+fn measured_encrypt(plaintext: []u8, key: []u8) -> Result<[]u8, CryptoError> {
+    extern "asthra_runtime" fn asthra_get_time_ns(none) -> u64;
+    
+    unsafe {
+        let start_time: u64 = asthra_get_time_ns();
+        
+        let result: Result<[]u8, CryptoError> = aes_gcm_encrypt(plaintext, key);
+        
+        let end_time: u64 = asthra_get_time_ns();
+        let operation_time: u64 = end_time - start_time;
+        
+        // Update metrics
+        CRYPTO_METRICS.operations_count = CRYPTO_METRICS.operations_count + 1;
+        CRYPTO_METRICS.total_bytes_processed = CRYPTO_METRICS.total_bytes_processed + (plaintext.len as u64);
+        CRYPTO_METRICS.last_operation_time_ns = operation_time;
+        
+        // Update rolling average
+        let total_time: u64 = CRYPTO_METRICS.average_operation_time_ns * (CRYPTO_METRICS.operations_count - 1) + operation_time;
+        CRYPTO_METRICS.average_operation_time_ns = total_time / CRYPTO_METRICS.operations_count;
+        
+        return result;
+    }
+}
+
+// ============================================================================
+// Configuration and Feature Flags
+// ============================================================================
+
+struct CryptoConfig {
+    default_key_size: usize,
+    default_iterations: u32,
+    enable_performance_monitoring: bool,
+    preferred_hash_algorithm: string,
+    enable_post_quantum: bool
+}
+
+// Default configuration
+fn get_default_crypto_config(none) -> CryptoConfig {
+    return CryptoConfig {
+        default_key_size: 32,           // 256-bit keys
+        default_iterations: 100000,     // PBKDF2 iterations
+        enable_performance_monitoring: false,
+        preferred_hash_algorithm: "SHA256",
+        enable_post_quantum: false     // Not yet available
+    };
+}
+
+// ============================================================================
+// Example Usage Patterns
+// ============================================================================
+
+// High-level file encryption example
+fn encrypt_file_content(content: []u8, password: string) -> Result<[]u8, CryptoError> {
+    // Generate salt
+    let salt_result: Result<[]u8, CryptoError> = generate_salt();
+    let salt: []u8 = match salt_result {
+        Result.Ok(s) => s
+        Result.Err(error) => return Result.Err(error)
+    };
+    
+    // Derive key from password
+    let password_bytes: []u8 = password.as_bytes();
+    let key_result: Result<[]u8, CryptoError> = pbkdf2_sha256(password_bytes, salt, 100000, 32);
+    let key: []u8 = match key_result {
+        Result.Ok(k) => k
+        Result.Err(error) => return Result.Err(error)
+    };
+    
+    // Encrypt content
+    let encrypted_result: Result<[]u8, CryptoError> = aes_gcm_encrypt(content, key);
+    let encrypted: []u8 = match encrypted_result {
+        Result.Ok(e) => e
+        Result.Err(error) => return Result.Err(error)
+    };
+    
+    // Prepend salt to encrypted data
+    let mut result: []u8 = [];
+    let mut i: usize = 0;
+    while i < salt.len {
+        result.push(salt[i]);
+        i = i + 1;
+    }
+    while i < salt.len + encrypted.len {
+        result.push(encrypted[i - salt.len]);
+        i = i + 1;
+    }
+    
+    // Secure cleanup
+    secure_zero(key);
+    
+    return Result.Ok(result);
+} 

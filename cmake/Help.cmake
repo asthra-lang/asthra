@@ -1,0 +1,331 @@
+# Comprehensive Help System for Asthra CMake Build
+# Provides unified help interface for all build targets and options
+
+# Main help target
+add_custom_target(asthra-help
+    COMMAND ${CMAKE_COMMAND} -E echo "=== Asthra Build System Help ==="
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Basic Commands:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make              - Build the compiler"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test         - Run basic tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test-all     - Run all tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make clean        - Clean build artifacts"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make install      - Install Asthra"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Help Commands:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make help         - Show this help"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make help-test    - Show testing help"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make help-dev     - Show development help"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make help-perf    - Show performance help"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make help-build   - Show build configuration help"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make help-all     - Show all available help"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Quick Start:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  mkdir build && cd build"
+    COMMAND ${CMAKE_COMMAND} -E echo "  cmake .."
+    COMMAND ${CMAKE_COMMAND} -E echo "  make -j$(nproc)"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test"
+    COMMENT "Display main help"
+)
+
+# Testing help
+add_custom_target(help-test
+    COMMAND ${CMAKE_COMMAND} -E echo "=== Testing Help ==="
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Test Execution:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test                - Run basic tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test-all            - Run all tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test-quick          - Run quick test suite"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test-comprehensive  - Run with retries"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test-ci             - CI-optimized tests"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Category Tests:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test-parser         - Parser tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test-codegen        - Code generation tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test-semantic       - Semantic analysis tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test-ffi            - FFI tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test-concurrency    - Concurrency tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test-list-categories - List all categories"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Test Options:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DASTHRA_TEST_PARALLEL=4     - Parallel test jobs"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DASTHRA_TEST_TIMEOUT=30     - Test timeout in seconds"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DASTHRA_TEST_VERBOSE=ON     - Verbose output"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Coverage:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make coverage            - Generate coverage report"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make coverage-html       - HTML coverage report"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make coverage-parser     - Parser module coverage"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Sanitizers:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test-asan           - Test with AddressSanitizer"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test-tsan           - Test with ThreadSanitizer"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test-ubsan          - Test with UBSanitizer"
+    COMMENT "Display testing help"
+)
+
+# Development help
+add_custom_target(help-dev
+    COMMAND ${CMAKE_COMMAND} -E echo "=== Development Help ==="
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Development Tools:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make ast-visualizer      - Generate AST visualization"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make grammar-validator   - Validate grammar"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make symbol-inspector    - Inspect symbol table"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test-generator      - Generate test cases"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make dev-tools           - Run all dev tools"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "AI Features:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make ai-lint             - AI-powered linting"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make ai-lint-fix         - Auto-fix with AI"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make ai-api-server       - Start AI API server"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make fast-check          - Fast compilation check"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Code Quality:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make format              - Format code"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make analyze             - Static analysis"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make dev-memcheck        - Memory leak detection"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Language Server:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make language-server     - Start LSP"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make language-server-tcp - LSP on TCP port 7777"
+    COMMENT "Display development help"
+)
+
+# Performance help
+add_custom_target(help-perf
+    COMMAND ${CMAKE_COMMAND} -E echo "=== Performance Help ==="
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Benchmarks:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make benchmark           - Basic benchmark"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make benchmark-all       - All benchmarks"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make benchmark-lexer     - Lexer performance"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make benchmark-parser    - Parser performance"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make benchmark-codegen   - Codegen performance"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make benchmark-memory    - Memory performance"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Profiling:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make performance-profiler - Profile compiler"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make performance-hotspots - Find hotspots"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make benchmark-perf       - Linux perf profiling"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Options:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DENABLE_BENCHMARKS=ON       - Enable benchmarks"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DBENCHMARK_ITERATIONS=100   - Iterations"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DCMAKE_BUILD_TYPE=Release   - Optimized build"
+    COMMENT "Display performance help"
+)
+
+# Build configuration help
+add_custom_target(help-build
+    COMMAND ${CMAKE_COMMAND} -E echo "=== Build Configuration Help ==="
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Build Types:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DCMAKE_BUILD_TYPE=Debug     - Debug build"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DCMAKE_BUILD_TYPE=Release   - Optimized build"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DCMAKE_BUILD_TYPE=Profile   - Profiling build"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DCMAKE_BUILD_TYPE=PGO-Generate - PGO generation"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DCMAKE_BUILD_TYPE=PGO-Use   - PGO optimized"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Features:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DENABLE_COVERAGE=ON         - Code coverage"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DENABLE_DEV_TOOLS=ON        - Development tools"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DENABLE_FAST_CHECK=ON       - Fast check system"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DENABLE_AI_INTEGRATION=ON   - AI features"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DENABLE_FUZZING=ON          - Fuzzing support"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Sanitizers:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DASTHRA_SANITIZER=asan      - AddressSanitizer"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DASTHRA_SANITIZER=tsan      - ThreadSanitizer"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DASTHRA_SANITIZER=ubsan     - UBSanitizer"
+    COMMAND ${CMAKE_COMMAND} -E echo "  -DASTHRA_SANITIZER=msan      - MemorySanitizer"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Platform Info:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make platform-info           - Show platform details"
+    COMMENT "Display build configuration help"
+)
+
+# Comprehensive help - all topics
+add_custom_target(help-all
+    COMMAND ${CMAKE_COMMAND} -E echo "=== Asthra Complete Build System Reference ==="
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "======== BASIC USAGE ========"
+    COMMAND ${CMAKE_COMMAND} --build . --target help
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "======== TESTING ========"
+    COMMAND ${CMAKE_COMMAND} --build . --target help-test
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "======== DEVELOPMENT ========"
+    COMMAND ${CMAKE_COMMAND} --build . --target help-dev
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "======== PERFORMANCE ========"
+    COMMAND ${CMAKE_COMMAND} --build . --target help-perf
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "======== BUILD CONFIG ========"
+    COMMAND ${CMAKE_COMMAND} --build . --target help-build
+    COMMENT "Display comprehensive help"
+)
+
+# Category-specific help targets
+add_custom_target(help-categories
+    COMMAND ${CMAKE_COMMAND} -E echo "=== Test Categories Help ==="
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Available test categories:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  ai_annotations   - AI annotation tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  ai_api           - AI API tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  ai_linter        - AI linter tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  basic            - Basic functionality tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  character        - Character handling tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  codegen          - Code generation tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  concurrency      - Concurrency tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  core             - Core functionality tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  diagnostics      - Diagnostic tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  enum             - Enumeration tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  fast_check       - Fast check tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  ffi              - Foreign Function Interface tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  immutable_by_default - Immutability tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  integration      - Integration tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  io               - Input/Output tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  lexer            - Lexer tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  linker           - Linker tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  memory           - Memory management tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  optimization     - Optimization tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  parser           - Parser tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  patterns         - Pattern matching tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  performance      - Performance tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  pipeline         - Compilation pipeline tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  platform         - Platform-specific tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  runtime          - Runtime tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  security         - Security tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  semantic         - Semantic analysis tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  stdlib           - Standard library tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  struct           - Structure tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  types            - Type system tests"
+    COMMAND ${CMAKE_COMMAND} -E echo "  utils            - Utility tests"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Run category tests with: make test-<category>"
+    COMMENT "Display test categories help"
+)
+
+# Quick reference card
+add_custom_target(help-quick
+    COMMAND ${CMAKE_COMMAND} -E echo "=== Asthra Quick Reference ==="
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Build:     make"
+    COMMAND ${CMAKE_COMMAND} -E echo "Test:      make test"
+    COMMAND ${CMAKE_COMMAND} -E echo "Coverage:  make coverage"
+    COMMAND ${CMAKE_COMMAND} -E echo "Benchmark: make benchmark"
+    COMMAND ${CMAKE_COMMAND} -E echo "Format:    make format"
+    COMMAND ${CMAKE_COMMAND} -E echo "Sanitize:  make test-asan"
+    COMMAND ${CMAKE_COMMAND} -E echo "AI Lint:   make ai-lint"
+    COMMAND ${CMAKE_COMMAND} -E echo "Fast:      make fast-check"
+    COMMAND ${CMAKE_COMMAND} -E echo "Help:      make help"
+    COMMENT "Display quick reference"
+)
+
+# Interactive help menu
+add_custom_target(help-menu
+    COMMAND ${CMAKE_COMMAND} -E echo "=== Asthra Build System Menu ==="
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Select a topic for detailed help:"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "[1] Basic Usage        (make help)"
+    COMMAND ${CMAKE_COMMAND} -E echo "[2] Testing            (make help-test)"
+    COMMAND ${CMAKE_COMMAND} -E echo "[3] Development        (make help-dev)"
+    COMMAND ${CMAKE_COMMAND} -E echo "[4] Performance        (make help-perf)"
+    COMMAND ${CMAKE_COMMAND} -E echo "[5] Build Config       (make help-build)"
+    COMMAND ${CMAKE_COMMAND} -E echo "[6] Test Categories    (make help-categories)"
+    COMMAND ${CMAKE_COMMAND} -E echo "[7] Quick Reference    (make help-quick)"
+    COMMAND ${CMAKE_COMMAND} -E echo "[8] All Help           (make help-all)"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Type 'make <help-target>' to view specific help"
+    COMMENT "Display interactive help menu"
+)
+
+# Examples help
+add_custom_target(help-examples
+    COMMAND ${CMAKE_COMMAND} -E echo "=== Common Usage Examples ==="
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Debug build with tests:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  cmake -DCMAKE_BUILD_TYPE=Debug .."
+    COMMAND ${CMAKE_COMMAND} -E echo "  make -j8"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Release build with benchmarks:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_BENCHMARKS=ON .."
+    COMMAND ${CMAKE_COMMAND} -E echo "  make -j8"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make benchmark-all"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Development with coverage:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  cmake -DENABLE_COVERAGE=ON -DENABLE_DEV_TOOLS=ON .."
+    COMMAND ${CMAKE_COMMAND} -E echo "  make -j8"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make test-all"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make coverage"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "AI-assisted development:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  cmake -DENABLE_AI_INTEGRATION=ON .."
+    COMMAND ${CMAKE_COMMAND} -E echo "  make -j8"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make ai-lint-fix"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make fast-check-watch"
+    COMMENT "Display usage examples"
+)
+
+# Troubleshooting help
+add_custom_target(help-troubleshoot
+    COMMAND ${CMAKE_COMMAND} -E echo "=== Troubleshooting ==="
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Common Issues:"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "1. Build fails with 'json-c not found':"
+    COMMAND ${CMAKE_COMMAND} -E echo "   Install json-c: brew install json-c (macOS)"
+    COMMAND ${CMAKE_COMMAND} -E echo "                   apt install libjson-c-dev (Ubuntu)"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "2. Sanitizer not available:"
+    COMMAND ${CMAKE_COMMAND} -E echo "   Use Clang or GCC compiler"
+    COMMAND ${CMAKE_COMMAND} -E echo "   cmake -DCMAKE_C_COMPILER=clang .."
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "3. Coverage reports empty:"
+    COMMAND ${CMAKE_COMMAND} -E echo "   Ensure -DENABLE_COVERAGE=ON is set"
+    COMMAND ${CMAKE_COMMAND} -E echo "   Use Debug or RelWithDebInfo build type"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "4. Tests fail to run:"
+    COMMAND ${CMAKE_COMMAND} -E echo "   Check test framework is built:"
+    COMMAND ${CMAKE_COMMAND} -E echo "   make test_framework"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "For more help: https://github.com/asthra-lang/asthra/issues"
+    COMMENT "Display troubleshooting help"
+)
+
+# Version and system info
+add_custom_target(help-version
+    COMMAND ${CMAKE_COMMAND} -E echo "=== Asthra Build System ==="
+    COMMAND ${CMAKE_COMMAND} -E echo "CMake Version: ${CMAKE_VERSION}"
+    COMMAND ${CMAKE_COMMAND} -E echo "Generator: ${CMAKE_GENERATOR}"
+    COMMAND ${CMAKE_COMMAND} -E echo "Source Dir: ${CMAKE_SOURCE_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E echo "Binary Dir: ${CMAKE_BINARY_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} --build . --target platform-info
+    COMMENT "Display version and system info"
+)
+
+# Alias for common help mistakes
+add_custom_target(h DEPENDS asthra-help)
+add_custom_target(usage DEPENDS asthra-help)
+add_custom_target(question DEPENDS help-menu)
+
+# Environment variables help
+add_custom_target(help-env
+    COMMAND ${CMAKE_COMMAND} -E echo "=== Environment Variables ==="
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Build control:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  CC                - C compiler"
+    COMMAND ${CMAKE_COMMAND} -E echo "  CFLAGS            - Additional C flags"
+    COMMAND ${CMAKE_COMMAND} -E echo "  LDFLAGS           - Additional linker flags"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Asthra-specific:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  ASTHRA_TEST_PARALLEL     - Test parallelism"
+    COMMAND ${CMAKE_COMMAND} -E echo "  ASTHRA_TEST_TIMEOUT      - Test timeout"
+    COMMAND ${CMAKE_COMMAND} -E echo "  ASTHRA_COVERAGE_THRESHOLD - Coverage threshold"
+    COMMAND ${CMAKE_COMMAND} -E echo "  AI_API_KEY              - AI service API key"
+    COMMENT "Display environment variables help"
+)

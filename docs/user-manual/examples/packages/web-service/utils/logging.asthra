@@ -1,0 +1,54 @@
+package utils;
+
+import "system/libc";
+
+pub enum LogLevel {
+    Debug,
+    Info,
+    Warning,
+    Error,
+}
+
+pub fn log_info(message: string) -> void {
+    log_with_level(LogLevel.Info, message);
+}
+
+pub fn log_debug(message: string) -> void {
+    log_with_level(LogLevel.Debug, message);
+}
+
+pub fn log_warning(message: string) -> void {
+    log_with_level(LogLevel.Warning, message);
+}
+
+pub fn log_error(message: string) -> void {
+    log_with_level(LogLevel.Error, message);
+}
+
+pub fn log_with_level(level: LogLevel, message: string) -> void {
+    let prefix: string = get_log_prefix(level);
+    let timestamp: string = get_timestamp();
+    let formatted_message: string = "[" + timestamp + "] " + prefix + ": " + message;
+    
+    unsafe {
+        libc.puts(formatted_message);
+    }
+}
+
+pub fn format_user_log(username: string, action: string) -> string {
+    return "User '" + username + "' performed action: " + action;
+}
+
+fn get_log_prefix(level: LogLevel) -> string {
+    match level {
+        LogLevel.Debug => return "DEBUG",
+        LogLevel.Info => return "INFO",
+        LogLevel.Warning => return "WARNING",
+        LogLevel.Error => return "ERROR",
+    }
+}
+
+fn get_timestamp() -> string {
+    // Simplified timestamp - in real implementation, this would use actual time functions
+    return "2025-01-07T12:00:00Z";
+} 

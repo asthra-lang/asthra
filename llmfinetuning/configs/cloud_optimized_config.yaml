@@ -1,0 +1,186 @@
+# Cloud-Optimized Asthra LLM Training Configuration
+# Designed for cost-effective cloud training with reduced resources
+
+model:
+  name: "google/gemma-2-2b-it"  # Smaller 2B model for faster training
+  model_max_length: 2048
+  trust_remote_code: true
+
+training:
+  output_dir: "./outputs/asthra-gemma-2b-cloud"
+  overwrite_output_dir: true
+  
+  # Optimized batch sizes for cloud GPUs
+  per_device_train_batch_size: 4    # Larger batches for efficiency
+  per_device_eval_batch_size: 4
+  gradient_accumulation_steps: 4     # Reduced for faster training
+  dataloader_num_workers: 2          # Parallel data loading
+  
+  # Learning rate and optimization
+  learning_rate: 0.0003              # Slightly higher for faster convergence
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.05                 # Reduced warmup
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  
+  # Reduced training duration for cost efficiency
+  num_train_epochs: 2                # Fewer epochs
+  max_steps: 300                     # Hard limit for cost control
+  
+  # Frequent logging for cloud monitoring
+  logging_dir: "./outputs/logs/asthra-gemma-2b-cloud"
+  logging_steps: 25                  # More frequent logging
+  eval_strategy: "steps"
+  eval_steps: 50                     # Frequent evaluation
+  save_strategy: "steps"
+  save_steps: 100                    # Frequent saves for reliability
+  save_total_limit: 2                # Limit checkpoints to save space
+  
+  # GPU optimizations
+  fp16: true                         # Enable for NVIDIA GPUs
+  bf16: false
+  gradient_checkpointing: true       # Save memory
+  dataloader_pin_memory: true        # GPU optimization
+  
+  # Other settings
+  remove_unused_columns: false
+  group_by_length: true              # Efficiency optimization
+  ddp_find_unused_parameters: false
+
+# Reduced LoRA for faster training
+lora:
+  rank: 16                          # Smaller rank for speed
+  alpha: 8                          # alpha = rank/2
+  dropout: 0.05
+  bias: "none"
+  task_type: "CAUSAL_LM"
+  target_modules:
+    - "q_proj"
+    - "v_proj" 
+    - "k_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+
+evaluation:
+  # Disabled for speed
+  enable_compilation_testing: false
+  enable_semantic_testing: false
+  target_compilation_rate: 0.80
+  target_semantic_rate: 0.75
+
+data:
+  dataset_path: "./data/processed/"
+  raw_data_path: "./data/raw/"
+  cache_dir: "./outputs/cache/cloud/"
+  
+  # Reduced dataset for faster training
+  train_split: 0.95                 # More training data
+  validation_split: 0.05            # Less validation
+  test_split: 0.0
+  
+  # Aggressive data limits for cost control
+  max_samples: 800                  # Reduced sample count
+  max_seq_length: 2048              # Shorter sequences
+  preprocessing_num_workers: 2
+  
+  # Data quality filters
+  min_code_length: 20
+  max_code_length: 2048
+  quality_threshold: 0.7
+
+monitoring:
+  # Disabled for cloud simplicity
+  use_wandb: false
+  use_tensorboard: true
+  tensorboard_log_dir: "./outputs/logs/asthra-gemma-2b-cloud/tensorboard/"
+  
+  # Simplified metrics
+  track_compilation_success: false
+  track_semantic_correctness: false
+  track_code_quality: false
+
+hardware:
+  # Cloud GPU optimizations
+  device_map: "auto"
+  max_memory: null
+  offload_folder: "./outputs/offload/cloud/"
+  
+  # Performance settings
+  gradient_checkpointing: true
+  dataloader_pin_memory: true
+  use_cache: true
+  
+  # Memory management for cloud
+  max_memory_mb: 20000              # Assume 24GB GPU
+  cleanup_cache_every_n_steps: 25
+
+# Single stage for simplicity
+stages:
+  stage1:
+    name: "asthra_cloud_training"
+    dataset: "instruction_tuning.jsonl"
+    epochs: 2
+    learning_rate: 0.0003
+    description: "Fast cloud training for Asthra patterns"
+
+export:
+  output_dir: "./outputs/asthra-gemma-2b-cloud"
+  hub_model_id: null
+  push_to_hub: false
+  
+  # Skip GGUF for speed
+  gguf_export:
+    enabled: false
+
+advanced:
+  seed: 42
+  debug_dataset_size: 50           # Small debug size
+  
+comments:
+  optimization_notes: |
+    Cloud Optimization Strategy:
+    
+    1. Model Size: Using Gemma-2-2B instead of 4B for 3x faster training
+    2. Batch Size: Larger batches (4) for better GPU utilization
+    3. Sequence Length: Reduced to 2048 for memory efficiency
+    4. Epochs: Only 2 epochs with max 300 steps for cost control
+    5. LoRA: Reduced rank (16) for faster adaptation
+    6. Dataset: Limited to 800 samples for quick iteration
+    7. Monitoring: Disabled wandb, simplified logging
+    8. Memory: Aggressive optimizations for cloud GPUs
+    
+    Expected Training Time: 2-4 hours on RTX 4090
+    Expected Cost: $1-2 on Vast.ai, $10 on Colab Pro
+    
+  cloud_platforms: |
+    Recommended Platforms:
+    
+    1. Google Colab Pro ($10/month):
+       - Best for beginners
+       - A100 24GB access
+       - No setup required
+       
+    2. Vast.ai ($0.30/hour):
+       - RTX 4090 24GB
+       - Most cost-effective
+       - $1-2 total training cost
+       
+    3. RunPod ($0.34/hour):
+       - Reliable infrastructure
+       - Good documentation
+       - $1.50-2.50 total cost
+       
+  usage_instructions: |
+    Usage Instructions:
+    
+    1. Upload data to cloud instance
+    2. Install requirements: pip install -r requirements.txt
+    3. Disable wandb: export WANDB_DISABLED=true
+    4. Start training: python scripts/train_asthra_llm.py --config configs/cloud_optimized_config.yaml
+    5. Monitor: tail -f outputs/logs/asthra-gemma-2b-cloud/training.log
+    6. Download results when complete
+
+logging_dir: "./outputs/logs/asthra-gemma-2b-cloud"
+run_name: "asthra-gemma-2b-cloud-v1" 

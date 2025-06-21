@@ -1,0 +1,138 @@
+/**
+ * Asthra Struct Methods Example
+ * 
+ * This example demonstrates the implementation of struct methods in Asthra,
+ * including both instance methods (with 'self' parameter) and associated 
+ * functions (without 'self' parameter).
+ * 
+ * Copyright (c) 2024 Asthra Project
+ */
+
+package struct_methods;
+
+// Define a Point struct
+struct Point {
+    x: f64;
+    y: f64;
+}
+
+// Implement methods for Point
+impl Point {
+    // Associated function (constructor) - no 'self' parameter
+    fn new(x: f64, y: f64) -> Point {
+        return Point { x: x, y: y };
+    }
+    
+    // Associated function for creating origin point
+    fn origin(none) -> Point {
+        return Point { x: 0.0, y: 0.0 };
+    }
+    
+    // Instance method - has 'self' parameter
+    fn distance_from_origin(self) -> f64 {
+        return sqrt(self.x * self.x + self.y * self.y);
+    }
+    
+    // Instance method to calculate distance to another point
+    fn distance_to(self, other: Point) -> f64 {
+        let dx: auto  // Manual review needed = self.x - other.x;
+        let dy: auto  // Manual review needed = self.y - other.y;
+        return sqrt(dx * dx + dy * dy);
+    }
+    
+    // Instance method to move the point
+    fn translate(self, dx: f64, dy: f64) -> Point {
+        return Point { x: self.x + dx, y: self.y + dy };
+    }
+    
+    // Instance method to scale the point
+    fn scale(self, factor: f64) -> Point {
+        return Point { x: self.x * factor, y: self.y * factor };
+    }
+    
+    // Instance method to check if point is at origin
+    fn is_origin(self) -> bool {
+        return self.x == 0.0 && self.y == 0.0;
+    }
+}
+
+// Define a Rectangle struct
+struct Rectangle {
+    top_left: Point;
+    width: f64;
+    height: f64;
+}
+
+// Implement methods for Rectangle
+impl Rectangle {
+    // Associated function (constructor)
+    fn new(x: f64, y: f64, width: f64, height: f64) -> Rectangle {
+        return Rectangle {
+            top_left: Point::new(x, y),
+            width: width,
+            height: height
+        };
+    }
+    
+    // Associated function for creating a square
+    fn square(x: f64, y: f64, size: f64) -> Rectangle {
+        return Rectangle::new(x, y, size, size);
+    }
+    
+    // Instance method to calculate area
+    fn area(self) -> f64 {
+        return self.width * self.height;
+    }
+    
+    // Instance method to calculate perimeter
+    fn perimeter(self) -> f64 {
+        return 2.0 * (self.width + self.height);
+    }
+    
+    // Instance method to get bottom-right corner
+    fn bottom_right(self) -> Point {
+        return Point::new(
+            self.top_left.x + self.width,
+            self.top_left.y + self.height
+        );
+    }
+    
+    // Instance method to check if point is inside rectangle
+    fn contains(self, point: Point) -> bool {
+        return point.x >= self.top_left.x &&
+               point.x <= self.top_left.x + self.width &&
+               point.y >= self.top_left.y &&
+               point.y <= self.top_left.y + self.height;
+    }
+}
+
+// Main function demonstrating struct methods
+fn main() {
+    // Using associated functions (constructors)
+    let origin: auto  // Function call - manual review needed = Point::origin();
+    let point1: auto  // Function call - manual review needed = Point::new(3.0, 4.0);
+    let point2: auto  // Function call - manual review needed = Point::new(6.0, 8.0);
+    
+    // Using instance methods
+    let distance1: auto  // Manual review needed = point1.distance_from_origin();
+    let distance2: auto  // Manual review needed = point1.distance_to(point2);
+    let is_origin: auto  // Manual review needed = origin.is_origin();
+    
+    // Method chaining
+    let transformed_point: auto  // Manual review needed = point1.translate(1.0, 1.0).scale(2.0);
+    
+    // Rectangle examples
+    let rect: auto  // Function call - manual review needed = Rectangle::new(0.0, 0.0, 10.0, 5.0);
+    let square: auto  // Function call - manual review needed = Rectangle::square(2.0, 2.0, 4.0);
+    
+    let area: auto  // Manual review needed = rect.area();
+    let perimeter: auto  // Manual review needed = rect.perimeter();
+    let corner: auto  // Manual review needed = rect.bottom_right();
+    let contains_point: auto  // Manual review needed = rect.contains(point1);
+    
+    // Print results (when print functionality is available)
+    log("Point distance from origin: " + distance1);
+    log("Distance between points: " + distance2);
+    log("Rectangle area: " + area);
+    log("Rectangle perimeter: " + perimeter);
+} 

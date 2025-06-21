@@ -1,0 +1,5 @@
+package test;
+
+pub fn main(none) -> int {
+    return 0;
+}

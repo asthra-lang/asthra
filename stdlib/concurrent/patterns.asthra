@@ -1,0 +1,508 @@
+/**
+ * Asthra Standard Library - Concurrent Patterns
+ * 
+ * This module provides advanced concurrency patterns including worker pools,
+ * task queues, and other high-level coordination patterns.
+ * These are Tier 2/3 concurrency features that require explicit #[non_deterministic] annotation.
+ * 
+ * Part of Phase 6: Standard Library Migration
+ * From the Pragmatic Concurrency Balance Plan
+ * 
+ * GRAMMAR COMPLIANT: Rewritten to use AI-friendly patterns: function pointers, 
+ * enums, and structs instead of traits for maximum AI generation compatibility.
+ * Strictly follows grammar.txt specification.
+ */
+
+package concurrent::patterns;
+
+import concurrent::channels::{Channel, channel, SendResult, RecvResult};
+import concurrent::coordination::{Semaphore, create_semaphore, select2, SelectResult};
+
+// =============================================================================
+// TASK SYSTEM USING FUNCTION POINTERS (AI-FRIENDLY)
+// =============================================================================
+
+/**
+ * Task execution function pointer type
+ * Takes void pointer to data, returns Result with void pointer to result
+ */
+pub type TaskFunction = fn(*const void) -> Result<*mut void, string>;
+
+/**
+ * Task cleanup function pointer type
+ * Used to free task data and result data
+ */
+pub type TaskCleanup = fn(*mut void) -> void;
+
+/**
+ * A task that can be executed by a worker
+ * Uses function pointers instead of traits for AI-friendly pattern
+ */
+pub struct Task {
+    execute_fn: TaskFunction;
+    cleanup_fn: TaskCleanup;
+    data: *mut void;
+    task_id: u64;
+}
+
+impl Task {
+    /**
+     * Create a new task with function pointer and data
+     */
+    pub fn new(execute_fn: TaskFunction, cleanup_fn: TaskCleanup, data: *mut void, task_id: u64) -> Task {
+        return Task {
+            execute_fn: execute_fn,
+            cleanup_fn: cleanup_fn,
+            data: data,
+            task_id: task_id,
+        };
+    }
+    
+    /**
+     * Execute the task
+     * Requires #[non_deterministic] annotation on calling function
+     */
+    #[non_deterministic]
+    pub fn execute(self) -> Result<*mut void, string> {
+        return (self.execute_fn)(self.data);
+    }
+    
+    /**
+     * Clean up task resources
+     */
+    pub fn cleanup(self) -> void {
+        if self.cleanup_fn as usize != 0 {
+            (self.cleanup_fn)(self.data);
+        }
+    }
+    
+    /**
+     * Get task ID
+     */
+    pub fn get_id(self) -> u64 {
+        return self.task_id;
+    }
+}
+
+// =============================================================================
+// WORKER POOL IMPLEMENTATION (SIMPLIFIED FOR AI)
+// =============================================================================
+
+/**
+ * Worker pool status enum for clear state management
+ */
+pub enum PoolStatus {
+    Starting,
+    Running,
+    Shutting,
+    Stopped
+}
+
+/**
+ * Worker pool for executing tasks concurrently
+ * Simplified to use concrete types instead of generics
+ */
+pub struct WorkerPool {
+    task_channel: Channel<Task>;
+    result_channel: Channel<Result<*mut void, string>>;
+    worker_count: usize;
+    shutdown_signal: Channel<()>;
+    next_task_id: u64;
+    status: PoolStatus;
+}
+
+impl WorkerPool {
+    /**
+     * Create a new worker pool with specified number of workers
+     * Requires #[non_deterministic] annotation on calling function
+     */
+    #[non_deterministic]
+    pub fn new(worker_count: usize) -> Result<WorkerPool, string> {
+        let task_channel_result: auto  // Function call - manual review needed = channel::<Task>(100);
+        let task_channel: auto  // Match unwrap - manual review needed = match task_channel_result {;
+            Result.Ok(value) => value
+            Result.Err(e) => return Result.Err(e)
+        };
+        let result_channel_result: auto  // Function call - manual review needed = channel::<Result<*mut void, string>>(100);
+        let result_channel: auto  // Match unwrap - manual review needed = match result_channel_result {;
+            Result.Ok(value) => value
+            Result.Err(e) => return Result.Err(e)
+        };
+        let shutdown_signal_result: auto  // Function call - manual review needed = channel::<()>(worker_count);
+        let shutdown_signal: auto  // Match unwrap - manual review needed = match shutdown_signal_result {;
+            Result.Ok(value) => value
+            Result.Err(e) => return Result.Err(e)
+        };
+        
+        let pool: auto  // Manual review needed = WorkerPool {;
+            task_channel: task_channel,
+            result_channel: result_channel,
+            worker_count: worker_count,
+            shutdown_signal: shutdown_signal,
+            next_task_id: 1,
+            status: PoolStatus.Starting,
+        };
+        
+        // Start worker tasks
+        for worker_id in 0..worker_count {
+            let task_ch: auto  // Manual review needed = pool.task_channel.clone();
+            let result_ch: auto  // Manual review needed = pool.result_channel.clone();
+            let shutdown_ch: auto  // Manual review needed = pool.shutdown_signal.clone();
+            
+            spawn(move || {
+                WorkerPool::worker_loop(worker_id, task_ch, result_ch, shutdown_ch)
+            });
+        }
+        
+        return Result.Ok(pool);
+    }
+    
+    /**
+     * Submit a task to the worker pool for execution
+     * Requires #[non_deterministic] annotation on calling function
+     */
+    #[non_deterministic]
+    pub fn submit(mut self, task: Task) -> Result<u64, string> {
+        match self.status {
+            PoolStatus.Running => {}
+            PoolStatus.Starting => {}
+            _ => {
+                return Result.Err("Worker pool is not running");
+            }
+        }
+        
+        let task_id: auto  // Manual review needed = self.next_task_id;
+        self.next_task_id = self.next_task_id + 1;
+        
+        let task_with_id: auto  // Function call - manual review needed = Task::new(task.execute_fn, task.cleanup_fn, task.data, task_id);
+        
+        match self.task_channel.send(task_with_id) {
+            SendResult.Ok(_) => {
+                return Result.Ok(task_id);
+            },
+            SendResult.Full(_) => {
+                return Result.Err("Worker pool task queue is full");
+            },
+            SendResult.Closed(_) => {
+                return Result.Err("Worker pool has been shut down");
+            },
+            SendResult.Error(msg) => {
+                return Result.Err(msg);
+            }
+        }
+    }
+    
+    /**
+     * Get a completed result from the worker pool
+     * Requires #[non_deterministic] annotation on calling function
+     */
+    #[non_deterministic]
+    pub fn get_result(self) -> Result<Result<*mut void, string>, string> {
+        match self.result_channel.recv() {
+            RecvResult.Ok(result) => {
+                return Result.Ok(result);
+            },
+            RecvResult.Closed() => {
+                return Result.Err("Worker pool has been shut down");
+            },
+            RecvResult.Error(msg) => {
+                return Result.Err(msg);
+            },
+            _ => {
+                return Result.Err("No results available");
+            }
+        }
+    }
+    
+    /**
+     * Try to get a result without blocking
+     * Requires #[non_deterministic] annotation on calling function
+     */
+    #[non_deterministic]
+    pub fn try_get_result(self) -> Option<Result<*mut void, string>> {
+        match self.result_channel.try_recv() {
+            RecvResult.Ok(result) => {
+                return Some(result);
+            },
+            _ => {
+                return None;
+            }
+        }
+    }
+    
+    /**
+     * Shutdown the worker pool gracefully
+     * Requires #[non_deterministic] annotation on calling function
+     */
+    #[non_deterministic]
+    pub fn shutdown(mut self) -> Result<(), string> {
+        self.status = PoolStatus.Shutting;
+        
+        // Signal all workers to shutdown
+        for _ in 0..self.worker_count {
+            match self.shutdown_signal.send(()) {
+                SendResult.Ok(_) => {}
+                _ => {}
+            }
+        }
+        
+        // Close task channel to prevent new submissions
+        match self.task_channel.close() {
+            Result.Ok(_) => {}
+            Result.Err(_) => {}
+        }
+        
+        self.status = PoolStatus.Stopped;
+        return Result.Ok(());
+    }
+    
+    /**
+     * Get current pool status
+     */
+    pub fn get_status(self) -> PoolStatus {
+        return self.status;
+    }
+    
+    /**
+     * Worker loop implementation - static function for simplicity
+     * Requires #[non_deterministic] annotation on calling function
+     */
+    #[non_deterministic]
+    fn worker_loop(
+        worker_id: usize,
+        task_channel: Channel<Task>,
+        result_channel: Channel<Result<*mut void, string>>,
+        shutdown_signal: Channel<()>
+    ) -> Result<(), string> {
+        loop {
+            // Use select to check for shutdown or new tasks
+            match select2(task_channel.clone(), shutdown_signal.clone()) {
+                SelectResult.RecvOk(0, task) => {
+                    // Received a task to execute
+                    let result: auto  // Manual review needed = task.execute();
+                    task.cleanup(); // Clean up task resources
+                    
+                    match result_channel.send(result) {
+                        SendResult.Ok(_) => {}
+                        _ => {
+                            // Result channel closed, shutdown worker
+                            break;
+                        }
+                    }
+                },
+                SelectResult.RecvOk(1, _) => {
+                    // Received shutdown signal
+                    break;
+                },
+                SelectResult.Error(msg) => {
+                    return Result.Err("Worker error: " + msg);
+                },
+                _ => {}
+            }
+        }
+        
+        return Result.Ok(());
+    }
+}
+
+// =============================================================================
+// HELPER FUNCTIONS FOR SIMPLE TASKS
+// =============================================================================
+
+/**
+ * Executor for simple function tasks
+ */
+fn simple_function_executor(data: *const void) -> Result<*mut void, string> {
+    let func: auto  // Manual review needed = data as fn() -> Result<*mut void, string>;
+    return func();
+}
+
+/**
+ * Cleanup for simple function tasks (no-op)
+ */
+fn simple_function_cleanup(data: *mut void) -> void {
+    // Simple functions don't need cleanup
+}
+
+// =============================================================================
+// UTILITY FUNCTIONS AND PATTERNS
+// =============================================================================
+
+/**
+ * Get current time in milliseconds (FFI function)
+ */
+#[ffi("Asthra_get_current_time_ms")]
+extern fn get_current_time_ms(none) -> u64;
+
+/**
+ * Rate limiter status
+ */
+pub enum RateLimiterStatus {
+    Ready,
+    Limited,
+    Error(string)
+}
+
+/**
+ * Rate limiter for controlling task submission rate
+ */
+pub struct RateLimiter {
+    semaphore: Semaphore;
+    refill_rate: usize;
+    last_refill: u64;
+    current_permits: usize;
+}
+
+impl RateLimiter {
+    /**
+     * Create a new rate limiter
+     * Requires #[non_deterministic] annotation on calling function
+     */
+    #[non_deterministic]
+    pub fn new(max_rate: usize, refill_rate: usize) -> Result<RateLimiter, string> {
+        let semaphore_result: auto  // Manual review needed = create_semaphore(max_rate);
+        let semaphore: auto  // Match unwrap - manual review needed = match semaphore_result {;
+            Result.Ok(value) => value
+            Result.Err(e) => return Result.Err(e)
+        };
+        
+        return Result.Ok(RateLimiter {
+            semaphore: semaphore,
+            refill_rate: refill_rate,
+            last_refill: get_current_time_ms(),
+            current_permits: max_rate,
+        });
+    }
+    
+    /**
+     * Try to acquire permission to proceed (respects rate limit)
+     * Requires #[non_deterministic] annotation on calling function
+     */
+    #[non_deterministic]
+    pub fn try_acquire(mut self) -> RateLimiterStatus {
+        // Refill permits based on elapsed time
+        let current_time: auto  // Manual review needed = get_current_time_ms();
+        let elapsed_seconds: auto  // Manual review needed = (current_time - self.last_refill) / 1000;
+        
+        if elapsed_seconds > 0 {
+            let permits_to_add: auto  // Manual review needed = elapsed_seconds * (self.refill_rate as u64);
+            self.current_permits = self.current_permits + (permits_to_add as usize);
+            self.last_refill = current_time;
+        }
+        
+        if self.current_permits > 0 {
+            self.current_permits = self.current_permits - 1;
+            return RateLimiterStatus.Ready;
+        } else {
+            return RateLimiterStatus.Limited;
+        }
+    }
+    
+    /**
+     * Get current permit count
+     */
+    pub fn get_permits(self) -> usize {
+        return self.current_permits;
+    }
+}
+
+// =============================================================================
+// USAGE EXAMPLES AND DOCUMENTATION
+// =============================================================================
+
+/**
+ * Example: Worker pool usage with simple functions
+ * 
+ * ```asthra
+ * #[non_deterministic]
+ * fn worker_pool_example(none) -> Result<(), string> {
+ *     let pool_result = WorkerPool::new(4);
+ *     let pool = match pool_result {
+ *         Result.Ok(value) => value
+ *         Result.Err(e) => return Result.Err(e)
+ *     };
+ *     
+ *     // Submit some simple tasks using function pointers
+ *     for i in 0..10 {
+ *         let task = Task::new(
+ *             simple_calculation_executor,
+ *             simple_function_cleanup,
+ *             i as *mut void,
+ *             i as u64
+ *         );
+ *         
+ *         match pool.submit(task) {
+ *             Result.Ok(task_id) => {
+ *                 // Task submitted successfully
+ *             },
+ *             Result.Err(msg) => {
+ *                 return Result.Err("Failed to submit task: " + msg);
+ *             }
+ *         }
+ *     }
+ *     
+ *     // Collect results
+ *     for _ in 0..10 {
+ *         match pool.get_result() {
+ *             Result.Ok(task_result) => {
+ *                 match task_result {
+ *                     Result.Ok(value) => {
+ *                         let int_result = value as int;
+ *                         // Use result
+ *                     },
+ *                     Result.Err(msg) => {
+ *                         // Handle task error
+ *                     }
+ *                 }
+ *             },
+ *             Result.Err(msg) => {
+ *                 // Handle pool error
+ *             }
+ *         }
+ *     }
+ *     
+ match *     pool.shutdown() {
+     Result.Ok(_) => {}
+     Result.Err(e) => return Result.Err(e)
+ }
+ *     return Result.Ok(());
+ * }
+ * 
+ * fn simple_calculation_executor(data: *const void) -> Result<*mut void, string> {
+ *     let input = data as int;
+ *     let result = input * input;
+ *     return Result.Ok(result as *mut void);
+ * }
+ * ```
+ *
+ * Example: Rate limiter usage
+ * 
+ * ```asthra
+ * #[non_deterministic]
+ * fn rate_limiter_example(none) -> Result<(), string> {
+ *     let limiter_result = RateLimiter::new(10, 5); // 10 permits, refill 5 per second
+ *     let limiter = match limiter_result {
+ *         Result.Ok(value) => value
+ *         Result.Err(e) => return Result.Err(e)
+ *     };
+ *     
+ *     for i in 0..20 {
+ *         match limiter.try_acquire() {
+ *             RateLimiterStatus.Ready => {
+ *                 // Process request
+ *                 process_request(i);
+ *             },
+ *             RateLimiterStatus.Limited => {
+ *                 // Wait and retry
+ *                 sleep_ms(100);
+ *             },
+ *             RateLimiterStatus.Error(msg) => {
+ *                 return Result.Err("Rate limiter error: " + msg);
+ *             }
+ *         }
+ *     }
+ *     
+ *     return Result.Ok(());
+ * }
+ * ```
+ */

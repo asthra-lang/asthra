@@ -1,0 +1,798 @@
+// Asthra Concurrency Migration Guide
+// Practical examples of migrating between tiers and from other languages
+
+// ============================================================================
+// Section 1: Upgrading from Tier 1 to Tier 2
+// ============================================================================
+
+// Before: Simple Tier 1 parallel processing
+fn tier1_simple_processing(data: Vec<i32>) -> Result<Vec<i32>, string> {
+    let mut handles = [];
+    
+    for item in data {
+        let handle: auto  // Manual review needed = spawn_with_handle move || {;
+            process_item_simple(item)
+        };
+        handles.push(handle);
+    }
+    
+    let mut results = [];
+    for handle in handles {
+        results.push(await handle?);
+    }
+    
+    Result.Ok(results)
+}
+
+fn process_item_simple(item: i32) -> Result<i32, string> {
+    Result.Ok(item * 2)
+}
+
+// After: Tier 2 with worker pool for better resource management
+import "stdlib/concurrent/patterns";
+
+#[non_deterministic]
+fn tier2_managed_processing(data: Vec<i32>) -> Result<Vec<i32>, string> {
+    // Create a worker pool to limit resource usage
+    let pool_result: auto  // Function call - manual review needed = patterns.WorkerPool::<i32>::new(4);
+    let pool: auto  // Match unwrap - manual review needed = match pool_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    
+    // Submit all tasks
+    for item in data {
+        pool.submit_function(move || {
+            process_item_advanced(item)
+        match }) {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+    }
+    
+    // Collect results
+    let mut results = [];
+    for _ in 0..data.len() {
+        match pool.get_result()? {
+            Result.Ok(value) => results.push(value)
+            Result.Err(msg) => return Result.Err(msg)
+        }
+    }
+    
+    match pool.shutdown() {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    Result.Ok(results)
+}
+
+fn process_item_advanced(item: i32) -> Result<i32, string> {
+    // More sophisticated processing
+    if item < 0 {
+        Result.Err("Negative values not supported".to_string())
+    } else {
+        Result.Ok(item * 2 + 1)
+    }
+}
+
+// ============================================================================
+// Section 2: Producer-Consumer Pattern Migration
+// ============================================================================
+
+// Before: Tier 1 simple producer-consumer
+fn tier1_producer_consumer(none) -> Result<Vec<i32>, string> {
+    // Simple approach: producer generates all data first
+    let data: auto  // Manual review needed = produce_all_data();
+    
+    // Then consumer processes all data
+    let mut results = [];
+    for item in data {
+        let handle: auto  // Manual review needed = spawn_with_handle move || {;
+            consume_item(item)
+        };
+        results.push(await handle?);
+    }
+    
+    Result.Ok(results)
+}
+
+fn produce_all_data(none) -> Vec<i32> {
+    let mut data = [];
+    for i in 0..100 {
+        data.push(i);
+    }
+    data
+}
+
+fn consume_item(item: i32) -> Result<i32, string> {
+    Result.Ok(item * 3)
+}
+
+// After: Tier 2 true producer-consumer with channels
+import "stdlib/concurrent/channels";
+
+#[non_deterministic]
+fn tier2_producer_consumer(none) -> Result<Vec<i32>, string> {
+    let channel_pair_result: auto  // Manual review needed = channels.channel_pair<i32>(10);
+    let (sender, receiver) = match channel_pair_result {
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    
+    // Producer task
+    let producer: auto  // Manual review needed = spawn_with_handle move || {;
+        for i in 0..100 {
+            match sender.send(i) {
+                Result.Ok(_) => {}
+                Result.Err(e) => return Result.Err(e)
+            }
+        }
+        match sender.close() {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+        Result.Ok(())
+    };
+    
+    // Consumer task
+    let consumer: auto  // Manual review needed = spawn_with_handle move || {;
+        let mut results = [];
+        loop {
+            match receiver.recv() {
+                channels.RecvResult.Ok(item) => {
+                    let processed_result: auto  // Manual review needed = consume_item_advanced(item);
+                    let processed: auto  // Match unwrap - manual review needed = match processed_result {;
+                        Result.Ok(value) => value
+                        Result.Err(e) => return Result.Err(e)
+                    };
+                    results.push(processed);
+                },
+                channels.RecvResult.Closed() => break
+                channels.RecvResult.Error(msg) => return Result.Err(msg)
+                _ => continue
+            }
+        }
+        Result.Ok(results)
+    };
+    
+    match await producer {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    let results_result: auto  // Manual review needed = await consumer;
+    let results: auto  // Match unwrap - manual review needed = match results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    Result.Ok(results)
+}
+
+fn consume_item_advanced(item: i32) -> Result<i32, string> {
+    // More complex processing that might fail
+    if item % 17 == 0 {
+        Result.Err(format!("Cannot process item {}", item))
+    } else {
+        Result.Ok(item * 3 + 7)
+    }
+}
+
+// ============================================================================
+// Section 3: Migrating from Go
+// ============================================================================
+
+// Go equivalent:
+//   go func() {
+//       result := processData(data)
+//       resultChan <- result
+//   }()
+//   result := <-resultChan
+
+// Asthra Tier 1 equivalent:
+fn go_to_asthra_tier1(data: i32) -> Result<i32, string> {
+    let handle: auto  // Manual review needed = spawn_with_handle move || {;
+        process_data_go_style(data)
+    };
+    
+    let result_result: auto  // Manual review needed = await handle;
+    let result: auto  // Match unwrap - manual review needed = match result_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    Result.Ok(result)
+}
+
+// Asthra Tier 2 equivalent (more Go-like with channels):
+import "stdlib/concurrent/channels";
+
+#[non_deterministic]
+fn go_to_asthra_tier2(data: i32) -> Result<i32, string> {
+    let channel_pair_result: auto  // Manual review needed = channels.channel_pair<i32>(1);
+    let (sender, receiver) = match channel_pair_result {
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    
+    spawn_with_handle move || {
+        let result_result: auto  // Manual review needed = process_data_go_style(data);
+        let result: auto  // Match unwrap - manual review needed = match result_result {;
+            Result.Ok(value) => value
+            Result.Err(e) => return Result.Err(e)
+        };
+        match sender.send(result) {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+        Result.Ok(())
+    };
+    
+    match receiver.recv() {
+        channels.RecvResult.Ok(result) => Result.Ok(result)
+        channels.RecvResult.Error(msg) => Result.Err(msg)
+        _ => Result.Err("Unexpected channel result".to_string())
+    }
+}
+
+fn process_data_go_style(data: i32) -> Result<i32, string> {
+    Result.Ok(data + 42)
+}
+
+// Go select statement equivalent:
+// select {
+// case msg1 := <-ch1:
+//     handleMsg1(msg1)
+// case msg2 := <-ch2:
+//     handleMsg2(msg2)
+// case <-timeout:
+//     handleTimeout()
+// }
+
+import "stdlib/concurrent/coordination";
+
+#[non_deterministic]
+fn go_select_to_asthra(ch1: channels.Channel<string>, ch2: channels.Channel<i32>) -> Result<(), string> {
+    match coordination.SelectBuilder::new()
+        .recv(ch1)
+        .recv(ch2)
+        .timeout(1000)
+        .execute() {
+        
+        coordination.SelectResult.RecvOk(0, msg1) => {
+            handle_string_message(msg1);
+        },
+        coordination.SelectResult.RecvOk(1, msg2) => {
+            handle_int_message(msg2);
+        },
+        coordination.SelectResult.Timeout() => {
+            handle_timeout();
+        },
+        coordination.SelectResult.Error(msg) => {
+            return Result.Err(msg);
+        }
+        _ => {}
+    }
+    
+    Result.Ok(())
+}
+
+fn handle_string_message(msg: string) {
+    println("Received string: {}", msg);
+}
+
+fn handle_int_message(msg: i32) {
+    println("Received integer: {}", msg);
+}
+
+fn handle_timeout() {
+    println("Operation timed out");
+}
+
+// ============================================================================
+// Section 4: Migrating from Rust/Tokio
+// ============================================================================
+
+// Rust/Tokio equivalent:
+// let handle = tokio::spawn(async {
+//     expensive_computation().await
+// });
+// let result = handle.await?;
+
+// Asthra Tier 1 equivalent:
+fn rust_to_asthra_tier1(none) -> Result<i32, string> {
+    let handle: auto  // Manual review needed = spawn_with_handle expensive_computation();
+    let result_result: auto  // Manual review needed = await handle;
+    let result: auto  // Match unwrap - manual review needed = match result_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    Result.Ok(result)
+}
+
+// Rust async/await pattern:
+// async fn process_sequence(none) -> Result<i32, Error> {
+//     let step1 = async_step1().await?;
+//     let step2 = async_step2(step1).await?;
+//     let step3 = async_step3(step2).await?;
+//     Ok(step3)
+// }
+
+// Asthra equivalent:
+fn rust_async_to_asthra(none) -> Result<i32, string> {
+    let step1_handle: auto  // Manual review needed = spawn_with_handle async_step1();
+    let step1_result_result: auto  // Manual review needed = await step1_handle;
+    let step1_result: auto  // Match unwrap - manual review needed = match step1_result_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    
+    let step2_handle: auto  // Manual review needed = spawn_with_handle async_step2(step1_result);
+    let step2_result_result: auto  // Manual review needed = await step2_handle;
+    let step2_result: auto  // Match unwrap - manual review needed = match step2_result_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    
+    let step3_handle: auto  // Manual review needed = spawn_with_handle async_step3(step2_result);
+    let step3_result_result: auto  // Manual review needed = await step3_handle;
+    let step3_result: auto  // Match unwrap - manual review needed = match step3_result_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    
+    Result.Ok(step3_result)
+}
+
+fn expensive_computation(none) -> Result<i32, string> {
+    // Simulate expensive work
+    let mut result = 0;
+    for i in 0..1000000 {
+        result += i % 1000;
+    }
+    Result.Ok(result)
+}
+
+fn async_step1(none) -> Result<i32, string> {
+    Result.Ok(42)
+}
+
+fn async_step2(input: i32) -> Result<i32, string> {
+    Result.Ok(input * 2)
+}
+
+fn async_step3(input: i32) -> Result<i32, string> {
+    Result.Ok(input + 10)
+}
+
+// ============================================================================
+// Section 5: Migrating from Java/ExecutorService
+// ============================================================================
+
+// Java equivalent:
+// ExecutorService executor = Executors.newFixedThreadPool(4);
+// List<Future<Integer>> futures = new ArrayList<>();
+// for (int i = 0; i < 10; i++) {
+//     futures.add(executor.submit(() -> processTask(i)));
+// }
+// for (Future<Integer> future : futures) {
+//     results.add(future.get());
+// }
+
+// Asthra Tier 2 equivalent:
+import "stdlib/concurrent/patterns";
+
+#[non_deterministic]
+fn java_executor_to_asthra(none) -> Result<Vec<i32>, string> {
+    let pool_result: auto  // Function call - manual review needed = patterns.WorkerPool::<i32>::new(4);
+    let pool: auto  // Match unwrap - manual review needed = match pool_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    
+    // Submit tasks (like executor.submit())
+    for i in 0..10 {
+        pool.submit_function(move || {
+            process_task_java_style(i)
+        match }) {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+    }
+    
+    // Collect results (like future.get())
+    let mut results = [];
+    for _ in 0..10 {
+        match pool.get_result()? {
+            Result.Ok(value) => results.push(value)
+            Result.Err(msg) => return Result.Err(msg)
+        }
+    }
+    
+    match pool.shutdown() {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    Result.Ok(results)
+}
+
+fn process_task_java_style(task_id: i32) -> Result<i32, string> {
+    // Simulate task processing
+    Result.Ok(task_id * task_id)
+}
+
+// ============================================================================
+// Section 6: Performance Optimization Patterns
+// ============================================================================
+
+// Before: Naive parallel approach (might create too many tasks)
+fn naive_parallel(data: Vec<i32>) -> Result<Vec<i32>, string> {
+    let mut handles = [];
+    
+    // Creates one task per item - could be thousands!
+    for item in data {
+        let handle: auto  // Manual review needed = spawn_with_handle move || {;
+            expensive_operation(item)
+        };
+        handles.push(handle);
+    }
+    
+    let mut results = [];
+    for handle in handles {
+        results.push(await handle?);
+    }
+    
+    Result.Ok(results)
+}
+
+// After: Optimized chunked approach
+fn optimized_chunked(data: Vec<i32>) -> Result<Vec<i32>, string> {
+    let cpu_count: auto  // Manual review needed = get_cpu_count();
+    let chunk_size: auto  // Manual review needed = max(1, data.len() / cpu_count);
+    
+    let mut handles = [];
+    
+    // Process data in chunks, one chunk per CPU core
+    for chunk_start in (0..data.len()).step_by(chunk_size) {
+        let chunk_end: auto  // Manual review needed = min(chunk_start + chunk_size, data.len());
+        let chunk_data: auto  // Manual review needed = data[chunk_start..chunk_end].to_vec();
+        
+        let handle: auto  // Manual review needed = spawn_with_handle move || {;
+            process_chunk_optimized(chunk_data)
+        };
+        handles.push(handle);
+    }
+    
+    let mut all_results = [];
+    for handle in handles {
+        let chunk_results_result: auto  // Manual review needed = await handle;
+        let chunk_results: auto  // Match unwrap - manual review needed = match chunk_results_result {;
+            Result.Ok(value) => value
+            Result.Err(e) => return Result.Err(e)
+        };
+        all_results.extend(chunk_results);
+    }
+    
+    Result.Ok(all_results)
+}
+
+fn process_chunk_optimized(chunk: Vec<i32>) -> Result<Vec<i32>, string> {
+    let mut results = [];
+    for item in chunk {
+        results.push(expensive_operation(item)?);
+    }
+    Result.Ok(results)
+}
+
+// After: Using Tier 2 worker pool for resource control
+import "stdlib/concurrent/patterns";
+
+#[non_deterministic]
+fn optimized_worker_pool(data: Vec<i32>) -> Result<Vec<i32>, string> {
+    let pool_result: auto  // Function call - manual review needed = patterns.WorkerPool::<i32>::new(get_cpu_count());
+    let pool: auto  // Match unwrap - manual review needed = match pool_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    
+    // Submit work items to pool
+    for item in data {
+        pool.submit_function(move || {
+            expensive_operation(item)
+        match }) {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+    }
+    
+    // Collect results
+    let mut results = [];
+    for _ in 0..data.len() {
+        match pool.get_result()? {
+            Result.Ok(value) => results.push(value)
+            Result.Err(msg) => return Result.Err(msg)
+        }
+    }
+    
+    match pool.shutdown() {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    Result.Ok(results)
+}
+
+fn expensive_operation(item: i32) -> Result<i32, string> {
+    // Simulate expensive computation
+    let mut result = item;
+    for _ in 0..1000 {
+        result = (result * 31 + 17) % 1000000;
+    }
+    Result.Ok(result)
+}
+
+// ============================================================================
+// Section 7: Error Handling Migration
+// ============================================================================
+
+// Before: Basic error handling
+fn basic_error_handling(none) -> Result<Vec<i32>, string> {
+    let mut handles = [];
+    
+    for i in 0..10 {
+        let handle: auto  // Manual review needed = spawn_with_handle move || {;
+            risky_operation(i)
+        };
+        handles.push(handle);
+    }
+    
+    let mut results = [];
+    for handle in handles {
+        results.push(await handle?); // Stops on first error
+    }
+    
+    Result.Ok(results)
+}
+
+// After: Robust error handling with partial failure tolerance
+fn robust_error_handling(none) -> Result<ProcessingReport, string> {
+    let mut handles = [];
+    
+    for i in 0..10 {
+        let handle: auto  // Manual review needed = spawn_with_handle move || {;
+            risky_operation_with_retry(i)
+        };
+        handles.push(handle);
+    }
+    
+    let mut successful_results = [];
+    let mut failures = [];
+    
+    for (index, handle) in handles.enumerate() {
+        match await handle {
+            Result.Ok(value) => successful_results.push(value)
+            Result.Err(error) => {
+                failures.push(TaskFailure {
+                    task_id: index as i32,
+                    error: error,
+                    retry_count: 0,
+                });
+            }
+        }
+    }
+    
+    let report: auto  // Manual review needed = ProcessingReport {;
+        total_tasks: 10,
+        successful_tasks: successful_results.len() as i32,
+        failed_tasks: failures.len() as i32,
+        success_rate: (successful_results.len() as f64) / 10.0,
+        failures: failures,
+    };
+    
+    if report.success_rate < 0.5 {
+        Result.Err(format!("Too many failures: only " + (:.1).to_string() + "% success rate", report.success_rate * 100.0))
+    } else {
+        Result.Ok(report)
+    }
+}
+
+struct ProcessingReport {
+    total_tasks: i32,
+    successful_tasks: i32,
+    failed_tasks: i32,
+    success_rate: f64,
+    failures: Vec<TaskFailure>,
+}
+
+struct TaskFailure {
+    task_id: i32,
+    error: string,
+    retry_count: i32,
+}
+
+fn risky_operation(input: i32) -> Result<i32, string> {
+    if input % 3 == 0 {
+        Result.Err(format!("Operation failed for input {}", input))
+    } else {
+        Result.Ok(input * 2)
+    }
+}
+
+fn risky_operation_with_retry(input: i32) -> Result<i32, string> {
+    let max_retries: i32 = 3;
+    
+    for retry in 0..max_retries {
+        match attempt_operation(input) {
+            Result.Ok(value) => return Result.Ok(value)
+            Result.Err(error) => {
+                if retry == max_retries - 1 {
+                    return Result.Err(format!("Failed after {} retries: {}", max_retries, error));
+                }
+                // Wait before retry (in real implementation)
+            }
+        }
+    }
+    
+    Result.Err("Unexpected retry loop exit".to_string())
+}
+
+fn attempt_operation(input: i32) -> Result<i32, string> {
+    // Simulate operation that might fail
+    if input % 7 == 0 {
+        Result.Err("Random failure".to_string())
+    } else {
+        Result.Ok(input * 2 + 1)
+    }
+}
+
+// ============================================================================
+// Section 8: When to Move to Tier 3
+// ============================================================================
+
+// Scenario: You've hit performance limits with Tier 2
+fn tier2_performance_limit(none) -> Result<(), string> {
+    println("Current Tier 2 approach reaching limits:");
+    println("- Need to handle 10,000+ concurrent connections");
+    println("- Worker pool overhead becoming significant");
+    println("- Need specialized async I/O patterns");
+    println("- Memory usage growing too large");
+    
+    Result.Ok(())
+}
+
+// Solution: Move to Tier 3 with external async runtime
+extern "tokio" {
+    fn tokio_runtime_new(none) -> *mut TokioRuntime;
+    fn tokio_spawn_many(runtime: *mut TokioRuntime, tasks: Vec<AsyncTask>) -> Vec<TaskHandle>;
+}
+
+type TokioRuntime = *mut void;
+type TaskHandle = *mut void;
+type AsyncTask = *mut void;
+
+fn tier3_high_performance(none) -> Result<(), string> {
+    println("Tier 3 solution:");
+    println("- Use Tokio for efficient async I/O");
+    println("- Green threads for massive concurrency");
+    println("- Specialized data structures for high throughput");
+    println("- Integration with ecosystem libraries");
+    
+    let runtime: auto  // Manual review needed = tokio_runtime_new();
+    // ... use external library for maximum performance
+    
+    Result.Ok(())
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+fn get_cpu_count(none) -> usize {
+    8 // Default for examples
+}
+
+fn max(a: usize, b: usize) -> usize {
+    if a > b { a } else { b }
+}
+
+fn min(a: usize, b: usize) -> usize {
+    if a < b { a } else { b }
+}
+
+// ============================================================================
+// Main Migration Examples Runner
+// ============================================================================
+
+fn main(none) -> Result<(), string> {
+    println("=== Asthra Concurrency Migration Guide ===");
+    
+    println("\n--- Tier 1 to Tier 2 Migration ---");
+    let test_data: auto  // Manual review needed = vec![1, 2, 3, 4, 5];
+    
+    let tier1_results_result: auto  // Manual review needed = tier1_simple_processing(test_data.clone());
+    let tier1_results: auto  // Match unwrap - manual review needed = match tier1_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println("Tier 1 processed {} items", tier1_results.len());
+    
+    let tier2_results_result: auto  // Manual review needed = tier2_managed_processing(test_data);
+    let tier2_results: auto  // Match unwrap - manual review needed = match tier2_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println("Tier 2 processed {} items", tier2_results.len());
+    
+    println("\n--- Producer-Consumer Migration ---");
+    let tier1_pc_results_result: auto  // Manual review needed = tier1_producer_consumer();
+    let tier1_pc_results: auto  // Match unwrap - manual review needed = match tier1_pc_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println("Tier 1 producer-consumer: {} items", tier1_pc_results.len());
+    
+    let tier2_pc_results_result: auto  // Manual review needed = tier2_producer_consumer();
+    let tier2_pc_results: auto  // Match unwrap - manual review needed = match tier2_pc_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println("Tier 2 producer-consumer: {} items", tier2_pc_results.len());
+    
+    println("\n--- Language Migration Examples ---");
+    let go_result_result: auto  // Manual review needed = go_to_asthra_tier1(100);
+    let go_result: auto  // Match unwrap - manual review needed = match go_result_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println("Go to Asthra Tier 1: {}", go_result);
+    
+    let rust_result_result: auto  // Manual review needed = rust_to_asthra_tier1();
+    let rust_result: auto  // Match unwrap - manual review needed = match rust_result_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println("Rust to Asthra: {}", rust_result);
+    
+    let java_results_result: auto  // Manual review needed = java_executor_to_asthra();
+    let java_results: auto  // Match unwrap - manual review needed = match java_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println("Java ExecutorService to Asthra: {} results", java_results.len());
+    
+    println("\n--- Performance Optimization ---");
+    let test_data_large: auto  // Manual review needed = (0..100).collect();
+    
+    let naive_results_result: auto  // Manual review needed = naive_parallel(test_data_large.clone());
+    let naive_results: auto  // Match unwrap - manual review needed = match naive_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println("Naive parallel: {} results", naive_results.len());
+    
+    let optimized_results_result: auto  // Manual review needed = optimized_chunked(test_data_large.clone());
+    let optimized_results: auto  // Match unwrap - manual review needed = match optimized_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println("Optimized chunked: {} results", optimized_results.len());
+    
+    let pool_results_result: auto  // Manual review needed = optimized_worker_pool(test_data_large);
+    let pool_results: auto  // Match unwrap - manual review needed = match pool_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println("Worker pool: {} results", pool_results.len());
+    
+    println("\n--- Error Handling Migration ---");
+    match robust_error_handling() {
+        Result.Ok(report) => {
+            println("Robust error handling: " + (:.1).to_string() + "% success rate ({}/{})", 
+                     report.success_rate * 100.0, report.successful_tasks, report.total_tasks);
+        },
+        Result.Err(error) => {
+            println("Processing failed: {}", error);
+        }
+    }
+    
+    println!("\nMigration guide examples completed!");
+    println!("Use these patterns to migrate your code between tiers effectively.");
+    
+    Result.Ok(())
+} 

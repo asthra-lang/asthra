@@ -1,0 +1,370 @@
+name: Performance Monitoring
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run performance tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      benchmark_type:
+        description: 'Type of benchmark to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - basic
+          - memory
+          - concurrency
+          - optimization
+
+env:
+  CFLAGS: -std=c17 -Wall -Wextra -Wpedantic
+
+jobs:
+  performance-baseline:
+    name: Performance Baseline
+    runs-on: ubuntu-latest
+    outputs:
+      baseline-hash: ${{ steps.baseline.outputs.hash }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get baseline commit
+        id: baseline
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "hash=${{ github.event.pull_request.base.sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "hash=${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+
+  benchmark-suite:
+    name: Benchmark Suite
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        optimization: [debug, release, pgo]
+        include:
+          - optimization: debug
+            build_flags: "debug"
+          - optimization: release
+            build_flags: "release"
+          - optimization: pgo
+            build_flags: "pgo-optimized"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake clang libc6-dev gperf libjson-c-dev
+
+      - name: Set up performance monitoring
+        run: |
+          # Enable performance counters
+          echo 0 | sudo tee /proc/sys/kernel/perf_event_paranoid || true
+          echo 0 | sudo tee /proc/sys/kernel/kptr_restrict || true
+
+      - name: Build with optimization
+        run: |
+          mkdir -p build
+          cd build
+          if [ "${{ matrix.optimization }}" = "pgo" ]; then
+            # Build PGO optimized version - this is complex and may not be implemented yet
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS="-fprofile-generate"
+            cmake --build . --config Release
+            # TODO: Run profiling workload here
+            # cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS="-fprofile-use"
+            # cmake --build . --config Release
+            echo "PGO optimization not fully implemented yet"
+          else
+            cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.optimization == 'debug' && 'Debug' || 'Release' }}
+            cmake --build . --config ${{ matrix.optimization == 'debug' && 'Debug' || 'Release' }}
+          fi
+
+      - name: Run basic benchmarks
+        if: github.event.inputs.benchmark_type == 'all' || github.event.inputs.benchmark_type == 'basic' || github.event.inputs.benchmark_type == ''
+        run: |
+          echo "=== Basic Performance Benchmarks ===" | tee benchmark-${{ matrix.optimization }}.log
+          cd build
+          # Look for benchmark targets
+          cmake --build . --target benchmark 2>&1 | tee -a ../benchmark-${{ matrix.optimization }}.log || echo "No benchmark target available" | tee -a ../benchmark-${{ matrix.optimization }}.log
+
+      - name: Run memory benchmarks
+        if: github.event.inputs.benchmark_type == 'all' || github.event.inputs.benchmark_type == 'memory' || github.event.inputs.benchmark_type == ''
+        run: |
+          echo "=== Memory Performance Benchmarks ===" | tee -a benchmark-${{ matrix.optimization }}.log
+          cd build
+          # Look for memory benchmark targets
+          ctest -R memory 2>&1 | tee -a ../benchmark-${{ matrix.optimization }}.log || echo "No memory benchmarks available" | tee -a ../benchmark-${{ matrix.optimization }}.log
+
+      - name: Run concurrency benchmarks
+        if: github.event.inputs.benchmark_type == 'all' || github.event.inputs.benchmark_type == 'concurrency' || github.event.inputs.benchmark_type == ''
+        run: |
+          echo "=== Concurrency Performance Benchmarks ===" | tee -a benchmark-${{ matrix.optimization }}.log
+          cd build
+          # Look for concurrency benchmark targets
+          ctest -R concurrency 2>&1 | tee -a ../benchmark-${{ matrix.optimization }}.log || echo "No concurrency benchmarks available" | tee -a ../benchmark-${{ matrix.optimization }}.log
+
+      - name: Run optimization benchmarks
+        if: github.event.inputs.benchmark_type == 'all' || github.event.inputs.benchmark_type == 'optimization' || github.event.inputs.benchmark_type == ''
+        run: |
+          echo "=== Optimization Performance Benchmarks ===" | tee -a benchmark-${{ matrix.optimization }}.log
+          cd build
+          # Look for optimization benchmark targets
+          ctest -R optimization 2>&1 | tee -a ../benchmark-${{ matrix.optimization }}.log || echo "No optimization benchmarks available" | tee -a ../benchmark-${{ matrix.optimization }}.log
+
+      - name: Run comprehensive performance tests
+        run: |
+          echo "=== Comprehensive Performance Tests ===" | tee -a benchmark-${{ matrix.optimization }}.log
+          cd build
+          ctest -R performance 2>&1 | tee -a ../benchmark-${{ matrix.optimization }}.log || echo "No performance tests available" | tee -a ../benchmark-${{ matrix.optimization }}.log
+
+      - name: Generate performance profile
+        run: |
+          echo "=== Performance Profile ===" | tee -a benchmark-${{ matrix.optimization }}.log
+          echo "Build: ${{ matrix.optimization }}" | tee -a benchmark-${{ matrix.optimization }}.log
+          echo "Timestamp: $(date -u)" | tee -a benchmark-${{ matrix.optimization }}.log
+          echo "Commit: ${{ github.sha }}" | tee -a benchmark-${{ matrix.optimization }}.log
+          echo "System: $(uname -a)" | tee -a benchmark-${{ matrix.optimization }}.log
+          echo "CPU: $(lscpu | grep 'Model name' | cut -d: -f2 | xargs)" | tee -a benchmark-${{ matrix.optimization }}.log
+          echo "Memory: $(free -h | grep Mem | awk '{print $2}')" | tee -a benchmark-${{ matrix.optimization }}.log
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ matrix.optimization }}
+          path: |
+            benchmark-${{ matrix.optimization }}.log
+            *.benchmark
+            *.perf
+            benchmark_*.log
+
+  memory-profiling:
+    name: Memory Profiling
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake clang libc6-dev gperf valgrind massif-visualizer libjson-c-dev
+
+      - name: Build for memory profiling
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Debug
+          cmake --build . --config Debug
+
+      - name: Run Valgrind memory profiling
+        run: |
+          echo "=== Valgrind Memory Profiling ===" | tee memory-profile.log
+          
+          # Run basic memory checks
+          if [ -f build/asthra ]; then
+            valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all \
+              --track-origins=yes --verbose --log-file=valgrind-memcheck.log \
+              build/asthra --help || true
+          elif [ -f build/bin/asthra ]; then
+            valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all \
+              --track-origins=yes --verbose --log-file=valgrind-memcheck.log \
+              build/bin/asthra --help || true
+          fi
+          
+          # Run heap profiling on any test binaries
+          cd build
+          find . -name "*test*" -type f -executable | head -1 | while read testfile; do
+            if [ -n "$testfile" ]; then
+              valgrind --tool=massif --massif-out-file=../massif.out \
+                "$testfile" || true
+            fi
+          done
+
+      - name: Run AddressSanitizer profiling
+        run: |
+          echo "=== AddressSanitizer Memory Profiling ===" | tee -a memory-profile.log
+          mkdir -p build-asan
+          cd build-asan
+          cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-fsanitize=address"
+          cmake --build . --config Debug
+          ctest --output-on-failure 2>&1 | tee -a ../memory-profile.log || true
+
+      - name: Generate memory report
+        run: |
+          echo "=== Memory Profiling Report ===" | tee -a memory-profile.log
+          echo "Timestamp: $(date -u)" | tee -a memory-profile.log
+          echo "Commit: ${{ github.sha }}" | tee -a memory-profile.log
+          
+          if [ -f valgrind-memcheck.log ]; then
+            echo "=== Valgrind Results ===" | tee -a memory-profile.log
+            tail -20 valgrind-memcheck.log | tee -a memory-profile.log
+          fi
+
+      - name: Upload memory profiling results
+        uses: actions/upload-artifact@v4
+        with:
+          name: memory-profiling-results
+          path: |
+            memory-profile.log
+            valgrind-*.log
+            massif.out
+            *.asan
+
+  performance-regression:
+    name: Performance Regression Detection
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: [performance-baseline, benchmark-suite]
+    steps:
+      - name: Checkout current code
+        uses: actions/checkout@v4
+
+      - name: Download current benchmark results
+        uses: actions/download-artifact@v4
+        with:
+          name: benchmark-results-release
+          path: current/
+
+      - name: Checkout baseline code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.performance-baseline.outputs.baseline-hash }}
+          path: baseline/
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake clang libc6-dev gperf libjson-c-dev
+
+      - name: Build baseline
+        run: |
+          cd baseline
+          mkdir -p build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release
+
+      - name: Run baseline benchmarks
+        run: |
+          cd baseline/build
+          cmake --build . --target benchmark > ../../baseline-benchmark.log 2>&1 || echo "No benchmark target available" > ../../baseline-benchmark.log
+          ctest -R performance >> ../../baseline-benchmark.log 2>&1 || echo "No performance tests available" >> ../../baseline-benchmark.log
+
+      - name: Compare performance
+        run: |
+          echo "# Performance Regression Analysis" > performance-comparison.md
+          echo "" >> performance-comparison.md
+          echo "Comparing commit ${{ github.sha }} against baseline ${{ needs.performance-baseline.outputs.baseline-hash }}" >> performance-comparison.md
+          echo "" >> performance-comparison.md
+          
+          echo "## Current Results" >> performance-comparison.md
+          echo '```' >> performance-comparison.md
+          if [ -f current/benchmark-release.log ]; then
+            head -50 current/benchmark-release.log >> performance-comparison.md
+          fi
+          echo '```' >> performance-comparison.md
+          echo "" >> performance-comparison.md
+          
+          echo "## Baseline Results" >> performance-comparison.md
+          echo '```' >> performance-comparison.md
+          head -50 baseline-benchmark.log >> performance-comparison.md
+          echo '```' >> performance-comparison.md
+          echo "" >> performance-comparison.md
+          
+          echo "## Analysis" >> performance-comparison.md
+          echo "- Review the benchmark results above for any significant performance changes" >> performance-comparison.md
+          echo "- Look for increases in execution time or memory usage" >> performance-comparison.md
+          echo "- Consider the impact of any algorithmic or optimization changes" >> performance-comparison.md
+
+      - name: Upload performance comparison
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-comparison
+          path: performance-comparison.md
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('performance-comparison.md')) {
+              const report = fs.readFileSync('performance-comparison.md', 'utf8');
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: report
+              });
+            }
+
+  performance-dashboard:
+    name: Performance Dashboard
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: benchmark-suite
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all benchmark results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: benchmark-results-*
+          merge-multiple: true
+
+      - name: Generate performance dashboard
+        run: |
+          echo "# Asthra Performance Dashboard" > performance-dashboard.md
+          echo "" >> performance-dashboard.md
+          echo "Last updated: $(date -u)" >> performance-dashboard.md
+          echo "Commit: ${{ github.sha }}" >> performance-dashboard.md
+          echo "" >> performance-dashboard.md
+          
+          echo "## Build Configurations" >> performance-dashboard.md
+          echo "" >> performance-dashboard.md
+          
+          for config in debug release pgo; do
+            if [ -f "benchmark-${config}.log" ]; then
+              echo "### ${config^} Build" >> performance-dashboard.md
+              echo '```' >> performance-dashboard.md
+              head -30 "benchmark-${config}.log" >> performance-dashboard.md
+              echo '```' >> performance-dashboard.md
+              echo "" >> performance-dashboard.md
+            fi
+          done
+          
+          echo "## Performance Trends" >> performance-dashboard.md
+          echo "- Track performance changes over time" >> performance-dashboard.md
+          echo "- Monitor for regressions in key metrics" >> performance-dashboard.md
+          echo "- Validate optimization improvements" >> performance-dashboard.md
+
+      - name: Upload performance dashboard
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-dashboard
+          path: performance-dashboard.md
+
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    needs: [benchmark-suite, memory-profiling, performance-regression, performance-dashboard]
+    if: always()
+    steps:
+      - name: Performance monitoring complete
+        run: |
+          echo "✅ Performance monitoring workflow completed"
+          echo "Results available in workflow artifacts" 

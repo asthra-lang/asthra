@@ -1,0 +1,83 @@
+// Asthra Standard Library - JSON FFI Module
+// FFI declarations for json-c library integration
+
+package stdlib::json;
+
+// ============================================================================
+// JSON Value Type (Opaque Handle)
+// ============================================================================
+
+// JSON value wrapper using opaque handle to json-c objects
+pub struct JSONValue {
+    handle: *void                        // Opaque pointer to json_object
+}
+
+// ============================================================================
+// Core FFI Declarations
+// ============================================================================
+
+// Core parsing/serialization functions
+extern fn asthra_stdlib_json_parse(input: *const u8) -> *void;
+extern fn asthra_stdlib_json_stringify(handle: *void) -> *u8;
+extern fn asthra_stdlib_json_stringify_pretty(handle: *void) -> *u8;
+extern fn asthra_stdlib_json_free_handle(handle: *void) -> void;
+extern fn asthra_stdlib_json_free_string(str: *u8) -> void;
+
+// ============================================================================
+// Value Creation FFI Declarations
+// ============================================================================
+
+// Type creation functions
+extern fn asthra_stdlib_json_null(none) -> *void;
+extern fn asthra_stdlib_json_bool(value: bool) -> *void;
+extern fn asthra_stdlib_json_number(value: f64) -> *void;
+extern fn asthra_stdlib_json_string(str: *const u8) -> *void;
+extern fn asthra_stdlib_json_array(none) -> *void;
+extern fn asthra_stdlib_json_object(none) -> *void;
+
+// ============================================================================
+// Object Operations FFI Declarations
+// ============================================================================
+
+// Object operations
+extern fn asthra_stdlib_json_object_set(obj: *void, key: *const u8, value: *void) -> bool;
+extern fn asthra_stdlib_json_object_get(obj: *void, key: *const u8) -> *void;
+extern fn asthra_stdlib_json_object_has(obj: *void, key: *const u8) -> bool;
+extern fn asthra_stdlib_json_object_size(obj: *void) -> usize;
+
+// ============================================================================
+// Array Operations FFI Declarations
+// ============================================================================
+
+// Array operations
+extern fn asthra_stdlib_json_array_push(array: *void, value: *void) -> bool;
+extern fn asthra_stdlib_json_array_get(array: *void, index: usize) -> *void;
+extern fn asthra_stdlib_json_array_length(array: *void) -> usize;
+
+// ============================================================================
+// Type Checking FFI Declarations
+// ============================================================================
+
+// Type checking
+extern fn asthra_stdlib_json_is_null(handle: *void) -> bool;
+extern fn asthra_stdlib_json_is_bool(handle: *void) -> bool;
+extern fn asthra_stdlib_json_is_number(handle: *void) -> bool;
+extern fn asthra_stdlib_json_is_string(handle: *void) -> bool;
+extern fn asthra_stdlib_json_is_array(handle: *void) -> bool;
+extern fn asthra_stdlib_json_is_object(handle: *void) -> bool;
+
+// ============================================================================
+// Value Extraction FFI Declarations
+// ============================================================================
+
+// Value extraction
+extern fn asthra_stdlib_json_get_bool(handle: *void) -> bool;
+extern fn asthra_stdlib_json_get_number(handle: *void) -> f64;
+extern fn asthra_stdlib_json_get_string(handle: *void) -> *const u8;
+
+// ============================================================================
+// Validation FFI Declarations
+// ============================================================================
+
+// Validation
+extern fn asthra_stdlib_json_is_valid(input: *const u8) -> bool; 

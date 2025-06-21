@@ -1,0 +1,22 @@
+{
+  "file_path": "demo_source.asthra",
+  "overall_confidence": 0.75,
+  "ai_generated_functions": 3,
+  "human_reviewed_functions": 2,
+  "total_functions": 5,
+  "improvement_suggestions": [
+    "Consider adding error handling for edge cases",
+    "Optimize the sorting algorithm performance"
+  ],
+  "security_concerns": [
+  ],
+  "todo_items": [
+    "Add comprehensive unit tests"
+  ],
+  "quality_scores": {
+    "test_coverage": 0.50,
+    "security": 0.50,
+    "maintainability": 0.50
+  },
+  "learning_data": null
+}

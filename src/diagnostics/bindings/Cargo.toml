@@ -1,0 +1,33 @@
+[package]
+name = "asthra-diagnostics"
+version = "0.1.0"
+edition = "2021"
+authors = ["Asthra Language Team"]
+description = "Rust bindings for Asthra Enhanced Diagnostics - AI-ready error reporting and suggestion system"
+license = "MIT"
+repository = "https://github.com/asthra-lang/asthra"
+keywords = ["compiler", "diagnostics", "ai", "error-reporting", "language-server"]
+categories = ["development-tools", "parsing"]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["full"] }
+
+[lib]
+name = "asthra_diagnostics"
+crate-type = ["cdylib", "rlib"]
+
+[[example]]
+name = "ai_error_resolver"
+path = "examples/ai_error_resolver.rs"
+
+[[example]]
+name = "diagnostic_analyzer"
+path = "examples/diagnostic_analyzer.rs"
+
+[features]
+default = []
+async = ["tokio"] 

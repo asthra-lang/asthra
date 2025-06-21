@@ -1,0 +1,10 @@
+// Asthra Standard Library - TOML Package Entry Point
+package stdlib::toml;
+
+// Package metadata
+pub const PACKAGE_NAME: string = "stdlib::toml";
+pub const PACKAGE_VERSION: string = "1.0.0";
+pub const PACKAGE_DESCRIPTION: string = "TOML parsing and generation for configuration files";
+
+// NOTE: All types and functions are accessible directly through the toml module
+// No re-exports needed - everything is in the same package stdlib::toml 

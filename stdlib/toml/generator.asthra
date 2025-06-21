@@ -1,0 +1,463 @@
+// Asthra Standard Library - TOML Generator Implementation
+package stdlib::toml;
+
+import "stdlib/asthra/core";
+
+// Generator configuration
+pub struct TomlGeneratorConfig {
+    pub indent: string,
+    pub array_inline_threshold: usize,
+    pub table_inline_threshold: usize,
+    pub sort_keys: bool,
+    pub multiline_strings: bool,
+    pub datetime_format: TomlDateTimeFormat,
+}
+
+// Generator state
+pub struct TomlGenerator {
+    pub config: TomlGeneratorConfig,
+    pub output: string,
+    pub indent_level: usize,
+    pub current_table_path: []string,
+}
+
+// =============================================================================
+// Main Generation Functions
+// =============================================================================
+
+// Generate TOML string from document
+pub fn generate_string(document: TomlDocument) -> string {
+    let config: TomlGeneratorConfig = default_generator_config();
+    return generate_string_with_config(document, config);
+}
+
+// Generate TOML string with configuration
+pub fn generate_string_with_config(document: TomlDocument, config: TomlGeneratorConfig) -> string {
+    let mut generator: TomlGenerator = new_generator(config);
+    generate_document(&mut generator, document);
+    return generator.output;
+}
+
+// Generate TOML to file
+pub fn generate_file(document: TomlDocument, filename: string) -> Result<void, string> {
+    let toml_content: string = generate_string(document);
+    return write_string_to_file(filename, toml_content);
+}
+
+// Generate pretty-printed TOML
+pub fn generate_pretty(document: TomlDocument) -> string {
+    let config: TomlGeneratorConfig = pretty_generator_config();
+    return generate_string_with_config(document, config);
+}
+
+// Generate compact TOML
+pub fn generate_compact(document: TomlDocument) -> string {
+    let config: TomlGeneratorConfig = compact_generator_config();
+    return generate_string_with_config(document, config);
+}
+
+// =============================================================================
+// Generator Implementation
+// =============================================================================
+
+// Create new generator
+pub fn new_generator(config: TomlGeneratorConfig) -> TomlGenerator {
+    return TomlGenerator {
+        config: config,
+        output: "",
+        indent_level: 0,
+        current_table_path: [],
+    };
+}
+
+// Generate complete TOML document
+pub fn generate_document(generator: *mut TomlGenerator, document: TomlDocument) -> void {
+    // Generate root table key-value pairs first
+    generate_table_contents(generator, document.root_table, false);
+    
+    // Generate nested tables
+    generate_nested_tables(generator, document.root_table, []);
+}
+
+// Generate table contents (key-value pairs)
+pub fn generate_table_contents(generator: *mut TomlGenerator, table: TomlTable, is_inline: bool) -> void {
+    let keys: []string = if generator.config.sort_keys {
+        sort_strings(table.keys)
+    } else {
+        table.keys
+    };
+    
+    for i in 0..keys.len {
+        let key: string = keys[i];
+        let value: TomlValue = table_get(table, key);
+        
+        // Skip nested tables in non-inline mode (they'll be generated separately)
+        if !is_inline && is_table_value(value) {
+            continue;
+        }
+        
+        generate_key_value_pair(generator, key, value, is_inline);
+    }
+}
+
+// Generate key-value pair
+pub fn generate_key_value_pair(generator: *mut TomlGenerator, key: string, value: TomlValue, is_inline: bool) -> void {
+    if !is_inline {
+        write_indent(generator);
+    }
+    
+    write_key(generator, key);
+    write_string(generator, " = ");
+    generate_value(generator, value, is_inline);
+    
+    if !is_inline {
+        write_string(generator, "\n");
+    }
+}
+
+// Generate TOML value
+pub fn generate_value(generator: *mut TomlGenerator, value: TomlValue, is_inline: bool) -> void {
+    match value {
+        TomlValue.String(s) => {
+            generate_string_value(generator, s);
+        },
+        TomlValue.Integer(i) => {
+            write_string(generator, string(i));
+        },
+        TomlValue.Float(f) => {
+            write_string(generator, string(f));
+        },
+        TomlValue.Boolean(b) => {
+            write_string(generator, if b { "true" } else { "false" });
+        },
+        TomlValue.DateTime(dt) => {
+            write_string(generator, dt);
+        },
+        TomlValue.Array(arr) => {
+            generate_array(generator, arr, is_inline);
+        },
+        TomlValue.Table(table) => {
+            generate_inline_table(generator, table);
+        },
+        TomlValue.InlineTable(table) => {
+            generate_inline_table(generator, table);
+        },
+    }
+}
+
+// Generate string value with proper escaping
+pub fn generate_string_value(generator: *mut TomlGenerator, s: string) -> void {
+    if should_use_literal_string(s) {
+        generate_literal_string(generator, s);
+    } else if should_use_multiline_string(generator, s) {
+        generate_multiline_string(generator, s);
+    } else {
+        generate_basic_string(generator, s);
+    }
+}
+
+// Generate basic string with escaping
+pub fn generate_basic_string(generator: *mut TomlGenerator, s: string) -> void {
+    write_string(generator, "\"");
+    
+    for i in 0..s.len {
+        let ch: u8 = string_byte_at(s, i);
+        match ch {
+            '"' as u8 => write_string(generator, "\\\""),
+            '\\' as u8 => write_string(generator, "\\\\"),
+            '\n' as u8 => write_string(generator, "\\n"),
+            '\r' as u8 => write_string(generator, "\\r"),
+            '\t' as u8 => write_string(generator, "\\t"),
+            _ => write_string(generator, char_to_string(ch)),
+        }
+    }
+    
+    write_string(generator, "\"");
+}
+
+// Generate literal string
+pub fn generate_literal_string(generator: *mut TomlGenerator, s: string) -> void {
+    write_string(generator, "'");
+    write_string(generator, s);
+    write_string(generator, "'");
+}
+
+// Generate multiline string
+pub fn generate_multiline_string(generator: *mut TomlGenerator, s: string) -> void {
+    write_string(generator, "\"\"\"\n");
+    write_string(generator, s);
+    if !string_ends_with(s, "\n") {
+        write_string(generator, "\n");
+    }
+    write_string(generator, "\"\"\"");
+}
+
+// Generate array
+pub fn generate_array(generator: *mut TomlGenerator, arr: []TomlValue, force_inline: bool) -> void {
+    if arr.len == 0 {
+        write_string(generator, "[]");
+        return;
+    }
+    
+    let should_inline: bool = force_inline || 
+                              arr.len <= generator.config.array_inline_threshold ||
+                              all_primitives(arr);
+    
+    if should_inline {
+        generate_inline_array(generator, arr);
+    } else {
+        generate_multiline_array(generator, arr);
+    }
+}
+
+// Generate inline array
+pub fn generate_inline_array(generator: *mut TomlGenerator, arr: []TomlValue) -> void {
+    write_string(generator, "[");
+    
+    for i in 0..arr.len {
+        if i > 0 {
+            write_string(generator, ", ");
+        }
+        generate_value(generator, arr[i], true);
+    }
+    
+    write_string(generator, "]");
+}
+
+// Generate multiline array
+pub fn generate_multiline_array(generator: *mut TomlGenerator, arr: []TomlValue) -> void {
+    write_string(generator, "[\n");
+    generator.indent_level = generator.indent_level + 1;
+    
+    for i in 0..arr.len {
+        write_indent(generator);
+        generate_value(generator, arr[i], false);
+        write_string(generator, ",\n");
+    }
+    
+    generator.indent_level = generator.indent_level - 1;
+    write_indent(generator);
+    write_string(generator, "]");
+}
+
+// Generate inline table
+pub fn generate_inline_table(generator: *mut TomlGenerator, table: TomlTable) -> void {
+    write_string(generator, "{ ");
+    
+    let keys: []string = if generator.config.sort_keys {
+        sort_strings(table.keys)
+    } else {
+        table.keys
+    };
+    
+    for i in 0..keys.len {
+        if i > 0 {
+            write_string(generator, ", ");
+        }
+        
+        let key: string = keys[i];
+        let value: TomlValue = table_get(table, key);
+        
+        write_key(generator, key);
+        write_string(generator, " = ");
+        generate_value(generator, value, true);
+    }
+    
+    write_string(generator, " }");
+}
+
+// Generate nested tables
+pub fn generate_nested_tables(generator: *mut TomlGenerator, table: TomlTable, parent_path: []string) -> void {
+    for i in 0..table.keys.len {
+        let key: string = table.keys[i];
+        let value: TomlValue = table.values[i];
+        
+        match value {
+            TomlValue.Table(nested_table) => {
+                let table_path: []string = append_to_path(parent_path, key);
+                generate_table_header(generator, table_path, false);
+                generate_table_contents(generator, nested_table, false);
+                write_string(generator, "\n");
+                
+                // Recursively generate deeper nested tables
+                generate_nested_tables(generator, nested_table, table_path);
+            },
+            TomlValue.Array(arr) => {
+                // Check if it's an array of tables
+                if is_array_of_tables(arr) {
+                    for j in 0..arr.len {
+                        match arr[j] {
+                            TomlValue.Table(array_table) => {
+                                let table_path: []string = append_to_path(parent_path, key);
+                                generate_table_header(generator, table_path, true);
+                                generate_table_contents(generator, array_table, false);
+                                write_string(generator, "\n");
+                            },
+                            _ => {
+                                // This shouldn't happen if is_array_of_tables returned true
+                            },
+                        }
+                    }
+                }
+            },
+            _ => {
+                // Non-table values are handled in generate_table_contents
+            },
+        }
+    }
+}
+
+// Generate table header
+pub fn generate_table_header(generator: *mut TomlGenerator, path: []string, is_array: bool) -> void {
+    if is_array {
+        write_string(generator, "[[");
+    } else {
+        write_string(generator, "[");
+    }
+    
+    for i in 0..path.len {
+        if i > 0 {
+            write_string(generator, ".");
+        }
+        write_key(generator, path[i]);
+    }
+    
+    if is_array {
+        write_string(generator, "]]\n");
+    } else {
+        write_string(generator, "]\n");
+    }
+}
+
+// =============================================================================
+// Helper Functions
+// =============================================================================
+
+// Write string to output
+priv fn write_string(generator: *mut TomlGenerator, s: string) -> void {
+    generator.output = generator.output + s;
+}
+
+// Write indentation
+priv fn write_indent(generator: *mut TomlGenerator) -> void {
+    for i in 0..generator.indent_level {
+        write_string(generator, generator.config.indent);
+    }
+}
+
+// Write key (with quoting if necessary)
+priv fn write_key(generator: *mut TomlGenerator, key: string) -> void {
+    if needs_quoting(key) {
+        write_string(generator, "\"");
+        write_string(generator, escape_key(key));
+        write_string(generator, "\"");
+    } else {
+        write_string(generator, key);
+    }
+}
+
+// Check if string needs quoting
+priv fn needs_quoting(s: string) -> bool {
+    if s.len == 0 {
+        return true;
+    }
+    
+    for i in 0..s.len {
+        let ch: u8 = string_byte_at(s, i);
+        if !is_identifier_char(ch) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+// Check if should use literal string
+priv fn should_use_literal_string(s: string) -> bool {
+    return !string_contains(s, "'") && !string_contains(s, "\\") && !string_contains(s, "\n");
+}
+
+// Check if should use multiline string
+priv fn should_use_multiline_string(generator: *TomlGenerator, s: string) -> bool {
+    return generator.config.multiline_strings && 
+           (string_contains(s, "\n") || s.len > 80);
+}
+
+// Check if all array elements are primitives
+priv fn all_primitives(arr: []TomlValue) -> bool {
+    for i in 0..arr.len {
+        if !is_primitive(arr[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Check if array contains only tables
+priv fn is_array_of_tables(arr: []TomlValue) -> bool {
+    if arr.len == 0 {
+        return false;
+    }
+    
+    for i in 0..arr.len {
+        match arr[i] {
+            TomlValue.Table(_) => continue,
+            _ => return false,
+        }
+    }
+    
+    return true;
+}
+
+// =============================================================================
+// Configuration Functions
+// =============================================================================
+
+// Default generator configuration
+pub fn default_generator_config() -> TomlGeneratorConfig {
+    return TomlGeneratorConfig {
+        indent: "  ",
+        array_inline_threshold: 5,
+        table_inline_threshold: 3,
+        sort_keys: false,
+        multiline_strings: true,
+        datetime_format: TomlDateTimeFormat.RFC3339,
+    };
+}
+
+// Pretty-printed configuration
+pub fn pretty_generator_config() -> TomlGeneratorConfig {
+    return TomlGeneratorConfig {
+        indent: "  ",
+        array_inline_threshold: 3,
+        table_inline_threshold: 2,
+        sort_keys: true,
+        multiline_strings: true,
+        datetime_format: TomlDateTimeFormat.RFC3339,
+    };
+}
+
+// Compact configuration
+pub fn compact_generator_config() -> TomlGeneratorConfig {
+    return TomlGeneratorConfig {
+        indent: "",
+        array_inline_threshold: 20,
+        table_inline_threshold: 10,
+        sort_keys: false,
+        multiline_strings: false,
+        datetime_format: TomlDateTimeFormat.RFC3339,
+    };
+}
+
+// External functions (implemented in runtime)
+extern fn write_string_to_file(filename: string, content: string) -> Result<void, string>;
+extern fn string_byte_at(s: string, index: usize) -> u8;
+extern fn char_to_string(ch: u8) -> string;
+extern fn string_contains(s: string, substr: string) -> bool;
+extern fn string_ends_with(s: string, suffix: string) -> bool;
+extern fn sort_strings(strings: []string) -> []string;
+extern fn escape_key(key: string) -> string;
+extern fn append_to_path(path: []string, segment: string) -> []string;
+extern fn is_identifier_char(ch: u8) -> bool;
+extern fn table_get(table: TomlTable, key: string) -> TomlValue;
+extern fn is_table_value(value: TomlValue) -> bool; 

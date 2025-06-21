@@ -1,0 +1,18 @@
+asthra_team:
+  name: Asthra Language Team
+  title: Core Development Team
+  url: https://github.com/asthra-lang/asthra
+  image_url: https://github.com/asthra-lang.png
+
+bmuthuka:
+  name: B. Muthuka
+  title: Language Designer
+  url: https://github.com/asthra-lang/asthra
+  image_url: https://github.com/bmuthuka.png
+  email: bmuthuka@example.com
+
+ai_contributor:
+  name: AI Development Assistant
+  title: AI Integration Specialist
+  url: https://github.com/asthra-lang/asthra
+  image_url: https://github.com/asthra-lang.png

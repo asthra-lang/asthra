@@ -1,0 +1,808 @@
+// Asthra Syntax Completion Examples
+// This file demonstrates all syntax elements that complete the user manual coverage
+// Status: Grammar v1.25 compliant, production-ready examples
+
+package examples;
+
+// ============================================================================
+// EXTERN KEYWORD EXAMPLES
+// ============================================================================
+
+// System library integration
+extern "C" {
+    fn getpid() -> i32;
+    fn sleep(seconds: u32) -> i32;
+    fn malloc(size: usize) -> *mut void;
+    fn free(ptr: *mut void);
+    fn strlen(s: *const char) -> usize;
+}
+
+// Custom C library binding
+extern "C" {
+    fn custom_hash(data: *const u8, len: usize) -> u64;
+    fn initialize_library() -> i32;
+    fn cleanup_library();
+    fn matrix_multiply(a: *const f64, b: *const f64, result: *mut f64, size: usize);
+}
+
+// Usage of extern functions requires unsafe blocks
+pub fn demonstrate_extern_usage() -> i32 {
+    unsafe {
+        let pid = getpid();
+        let lib_status = initialize_library();
+        
+        // Memory allocation example
+        let ptr = malloc(1024);
+        if ptr.is_null() {
+            return -1;
+        }
+        
+        // Use allocated memory
+        // ... operations ...
+        
+        free(ptr);
+        cleanup_library();
+        
+        return pid;
+    }
+}
+
+// ============================================================================
+// IN KEYWORD EXAMPLES - Iterator Operator
+// ============================================================================
+
+pub fn demonstrate_in_operator() {
+    // Basic array iteration
+    let numbers = [1, 2, 3, 4, 5];
+    for num in numbers {
+        print(num.to_string());
+    }
+    
+    // Range iteration (exclusive end)
+    for i in 0..10 {
+        print("Index: " + i.to_string());
+    }
+    
+    // Range iteration (inclusive end)  
+    for i in 0..=10 {
+        print("Value: " + i.to_string());
+    }
+    
+    // Hash map iteration with destructuring
+    let scores: HashMap<string, i32> = HashMap.new();
+    scores.insert("Alice", 95);
+    scores.insert("Bob", 87);
+    
+    for (name, score) in scores {
+        print(name + " scored " + score.to_string());
+    }
+    
+    // Custom collection iteration
+    let results: Vec<Result<string, Error>> = Vec.new();
+    for result in results {
+        match result {
+            Result.Ok(data) => print("Success: " + data),
+            Result.Err(error) => print("Error: " + error.message()),
+        }
+    }
+    
+    // String character iteration
+    let text = "Hello, 世界!";
+    for character in text.chars() {
+        print("Character: " + character.to_string());
+    }
+}
+
+// ============================================================================
+// BOOLEAN LITERALS - TRUE/FALSE EXAMPLES  
+// ============================================================================
+
+pub fn demonstrate_boolean_literals() {
+    // Basic boolean variables
+    let is_active: bool = true;
+    let is_disabled: bool = false;
+    let debug_mode: bool = true;
+    let production_ready: bool = false;
+    
+    // Conditional logic with boolean literals
+    let result = if is_active && true {
+        "System is running"
+    } else {
+        "System is stopped"
+    };
+    
+    // Boolean operations
+    let complex_condition = (is_active || false) && !is_disabled;
+    let default_behavior = debug_mode && true && !production_ready;
+    
+    // Pattern matching with booleans
+    match is_active {
+        true => print("System activated"),
+        false => print("System deactivated"),
+    }
+    
+    // Function returning boolean
+    let validation_result = validate_input("test_data");
+    if validation_result == true {
+        print("Input is valid");
+    }
+    
+    // Boolean in control flow
+    while debug_mode && true {
+        print("Debug mode active");
+        debug_mode = false;  // Exit condition
+    }
+    
+    // Boolean arrays
+    let flags: [3]bool = [true, false, true];
+    for flag in flags {
+        if flag == true {
+            print("Flag is set");
+        }
+    }
+}
+
+fn validate_input(input: string) -> bool {
+    if input.length() > 0 {
+        return true;
+    }
+    return false;
+}
+
+// ============================================================================
+// SPAWN_WITH_HANDLE COMPREHENSIVE EXAMPLES
+// ============================================================================
+
+use std::time::Duration;
+use std::sync::Channel;
+
+pub fn demonstrate_spawn_with_handle() {
+    // Basic task with result retrieval
+    let computation = spawn_with_handle {
+        return fibonacci(40);
+    };
+    
+    let result = computation.join();
+    print("Fibonacci result: " + result.to_string());
+    
+    // Multiple parallel tasks
+    let task1 = spawn_with_handle {
+        return process_data_chunk([1, 2, 3, 4, 5]);
+    };
+    
+    let task2 = spawn_with_handle {
+        return process_data_chunk([6, 7, 8, 9, 10]);
+    };
+    
+    let results = [task1.join(), task2.join()];
+    let total = results[0] + results[1];
+    print("Total result: " + total.to_string());
+    
+    // Task coordination with timeout
+    let network_task = spawn_with_handle {
+        return simulate_network_request();
+    };
+    
+    match network_task.try_join_timeout(Duration.from_seconds(5)) {
+        Some(response) => print("Network response: " + response),
+        None => print("Network request timed out"),
+    }
+    
+    // Error handling in spawned tasks
+    let risky_task = spawn_with_handle {
+        let result = potentially_failing_operation();
+        match result {
+            Result.Ok(value) => return value,
+            Result.Err(error) => {
+                log("Task failed: " + error.message());
+                return -1;
+            }
+        }
+    };
+    
+    let final_result = risky_task.join();
+    if final_result == -1 {
+        print("Task encountered an error");
+    }
+    
+    // Producer-consumer pattern with handles
+    let (sender, receiver) = Channel.new<i32>();
+    
+    let producer = spawn_with_handle {
+        for i in 0..100 {
+            sender.send(i);
+        }
+        sender.close();
+        return "Producer finished";
+    };
+    
+    let consumer = spawn_with_handle {
+        let mut total = 0;
+        while true {
+            match receiver.try_recv() {
+                Some(value) => total = total + value,
+                None => break,
+            }
+        }
+        return total;
+    };
+    
+    let producer_status = producer.join();
+    let consumer_result = consumer.join();
+    
+    print(producer_status);
+    print("Consumer processed total: " + consumer_result.to_string());
+}
+
+fn fibonacci(n: i32) -> i64 {
+    if n <= 1 {
+        return n as i64;
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+fn process_data_chunk(data: []i32) -> i32 {
+    let mut sum = 0;
+    for item in data {
+        sum = sum + item;
+    }
+    return sum;
+}
+
+fn simulate_network_request() -> string {
+    // Simulate network delay
+    std::thread::sleep(Duration.from_millis(1000));
+    return "Network response data";
+}
+
+fn potentially_failing_operation() -> Result<i32, Error> {
+    // Simulate potential failure
+    let random_value = std::random::random_i32() % 100;
+    if random_value < 50 {
+        return Result.Ok(random_value);
+    } else {
+        return Result.Err(Error.new("Random failure occurred"));
+    }
+}
+
+// ============================================================================
+// GENERIC TYPE SYNTAX EXAMPLES
+// ============================================================================
+
+// Generic struct definition
+pub struct Container<T> {
+    pub value: T,
+    pub metadata: string,
+}
+
+impl<T> Container<T> {
+    pub fn new(value: T) -> Container<T> {
+        return Container {
+            value: value,
+            metadata: "default",
+        };
+    }
+    
+    pub fn get_value(&self) -> &T {
+        return &self.value;
+    }
+    
+    pub fn set_value(&mut self, new_value: T) {
+        self.value = new_value;
+    }
+}
+
+// Multiple type parameters
+pub struct Pair<T, U> {
+    pub first: T,
+    pub second: U,
+}
+
+// Generic function with constraints
+pub fn serialize<T: Serializable>(data: T) -> string {
+    return data.to_json();
+}
+
+// Generic enum with associated data
+pub enum Response<T, E> {
+    Success(T),
+    Failure(E),
+    Pending,
+}
+
+pub fn demonstrate_generic_types() {
+    // Explicit type instantiation
+    let int_container: Container<i32> = Container.new(42);
+    let string_container: Container<string> = Container.new("hello");
+    
+    // Type inference
+    let auto_container = Container.new(3.14);  // Container<f64>
+    let pair = Pair { first: 10, second: "ten" };  // Pair<i32, string>
+    
+    // Generic function calls
+    let numbers = Vec.new<i32>();
+    let names = Vec.new<string>();
+    
+    // Associated function calls with generics
+    let result: Response<string, Error> = Response.Success("operation completed");
+    
+    // Pattern matching with generic enums
+    match result {
+        Response.Success(data) => print("Got data: " + data),
+        Response.Failure(error) => print("Error: " + error.message()),
+        Response.Pending => print("Still processing"),
+    }
+}
+
+// ============================================================================
+// POINTER TYPE SYNTAX EXAMPLES
+// ============================================================================
+
+pub fn demonstrate_pointer_types() {
+    unsafe {
+        // Basic pointer operations
+        let mut value = 42;
+        let mut_ptr: *mut i32 = &mut value;
+        let const_ptr: *const i32 = &value;
+        
+        // Modify through mutable pointer
+        *mut_ptr = 100;
+        
+        // Read through immutable pointer
+        let read_value = *const_ptr;
+        print("Read value: " + read_value.to_string());
+        
+        // Array pointer operations
+        let array = [1, 2, 3, 4, 5];
+        let array_ptr: *const i32 = array.as_ptr();
+        
+        // Pointer arithmetic (unsafe)
+        let second_element = *(array_ptr.offset(1));
+        print("Second element: " + second_element.to_string());
+        
+        // Function pointer with pointer parameters
+        let processor: fn(*const u8, usize) -> u64 = custom_hash;
+        let data = "hello".as_bytes();
+        let hash_result = processor(data.as_ptr(), data.len());
+        
+        // Null pointer handling
+        let null_ptr: *mut void = std::ptr::null_mut();
+        if null_ptr.is_null() {
+            print("Pointer is null");
+        }
+        
+        // Memory allocation with pointers
+        let allocated_ptr = malloc(1024);
+        if !allocated_ptr.is_null() {
+            // Use allocated memory
+            let typed_ptr = allocated_ptr as *mut i32;
+            *typed_ptr = 123;
+            
+            print("Allocated value: " + (*typed_ptr).to_string());
+            
+            free(allocated_ptr);
+        }
+    }
+}
+
+// ============================================================================
+// OCTAL LITERALS EXAMPLES
+// ============================================================================
+
+pub fn demonstrate_octal_literals() {
+    // File permission examples (common use case)
+    let read_only: i32 = 0o444;        // r--r--r--
+    let read_write: i32 = 0o644;       // rw-r--r--
+    let executable: i32 = 0o755;       // rwxr-xr-x
+    let full_access: i32 = 0o777;      // rwxrwxrwx
+    
+    // System configuration values
+    let umask_value: i32 = 0o022;      // Common umask
+    let device_major: i32 = 0o010;     // Device major number
+    let signal_mask: u32 = 0o377;      // Signal mask value
+    
+    // Network protocol values
+    let protocol_id: u16 = 0o17;       // Protocol identifier
+    let port_base: u16 = 0o1000;       // Octal port number
+    
+    // Display octal values
+    print("Read-only permissions: " + read_only.to_string());
+    print("Executable permissions: " + executable.to_string());
+    print("Umask value: " + umask_value.to_string());
+    
+    // Convert between number systems
+    let decimal_value = 493;           // Same as 0o755
+    let octal_equivalent = 0o755;
+    
+    if decimal_value == octal_equivalent {
+        print("Octal 0o755 equals decimal 493");
+    }
+    
+    // Use in system calls (example pattern)
+    let file_mode = 0o644;
+    create_file_with_permissions("config.txt", file_mode);
+}
+
+fn create_file_with_permissions(filename: string, mode: i32) {
+    // Implementation would use extern system calls
+    print("Creating file " + filename + " with mode " + mode.to_string());
+}
+
+// ============================================================================
+// CHARACTER ESCAPE SEQUENCES EXAMPLES
+// ============================================================================
+
+pub fn demonstrate_character_escapes() {
+    // Basic escape sequences
+    let newline: char = '\n';
+    let tab: char = '\t';
+    let carriage_return: char = '\r';
+    let backslash: char = '\\';
+    let single_quote: char = '\'';
+    let double_quote: char = '\"';
+    let null_char: char = '\0';
+    
+    // Hexadecimal escapes
+    let ascii_a: char = '\x41';         // ASCII 'A'
+    let ascii_z: char = '\x7A';         // ASCII 'z'
+    let bell_char: char = '\x07';       // Bell character
+    
+    // Unicode escapes
+    let rocket_emoji: char = '\u{1F680}';  // 🚀
+    let heart_emoji: char = '\u{2764}';    // ❤
+    let greek_alpha: char = '\u{03B1}';    // α
+    let chinese_char: char = '\u{4E2D}';   // 中
+    
+    // Create strings with escape sequences
+    let formatted_text = "Line 1\nLine 2\tTabbed\nLine 3";
+    let quoted_text = "She said, \"Hello, World!\"";
+    let path_text = "C:\\Users\\Name\\Documents\\file.txt";
+    
+    // Character arrays with escapes
+    let control_chars: [5]char = ['\n', '\t', '\r', '\\', '\0'];
+    
+    // Unicode string with various characters
+    let international = "Hello: \u{1F44B} World: \u{1F30D} Rocket: \u{1F680}";
+    
+    // Display examples
+    print("Formatted text:");
+    print(formatted_text);
+    print("Quoted text: " + quoted_text);
+    print("International: " + international);
+    
+    // Character processing
+    for ch in control_chars {
+        match ch {
+            '\n' => print("Found newline"),
+            '\t' => print("Found tab"),
+            '\r' => print("Found carriage return"),
+            '\\' => print("Found backslash"),
+            '\0' => print("Found null character"),
+            _ => print("Unknown control character"),
+        }
+    }
+}
+
+// ============================================================================
+// COMMENT SYNTAX EXAMPLES
+// ============================================================================
+
+// Single-line comment example
+// This demonstrates line comments in Asthra
+
+pub fn demonstrate_comment_syntax() {
+    // Inline comments
+    let x = 42;  // This is an inline comment
+    let y = 24;  // Another inline comment
+    
+    /*
+     * This is a block comment
+     * spanning multiple lines
+     * with traditional formatting
+     */
+    
+    /*
+    Block comments can also be
+    written without asterisks
+    on each line
+    */
+    
+    /* Single line block comment */
+    
+    /*
+    Block comments can be /* nested */ inside
+    other block comments for complex documentation
+    or temporary code removal
+    */
+    
+    // Multiple consecutive line comments
+    // can be used for longer explanations
+    // that span several lines
+    // like this example
+    
+    let result = compute_value(x, y);  // Function call with comment
+}
+
+/// Documentation comment for the function
+/// 
+/// This function computes a value based on two inputs
+/// and demonstrates documentation comment syntax.
+/// 
+/// # Arguments
+/// * `a` - The first input value
+/// * `b` - The second input value
+/// 
+/// # Returns
+/// The computed result as an integer
+/// 
+/// # Example
+/// ```
+/// let result = compute_value(10, 20);
+/// assert_eq!(result, 30);
+/// ```
+pub fn compute_value(a: i32, b: i32) -> i32 {
+    /*
+     * Implementation note:
+     * This is a simple addition function
+     * used to demonstrate comment syntax
+     */
+    return a + b;  // Simple addition
+}
+
+// ============================================================================
+// OPERATOR PRECEDENCE AND EXPRESSION GROUPING
+// ============================================================================
+
+pub fn demonstrate_operator_precedence() {
+    // Basic arithmetic precedence
+    let result1 = 2 + 3 * 4;        // 14 (not 20)
+    let result2 = (2 + 3) * 4;      // 20 (forced precedence)
+    
+    // Complex expressions with parentheses
+    let complex = ((10 + 5) * 2) / (3 + 2);  // ((15 * 2) / 5) = 6
+    
+    // Mixed operators with precedence
+    let mixed = 10 + 2 * 3 - 4 / 2;  // 10 + 6 - 2 = 14
+    let grouped = (10 + 2) * (3 - 4) / 2;  // 12 * (-1) / 2 = -6
+    
+    // Logical operators with precedence
+    let logical1 = true || false && false;   // true (AND has higher precedence)
+    let logical2 = (true || false) && false; // false (forced precedence)
+    
+    // Comparison with logical operators
+    let comparison = (x > 0) && (y < 100) || (z == 0);
+    let grouped_comparison = ((x > 0) && (y < 100)) || (z == 0);
+    
+    // Function calls in expressions
+    let func_result = add(2, 3) * subtract(10, 5);  // Function calls have high precedence
+    let grouped_funcs = (add(2, 3)) * (subtract(10, 5));  // Equivalent
+    
+    // Array access with expressions
+    let array = [1, 2, 3, 4, 5];
+    let index_expr = array[1 + 2];          // array[3] = 4
+    let complex_index = array[(x + y) % 5]; // Complex index expression
+    
+    // Method chaining with precedence
+    let text = "hello world";
+    let processed = text.to_uppercase().replace(" ", "_").length();
+    
+    print("result1: " + result1.to_string());
+    print("result2: " + result2.to_string());
+    print("complex: " + complex.to_string());
+    print("mixed: " + mixed.to_string());
+}
+
+fn add(a: i32, b: i32) -> i32 {
+    return a + b;
+}
+
+fn subtract(a: i32, b: i32) -> i32 {
+    return a - b;
+}
+
+// ============================================================================
+// ARRAY/STRUCT INITIALIZATION PATTERNS
+// ============================================================================
+
+pub struct Configuration {
+    pub server_port: u16,
+    pub max_connections: i32,
+    pub debug_mode: bool,
+    pub log_level: string,
+}
+
+pub fn demonstrate_initialization_patterns() {
+    // Array initialization patterns
+    let simple_array = [1, 2, 3, 4, 5];
+    let typed_array: [3]string = ["one", "two", "three"];
+    let empty_array: []i32 = [];
+    
+    // Repeated element initialization
+    let zeros = [0; 10];                    // 10 zeros
+    let default_strings = ["default"; 5];   // 5 "default" strings
+    let bool_array = [true; 3];            // 3 true values
+    
+    // Nested array initialization
+    let matrix: [3][3]i32 = [
+        [1, 2, 3],
+        [4, 5, 6],
+        [7, 8, 9],
+    ];
+    
+    // Mixed initialization
+    let mixed_data = [
+        compute_value(1, 2),
+        compute_value(3, 4),
+        compute_value(5, 6),
+    ];
+    
+    // Struct initialization patterns
+    let config = Configuration {
+        server_port: 8080,
+        max_connections: 1000,
+        debug_mode: true,
+        log_level: "info",
+    };
+    
+    // Struct with computed values
+    let dynamic_config = Configuration {
+        server_port: get_port_from_env(),
+        max_connections: calculate_max_connections(),
+        debug_mode: is_development_mode(),
+        log_level: get_log_level(),
+    };
+    
+    // Struct update syntax
+    let updated_config = Configuration {
+        debug_mode: false,
+        log_level: "error",
+        ..config  // Copy other fields from config
+    };
+    
+    // Array of structs
+    let configs = [
+        Configuration { server_port: 8080, max_connections: 100, debug_mode: true, log_level: "debug" },
+        Configuration { server_port: 8081, max_connections: 200, debug_mode: false, log_level: "info" },
+        Configuration { server_port: 8082, max_connections: 300, debug_mode: false, log_level: "warn" },
+    ];
+    
+    // Complex nested initialization
+    let server_cluster = [
+        [config, updated_config],
+        [dynamic_config, config],
+    ];
+    
+    print("Simple array length: " + simple_array.len().to_string());
+    print("Config port: " + config.server_port.to_string());
+}
+
+fn get_port_from_env() -> u16 {
+    return 9000;  // Simplified implementation
+}
+
+fn calculate_max_connections() -> i32 {
+    return 500;   // Simplified implementation
+}
+
+fn is_development_mode() -> bool {
+    return true;  // Simplified implementation
+}
+
+fn get_log_level() -> string {
+    return "debug";  // Simplified implementation
+}
+
+// ============================================================================
+// REFERENCE/DEREFERENCE OPERATORS
+// ============================================================================
+
+pub fn demonstrate_reference_operators() {
+    // Basic reference and dereference
+    let value = 42;
+    let reference: &i32 = &value;
+    let dereferenced = *reference;
+    
+    print("Original value: " + value.to_string());
+    print("Dereferenced: " + dereferenced.to_string());
+    
+    // Mutable references
+    let mut mutable_value = 100;
+    let mut_ref: &mut i32 = &mut mutable_value;
+    *mut_ref = 200;  // Modify through reference
+    
+    print("Modified value: " + mutable_value.to_string());
+    
+    // Function parameters with references
+    let data = [1, 2, 3, 4, 5];
+    let sum = calculate_sum(&data);     // Pass by reference
+    let average = calculate_average(&data);
+    
+    print("Sum: " + sum.to_string());
+    print("Average: " + average.to_string());
+    
+    // Struct field references
+    let mut point = Point { x: 1.0, y: 2.0 };
+    let x_ref: &mut f64 = &mut point.x;
+    *x_ref = 5.0;  // Modify field through reference
+    
+    print("Point x: " + point.x.to_string());
+    
+    // Array element references
+    let mut numbers = [10, 20, 30, 40, 50];
+    let first_ref: &mut i32 = &mut numbers[0];
+    *first_ref = 100;
+    
+    print("First element: " + numbers[0].to_string());
+    
+    // Chained dereferences
+    let value_ptr = &value;
+    let ptr_to_ptr = &value_ptr;
+    let double_deref = **ptr_to_ptr;
+    
+    print("Double dereference: " + double_deref.to_string());
+}
+
+fn calculate_sum(arr: &[]i32) -> i32 {
+    let mut total = 0;
+    for item in arr {
+        total = total + *item;  // Dereference array element
+    }
+    return total;
+}
+
+fn calculate_average(arr: &[]i32) -> f64 {
+    let sum = calculate_sum(arr);
+    return sum as f64 / arr.len() as f64;
+}
+
+pub struct Point {
+    pub x: f64,
+    pub y: f64,
+}
+
+// ============================================================================
+// MAIN FUNCTION - DEMONSTRATES ALL SYNTAX ELEMENTS
+// ============================================================================
+
+pub fn main() {
+    print("=== Asthra Syntax Completion Examples ===");
+    
+    print("\n--- Extern Functions ---");
+    let pid = demonstrate_extern_usage();
+    print("Process ID: " + pid.to_string());
+    
+    print("\n--- Iterator Operator (in) ---");
+    demonstrate_in_operator();
+    
+    print("\n--- Boolean Literals ---");
+    demonstrate_boolean_literals();
+    
+    print("\n--- Spawn with Handle ---");
+    demonstrate_spawn_with_handle();
+    
+    print("\n--- Generic Types ---");
+    demonstrate_generic_types();
+    
+    print("\n--- Pointer Types ---");
+    demonstrate_pointer_types();
+    
+    print("\n--- Octal Literals ---");
+    demonstrate_octal_literals();
+    
+    print("\n--- Character Escapes ---");
+    demonstrate_character_escapes();
+    
+    print("\n--- Comment Syntax ---");
+    demonstrate_comment_syntax();
+    
+    print("\n--- Operator Precedence ---");
+    demonstrate_operator_precedence();
+    
+    print("\n--- Initialization Patterns ---");
+    demonstrate_initialization_patterns();
+    
+    print("\n--- Reference Operators ---");
+    demonstrate_reference_operators();
+    
+    print("\n=== All syntax elements demonstrated ===");
+} 

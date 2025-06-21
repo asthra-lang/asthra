@@ -1,0 +1,502 @@
+// Asthra Standard Library - TOML Table Operations
+package stdlib::toml;
+
+import "stdlib/asthra/core";
+
+// =============================================================================
+// Table Creation and Initialization
+// =============================================================================
+
+// Create table with initial capacity
+pub fn new_table_with_capacity(capacity: usize) -> TomlTable {
+    return TomlTable {
+        keys: [],
+        values: [],
+        count: 0,
+        capacity: capacity,
+    };
+}
+
+// Create table from key-value pairs
+pub fn table_from_pairs(pairs: [](string, TomlValue)) -> TomlTable {
+    let mut table: TomlTable = new_table_with_capacity(pairs.len);
+    
+    for i in 0..pairs.len {
+        let key: string = pairs[i].0;
+        let value: TomlValue = pairs[i].1;
+        table_set(&mut table, key, value);
+    }
+    
+    return table;
+}
+
+// Clone table (deep copy)
+pub fn table_clone(table: TomlTable) -> TomlTable {
+    let mut cloned: TomlTable = new_table_with_capacity(table.capacity);
+    
+    for i in 0..table.count {
+        let key: string = table.keys[i];
+        let value: TomlValue = clone_value(table.values[i]);
+        table_set(&mut cloned, key, value);
+    }
+    
+    return cloned;
+}
+
+// =============================================================================
+// Table Access Operations
+// =============================================================================
+
+// Get value from table
+pub fn table_get(table: TomlTable, key: string) -> TomlValue {
+    for i in 0..table.count {
+        if table.keys[i] == key {
+            return table.values[i];
+        }
+    }
+    
+    // Return a default value or consider using Option
+    return TomlValue.String("");
+}
+
+// Get value with result type
+pub fn table_get_result(table: TomlTable, key: string) -> TomlResult<TomlValue> {
+    for i in 0..table.count {
+        if table.keys[i] == key {
+            return TomlResult.Ok(table.values[i]);
+        }
+    }
+    
+    return TomlResult.Err(key_error(key, "get"));
+}
+
+// Check if table contains key
+pub fn table_contains(table: TomlTable, key: string) -> bool {
+    for i in 0..table.count {
+        if table.keys[i] == key {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Get string value from table
+pub fn table_get_string(table: TomlTable, key: string) -> TomlResult<string> {
+    let value_result: TomlResult<TomlValue> = table_get_result(table, key);
+    match value_result {
+        TomlResult.Ok(value) => {
+            match value {
+                TomlValue.String(s) => return TomlResult.Ok(s),
+                _ => return TomlResult.Err(type_error(TomlValueType.String, get_value_type(value), key)),
+            }
+        },
+        TomlResult.Err(error) => return TomlResult.Err(error),
+    }
+}
+
+// Get integer value from table
+pub fn table_get_integer(table: TomlTable, key: string) -> TomlResult<i64> {
+    let value_result: TomlResult<TomlValue> = table_get_result(table, key);
+    match value_result {
+        TomlResult.Ok(value) => {
+            match value {
+                TomlValue.Integer(i) => return TomlResult.Ok(i),
+                _ => return TomlResult.Err(type_error(TomlValueType.Integer, get_value_type(value), key)),
+            }
+        },
+        TomlResult.Err(error) => return TomlResult.Err(error),
+    }
+}
+
+// Get float value from table
+pub fn table_get_float(table: TomlTable, key: string) -> TomlResult<f64> {
+    let value_result: TomlResult<TomlValue> = table_get_result(table, key);
+    match value_result {
+        TomlResult.Ok(value) => {
+            match value {
+                TomlValue.Float(f) => return TomlResult.Ok(f),
+                TomlValue.Integer(i) => return TomlResult.Ok(i as f64),  // Auto-convert integer to float
+                _ => return TomlResult.Err(type_error(TomlValueType.Float, get_value_type(value), key)),
+            }
+        },
+        TomlResult.Err(error) => return TomlResult.Err(error),
+    }
+}
+
+// Get boolean value from table
+pub fn table_get_boolean(table: TomlTable, key: string) -> TomlResult<bool> {
+    let value_result: TomlResult<TomlValue> = table_get_result(table, key);
+    match value_result {
+        TomlResult.Ok(value) => {
+            match value {
+                TomlValue.Boolean(b) => return TomlResult.Ok(b),
+                _ => return TomlResult.Err(type_error(TomlValueType.Boolean, get_value_type(value), key)),
+            }
+        },
+        TomlResult.Err(error) => return TomlResult.Err(error),
+    }
+}
+
+// Get array value from table
+pub fn table_get_array(table: TomlTable, key: string) -> TomlResult<[]TomlValue> {
+    let value_result: TomlResult<TomlValue> = table_get_result(table, key);
+    match value_result {
+        TomlResult.Ok(value) => {
+            match value {
+                TomlValue.Array(arr) => return TomlResult.Ok(arr),
+                _ => return TomlResult.Err(type_error(TomlValueType.Array, get_value_type(value), key)),
+            }
+        },
+        TomlResult.Err(error) => return TomlResult.Err(error),
+    }
+}
+
+// Get nested table value
+pub fn table_get_table(table: TomlTable, key: string) -> TomlResult<TomlTable> {
+    let value_result: TomlResult<TomlValue> = table_get_result(table, key);
+    match value_result {
+        TomlResult.Ok(value) => {
+            match value {
+                TomlValue.Table(nested_table) => return TomlResult.Ok(nested_table),
+                TomlValue.InlineTable(inline_table) => return TomlResult.Ok(inline_table),
+                _ => return TomlResult.Err(type_error(TomlValueType.Table, get_value_type(value), key)),
+            }
+        },
+        TomlResult.Err(error) => return TomlResult.Err(error),
+    }
+}
+
+// =============================================================================
+// Table Modification Operations
+// =============================================================================
+
+// Set value in table
+pub fn table_set(table: *mut TomlTable, key: string, value: TomlValue) -> TomlResult<void> {
+    // Check if key already exists
+    for i in 0..table.count {
+        if table.keys[i] == key {
+            table.values[i] = value;
+            return TomlResult.Ok(void);
+        }
+    }
+    
+    // Add new key-value pair
+    if table.count >= table.capacity {
+        let resize_result: TomlResult<void> = table_resize(table, table.capacity * 2 + 1);
+        match resize_result {
+            TomlResult.Ok(_) => {
+                // Continue with insertion
+            },
+            TomlResult.Err(error) => return TomlResult.Err(error),
+        }
+    }
+    
+    table.keys[table.count] = key;
+    table.values[table.count] = value;
+    table.count = table.count + 1;
+    
+    return TomlResult.Ok(void);
+}
+
+// Remove key from table
+pub fn table_remove(table: *mut TomlTable, key: string) -> TomlResult<TomlValue> {
+    for i in 0..table.count {
+        if table.keys[i] == key {
+            let removed_value: TomlValue = table.values[i];
+            
+            // Shift remaining elements down
+            for j in i..(table.count - 1) {
+                table.keys[j] = table.keys[j + 1];
+                table.values[j] = table.values[j + 1];
+            }
+            
+            table.count = table.count - 1;
+            return TomlResult.Ok(removed_value);
+        }
+    }
+    
+    return TomlResult.Err(key_error(key, "remove"));
+}
+
+// Clear all entries from table
+pub fn table_clear(table: *mut TomlTable) -> void {
+    table.count = 0;
+}
+
+// Resize table capacity
+pub fn table_resize(table: *mut TomlTable, new_capacity: usize) -> TomlResult<void> {
+    if new_capacity < table.count {
+        return TomlResult.Err(TomlError.InternalError("New capacity too small"));
+    }
+    
+    let new_keys: []string = allocate_string_array(new_capacity);
+    let new_values: []TomlValue = allocate_value_array(new_capacity);
+    
+    // Copy existing data
+    for i in 0..table.count {
+        new_keys[i] = table.keys[i];
+        new_values[i] = table.values[i];
+    }
+    
+    table.keys = new_keys;
+    table.values = new_values;
+    table.capacity = new_capacity;
+    
+    return TomlResult.Ok(void);
+}
+
+// =============================================================================
+// Table Navigation and Path Operations
+// =============================================================================
+
+// Get value using dotted path (e.g., "database.connection.host")
+pub fn table_get_path(table: TomlTable, path: string) -> TomlResult<TomlValue> {
+    let path_parts: []string = split_string(path, ".");
+    let mut current_table: TomlTable = table;
+    
+    for i in 0..(path_parts.len - 1) {
+        let nested_result: TomlResult<TomlTable> = table_get_table(current_table, path_parts[i]);
+        match nested_result {
+            TomlResult.Ok(nested_table) => {
+                current_table = nested_table;
+            },
+            TomlResult.Err(error) => return TomlResult.Err(error),
+        }
+    }
+    
+    let final_key: string = path_parts[path_parts.len - 1];
+    return table_get_result(current_table, final_key);
+}
+
+// Set value using dotted path, creating intermediate tables as needed
+pub fn table_set_path(table: *mut TomlTable, path: string, value: TomlValue) -> TomlResult<void> {
+    let path_parts: []string = split_string(path, ".");
+    let mut current_table: *mut TomlTable = table;
+    
+    for i in 0..(path_parts.len - 1) {
+        let key: string = path_parts[i];
+        
+        if table_contains(*current_table, key) {
+            let nested_result: TomlResult<TomlTable> = table_get_table(*current_table, key);
+            match nested_result {
+                TomlResult.Ok(nested_table) => {
+                    // This is a simplification - in practice we'd need mutable references
+                    // current_table = &mut nested_table;
+                },
+                TomlResult.Err(_) => {
+                    // Key exists but is not a table, create new table
+                    let new_table: TomlTable = new_table();
+                    table_set(current_table, key, TomlValue.Table(new_table));
+                },
+            }
+        } else {
+            // Create new intermediate table
+            let new_table: TomlTable = new_table();
+            table_set(current_table, key, TomlValue.Table(new_table));
+        }
+    }
+    
+    let final_key: string = path_parts[path_parts.len - 1];
+    return table_set(current_table, final_key, value);
+}
+
+// =============================================================================
+// Table Inspection and Information
+// =============================================================================
+
+// Get all keys from table
+pub fn table_keys(table: TomlTable) -> []string {
+    let mut keys: []string = allocate_string_array(table.count);
+    for i in 0..table.count {
+        keys[i] = table.keys[i];
+    }
+    return keys;
+}
+
+// Get all values from table
+pub fn table_values(table: TomlTable) -> []TomlValue {
+    let mut values: []TomlValue = allocate_value_array(table.count);
+    for i in 0..table.count {
+        values[i] = table.values[i];
+    }
+    return values;
+}
+
+// Get table size
+pub fn table_size(table: TomlTable) -> usize {
+    return table.count;
+}
+
+// Check if table is empty
+pub fn table_is_empty(table: TomlTable) -> bool {
+    return table.count == 0;
+}
+
+// Get table capacity
+pub fn table_capacity(table: TomlTable) -> usize {
+    return table.capacity;
+}
+
+// =============================================================================
+// Table Comparison and Validation
+// =============================================================================
+
+// Compare two tables for equality
+pub fn table_equals(table1: TomlTable, table2: TomlTable) -> bool {
+    if table1.count != table2.count {
+        return false;
+    }
+    
+    for i in 0..table1.count {
+        let key: string = table1.keys[i];
+        if !table_contains(table2, key) {
+            return false;
+        }
+        
+        let value1: TomlValue = table1.values[i];
+        let value2: TomlValue = table_get(table2, key);
+        
+        if !values_equal(value1, value2) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Validate table structure
+pub fn table_validate(table: TomlTable) -> TomlResult<void> {
+    if table.count > table.capacity {
+        return TomlResult.Err(TomlError.InternalError("Table count exceeds capacity"));
+    }
+    
+    if table.keys.len != table.values.len {
+        return TomlResult.Err(TomlError.InternalError("Keys and values array length mismatch"));
+    }
+    
+    // Check for duplicate keys
+    for i in 0..table.count {
+        for j in (i + 1)..table.count {
+            if table.keys[i] == table.keys[j] {
+                return TomlResult.Err(TomlError.InternalError("Duplicate key found: " + table.keys[i]));
+            }
+        }
+    }
+    
+    return TomlResult.Ok(void);
+}
+
+// =============================================================================
+// Table Merging and Combining
+// =============================================================================
+
+// Merge two tables (second table takes precedence)
+pub fn table_merge(table1: TomlTable, table2: TomlTable) -> TomlTable {
+    let mut merged: TomlTable = table_clone(table1);
+    
+    for i in 0..table2.count {
+        let key: string = table2.keys[i];
+        let value: TomlValue = table2.values[i];
+        table_set(&mut merged, key, clone_value(value));
+    }
+    
+    return merged;
+}
+
+// =============================================================================
+// Helper Functions
+// =============================================================================
+
+// Clone a TOML value (deep copy)
+priv fn clone_value(value: TomlValue) -> TomlValue {
+    match value {
+        TomlValue.String(s) => return TomlValue.String(s),
+        TomlValue.Integer(i) => return TomlValue.Integer(i),
+        TomlValue.Float(f) => return TomlValue.Float(f),
+        TomlValue.Boolean(b) => return TomlValue.Boolean(b),
+        TomlValue.DateTime(dt) => return TomlValue.DateTime(dt),
+        TomlValue.Array(arr) => {
+            let mut cloned_arr: []TomlValue = allocate_value_array(arr.len);
+            for i in 0..arr.len {
+                cloned_arr[i] = clone_value(arr[i]);
+            }
+            return TomlValue.Array(cloned_arr);
+        },
+        TomlValue.Table(table) => return TomlValue.Table(table_clone(table)),
+        TomlValue.InlineTable(table) => return TomlValue.InlineTable(table_clone(table)),
+    }
+}
+
+// Compare two TOML values for equality
+priv fn values_equal(value1: TomlValue, value2: TomlValue) -> bool {
+    match value1 {
+        TomlValue.String(s1) => {
+            match value2 {
+                TomlValue.String(s2) => return s1 == s2,
+                _ => return false,
+            }
+        },
+        TomlValue.Integer(i1) => {
+            match value2 {
+                TomlValue.Integer(i2) => return i1 == i2,
+                _ => return false,
+            }
+        },
+        TomlValue.Float(f1) => {
+            match value2 {
+                TomlValue.Float(f2) => return f1 == f2,
+                _ => return false,
+            }
+        },
+        TomlValue.Boolean(b1) => {
+            match value2 {
+                TomlValue.Boolean(b2) => return b1 == b2,
+                _ => return false,
+            }
+        },
+        TomlValue.DateTime(dt1) => {
+            match value2 {
+                TomlValue.DateTime(dt2) => return dt1 == dt2,
+                _ => return false,
+            }
+        },
+        TomlValue.Array(arr1) => {
+            match value2 {
+                TomlValue.Array(arr2) => return arrays_equal(arr1, arr2),
+                _ => return false,
+            }
+        },
+        TomlValue.Table(table1) => {
+            match value2 {
+                TomlValue.Table(table2) => return table_equals(table1, table2),
+                _ => return false,
+            }
+        },
+        TomlValue.InlineTable(table1) => {
+            match value2 {
+                TomlValue.InlineTable(table2) => return table_equals(table1, table2),
+                _ => return false,
+            }
+        },
+    }
+}
+
+// Compare two arrays for equality
+priv fn arrays_equal(arr1: []TomlValue, arr2: []TomlValue) -> bool {
+    if arr1.len != arr2.len {
+        return false;
+    }
+    
+    for i in 0..arr1.len {
+        if !values_equal(arr1[i], arr2[i]) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// External functions (implemented in runtime)
+extern fn allocate_string_array(size: usize) -> []string;
+extern fn allocate_value_array(size: usize) -> []TomlValue;
+extern fn split_string(s: string, delimiter: string) -> []string; 

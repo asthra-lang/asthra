@@ -1,0 +1,38 @@
+[package]
+name = "ampu"
+version = "0.1.0"
+edition = "2021"
+description = "Asthra build tool for dependency management and compilation orchestration"
+license = "MIT"
+authors = ["Asthra Team"]
+
+[dependencies]
+clap = { version = "4.0", features = ["derive"] }
+tokio = { version = "1.0", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+reqwest = { version = "0.11", features = ["json"] }
+git2 = "0.18"
+semver = { version = "1.0", features = ["serde"] }
+anyhow = "1.0"
+thiserror = "1.0"
+log = "0.4"
+env_logger = "0.10"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+walkdir = "2.0"
+regex = "1.0"
+petgraph = "0.6"
+sha2 = "0.10"
+chrono = { version = "0.4", features = ["serde"] }
+serde_json = "1.0"
+num_cpus = "1.0"
+dirs = "5.0"
+futures = "0.3"
+glob = "0.3"
+
+[dev-dependencies]
+tempfile = "3.0"
+tokio-test = "0.4"
+assert_cmd = "2.0"
+predicates = "3.1" 

@@ -1,0 +1,150 @@
+// Asthra Import Alias Examples
+// Demonstrates current implementation status of import aliases
+
+package import_alias_examples;
+
+// ============================================================================
+// IMPORT ALIAS SYNTAX - CURRENTLY SUPPORTED
+// ============================================================================
+// These import statements parse successfully and are stored in the AST
+
+// Standard library aliases
+import "stdlib/string" as str;
+import "stdlib/asthra/core" as core;
+import "stdlib/asthra/collections" as collections;
+import "stdlib/datetime/time" as time;
+
+// Third-party package aliases
+import "github.com/asthra-lang/json" as json;
+import "github.com/asthra-lang/http" as http;
+import "github.com/user/crypto-utils" as crypto;
+
+// Local module aliases
+import "./utils/string_helpers" as helpers;
+import "../common/validation" as validator;
+
+// Short aliases for long package names
+import "github.com/company/very-long-package-name" as pkg;
+
+// ============================================================================
+// CURRENT LIMITATIONS
+// ============================================================================
+// The following functionality requires semantic analysis implementation:
+
+fn demonstrate_current_limitations(none) -> i32 {
+    // ❌ DOES NOT WORK YET: Alias resolution in function calls
+    // These would require semantic analysis to resolve aliases:
+    
+    // let text: string = "  hello world  ";
+    // let trimmed: string = str.trim(text);           // ❌ Alias not resolved
+    // let version: string = core.runtime_version();   // ❌ Alias not resolved
+    // let data: json.Value = json.parse("{}");        // ❌ Alias not resolved
+    
+    // ❌ DOES NOT WORK YET: Original module name restriction
+    // After aliasing, the original name should become inaccessible:
+    
+    // let result1: string = str.trim("text");     // ❌ Should work (alias)
+    // let result2: string = string.trim("text");  // ❌ Should be forbidden (original)
+    
+    // ❌ DOES NOT WORK YET: Alias scope management
+    // Different scopes should allow different aliases for same module
+    
+    return 0;
+}
+
+// ============================================================================
+// WORKAROUND: CURRENT WORKING APPROACH
+// ============================================================================
+// Until semantic analysis is implemented, use standard imports:
+
+import "stdlib/string";
+import "stdlib/asthra/core";
+import "stdlib/asthra/fs";
+
+fn working_example(none) -> i32 {
+    // ✅ WORKS: Standard module access without aliases
+    let text: string = "  hello world  ";
+    let trimmed: string = string.trim(text);
+    let version: string = core.runtime_version();
+    
+    log("Trimmed text: " + trimmed);
+    log("Runtime version: " + version);
+    
+    // ✅ WORKS: File operations
+    let file_result: Result<string, fs.IOError> = fs.read_to_string("test.txt");
+    match file_result {
+        Result.Ok(content) => {
+            log("File content: " + content);
+        },
+        Result.Err(error) => {
+            log("File error: " + error);
+        }
+    }
+    
+    return 0;
+}
+
+// ============================================================================
+// PLANNED BEHAVIOR (WHEN SEMANTIC ANALYSIS IS COMPLETE)
+// ============================================================================
+
+/*
+When semantic analysis is implemented, this code should work:
+
+import "stdlib/string" as str;
+import "stdlib/asthra/core" as core;
+import "github.com/user/crypto" as crypto;
+
+fn future_working_example(none) -> i32 {
+    // ✅ PLANNED: Alias resolution
+    let text: string = "  hello world  ";
+    let trimmed: string = str.trim(text);           // Should resolve to string.trim()
+    let version: string = core.runtime_version();   // Should resolve to core.runtime_version()
+    
+    // ✅ PLANNED: Third-party alias resolution
+    let hash: []u8 = crypto.sha256("data");         // Should resolve to external package
+    
+    // ❌ PLANNED: Original name should be inaccessible
+    // let result: string = string.trim(text);       // Should cause compile error
+    
+    // ✅ PLANNED: Clear disambiguation between packages
+    import "stdlib/crypto" as stdlib_crypto;
+    import "github.com/user/crypto" as user_crypto;
+    
+    let hash1: []u8 = stdlib_crypto.sha256("data");
+    let hash2: []u8 = user_crypto.sha256("data");
+    
+    return 0;
+}
+
+IMPLEMENTATION REQUIREMENTS:
+
+1. Semantic Analysis Phase:
+   - Resolve alias names to actual module paths
+   - Build symbol table mapping aliases to modules
+   - Validate that aliases don't conflict with existing identifiers
+   - Implement scope management for aliases
+
+2. Code Generation Phase:
+   - Generate correct function calls using resolved module paths
+   - Ensure alias names are not present in final output
+   - Handle cross-module function resolution
+
+3. Error Handling:
+   - Report errors when using original module name after aliasing
+   - Detect alias conflicts within same scope
+   - Validate that alias names are valid identifiers
+
+4. Testing:
+   - Unit tests for alias parsing
+   - Integration tests for alias resolution
+   - Error case testing for invalid alias usage
+*/
+
+fn main(none) -> i32 {
+    log("=== Import Alias Examples ===");
+    log("Current status: Syntax parsing implemented");
+    log("Next step: Semantic analysis for alias resolution");
+    
+    return working_example();
+} 

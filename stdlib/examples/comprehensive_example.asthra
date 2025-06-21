@@ -1,0 +1,658 @@
+// Comprehensive Example of Asthra Standard Library Usage
+// Demonstrates all essential modules from the stdlib plan
+
+package stdlib_example;
+
+// Import all essential modules
+import "stdlib/asthra/core";
+import "stdlib/asthra/panic";
+import "stdlib/asthra/fs";
+import "stdlib/asthra/env";
+import "stdlib/string";
+import "stdlib/asthra/collections";
+import "stdlib/datetime/time";
+import "stdlib/asthra/math";
+import "stdlib/asthra/random";
+import "stdlib/asthra/process";
+import "stdlib/asthra/algorithms";
+
+fn main(none) -> i32 {
+    log("=== Asthra Standard Library Comprehensive Example ===");
+    
+    // Initialize panic system
+    panic.init_panic_system();
+    
+    // Demonstrate core functionality
+    demonstrate_core();
+    
+    // Demonstrate environment handling
+    demonstrate_environment();
+    
+    // Demonstrate string processing
+    demonstrate_strings();
+    
+    // Demonstrate collections
+    demonstrate_collections();
+    
+    // Demonstrate filesystem operations
+    demonstrate_filesystem();
+    
+    // Demonstrate time operations (Phase 4)
+    demonstrate_time();
+    
+    // Demonstrate mathematical functions (Phase 4)
+    demonstrate_math();
+    
+    // Demonstrate random number generation (Phase 4)
+    demonstrate_random();
+    
+    // Demonstrate panic and debugging
+    demonstrate_debugging();
+    
+    log("=== All examples completed successfully ===");
+    return 0;
+}
+
+// ============================================================================
+// Core Module Demonstration
+// ============================================================================
+
+fn demonstrate_core(none) -> void {
+    log("\n--- Core Module Demo ---");
+    
+    // Runtime information
+    let version: string = core.runtime_version();
+    log("Runtime version: " + version);
+    
+    let build_info: core.BuildInfo = core.build_info();
+    log("Build date: " + build_info.build_date);
+    log("Target platform: " + build_info.target_platform);
+    
+    // Type system
+    let type_id: u32 = core.type_of(42);
+    let type_name_result: Result<string, string> = core.get_type_name(type_id);
+    match type_name_result {
+        Result.Ok(name) => log("Type of 42: " + name)
+        Result.Err(_) => log("Could not get type name")
+    }
+    
+    // Memory management
+    let alloc_result: Result<*mut void, string> = core.alloc(1024, core.MemoryZone.Manual);
+    match alloc_result {
+        Result.Ok(ptr) => {
+            log("Allocated 1024 bytes successfully");
+            let free_result: Result<void, string> = core.free(ptr, core.MemoryZone.Manual);
+            match free_result {
+                Result.Ok(_) => log("Memory freed successfully")
+                Result.Err(error) => log("Free failed: " + error)
+            }
+        },
+        Result.Err(error) => log("Allocation failed: " + error)
+    }
+    
+    // Garbage collection
+    let gc_stats: core.GCStats = core.gc_stats();
+    log("Current memory usage: " + gc_stats.current_usage + " bytes");
+    log("GC cycles: " + gc_stats.gc_cycles);
+}
+
+// ============================================================================
+// Environment Module Demonstration
+// ============================================================================
+
+fn demonstrate_environment(none) -> void {
+    log("\n--- Environment Module Demo ---");
+    
+    // Environment variables
+    let path_result: Result<string, string> = env.get_env("PATH");
+    match path_result {
+        Result.Ok(path) => log("PATH length: " + string.len(path))
+        Result.Err(_) => log("PATH not found")
+    }
+    
+    // Set and remove environment variable
+    let set_result: Result<void, string> = env.set_env("ASTHRA_TEST", "hello_world");
+    match set_result {
+        Result.Ok(_) => {
+            let get_result: Result<string, string> = env.get_env("ASTHRA_TEST");
+            match get_result {
+                Result.Ok(value) => log("Test env var: " + value)
+                Result.Err(_) => log("Could not read test env var")
+            }
+            env.remove_env("ASTHRA_TEST");
+        },
+        Result.Err(error) => log("Could not set env var: " + error)
+    }
+    
+    // Process information
+    let cwd_result: Result<string, fs.IOError> = env.current_dir();
+    match cwd_result {
+        Result.Ok(cwd) => log("Current directory: " + cwd)
+        Result.Err(_) => log("Could not get current directory")
+    }
+    
+    let args: []string = env.args();
+    log("Command line arguments: " + args.len);
+    
+    // System information
+    let username_result: Result<string, string> = env.username();
+    match username_result {
+        Result.Ok(user) => log("Username: " + user)
+        Result.Err(_) => log("Could not get username")
+    }
+    
+    let temp_dir: string = env.temp_dir();
+    log("Temp directory: " + temp_dir);
+    
+    log("Is Windows: " + env.is_windows());
+    log("OS name: " + env.os_name());
+}
+
+// ============================================================================
+// String Module Demonstration
+// ============================================================================
+
+fn demonstrate_strings(none) -> void {
+    log("\n--- String Module Demo ---");
+    
+    let text: string = "  Hello, Asthra World!  ";
+    
+    // String analysis
+    log("Original: '" + text + "'");
+    log("Length: " + string.len(text));
+    log("Character count: " + string.char_count(text));
+    log("Is ASCII: " + string.is_ascii(text));
+    log("Is empty: " + string.is_empty(text));
+    
+    // String searching
+    log("Contains 'Asthra': " + string.contains(text, "Asthra"));
+    log("Starts with '  Hello': " + string.starts_with(text, "  Hello"));
+    log("Ends with '!  ': " + string.ends_with(text, "!  "));
+    
+    let find_result: Result<usize, string> = string.find(text, "Asthra");
+    match find_result {
+        Result.Ok(pos) => log("'Asthra' found at position: " + pos)
+        Result.Err(_) => log("'Asthra' not found")
+    }
+    
+    // String modification
+    let trimmed: string = string.trim(text);
+    log("Trimmed: '" + trimmed + "'");
+    
+    let upper: string = string.to_uppercase(trimmed);
+    log("Uppercase: " + upper);
+    
+    let lower: string = string.to_lowercase(trimmed);
+    log("Lowercase: " + lower);
+    
+    let replaced: string = string.replace(trimmed, "Asthra", "Amazing");
+    log("Replaced: " + replaced);
+    
+    // String splitting and joining
+    let words: []string = string.split_whitespace(trimmed);
+    log("Word count: " + words.len);
+    
+    let rejoined: string = string.join(words, "-");
+    log("Rejoined with dashes: " + rejoined);
+    
+    // String formatting
+    let format_args: []string.FormatArg = [
+        string.FormatArg.String("Asthra"),
+        string.FormatArg.Int(2024),
+        string.FormatArg.Bool(true)
+    ];
+    let formatted: string = string.format("Language: {}, Year: {}, Awesome: {}", format_args);
+    log("Formatted: " + formatted);
+    
+    // UTF-8 conversion
+    let utf8_bytes: []u8 = string.to_utf8(trimmed);
+    log("UTF-8 byte count: " + utf8_bytes.len);
+    
+    let from_utf8_result: Result<string, string.StringError> = string.from_utf8(utf8_bytes);
+    match from_utf8_result {
+        Result.Ok(converted) => log("UTF-8 conversion successful: " + converted)
+        Result.Err(error) => log("UTF-8 conversion error: " + error)
+    }
+}
+
+// ============================================================================
+// Collections Module Demonstration
+// ============================================================================
+
+fn demonstrate_collections(none) -> void {
+    log("\n--- Collections Module Demo ---");
+    
+    // Vector demonstration
+    log("Vector operations:");
+    let mut vec: collections.Vec<i32> = collections.vec_new();
+    
+    collections.vec_push(&mut vec, 10);
+    collections.vec_push(&mut vec, 20);
+    collections.vec_push(&mut vec, 30);
+    
+    log("Vector length: " + collections.vec_len(&vec));
+    log("Vector capacity: " + collections.vec_capacity(&vec));
+    
+    let get_result: Result<*i32, string> = collections.vec_get(&vec, 1);
+    match get_result {
+        Result.Ok(value_ptr) => {
+            unsafe {
+                log("Element at index 1: " + *value_ptr);
+            }
+        },
+        Result.Err(error) => log("Get failed: " + error)
+    }
+    
+    let pop_result: Result<i32, string> = collections.vec_pop(&mut vec);
+    match pop_result {
+        Result.Ok(value) => log("Popped value: " + value)
+        Result.Err(error) => log("Pop failed: " + error)
+    }
+    
+    // HashMap demonstration
+    log("HashMap operations:");
+    let mut map: collections.HashMap<string, i32> = collections.hashmap_new();
+    
+    collections.hashmap_insert(&mut map, "first", 100);
+    collections.hashmap_insert(&mut map, "second", 200);
+    collections.hashmap_insert(&mut map, "third", 300);
+    
+    log("HashMap size: " + collections.hashmap_len(&map));
+    
+    let contains_first: bool = collections.hashmap_contains_key(&map, &"first");
+    log("Contains 'first': " + contains_first);
+    
+    let get_second_result: Result<*i32, string> = collections.hashmap_get(&map, &"second");
+    match get_second_result {
+        Result.Ok(value_ptr) => {
+            unsafe {
+                log("Value for 'second': " + *value_ptr);
+            }
+        },
+        Result.Err(error) => log("Get failed: " + error)
+    }
+    
+    // LinkedList demonstration
+    log("LinkedList operations:");
+    let mut list: collections.LinkedList<string> = collections.list_new();
+    
+    collections.list_push_back(&mut list, "first");
+    collections.list_push_back(&mut list, "second");
+    collections.list_push_front(&mut list, "zero");
+    
+    log("List length: " + collections.list_len(&list));
+    log("List is empty: " + collections.list_is_empty(&list));
+    
+    let pop_front_result: Result<string, string> = collections.list_pop_front(&mut list);
+    match pop_front_result {
+        Result.Ok(value) => log("Popped from front: " + value)
+        Result.Err(error) => log("Pop front failed: " + error)
+    }
+    
+    let pop_back_result: Result<string, string> = collections.list_pop_back(&mut list);
+    match pop_back_result {
+        Result.Ok(value) => log("Popped from back: " + value)
+        Result.Err(error) => log("Pop back failed: " + error)
+    }
+}
+
+// ============================================================================
+// Filesystem Module Demonstration
+// ============================================================================
+
+fn demonstrate_filesystem(none) -> void {
+    log("\n--- Filesystem Module Demo ---");
+    
+    let test_file: string = "asthra_test.txt";
+    let test_content: string = "Hello from Asthra!\nThis is a test file.\n";
+    
+    // File operations
+    let write_result: Result<void, fs.IOError> = fs.write_string(test_file, test_content);
+    match write_result {
+        Result.Ok(_) => {
+            log("File written successfully");
+            
+            // Check if file exists
+            log("File exists: " + fs.exists(test_file));
+            log("Is file: " + fs.is_file(test_file));
+            log("Is directory: " + fs.is_dir(test_file));
+            
+            // Read file back
+            let read_result: Result<string, fs.IOError> = fs.read_to_string(test_file);
+            match read_result {
+                Result.Ok(content) => {
+                    log("File content length: " + string.len(content));
+                    let lines: []string = string.lines(content);
+                    log("Number of lines: " + lines.len);
+                },
+                Result.Err(_) => log("Failed to read file")
+            }
+            
+            // Get file metadata
+            let metadata_result: Result<fs.Metadata, fs.IOError> = fs.metadata(test_file);
+            match metadata_result {
+                Result.Ok(meta) => {
+                    log("File size: " + meta.size + " bytes");
+                    log("Is readable: " + meta.permissions.readable);
+                    log("Is writable: " + meta.permissions.writable);
+                },
+                Result.Err(_) => log("Failed to get metadata")
+            }
+            
+            // Copy file
+            let copy_file: string = "asthra_test_copy.txt";
+            let copy_result: Result<void, fs.IOError> = fs.copy(test_file, copy_file);
+            match copy_result {
+                Result.Ok(_) => {
+                    log("File copied successfully");
+                    fs.remove(copy_file);
+                },
+                Result.Err(_) => log("Failed to copy file")
+            }
+            
+            // Clean up
+            fs.remove(test_file);
+        },
+        Result.Err(error) => log("Failed to write file")
+    }
+    
+    // Path operations
+    let path: fs.Path = fs.path_new("/home/user/documents/file.txt");
+    
+    let filename_result: Result<string, string> = fs.path_filename(path);
+    match filename_result {
+        Result.Ok(name) => log("Filename: " + name)
+        Result.Err(_) => log("No filename")
+    }
+    
+    let extension_result: Result<string, string> = fs.path_extension(path);
+    match extension_result {
+        Result.Ok(ext) => log("Extension: " + ext)
+        Result.Err(_) => log("No extension")
+    }
+    
+    let parent_result: Result<fs.Path, string> = fs.path_parent(path);
+    match parent_result {
+        Result.Ok(parent) => {
+            let parent_str: string = fs.path_to_string(parent);
+            log("Parent path: " + parent_str);
+        },
+        Result.Err(_) => log("No parent path")
+    }
+    
+    // Directory operations
+    let test_dir: string = "asthra_test_dir";
+    let create_dir_result: Result<void, fs.IOError> = fs.create_dir(test_dir);
+    match create_dir_result {
+        Result.Ok(_) => {
+            log("Directory created successfully");
+            log("Directory exists: " + fs.exists(test_dir));
+            log("Is directory: " + fs.is_dir(test_dir));
+            
+            // Clean up
+            fs.remove_dir(test_dir);
+        },
+        Result.Err(_) => log("Failed to create directory")
+    }
+}
+
+// ============================================================================
+// Debugging and Panic Demonstration
+// ============================================================================
+
+fn demonstrate_debugging(none) -> void {
+    log("\n--- Debugging Module Demo ---");
+    
+    // Debug information
+    log("Is debug build: " + panic.is_debug());
+    
+    // Assertions
+    panic.assert(true, "This assertion should pass");
+    panic.assert_eq_i32(42, 42, "Numbers should be equal");
+    panic.assert_ne_string("hello", "world", "Strings should be different");
+    
+    // Debug assertions (only run in debug builds)
+    panic.debug_assert(true, "Debug assertion");
+    panic.debug_print("This is a debug message");
+    
+    // Stack trace
+    let frames: []panic.StackFrame = panic.capture_backtrace();
+    log("Stack trace frames: " + frames.len);
+    
+    if frames.len > 0 {
+        log("Current function: " + frames[0].function_name);
+        log("Current file: " + frames[0].file);
+    }
+    
+    // Note: We don't demonstrate actual panics here as they would terminate the program
+    log("Panic system is ready (not triggering actual panic)");
+}
+
+// ============================================================================
+// Time Module Demonstration (Phase 4)
+// ============================================================================
+
+fn demonstrate_time(none) -> void {
+    log("\n--- Time Module Demo (Phase 4) ---");
+    
+    // Duration creation and conversion
+    let duration_secs: time.Duration = time.duration_from_secs(5);
+    let duration_millis: time.Duration = time.duration_from_millis(2500);
+    let duration_micros: time.Duration = time.duration_from_micros(1500000);
+    let duration_nanos: time.Duration = time.duration_from_nanos(750000000);
+    
+    log("Duration from 5 seconds: " + time.duration_as_millis(duration_secs) + " ms");
+    log("Duration from 2500 ms: " + time.duration_as_secs(duration_millis) + " s");
+    log("Duration from 1.5M micros: " + time.duration_as_millis(duration_micros) + " ms");
+    log("Duration from 750M nanos: " + time.duration_as_millis(duration_nanos) + " ms");
+    
+    // Duration arithmetic
+    let sum: time.Duration = time.duration_add(duration_secs, duration_millis);
+    log("Sum of durations: " + time.duration_as_millis(sum) + " ms");
+    
+    let diff_result: Result<time.Duration, string> = time.duration_sub(duration_secs, duration_millis);
+    match diff_result {
+        Result.Ok(diff) => log("Difference: " + time.duration_as_millis(diff) + " ms")
+        Result.Err(error) => log("Subtraction error: " + error)
+    }
+    
+    let multiplied: time.Duration = time.duration_mul(duration_millis, 3);
+    log("Duration * 3: " + time.duration_as_millis(multiplied) + " ms");
+    
+    let divided: time.Duration = time.duration_div(duration_millis, 2);
+    log("Duration / 2: " + time.duration_as_millis(divided) + " ms");
+    
+    // Instant and timing
+    let start: time.Instant = time.instant_now();
+    
+    // Simulate some work with a small delay
+    let small_delay: time.Duration = time.duration_from_millis(10);
+    time.sleep(small_delay);
+    
+    let elapsed: time.Duration = time.instant_elapsed(start);
+    log("Elapsed time: " + time.duration_as_millis(elapsed) + " ms");
+    
+    // System time
+    let sys_time: time.SystemTime = time.system_time_now();
+    let epoch_duration: time.Duration = time.system_time_duration_since_epoch(sys_time);
+    log("Seconds since epoch: " + time.duration_as_secs(epoch_duration));
+    
+    // Deadline operations
+    let deadline_duration: time.Duration = time.duration_from_millis(100);
+    let deadline: time.Deadline = time.deadline_from_duration(deadline_duration);
+    log("Deadline expired: " + time.deadline_is_expired(deadline));
+    
+    let remaining: time.Duration = time.deadline_time_remaining(deadline);
+    log("Time remaining: " + time.duration_as_millis(remaining) + " ms");
+}
+
+// ============================================================================
+// Math Module Demonstration (Phase 4)
+// ============================================================================
+
+fn demonstrate_math(none) -> void {
+    log("\n--- Math Module Demo (Phase 4) ---");
+    
+    // Mathematical constants
+    log("Mathematical constants:");
+    log("PI = " + math.PI);
+    log("E = " + math.E);
+    log("TAU = " + math.TAU);
+    log("Golden ratio (PHI) = " + math.PHI);
+    log("SQRT_2 = " + math.SQRT_2);
+    
+    // Basic functions
+    log("\nBasic functions:");
+    log("abs(-42) = " + math.abs_i32(-42));
+    log("abs(-3.14) = " + math.abs_f64(-3.14));
+    
+    // Power and root functions
+    log("\nPower and root functions:");
+    log("pow(2.0, 8.0) = " + math.pow_f64(2.0, 8.0));
+    log("sqrt(16.0) = " + math.sqrt_f64(16.0));
+    log("sqrt(2.0) = " + math.sqrt_f64(2.0));
+    
+    // Exponential and logarithmic functions
+    log("\nExponential and logarithmic functions:");
+    log("exp(1.0) = " + math.exp_f64(1.0));
+    log("ln(E) = " + math.ln_f64(math.E));
+    log("log10(100.0) = " + math.log10_f64(100.0));
+    log("log2(8.0) = " + math.log2_f64(8.0));
+    
+    // Trigonometric functions
+    log("\nTrigonometric functions:");
+    log("sin(PI/2) = " + math.sin_f64(math.PI / 2.0));
+    log("cos(0) = " + math.cos_f64(0.0));
+    log("tan(PI/4) = " + math.tan_f64(math.PI / 4.0));
+    
+    // Inverse trigonometric functions
+    log("\nInverse trigonometric functions:");
+    log("asin(1.0) = " + math.asin_f64(1.0));
+    log("acos(0.0) = " + math.acos_f64(0.0));
+    log("atan(1.0) = " + math.atan_f64(1.0));
+    
+    // Hyperbolic functions
+    log("\nHyperbolic functions:");
+    log("sinh(1.0) = " + math.sinh_f64(1.0));
+    log("cosh(0.0) = " + math.cosh_f64(0.0));
+    log("tanh(1.0) = " + math.tanh_f64(1.0));
+    
+    // Rounding and comparison
+    log("\nRounding and comparison:");
+    log("floor(3.7) = " + math.floor_f64(3.7));
+    log("ceil(3.2) = " + math.ceil_f64(3.2));
+    log("round(3.5) = " + math.round_f64(3.5));
+    log("min(5, 3) = " + math.min_i32(5, 3));
+    log("max(5.5, 7.2) = " + math.max_f64(5.5, 7.2));
+    
+    // Special functions
+    log("\nSpecial functions:");
+    log("factorial(5) = " + math.factorial(5));
+    log("gcd(48, 18) = " + math.gcd(48, 18));
+    log("lcm(12, 8) = " + math.lcm(12, 8));
+}
+
+// ============================================================================
+// Random Module Demonstration (Phase 4)
+// ============================================================================
+
+fn demonstrate_random(none) -> void {
+    log("\n--- Random Module Demo (Phase 4) ---");
+    
+    // Create RNG instances
+    let mut rng: random.Rng = random.rng_new();
+    let mut rng_seeded: random.Rng = random.rng_from_seed(12345);
+    
+    // Basic random number generation
+    log("Basic random numbers:");
+    log("Random u32: " + random.rng_next_u32(&mut rng));
+    log("Random u64: " + random.rng_next_u64(&mut rng));
+    log("Random f64 [0,1): " + random.rng_next_f64(&mut rng));
+    log("Random f32 [0,1): " + random.rng_next_f32(&mut rng));
+    
+    // Seeded RNG (should be reproducible)
+    log("\nSeeded random numbers (seed=12345):");
+    log("Seeded u32: " + random.rng_next_u32(&mut rng_seeded));
+    log("Seeded u32: " + random.rng_next_u32(&mut rng_seeded));
+    
+    // Range generation
+    log("\nRange generation:");
+    log("Random u32 [10, 20): " + random.rng_gen_range_u32(&mut rng, 10, 20));
+    log("Random i32 [-5, 5): " + random.rng_gen_range_i32(&mut rng, -5, 5));
+    log("Random f64 [1.0, 10.0): " + random.rng_gen_range_f64(&mut rng, 1.0, 10.0));
+    
+    // Boolean generation
+    log("\nBoolean generation:");
+    log("Random bool: " + random.rng_gen_bool(&mut rng));
+    log("Bool with 70% probability: " + random.rng_gen_bool_with_prob(&mut rng, 0.7));
+    log("Bool with 30% probability: " + random.rng_gen_bool_with_prob(&mut rng, 0.3));
+    
+    // Array shuffling
+    log("\nArray operations:");
+    let mut numbers: [5]i32 = [1, 2, 3, 4, 5];
+    random.rng_shuffle_i32(&mut rng, &mut numbers);
+    log("Shuffled array: [" + numbers[0] + ", " + numbers[1] + ", " + numbers[2] + ", " + numbers[3] + ", " + numbers[4] + "]");
+    
+    // Statistical distributions
+    log("\nStatistical distributions:");
+    log("Normal distribution (mean=0, std=1): " + random.rng_normal(&mut rng, 0.0, 1.0));
+    log("Exponential distribution (lambda=1): " + random.rng_exponential(&mut rng, 1.0));
+    log("Gamma distribution (shape=2, scale=1): " + random.rng_gamma(&mut rng, 2.0, 1.0));
+    
+    // Secure random number generation
+    log("\nSecure random generation:");
+    let secure_rng_result: Result<random.SecureRng, string> = random.secure_rng_new();
+    match secure_rng_result {
+        Result.Ok(mut secure_rng) => {
+            let secure_u32_result: Result<u32, string> = random.secure_rng_u32(&mut secure_rng);
+            match secure_u32_result {
+                Result.Ok(secure_value) => log("Secure random u32: " + secure_value)
+                Result.Err(error) => log("Secure RNG error: " + error)
+            }
+            
+            let secure_u64_result: Result<u64, string> = random.secure_rng_u64(&mut secure_rng);
+            match secure_u64_result {
+                Result.Ok(secure_value) => log("Secure random u64: " + secure_value)
+                Result.Err(error) => log("Secure RNG error: " + error)
+            }
+            
+            // Generate secure random bytes
+            let mut buffer: [16]u8;
+            let bytes_result: Result<void, string> = random.secure_rng_bytes(&mut secure_rng, buffer);
+            match bytes_result {
+                Result.Ok(_) => log("Generated 16 secure random bytes successfully")
+                Result.Err(error) => log("Secure bytes error: " + error)
+            }
+        },
+        Result.Err(error) => log("Failed to create secure RNG: " + error)
+    }
+    
+    // Random choice from array
+    let choices: [4]string = ["apple", "banana", "cherry", "date"];
+    let choice_result: Result<string, string> = random.rng_choice_string(&mut rng, choices);
+    match choice_result {
+        Result.Ok(choice) => log("Random choice: " + choice)
+        Result.Err(error) => log("Choice error: " + error)
+    }
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+fn log(message: string) -> void {
+    extern "asthra_runtime" fn asthra_println(message: *const u8) -> void;
+    
+    unsafe {
+        let message_cstr: *const u8 = string_to_cstr(message);
+        asthra_println(message_cstr);
+    }
+}
+
+fn string_to_cstr(s: string) -> *const u8 {
+    extern "asthra_runtime" fn asthra_string_to_cstr(s: string) -> *const u8;
+    
+    unsafe {
+        return asthra_string_to_cstr(s);
+    }
+} 

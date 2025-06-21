@@ -1,0 +1,452 @@
+// Asthra Standard Library - Input/Output Module
+// Provides standard input, output, and error stream functionality
+
+package stdlib::io;
+
+// Import core functionality
+import "stdlib/asthra/core";
+
+// ============================================================================
+// Error Types
+// ============================================================================
+
+// Comprehensive I/O error enumeration
+enum IOError {
+    EndOfFile,                    // End of input stream reached
+    PermissionDenied,             // Operation not permitted due to access rights
+    NotFound,                     // Resource not found
+    Interrupted,                  // System call was interrupted
+    InvalidInput,                 // Input data was not in expected format
+    BrokenPipe,                   // SIGPIPE - broken pipe error
+    WouldBlock,                   // Operation would block (for future non-blocking I/O)
+    InvalidUtf8([]u8),           // Invalid UTF-8 sequence with problematic bytes
+    BufferTooSmall(usize),       // Buffer too small for operation
+    WriteError(string),          // General write error with message
+    ReadError(string),           // General read error with message
+    Other(string)                // Catch-all for other I/O errors
+}
+
+// ============================================================================
+// Standard Input (STDIN) Operations
+// ============================================================================
+
+// Read a line of text from STDIN
+// Returns the line including the newline character if present
+fn read_line(none) -> Result<string, IOError> {
+    extern "libc" fn fgets(buf: *mut u8, n: i32, stream: *mut void) -> *mut u8;
+    extern "libc" fn ferror(stream: *mut void) -> i32;
+    extern "libc" fn feof(stream: *mut void) -> i32;
+    extern "libc" fn clearerr(stream: *mut void) -> void;
+    
+    unsafe {
+        let stdin_handle: *mut void = c_stdin();
+        let buffer_size: i32 = 1024;
+        let mut buffer: [u8; 1024] = [0; 1024];
+        
+        let result: *mut u8 = fgets(&mut buffer[0], buffer_size, stdin_handle);
+        
+        // Check for errors
+        if result == null {
+            if ferror(stdin_handle) != 0 {
+                clearerr(stdin_handle);
+                return Result.Err(IOError.ReadError("Failed to read from stdin"));
+            }
+            if feof(stdin_handle) != 0 {
+                clearerr(stdin_handle);
+                return Result.Err(IOError.EndOfFile);
+            }
+            return Result.Err(IOError.ReadError("Unknown error reading from stdin"));
+        }
+        
+        // Convert C string to Asthra string
+        let asthra_string_result: Result<string, IOError> = cstr_to_asthra_string(&buffer[0]);
+        match asthra_string_result {
+            Result.Ok(s) => return Result.Ok(s)
+            Result.Err(error) => return Result.Err(error)
+        }
+    }
+}
+
+// Read a single character from STDIN
+fn read_char(none) -> Result<char, IOError> {
+    extern "libc" fn fgetc(stream: *mut void) -> i32;
+    extern "libc" fn ferror(stream: *mut void) -> i32;
+    extern "libc" fn feof(stream: *mut void) -> i32;
+    extern "libc" fn clearerr(stream: *mut void) -> void;
+    
+    unsafe {
+        let stdin_handle: *mut void = c_stdin();
+        let result: i32 = fgetc(stdin_handle);
+        
+        if result == -1 {
+            if ferror(stdin_handle) != 0 {
+                clearerr(stdin_handle);
+                return Result.Err(IOError.ReadError("Failed to read character from stdin"));
+            }
+            if feof(stdin_handle) != 0 {
+                clearerr(stdin_handle);
+                return Result.Err(IOError.EndOfFile);
+            }
+            return Result.Err(IOError.ReadError("Unknown error reading character"));
+        }
+        
+        return Result.Ok(result as char);
+    }
+}
+
+// Read all content from STDIN until EOF
+fn read_all(none) -> Result<string, IOError> {
+    let mut content: string = "";
+    
+    loop {
+        let line_result: Result<string, IOError> = read_line();
+        match line_result {
+            Result.Ok(line) => {
+                content = content + line;
+            },
+            Result.Err(IOError.EndOfFile) => {
+                break;
+            },
+            Result.Err(error) => {
+                return Result.Err(error);
+            }
+        }
+    }
+    
+    return Result.Ok(content);
+}
+
+// Read up to count bytes from STDIN into a new buffer
+fn read_bytes(count: usize) -> Result<[]u8, IOError> {
+    extern "libc" fn fread(ptr: *mut void, size: usize, nmemb: usize, stream: *mut void) -> usize;
+    extern "libc" fn ferror(stream: *mut void) -> i32;
+    extern "libc" fn feof(stream: *mut void) -> i32;
+    extern "libc" fn clearerr(stream: *mut void) -> void;
+    
+    unsafe {
+        let stdin_handle: *mut void = c_stdin();
+        let mut buffer: []u8 = [];
+        
+        // Allocate buffer
+        let buffer_ptr: *mut u8 = core.alloc(count, core.MemoryZone.GC) as *mut u8;
+        if buffer_ptr == null {
+            return Result.Err(IOError.Other("Failed to allocate read buffer"));
+        }
+        
+        let bytes_read: usize = fread(buffer_ptr as *mut void, 1, count, stdin_handle);
+        
+        if bytes_read == 0 {
+            if ferror(stdin_handle) != 0 {
+                clearerr(stdin_handle);
+                return Result.Err(IOError.ReadError("Failed to read bytes from stdin"));
+            }
+            if feof(stdin_handle) != 0 {
+                clearerr(stdin_handle);
+                return Result.Err(IOError.EndOfFile);
+            }
+        }
+        
+        // Create slice from read data
+        let mut i: usize = 0;
+        while i < bytes_read {
+            buffer.push(*(buffer_ptr + i));
+            i = i + 1;
+        }
+        
+        return Result.Ok(buffer);
+    }
+}
+
+// ============================================================================
+// Standard Output (STDOUT) Operations
+// ============================================================================
+
+// Write string to STDOUT
+fn print(message: string) -> Result<void, IOError> {
+    extern "libc" fn fputs(s: *const u8, stream: *mut void) -> i32;
+    extern "libc" fn ferror(stream: *mut void) -> i32;
+    extern "libc" fn clearerr(stream: *mut void) -> void;
+    
+    unsafe {
+        let stdout_handle: *mut void = c_stdout();
+        let c_string: *const u8 = asthra_string_to_cstr(message);
+        
+        let result: i32 = fputs(c_string, stdout_handle);
+        
+        if result == -1 {
+            if ferror(stdout_handle) != 0 {
+                clearerr(stdout_handle);
+                return Result.Err(IOError.WriteError("Failed to write to stdout"));
+            }
+            return Result.Err(IOError.WriteError("Unknown error writing to stdout"));
+        }
+        
+        return Result.Ok(());
+    }
+}
+
+// Write string to STDOUT followed by newline
+fn print_line(message: string) -> Result<void, IOError> {
+    let print_result: Result<void, IOError> = print(message);
+    match print_result {
+        Result.Err(error) => return Result.Err(error)
+        Result.Ok(_) => {}
+    }
+    
+    return print("\n");
+}
+
+// Write byte slice to STDOUT
+fn write_bytes(data: []const u8) -> Result<usize, IOError> {
+    extern "libc" fn fwrite(ptr: *const void, size: usize, nmemb: usize, stream: *mut void) -> usize;
+    extern "libc" fn ferror(stream: *mut void) -> i32;
+    extern "libc" fn clearerr(stream: *mut void) -> void;
+    
+    unsafe {
+        let stdout_handle: *mut void = c_stdout();
+        let bytes_written: usize = fwrite(data.ptr as *const void, 1, data.len, stdout_handle);
+        
+        if bytes_written != data.len {
+            if ferror(stdout_handle) != 0 {
+                clearerr(stdout_handle);
+                return Result.Err(IOError.WriteError("Failed to write bytes to stdout"));
+            }
+            return Result.Err(IOError.WriteError("Incomplete write to stdout"));
+        }
+        
+        return Result.Ok(bytes_written);
+    }
+}
+
+// Flush STDOUT buffer
+fn flush_stdout(none) -> Result<void, IOError> {
+    extern "libc" fn fflush(stream: *mut void) -> i32;
+    
+    unsafe {
+        let stdout_handle: *mut void = c_stdout();
+        let result: i32 = fflush(stdout_handle);
+        
+        if result != 0 {
+            return Result.Err(IOError.WriteError("Failed to flush stdout"));
+        }
+        
+        return Result.Ok(());
+    }
+}
+
+// ============================================================================
+// Standard Error (STDERR) Operations
+// ============================================================================
+
+// Write string to STDERR
+fn eprint(message: string) -> Result<void, IOError> {
+    extern "libc" fn fputs(s: *const u8, stream: *mut void) -> i32;
+    extern "libc" fn ferror(stream: *mut void) -> i32;
+    extern "libc" fn clearerr(stream: *mut void) -> void;
+    
+    unsafe {
+        let stderr_handle: *mut void = c_stderr();
+        let c_string: *const u8 = asthra_string_to_cstr(message);
+        
+        let result: i32 = fputs(c_string, stderr_handle);
+        
+        if result == -1 {
+            if ferror(stderr_handle) != 0 {
+                clearerr(stderr_handle);
+                return Result.Err(IOError.WriteError("Failed to write to stderr"));
+            }
+            return Result.Err(IOError.WriteError("Unknown error writing to stderr"));
+        }
+        
+        return Result.Ok(());
+    }
+}
+
+// Write string to STDERR followed by newline
+fn eprint_line(message: string) -> Result<void, IOError> {
+    let print_result: Result<void, IOError> = eprint(message);
+    match print_result {
+        Result.Err(error) => return Result.Err(error)
+        Result.Ok(_) => {}
+    }
+    
+    return eprint("\n");
+}
+
+// Write byte slice to STDERR
+fn ewrite_bytes(data: []const u8) -> Result<usize, IOError> {
+    extern "libc" fn fwrite(ptr: *const void, size: usize, nmemb: usize, stream: *mut void) -> usize;
+    extern "libc" fn ferror(stream: *mut void) -> i32;
+    extern "libc" fn clearerr(stream: *mut void) -> void;
+    
+    unsafe {
+        let stderr_handle: *mut void = c_stderr();
+        let bytes_written: usize = fwrite(data.ptr as *const void, 1, data.len, stderr_handle);
+        
+        if bytes_written != data.len {
+            if ferror(stderr_handle) != 0 {
+                clearerr(stderr_handle);
+                return Result.Err(IOError.WriteError("Failed to write bytes to stderr"));
+            }
+            return Result.Err(IOError.WriteError("Incomplete write to stderr"));
+        }
+        
+        return Result.Ok(bytes_written);
+    }
+}
+
+// Flush STDERR buffer
+fn flush_stderr(none) -> Result<void, IOError> {
+    extern "libc" fn fflush(stream: *mut void) -> i32;
+    
+    unsafe {
+        let stderr_handle: *mut void = c_stderr();
+        let result: i32 = fflush(stderr_handle);
+        
+        if result != 0 {
+            return Result.Err(IOError.WriteError("Failed to flush stderr"));
+        }
+        
+        return Result.Ok(());
+    }
+}
+
+// ============================================================================
+// Stream Handle Access Functions
+// ============================================================================
+
+// Get C stdin handle
+fn c_stdin(none) -> *mut void {
+    extern "asthra_runtime" fn asthra_get_stdin(none) -> *mut void;
+    
+    unsafe {
+        return asthra_get_stdin();
+    }
+}
+
+// Get C stdout handle
+fn c_stdout(none) -> *mut void {
+    extern "asthra_runtime" fn asthra_get_stdout(none) -> *mut void;
+    
+    unsafe {
+        return asthra_get_stdout();
+    }
+}
+
+// Get C stderr handle
+fn c_stderr(none) -> *mut void {
+    extern "asthra_runtime" fn asthra_get_stderr(none) -> *mut void;
+    
+    unsafe {
+        return asthra_get_stderr();
+    }
+}
+
+// ============================================================================
+// String Conversion Utilities
+// ============================================================================
+
+// Convert C string to Asthra string with UTF-8 validation
+fn cstr_to_asthra_string(cstr: *const u8) -> Result<string, IOError> {
+    extern "libc" fn strlen(s: *const u8) -> usize;
+    
+    unsafe {
+        if cstr == null {
+            return Result.Err(IOError.InvalidInput);
+        }
+        
+        let len: usize = strlen(cstr);
+        let mut bytes: []u8 = [];
+        let mut i: usize = 0;
+        
+        // Copy bytes and validate UTF-8
+        while i < len {
+            let byte: u8 = *(cstr + i);
+            bytes.push(byte);
+            i = i + 1;
+        }
+        
+        // Validate UTF-8 encoding
+        let validation_result: Result<void, []u8> = validate_utf8(bytes);
+        match validation_result {
+            Result.Err(invalid_bytes) => {
+                return Result.Err(IOError.InvalidUtf8(invalid_bytes));
+            },
+            Result.Ok(_) => {}
+        }
+        
+        // Convert to Asthra string using runtime function
+        let asthra_string: string = asthra_string_from_cstr(cstr);
+        return Result.Ok(asthra_string);
+    }
+}
+
+// Convert Asthra string to C string
+fn asthra_string_to_cstr(s: string) -> *const u8 {
+    extern "asthra_runtime" fn asthra_string_to_cstr(s: string) -> *const u8;
+    
+    unsafe {
+        return asthra_string_to_cstr(s);
+    }
+}
+
+// Convert C string to Asthra string (direct runtime call)
+fn asthra_string_from_cstr(cstr: *const u8) -> string {
+    extern "asthra_runtime" fn asthra_string_from_cstr(cstr: *const u8) -> string;
+    
+    unsafe {
+        return asthra_string_from_cstr(cstr);
+    }
+}
+
+// Validate UTF-8 byte sequence
+fn validate_utf8(bytes: []u8) -> Result<void, []u8> {
+    let mut i: usize = 0;
+    
+    while i < bytes.len {
+        let byte: u8 = bytes[i];
+        
+        if byte <= 0x7F {
+            // ASCII character (0xxxxxxx)
+            i = i + 1;
+        } else if (byte & 0xE0) == 0xC0 {
+            // 2-byte sequence (110xxxxx 10xxxxxx)
+            if i + 1 >= bytes.len {
+                return Result.Err([byte]);
+            }
+            let byte2: u8 = bytes[i + 1];
+            if (byte2 & 0xC0) != 0x80 {
+                return Result.Err([byte, byte2]);
+            }
+            i = i + 2;
+        } else if (byte & 0xF0) == 0xE0 {
+            // 3-byte sequence (1110xxxx 10xxxxxx 10xxxxxx)
+            if i + 2 >= bytes.len {
+                return Result.Err([byte]);
+            }
+            let byte2: u8 = bytes[i + 1];
+            let byte3: u8 = bytes[i + 2];
+            if (byte2 & 0xC0) != 0x80 || (byte3 & 0xC0) != 0x80 {
+                return Result.Err([byte, byte2, byte3]);
+            }
+            i = i + 3;
+        } else if (byte & 0xF8) == 0xF0 {
+            // 4-byte sequence (11110xxx 10xxxxxx 10xxxxxx 10xxxxxx)
+            if i + 3 >= bytes.len {
+                return Result.Err([byte]);
+            }
+            let byte2: u8 = bytes[i + 1];
+            let byte3: u8 = bytes[i + 2];
+            let byte4: u8 = bytes[i + 3];
+            if (byte2 & 0xC0) != 0x80 || (byte3 & 0xC0) != 0x80 || (byte4 & 0xC0) != 0x80 {
+                return Result.Err([byte, byte2, byte3, byte4]);
+            }
+            i = i + 4;
+        } else {
+            // Invalid UTF-8 start byte
+            return Result.Err([byte]);
+        }
+    }
+    
+    return Result.Ok(());
+} 

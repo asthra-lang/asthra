@@ -1,0 +1,1081 @@
+// Asthra Standard Library - Cryptographic Primitives Module
+// Provides secure cryptographic operations with comprehensive error handling
+
+package stdlib::crypto;
+
+// Import core functionality
+import "stdlib/asthra/core";
+
+// ============================================================================
+// Error Types
+// ============================================================================
+
+// Comprehensive cryptographic error enumeration
+enum CryptoError {
+    InvalidKeySize(usize),           // Key size is not supported for the algorithm
+    InvalidNonceSize(usize),         // Nonce/IV size is incorrect
+    InvalidTagSize(usize),           // Authentication tag size is invalid
+    KeyGenerationFailed,             // Failed to generate cryptographic key
+    EncryptionFailed,                // Encryption operation failed
+    DecryptionFailed,                // Decryption operation failed
+    AuthenticationFailed,            // Authentication tag verification failed
+    InvalidInput(string),            // Input data is malformed or invalid
+    InvalidKeyFormat,                // Key is not in expected format
+    HashingFailed,                   // Hash computation failed
+    SigningFailed,                   // Digital signature creation failed
+    VerificationFailed,              // Digital signature verification failed
+    KeyDerivationFailed,             // Key derivation function failed
+    InsufficientEntropy,             // Not enough entropy for secure operation
+    UnsupportedAlgorithm(string),    // Requested algorithm is not supported
+    BufferTooSmall(usize),           // Output buffer is too small
+    InvalidPadding,                  // Padding validation failed
+    WeakKey,                         // Key is cryptographically weak
+    Other(string)                    // Catch-all for other crypto errors
+}
+
+// ============================================================================
+// Cryptographic Constants
+// ============================================================================
+
+// Key sizes (in bytes)
+const AES_128_KEY_SIZE: usize = 16;
+const AES_256_KEY_SIZE: usize = 32;
+const CHACHA20_KEY_SIZE: usize = 32;
+const HMAC_KEY_MIN_SIZE: usize = 32;
+
+// Nonce/IV sizes (in bytes)
+const AES_GCM_NONCE_SIZE: usize = 12;
+const CHACHA20_NONCE_SIZE: usize = 12;
+const AES_CBC_IV_SIZE: usize = 16;
+
+// Tag sizes (in bytes)
+const AES_GCM_TAG_SIZE: usize = 16;
+const CHACHA20_POLY1305_TAG_SIZE: usize = 16;
+const HMAC_SHA256_SIZE: usize = 32;
+const HMAC_SHA512_SIZE: usize = 64;
+
+// Hash output sizes (in bytes)
+const SHA256_SIZE: usize = 32;
+const SHA512_SIZE: usize = 64;
+const BLAKE2B_SIZE: usize = 64;
+
+// ============================================================================
+// Secure Random Number Generation
+// ============================================================================
+
+// Generate cryptographically secure random bytes
+fn random_bytes(size: usize) -> Result<[]u8, CryptoError> {
+    extern "asthra_runtime" fn asthra_random_bytes(buffer: *mut u8, size: usize) -> i32;
+    
+    unsafe {
+        if size == 0 {
+            return Result.Err(CryptoError.InvalidInput("Size cannot be zero"));
+        }
+        
+        if size > 1048576 {  // 1MB limit for safety
+            return Result.Err(CryptoError.InvalidInput("Requested size too large"));
+        }
+        
+        let buffer_ptr: *mut u8 = core.alloc(size, core.MemoryZone.GC) as *mut u8;
+        if buffer_ptr == null {
+            return Result.Err(CryptoError.Other("Failed to allocate random buffer"));
+        }
+        
+        let result: i32 = asthra_random_bytes(buffer_ptr, size);
+        if result != 0 {
+            return Result.Err(CryptoError.InsufficientEntropy);
+        }
+        
+        // Create slice from random data
+        let mut random_data: []u8 = [];
+        let mut i: usize = 0;
+        while i < size {
+            random_data.push(*(buffer_ptr + i));
+            i = i + 1;
+        }
+        
+        return Result.Ok(random_data);
+    }
+}
+
+// Generate a secure random key of specified size
+fn generate_key(size: usize) -> Result<[]u8, CryptoError> {
+    match size {
+        16 | 24 | 32 | 64 => {
+            return random_bytes(size);
+        },
+        _ => {
+            return Result.Err(CryptoError.InvalidKeySize(size));
+        }
+    }
+}
+
+// Generate AES-256 key
+fn generate_aes256_key(none) -> Result<[]u8, CryptoError> {
+    return generate_key(AES_256_KEY_SIZE);
+}
+
+// Generate ChaCha20 key
+fn generate_chacha20_key(none) -> Result<[]u8, CryptoError> {
+    return generate_key(CHACHA20_KEY_SIZE);
+}
+
+// Generate HMAC key
+fn generate_hmac_key(none) -> Result<[]u8, CryptoError> {
+    return generate_key(64);  // 512-bit key for maximum security
+}
+
+// ============================================================================
+// Symmetric Encryption - AES-GCM
+// ============================================================================
+
+// AES-GCM encryption with automatic nonce generation
+fn aes_gcm_encrypt(plaintext: []u8, key: []u8) -> Result<[]u8, CryptoError> {
+    extern "libcrypto" fn EVP_CIPHER_CTX_new(none) -> *mut void;
+    extern "libcrypto" fn EVP_CIPHER_CTX_free(ctx: *mut void) -> void;
+    extern "libcrypto" fn EVP_aes_256_gcm(none) -> *const void;
+    extern "libcrypto" fn EVP_EncryptInit_ex(
+        ctx: *mut void, 
+        cipher: *const void, 
+        impl: *mut void, 
+        key: *const u8, 
+        iv: *const u8
+    ) -> i32;
+    extern "libcrypto" fn EVP_EncryptUpdate(
+        ctx: *mut void, 
+        out: *mut u8, 
+        outl: *mut i32, 
+        in: *const u8, 
+        inl: i32
+    ) -> i32;
+    extern "libcrypto" fn EVP_EncryptFinal_ex(
+        ctx: *mut void, 
+        out: *mut u8, 
+        outl: *mut i32
+    ) -> i32;
+    extern "libcrypto" fn EVP_CIPHER_CTX_ctrl(
+        ctx: *mut void, 
+        type: i32, 
+        arg: i32, 
+        ptr: *mut void
+    ) -> i32;
+    
+    // Validate key size
+    if key.len != AES_256_KEY_SIZE {
+        return Result.Err(CryptoError.InvalidKeySize(key.len));
+    }
+    
+    // Generate random nonce
+    let nonce_result: Result<[]u8, CryptoError> = random_bytes(AES_GCM_NONCE_SIZE);
+    let nonce: []u8 = match nonce_result {
+        Result.Ok(n) => n
+        Result.Err(error) => return Result.Err(error)
+    };
+    
+    unsafe {
+        let ctx: *mut void = EVP_CIPHER_CTX_new();
+        if ctx == null {
+            return Result.Err(CryptoError.EncryptionFailed);
+        }
+        
+        // Initialize encryption
+        let init_result: i32 = EVP_EncryptInit_ex(
+            ctx, 
+            EVP_aes_256_gcm(), 
+            null, 
+            key.ptr, 
+            nonce.ptr
+        );
+        
+        if init_result != 1 {
+            EVP_CIPHER_CTX_free(ctx);
+            return Result.Err(CryptoError.EncryptionFailed);
+        }
+        
+        // Allocate output buffer (plaintext + tag + nonce)
+        let output_size: usize = plaintext.len + AES_GCM_TAG_SIZE + AES_GCM_NONCE_SIZE;
+        let output_ptr: *mut u8 = core.alloc(output_size, core.MemoryZone.GC) as *mut u8;
+        if output_ptr == null {
+            EVP_CIPHER_CTX_free(ctx);
+            return Result.Err(CryptoError.Other("Failed to allocate output buffer"));
+        }
+        
+        // Copy nonce to output (first 12 bytes)
+        let mut i: usize = 0;
+        while i < AES_GCM_NONCE_SIZE {
+            *(output_ptr + i) = nonce[i];
+            i = i + 1;
+        }
+        
+        // Encrypt plaintext
+        let mut outlen: i32 = 0;
+        let encrypt_result: i32 = EVP_EncryptUpdate(
+            ctx,
+            output_ptr + AES_GCM_NONCE_SIZE,
+            &mut outlen,
+            plaintext.ptr,
+            plaintext.len as i32
+        );
+        
+        if encrypt_result != 1 {
+            EVP_CIPHER_CTX_free(ctx);
+            return Result.Err(CryptoError.EncryptionFailed);
+        }
+        
+        // Finalize encryption
+        let mut final_len: i32 = 0;
+        let final_result: i32 = EVP_EncryptFinal_ex(
+            ctx,
+            output_ptr + AES_GCM_NONCE_SIZE + (outlen as usize),
+            &mut final_len
+        );
+        
+        if final_result != 1 {
+            EVP_CIPHER_CTX_free(ctx);
+            return Result.Err(CryptoError.EncryptionFailed);
+        }
+        
+        // Get authentication tag
+        let tag_result: i32 = EVP_CIPHER_CTX_ctrl(
+            ctx,
+            16,  // EVP_CTRL_GCM_GET_TAG
+            AES_GCM_TAG_SIZE as i32,
+            output_ptr + AES_GCM_NONCE_SIZE + plaintext.len
+        );
+        
+        if tag_result != 1 {
+            EVP_CIPHER_CTX_free(ctx);
+            return Result.Err(CryptoError.EncryptionFailed);
+        }
+        
+        EVP_CIPHER_CTX_free(ctx);
+        
+        // Create output slice
+        let mut output: []u8 = [];
+        let mut j: usize = 0;
+        while j < output_size {
+            output.push(*(output_ptr + j));
+            j = j + 1;
+        }
+        
+        return Result.Ok(output);
+    }
+}
+
+// AES-GCM decryption
+fn aes_gcm_decrypt(ciphertext: []u8, key: []u8) -> Result<[]u8, CryptoError> {
+    extern "libcrypto" fn EVP_CIPHER_CTX_new(none) -> *mut void;
+    extern "libcrypto" fn EVP_CIPHER_CTX_free(ctx: *mut void) -> void;
+    extern "libcrypto" fn EVP_aes_256_gcm(none) -> *const void;
+    extern "libcrypto" fn EVP_DecryptInit_ex(
+        ctx: *mut void, 
+        cipher: *const void, 
+        impl: *mut void, 
+        key: *const u8, 
+        iv: *const u8
+    ) -> i32;
+    extern "libcrypto" fn EVP_DecryptUpdate(
+        ctx: *mut void, 
+        out: *mut u8, 
+        outl: *mut i32, 
+        in: *const u8, 
+        inl: i32
+    ) -> i32;
+    extern "libcrypto" fn EVP_DecryptFinal_ex(
+        ctx: *mut void, 
+        out: *mut u8, 
+        outl: *mut i32
+    ) -> i32;
+    extern "libcrypto" fn EVP_CIPHER_CTX_ctrl(
+        ctx: *mut void, 
+        type: i32, 
+        arg: i32, 
+        ptr: *mut void
+    ) -> i32;
+    
+    // Validate inputs
+    if key.len != AES_256_KEY_SIZE {
+        return Result.Err(CryptoError.InvalidKeySize(key.len));
+    }
+    
+    let min_size: usize = AES_GCM_NONCE_SIZE + AES_GCM_TAG_SIZE;
+    if ciphertext.len < min_size {
+        return Result.Err(CryptoError.InvalidInput("Ciphertext too short"));
+    }
+    
+    unsafe {
+        let ctx: *mut void = EVP_CIPHER_CTX_new();
+        if ctx == null {
+            return Result.Err(CryptoError.DecryptionFailed);
+        }
+        
+        // Extract nonce (first 12 bytes)
+        let nonce_ptr: *const u8 = ciphertext.ptr;
+        
+        // Extract tag (last 16 bytes)
+        let tag_ptr: *const u8 = ciphertext.ptr + ciphertext.len - AES_GCM_TAG_SIZE;
+        
+        // Ciphertext is in the middle
+        let encrypted_data_ptr: *const u8 = ciphertext.ptr + AES_GCM_NONCE_SIZE;
+        let encrypted_data_len: usize = ciphertext.len - AES_GCM_NONCE_SIZE - AES_GCM_TAG_SIZE;
+        
+        // Initialize decryption
+        let init_result: i32 = EVP_DecryptInit_ex(
+            ctx, 
+            EVP_aes_256_gcm(), 
+            null, 
+            key.ptr, 
+            nonce_ptr
+        );
+        
+        if init_result != 1 {
+            EVP_CIPHER_CTX_free(ctx);
+            return Result.Err(CryptoError.DecryptionFailed);
+        }
+        
+        // Set expected tag
+        let tag_result: i32 = EVP_CIPHER_CTX_ctrl(
+            ctx,
+            17,  // EVP_CTRL_GCM_SET_TAG
+            AES_GCM_TAG_SIZE as i32,
+            tag_ptr as *mut void
+        );
+        
+        if tag_result != 1 {
+            EVP_CIPHER_CTX_free(ctx);
+            return Result.Err(CryptoError.DecryptionFailed);
+        }
+        
+        // Allocate output buffer
+        let output_ptr: *mut u8 = core.alloc(encrypted_data_len, core.MemoryZone.GC) as *mut u8;
+        if output_ptr == null {
+            EVP_CIPHER_CTX_free(ctx);
+            return Result.Err(CryptoError.Other("Failed to allocate output buffer"));
+        }
+        
+        // Decrypt
+        let mut outlen: i32 = 0;
+        let decrypt_result: i32 = EVP_DecryptUpdate(
+            ctx,
+            output_ptr,
+            &mut outlen,
+            encrypted_data_ptr,
+            encrypted_data_len as i32
+        );
+        
+        if decrypt_result != 1 {
+            EVP_CIPHER_CTX_free(ctx);
+            return Result.Err(CryptoError.DecryptionFailed);
+        }
+        
+        // Finalize and verify tag
+        let mut final_len: i32 = 0;
+        let final_result: i32 = EVP_DecryptFinal_ex(
+            ctx,
+            output_ptr + (outlen as usize),
+            &mut final_len
+        );
+        
+        EVP_CIPHER_CTX_free(ctx);
+        
+        if final_result != 1 {
+            return Result.Err(CryptoError.AuthenticationFailed);
+        }
+        
+        // Create output slice
+        let mut plaintext: []u8 = [];
+        let mut i: usize = 0;
+        while i < (outlen as usize) {
+            plaintext.push(*(output_ptr + i));
+            i = i + 1;
+        }
+        
+        return Result.Ok(plaintext);
+    }
+}
+
+// ============================================================================
+// Symmetric Encryption - ChaCha20-Poly1305
+// ============================================================================
+
+// ChaCha20-Poly1305 encryption
+fn chacha20_poly1305_encrypt(plaintext: []u8, key: []u8) -> Result<[]u8, CryptoError> {
+    extern "libcrypto" fn EVP_CIPHER_CTX_new(none) -> *mut void;
+    extern "libcrypto" fn EVP_CIPHER_CTX_free(ctx: *mut void) -> void;
+    extern "libcrypto" fn EVP_chacha20_poly1305(none) -> *const void;
+    extern "libcrypto" fn EVP_EncryptInit_ex(
+        ctx: *mut void, 
+        cipher: *const void, 
+        impl: *mut void, 
+        key: *const u8, 
+        iv: *const u8
+    ) -> i32;
+    extern "libcrypto" fn EVP_EncryptUpdate(
+        ctx: *mut void, 
+        out: *mut u8, 
+        outl: *mut i32, 
+        in: *const u8, 
+        inl: i32
+    ) -> i32;
+    extern "libcrypto" fn EVP_EncryptFinal_ex(
+        ctx: *mut void, 
+        out: *mut u8, 
+        outl: *mut i32
+    ) -> i32;
+    extern "libcrypto" fn EVP_CIPHER_CTX_ctrl(
+        ctx: *mut void, 
+        type: i32, 
+        arg: i32, 
+        ptr: *mut void
+    ) -> i32;
+    
+    // Validate key size
+    if key.len != CHACHA20_KEY_SIZE {
+        return Result.Err(CryptoError.InvalidKeySize(key.len));
+    }
+    
+    // Generate random nonce
+    let nonce_result: Result<[]u8, CryptoError> = random_bytes(CHACHA20_NONCE_SIZE);
+    let nonce: []u8 = match nonce_result {
+        Result.Ok(n) => n
+        Result.Err(error) => return Result.Err(error)
+    };
+    
+    unsafe {
+        let ctx: *mut void = EVP_CIPHER_CTX_new();
+        if ctx == null {
+            return Result.Err(CryptoError.EncryptionFailed);
+        }
+        
+        // Initialize encryption
+        let init_result: i32 = EVP_EncryptInit_ex(
+            ctx, 
+            EVP_chacha20_poly1305(), 
+            null, 
+            key.ptr, 
+            nonce.ptr
+        );
+        
+        if init_result != 1 {
+            EVP_CIPHER_CTX_free(ctx);
+            return Result.Err(CryptoError.EncryptionFailed);
+        }
+        
+        // Allocate output buffer (nonce + ciphertext + tag)
+        let output_size: usize = CHACHA20_NONCE_SIZE + plaintext.len + CHACHA20_POLY1305_TAG_SIZE;
+        let output_ptr: *mut u8 = core.alloc(output_size, core.MemoryZone.GC) as *mut u8;
+        if output_ptr == null {
+            EVP_CIPHER_CTX_free(ctx);
+            return Result.Err(CryptoError.Other("Failed to allocate output buffer"));
+        }
+        
+        // Copy nonce to output
+        let mut i: usize = 0;
+        while i < CHACHA20_NONCE_SIZE {
+            *(output_ptr + i) = nonce[i];
+            i = i + 1;
+        }
+        
+        // Encrypt plaintext
+        let mut outlen: i32 = 0;
+        let encrypt_result: i32 = EVP_EncryptUpdate(
+            ctx,
+            output_ptr + CHACHA20_NONCE_SIZE,
+            &mut outlen,
+            plaintext.ptr,
+            plaintext.len as i32
+        );
+        
+        if encrypt_result != 1 {
+            EVP_CIPHER_CTX_free(ctx);
+            return Result.Err(CryptoError.EncryptionFailed);
+        }
+        
+        // Finalize encryption
+        let mut final_len: i32 = 0;
+        let final_result: i32 = EVP_EncryptFinal_ex(
+            ctx,
+            output_ptr + CHACHA20_NONCE_SIZE + (outlen as usize),
+            &mut final_len
+        );
+        
+        if final_result != 1 {
+            EVP_CIPHER_CTX_free(ctx);
+            return Result.Err(CryptoError.EncryptionFailed);
+        }
+        
+        // Get authentication tag
+        let tag_result: i32 = EVP_CIPHER_CTX_ctrl(
+            ctx,
+            16,  // EVP_CTRL_AEAD_GET_TAG
+            CHACHA20_POLY1305_TAG_SIZE as i32,
+            output_ptr + CHACHA20_NONCE_SIZE + plaintext.len
+        );
+        
+        if tag_result != 1 {
+            EVP_CIPHER_CTX_free(ctx);
+            return Result.Err(CryptoError.EncryptionFailed);
+        }
+        
+        EVP_CIPHER_CTX_free(ctx);
+        
+        // Create output slice
+        let mut output: []u8 = [];
+        let mut j: usize = 0;
+        while j < output_size {
+            output.push(*(output_ptr + j));
+            j = j + 1;
+        }
+        
+        return Result.Ok(output);
+    }
+}
+
+// ChaCha20-Poly1305 decryption
+fn chacha20_poly1305_decrypt(ciphertext: []u8, key: []u8) -> Result<[]u8, CryptoError> {
+    extern "libcrypto" fn EVP_CIPHER_CTX_new(none) -> *mut void;
+    extern "libcrypto" fn EVP_CIPHER_CTX_free(ctx: *mut void) -> void;
+    extern "libcrypto" fn EVP_chacha20_poly1305(none) -> *const void;
+    extern "libcrypto" fn EVP_DecryptInit_ex(
+        ctx: *mut void, 
+        cipher: *const void, 
+        impl: *mut void, 
+        key: *const u8, 
+        iv: *const u8
+    ) -> i32;
+    extern "libcrypto" fn EVP_DecryptUpdate(
+        ctx: *mut void, 
+        out: *mut u8, 
+        outl: *mut i32, 
+        in: *const u8, 
+        inl: i32
+    ) -> i32;
+    extern "libcrypto" fn EVP_DecryptFinal_ex(
+        ctx: *mut void, 
+        out: *mut u8, 
+        outl: *mut i32
+    ) -> i32;
+    extern "libcrypto" fn EVP_CIPHER_CTX_ctrl(
+        ctx: *mut void, 
+        type: i32, 
+        arg: i32, 
+        ptr: *mut void
+    ) -> i32;
+    
+    // Validate inputs
+    if key.len != CHACHA20_KEY_SIZE {
+        return Result.Err(CryptoError.InvalidKeySize(key.len));
+    }
+    
+    let min_size: usize = CHACHA20_NONCE_SIZE + CHACHA20_POLY1305_TAG_SIZE;
+    if ciphertext.len < min_size {
+        return Result.Err(CryptoError.InvalidInput("Ciphertext too short"));
+    }
+    
+    unsafe {
+        let ctx: *mut void = EVP_CIPHER_CTX_new();
+        if ctx == null {
+            return Result.Err(CryptoError.DecryptionFailed);
+        }
+        
+        // Extract components
+        let nonce_ptr: *const u8 = ciphertext.ptr;
+        let tag_ptr: *const u8 = ciphertext.ptr + ciphertext.len - CHACHA20_POLY1305_TAG_SIZE;
+        let encrypted_data_ptr: *const u8 = ciphertext.ptr + CHACHA20_NONCE_SIZE;
+        let encrypted_data_len: usize = ciphertext.len - CHACHA20_NONCE_SIZE - CHACHA20_POLY1305_TAG_SIZE;
+        
+        // Initialize decryption
+        let init_result: i32 = EVP_DecryptInit_ex(
+            ctx, 
+            EVP_chacha20_poly1305(), 
+            null, 
+            key.ptr, 
+            nonce_ptr
+        );
+        
+        if init_result != 1 {
+            EVP_CIPHER_CTX_free(ctx);
+            return Result.Err(CryptoError.DecryptionFailed);
+        }
+        
+        // Set expected tag
+        let tag_result: i32 = EVP_CIPHER_CTX_ctrl(
+            ctx,
+            17,  // EVP_CTRL_AEAD_SET_TAG
+            CHACHA20_POLY1305_TAG_SIZE as i32,
+            tag_ptr as *mut void
+        );
+        
+        if tag_result != 1 {
+            EVP_CIPHER_CTX_free(ctx);
+            return Result.Err(CryptoError.DecryptionFailed);
+        }
+        
+        // Allocate output buffer
+        let output_ptr: *mut u8 = core.alloc(encrypted_data_len, core.MemoryZone.GC) as *mut u8;
+        if output_ptr == null {
+            EVP_CIPHER_CTX_free(ctx);
+            return Result.Err(CryptoError.Other("Failed to allocate output buffer"));
+        }
+        
+        // Decrypt
+        let mut outlen: i32 = 0;
+        let decrypt_result: i32 = EVP_DecryptUpdate(
+            ctx,
+            output_ptr,
+            &mut outlen,
+            encrypted_data_ptr,
+            encrypted_data_len as i32
+        );
+        
+        if decrypt_result != 1 {
+            EVP_CIPHER_CTX_free(ctx);
+            return Result.Err(CryptoError.DecryptionFailed);
+        }
+        
+        // Finalize and verify tag
+        let mut final_len: i32 = 0;
+        let final_result: i32 = EVP_DecryptFinal_ex(
+            ctx,
+            output_ptr + (outlen as usize),
+            &mut final_len
+        );
+        
+        EVP_CIPHER_CTX_free(ctx);
+        
+        if final_result != 1 {
+            return Result.Err(CryptoError.AuthenticationFailed);
+        }
+        
+        // Create output slice
+        let mut plaintext: []u8 = [];
+        let mut i: usize = 0;
+        while i < (outlen as usize) {
+            plaintext.push(*(output_ptr + i));
+            i = i + 1;
+        }
+        
+        return Result.Ok(plaintext);
+    }
+}
+
+// ============================================================================
+// Cryptographic Hash Functions
+// ============================================================================
+
+// SHA-256 hash function
+fn sha256(data: []u8) -> Result<[]u8, CryptoError> {
+    extern "libcrypto" fn EVP_MD_CTX_new(none) -> *mut void;
+    extern "libcrypto" fn EVP_MD_CTX_free(ctx: *mut void) -> void;
+    extern "libcrypto" fn EVP_sha256(none) -> *const void;
+    extern "libcrypto" fn EVP_DigestInit_ex(
+        ctx: *mut void, 
+        type: *const void, 
+        impl: *mut void
+    ) -> i32;
+    extern "libcrypto" fn EVP_DigestUpdate(
+        ctx: *mut void, 
+        d: *const void, 
+        cnt: usize
+    ) -> i32;
+    extern "libcrypto" fn EVP_DigestFinal_ex(
+        ctx: *mut void, 
+        md: *mut u8, 
+        s: *mut u32
+    ) -> i32;
+    
+    unsafe {
+        let ctx: *mut void = EVP_MD_CTX_new();
+        if ctx == null {
+            return Result.Err(CryptoError.HashingFailed);
+        }
+        
+        let init_result: i32 = EVP_DigestInit_ex(ctx, EVP_sha256(), null);
+        if init_result != 1 {
+            EVP_MD_CTX_free(ctx);
+            return Result.Err(CryptoError.HashingFailed);
+        }
+        
+        let update_result: i32 = EVP_DigestUpdate(ctx, data.ptr as *const void, data.len);
+        if update_result != 1 {
+            EVP_MD_CTX_free(ctx);
+            return Result.Err(CryptoError.HashingFailed);
+        }
+        
+        let mut hash: [32]u8 = [0; 32];
+        let mut hash_len: u32 = 0;
+        let final_result: i32 = EVP_DigestFinal_ex(ctx, &mut hash[0], &mut hash_len);
+        
+        EVP_MD_CTX_free(ctx);
+        
+        if final_result != 1 || hash_len != SHA256_SIZE as u32 {
+            return Result.Err(CryptoError.HashingFailed);
+        }
+        
+        // Convert array to slice
+        let mut result: []u8 = [];
+        let mut i: usize = 0;
+        while i < SHA256_SIZE {
+            result.push(hash[i]);
+            i = i + 1;
+        }
+        
+        return Result.Ok(result);
+    }
+}
+
+// SHA-512 hash function
+fn sha512(data: []u8) -> Result<[]u8, CryptoError> {
+    extern "libcrypto" fn EVP_MD_CTX_new(none) -> *mut void;
+    extern "libcrypto" fn EVP_MD_CTX_free(ctx: *mut void) -> void;
+    extern "libcrypto" fn EVP_sha512(none) -> *const void;
+    extern "libcrypto" fn EVP_DigestInit_ex(
+        ctx: *mut void, 
+        type: *const void, 
+        impl: *mut void
+    ) -> i32;
+    extern "libcrypto" fn EVP_DigestUpdate(
+        ctx: *mut void, 
+        d: *const void, 
+        cnt: usize
+    ) -> i32;
+    extern "libcrypto" fn EVP_DigestFinal_ex(
+        ctx: *mut void, 
+        md: *mut u8, 
+        s: *mut u32
+    ) -> i32;
+    
+    unsafe {
+        let ctx: *mut void = EVP_MD_CTX_new();
+        if ctx == null {
+            return Result.Err(CryptoError.HashingFailed);
+        }
+        
+        let init_result: i32 = EVP_DigestInit_ex(ctx, EVP_sha512(), null);
+        if init_result != 1 {
+            EVP_MD_CTX_free(ctx);
+            return Result.Err(CryptoError.HashingFailed);
+        }
+        
+        let update_result: i32 = EVP_DigestUpdate(ctx, data.ptr as *const void, data.len);
+        if update_result != 1 {
+            EVP_MD_CTX_free(ctx);
+            return Result.Err(CryptoError.HashingFailed);
+        }
+        
+        let mut hash: [64]u8 = [0; 64];
+        let mut hash_len: u32 = 0;
+        let final_result: i32 = EVP_DigestFinal_ex(ctx, &mut hash[0], &mut hash_len);
+        
+        EVP_MD_CTX_free(ctx);
+        
+        if final_result != 1 || hash_len != SHA512_SIZE as u32 {
+            return Result.Err(CryptoError.HashingFailed);
+        }
+        
+        // Convert array to slice
+        let mut result: []u8 = [];
+        let mut i: usize = 0;
+        while i < SHA512_SIZE {
+            result.push(hash[i]);
+            i = i + 1;
+        }
+        
+        return Result.Ok(result);
+    }
+}
+
+// ============================================================================
+// Message Authentication Codes (HMAC)
+// ============================================================================
+
+// HMAC-SHA256
+fn hmac_sha256(data: []u8, key: []u8) -> Result<[]u8, CryptoError> {
+    extern "libcrypto" fn HMAC(
+        evp_md: *const void,
+        key: *const void,
+        key_len: i32,
+        d: *const u8,
+        n: usize,
+        md: *mut u8,
+        md_len: *mut u32
+    ) -> *mut u8;
+    extern "libcrypto" fn EVP_sha256(none) -> *const void;
+    
+    if key.len < HMAC_KEY_MIN_SIZE {
+        return Result.Err(CryptoError.InvalidKeySize(key.len));
+    }
+    
+    unsafe {
+        let mut hmac_result: [32]u8 = [0; 32];
+        let mut hmac_len: u32 = 0;
+        
+        let result_ptr: *mut u8 = HMAC(
+            EVP_sha256(),
+            key.ptr as *const void,
+            key.len as i32,
+            data.ptr,
+            data.len,
+            &mut hmac_result[0],
+            &mut hmac_len
+        );
+        
+        if result_ptr == null || hmac_len != HMAC_SHA256_SIZE as u32 {
+            return Result.Err(CryptoError.HashingFailed);
+        }
+        
+        // Convert array to slice
+        let mut result: []u8 = [];
+        let mut i: usize = 0;
+        while i < HMAC_SHA256_SIZE {
+            result.push(hmac_result[i]);
+            i = i + 1;
+        }
+        
+        return Result.Ok(result);
+    }
+}
+
+// HMAC-SHA512
+fn hmac_sha512(data: []u8, key: []u8) -> Result<[]u8, CryptoError> {
+    extern "libcrypto" fn HMAC(
+        evp_md: *const void,
+        key: *const void,
+        key_len: i32,
+        d: *const u8,
+        n: usize,
+        md: *mut u8,
+        md_len: *mut u32
+    ) -> *mut u8;
+    extern "libcrypto" fn EVP_sha512(none) -> *const void;
+    
+    if key.len < HMAC_KEY_MIN_SIZE {
+        return Result.Err(CryptoError.InvalidKeySize(key.len));
+    }
+    
+    unsafe {
+        let mut hmac_result: [64]u8 = [0; 64];
+        let mut hmac_len: u32 = 0;
+        
+        let result_ptr: *mut u8 = HMAC(
+            EVP_sha512(),
+            key.ptr as *const void,
+            key.len as i32,
+            data.ptr,
+            data.len,
+            &mut hmac_result[0],
+            &mut hmac_len
+        );
+        
+        if result_ptr == null || hmac_len != HMAC_SHA512_SIZE as u32 {
+            return Result.Err(CryptoError.HashingFailed);
+        }
+        
+        // Convert array to slice
+        let mut result: []u8 = [];
+        let mut i: usize = 0;
+        while i < HMAC_SHA512_SIZE {
+            result.push(hmac_result[i]);
+            i = i + 1;
+        }
+        
+        return Result.Ok(result);
+    }
+}
+
+// ============================================================================
+// Key Derivation Functions
+// ============================================================================
+
+// PBKDF2 with SHA-256
+fn pbkdf2_sha256(password: []u8, salt: []u8, iterations: u32, key_length: usize) -> Result<[]u8, CryptoError> {
+    extern "libcrypto" fn PKCS5_PBKDF2_HMAC(
+        pass: *const u8,
+        passlen: i32,
+        salt: *const u8,
+        saltlen: i32,
+        iter: i32,
+        digest: *const void,
+        keylen: i32,
+        out: *mut u8
+    ) -> i32;
+    extern "libcrypto" fn EVP_sha256(none) -> *const void;
+    
+    if iterations < 10000 {
+        return Result.Err(CryptoError.InvalidInput("Iterations too low (minimum 10000)"));
+    }
+    
+    if key_length == 0 || key_length > 1024 {
+        return Result.Err(CryptoError.InvalidInput("Invalid key length"));
+    }
+    
+    if salt.len < 16 {
+        return Result.Err(CryptoError.InvalidInput("Salt too short (minimum 16 bytes)"));
+    }
+    
+    unsafe {
+        let output_ptr: *mut u8 = core.alloc(key_length, core.MemoryZone.GC) as *mut u8;
+        if output_ptr == null {
+            return Result.Err(CryptoError.Other("Failed to allocate output buffer"));
+        }
+        
+        let result: i32 = PKCS5_PBKDF2_HMAC(
+            password.ptr,
+            password.len as i32,
+            salt.ptr,
+            salt.len as i32,
+            iterations as i32,
+            EVP_sha256(),
+            key_length as i32,
+            output_ptr
+        );
+        
+        if result != 1 {
+            return Result.Err(CryptoError.KeyDerivationFailed);
+        }
+        
+        // Create output slice
+        let mut derived_key: []u8 = [];
+        let mut i: usize = 0;
+        while i < key_length {
+            derived_key.push(*(output_ptr + i));
+            i = i + 1;
+        }
+        
+        return Result.Ok(derived_key);
+    }
+}
+
+// ============================================================================
+// Constant-Time Operations
+// ============================================================================
+
+// Constant-time memory comparison to prevent timing attacks
+#[constant_time]
+fn constant_time_compare(a: []u8, b: []u8) -> bool {
+    extern "asthra_runtime" fn asthra_constant_time_memcmp(
+        a: *const u8, 
+        b: *const u8, 
+        len: usize
+    ) -> i32;
+    
+    if a.len != b.len {
+        return false;
+    }
+    
+    unsafe {
+        let result: i32 = asthra_constant_time_memcmp(a.ptr, b.ptr, a.len);
+        return result == 0;
+    }
+}
+
+// Secure memory zeroing to prevent sensitive data leakage
+#[volatile_memory]
+fn secure_zero(data: []u8) -> void {
+    extern "asthra_runtime" fn asthra_secure_zero(ptr: *mut void, size: usize) -> void;
+    
+    unsafe {
+        asthra_secure_zero(data.ptr as *mut void, data.len);
+    }
+}
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+// Convert bytes to hexadecimal string
+fn bytes_to_hex(data: []u8) -> string {
+    let hex_chars: string = "0123456789abcdef";
+    let mut result: string = "";
+    
+    let mut i: usize = 0;
+    while i < data.len {
+        let byte: u8 = data[i];
+        let high: usize = (byte >> 4) as usize;
+        let low: usize = (byte & 0x0F) as usize;
+        
+        result = result + hex_chars[high] + hex_chars[low];
+        i = i + 1;
+    }
+    
+    return result;
+}
+
+// Convert hexadecimal string to bytes
+fn hex_to_bytes(hex: string) -> Result<[]u8, CryptoError> {
+    if hex.len % 2 != 0 {
+        return Result.Err(CryptoError.InvalidInput("Hex string length must be even"));
+    }
+    
+    let mut result: []u8 = [];
+    let mut i: usize = 0;
+    
+    while i < hex.len {
+        let high_char: char = hex[i];
+        let low_char: char = hex[i + 1];
+        
+        let high_val: u8 = match high_char {
+            '0' => 0, '1' => 1, '2' => 2, '3' => 3, '4' => 4
+            '5' => 5, '6' => 6, '7' => 7, '8' => 8, '9' => 9
+            'a' | 'A' => 10, 'b' | 'B' => 11, 'c' | 'C' => 12
+            'd' | 'D' => 13, 'e' | 'E' => 14, 'f' | 'F' => 15
+            _ => return Result.Err(CryptoError.InvalidInput("Invalid hex character"))
+        };
+        
+        let low_val: u8 = match low_char {
+            '0' => 0, '1' => 1, '2' => 2, '3' => 3, '4' => 4
+            '5' => 5, '6' => 6, '7' => 7, '8' => 8, '9' => 9
+            'a' | 'A' => 10, 'b' | 'B' => 11, 'c' | 'C' => 12
+            'd' | 'D' => 13, 'e' | 'E' => 14, 'f' | 'F' => 15
+            _ => return Result.Err(CryptoError.InvalidInput("Invalid hex character"))
+        };
+        
+        let byte: u8 = (high_val << 4) | low_val;
+        result.push(byte);
+        
+        i = i + 2;
+    }
+    
+    return Result.Ok(result);
+}
+
+// Generate a random salt for password hashing
+fn generate_salt(none) -> Result<[]u8, CryptoError> {
+    return random_bytes(32);  // 256-bit salt
+}
+
+// ============================================================================
+// High-Level Convenience Functions
+// ============================================================================
+
+// Encrypt data with AES-256-GCM (recommended for most use cases)
+fn encrypt(plaintext: []u8, key: []u8) -> Result<[]u8, CryptoError> {
+    return aes_gcm_encrypt(plaintext, key);
+}
+
+// Decrypt data with AES-256-GCM
+fn decrypt(ciphertext: []u8, key: []u8) -> Result<[]u8, CryptoError> {
+    return aes_gcm_decrypt(ciphertext, key);
+}
+
+// Hash data with SHA-256 (recommended for most use cases)
+fn hash(data: []u8) -> Result<[]u8, CryptoError> {
+    return sha256(data);
+}
+
+// Create message authentication code with HMAC-SHA256
+fn authenticate(data: []u8, key: []u8) -> Result<[]u8, CryptoError> {
+    return hmac_sha256(data, key);
+}
+
+// Verify message authentication code
+fn verify_authentication(data: []u8, key: []u8, expected_mac: []u8) -> Result<bool, CryptoError> {
+    let computed_mac_result: Result<[]u8, CryptoError> = hmac_sha256(data, key);
+    let computed_mac: []u8 = match computed_mac_result {
+        Result.Ok(mac) => mac
+        Result.Err(error) => return Result.Err(error)
+    };
+    
+    let is_valid: bool = constant_time_compare(computed_mac, expected_mac);
+    return Result.Ok(is_valid);
+} 

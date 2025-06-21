@@ -1,0 +1,13 @@
+# AsthraConfig.cmake - Config file for the Asthra package
+
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/AsthraTargets.cmake")
+
+# Provide old-style variables
+set(ASTHRA_INCLUDE_DIRS "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@/asthra")
+set(ASTHRA_LIBRARIES Asthra::asthra Asthra::asthra_runtime)
+set(ASTHRA_FOUND TRUE)
+
+# Check required components
+check_required_components(Asthra)

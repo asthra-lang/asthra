@@ -1,0 +1,19 @@
+# Immediate Flash Attention Fix Commands for Ubuntu 22.04.5 LTS
+# Run these commands one by one in your terminal:
+
+# 1. Install build dependencies
+pip install --upgrade pip setuptools wheel ninja
+
+# 2. Clean previous installations  
+pip uninstall -y flash-attn
+
+# 3. Install Flash Attention from source
+export FLASH_ATTENTION_FORCE_BUILD=TRUE
+export MAX_JOBS=4
+pip install flash-attn --no-build-isolation
+
+# 4. Test installation
+python -c "import flash_attn; print('✅ Flash Attention installed successfully')"
+
+# Alternative if the above fails:
+# pip install flash-attn --find-links https://github.com/Dao-AILab/flash-attention/releases 

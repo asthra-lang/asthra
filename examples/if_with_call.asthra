@@ -1,0 +1,13 @@
+package main;
+
+fn my_function(none) -> void {
+    // stub
+}
+
+fn main(none) -> i32 {
+    let flag: bool = true;
+    if flag {
+        my_function();
+    }
+    return 0;
+} 

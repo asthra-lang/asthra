@@ -1,0 +1,13 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#ffffff"/>
+  
+  <!-- Thick Circle with Arrow Head (centered) -->
+  <g transform="translate(600, 315)">
+    <!-- Thick circle -->
+    <circle cx="0" cy="0" r="150" fill="none" stroke="#2c3e50" stroke-width="20"/>
+    
+    <!-- Arrow head touching circle boundaries -->
+    <path d="M150 0 L-80 -110 L-80 -35 L40 0 L-80 35 L-80 110 Z" fill="#2c3e50"/>
+  </g>
+</svg> 

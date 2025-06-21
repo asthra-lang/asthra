@@ -1,0 +1,102 @@
+// Asthra Standard Library - Hash Table Optimized Functions
+package stdlib::hash;
+
+// Hash table hasher with DoS protection
+pub struct TableHasher {
+    pub siphash_key: SipHashKey,
+    pub use_siphash: bool,
+    pub dos_protection: bool,
+}
+
+// Create new table hasher with DoS protection enabled
+pub fn new_table_hasher(none) -> TableHasher {
+    return TableHasher {
+        siphash_key: generate_key(none),
+        use_siphash: true,
+        dos_protection: true,
+    };
+}
+
+// Create table hasher with custom key (for reproducible hashing)
+pub fn new_table_hasher_with_key(key: SipHashKey) -> TableHasher {
+    return TableHasher {
+        siphash_key: key,
+        use_siphash: true,
+        dos_protection: false,  // Custom key disables DoS protection
+    };
+}
+
+// Create table hasher without DoS protection (faster but vulnerable)
+pub fn new_table_hasher_fast(none) -> TableHasher {
+    return TableHasher {
+        siphash_key: key_from_u64(0, 0),
+        use_siphash: false,
+        dos_protection: false,
+    };
+}
+
+// Hash for hash table usage
+pub fn table_hash(hasher: TableHasher, data: []u8) -> u64 {
+    if hasher.use_siphash {
+        return siphash_24(data, hasher.siphash_key);
+    } else {
+        return fnv1a_64(data);
+    }
+}
+
+// Hash string for hash table usage
+pub fn table_hash_string(hasher: TableHasher, s: string) -> u64 {
+    return table_hash(hasher, string_to_bytes(s));
+}
+
+// Hash with automatic resize detection
+pub fn table_hash_with_stats(hasher: TableHasher, data: []u8, stats: *mut TableHashStats) -> u64 {
+    let hash: u64 = table_hash(hasher, data);
+    
+    // Update statistics
+    stats.total_hashes = stats.total_hashes + 1;
+    if hasher.dos_protection {
+        stats.protected_hashes = stats.protected_hashes + 1;
+    }
+    
+    return hash;
+}
+
+// Hash table statistics for monitoring
+pub struct TableHashStats {
+    pub total_hashes: u64,
+    pub protected_hashes: u64,
+    pub collision_count: u64,
+    pub resize_count: u64,
+}
+
+// Initialize hash table statistics
+pub fn new_table_stats(none) -> TableHashStats {
+    return TableHashStats {
+        total_hashes: 0,
+        protected_hashes: 0,
+        collision_count: 0,
+        resize_count: 0,
+    };
+}
+
+// Get DoS protection ratio
+pub fn get_protection_ratio(stats: TableHashStats) -> f64 {
+    if stats.total_hashes == 0 {
+        return 0.0;
+    }
+    return stats.protected_hashes as f64 / stats.total_hashes as f64;
+}
+
+// Detect potential DoS attack patterns
+pub fn detect_dos_attack(stats: TableHashStats, threshold: f64) -> bool {
+    if stats.total_hashes < 1000 {
+        return false;  // Not enough data
+    }
+    
+    let collision_rate: f64 = stats.collision_count as f64 / stats.total_hashes as f64;
+    return collision_rate > threshold;
+}
+
+// External functions
+extern fn string_to_bytes(s: string) -> []u8; 

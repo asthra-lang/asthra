@@ -1,0 +1,99 @@
+// Example usage of the stdlib/hash package
+package main;
+
+import "stdlib/hash";
+
+pub fn main(none) -> i32 {
+    // =============================================================================
+    // Basic String Hashing
+    // =============================================================================
+    
+    // Simple string hashing with default settings
+    let simple_hash: u64 = hash.hash_string("hello world");
+    log("Simple hash of 'hello world': " + string(simple_hash));
+    
+    // =============================================================================
+    // SipHash Examples
+    // =============================================================================
+    
+    // Generate a random SipHash key
+    let key: hash.SipHashKey = hash.generate_key(none);
+    log("Generated SipHash key: k0=" + string(key.k0) + ", k1=" + string(key.k1));
+    
+    // Hash with specific SipHash variant
+    let data: string = "Hello, SipHash!";
+    let hash_24: u64 = hash.siphash_24(string_to_bytes(data), key);
+    let hash_13: u64 = hash.siphash_13(string_to_bytes(data), key);
+    
+    log("SipHash-2-4: " + string(hash_24));
+    log("SipHash-1-3: " + string(hash_13));
+    
+    // =============================================================================
+    // Configuration-Based Hashing
+    // =============================================================================
+    
+    // Create configuration for SipHash-2-4
+    let config: hash.HashConfig = hash.config_with_function(hash.HashFunction.SipHash_2_4);
+    
+    // Hash with configuration
+    match hash.hash_string_config("test data", config) {
+        hash.HashResult.Ok(result) => {
+            log("Configured hash result: " + string(result));
+        },
+        hash.HashResult.InvalidInput(msg) => {
+            log("Invalid input: " + msg);
+        },
+        hash.HashResult.InternalError(msg) => {
+            log("Internal error: " + msg);
+        },
+    }
+    
+    // =============================================================================
+    // Hash Table Usage
+    // =============================================================================
+    
+    // Create table hasher with DoS protection
+    let table_hasher: hash.TableHasher = hash.new_table_hasher(none);
+    let table_stats: hash.TableHashStats = hash.new_table_stats(none);
+    
+    // Hash data for hash table usage
+    let table_hash: u64 = hash.table_hash_with_stats(
+        table_hasher, 
+        string_to_bytes("table key"), 
+        &mut table_stats
+    );
+    
+    log("Table hash: " + string(table_hash));
+    log("DoS protection ratio: " + string(hash.get_protection_ratio(table_stats)));
+    
+    // =============================================================================
+    // FNV Hashing
+    // =============================================================================
+    
+    // FNV-1a hashing for compatibility
+    let fnv_hash: u64 = hash.fnv1a_64(string_to_bytes("FNV test data"));
+    log("FNV-1a hash: " + string(fnv_hash));
+    
+    // =============================================================================
+    // Streaming Interface
+    // =============================================================================
+    
+    // Create streaming context
+    let mut ctx: hash.SipHashContext = hash.new_context(key, hash.SipHashVariant.SipHash_2_4);
+    
+    // Update with data chunks
+    hash.update(&mut ctx, string_to_bytes("chunk 1 "));
+    hash.update(&mut ctx, string_to_bytes("chunk 2 "));
+    hash.update(&mut ctx, string_to_bytes("chunk 3"));
+    
+    // Finalize and get result
+    let streaming_hash: u64 = hash.finalize(&mut ctx);
+    log("Streaming hash result: " + string(streaming_hash));
+    
+    return 0;
+}
+
+// External function for string conversion
+extern fn string_to_bytes(s: string) -> []u8;
+extern fn string(value: u64) -> string;
+extern fn log(message: string) -> void; 

@@ -1,0 +1,126 @@
+// Asthra Import System Examples
+// Demonstrates different types of package imports
+
+package import_examples;
+
+// ============================================================================
+// Standard Library Imports
+// ============================================================================
+
+// Core runtime functionality
+import "stdlib/asthra/core";
+import "stdlib/asthra/panic";
+import "stdlib/asthra/fs";
+import "stdlib/asthra/env";
+import "stdlib/asthra/collections";
+import "stdlib/datetime/time";
+
+// String processing
+import "stdlib/string";
+
+// ============================================================================
+// Internal Package Imports (RESTRICTED)
+// ============================================================================
+
+// These imports would only be allowed in stdlib or other internal packages
+// User code cannot import internal packages - this would cause a compile error
+// 
+// import "internal/runtime/memory_allocator";     // ❌ FORBIDDEN in user code
+// import "internal/unicode/utf8_validator";       // ❌ FORBIDDEN in user code
+
+// ============================================================================
+// Third-Party Package Imports
+// ============================================================================
+
+// GitHub packages
+import "github.com/baijum/mypkg";
+import "github.com/asthra-lang/json";
+import "github.com/asthra-lang/http";
+
+// GitLab packages
+import "gitlab.com/company/internal-lib";
+
+// Other Git hosting
+import "bitbucket.org/team/utility";
+import "codeberg.org/user/package";
+
+// Custom domains with Git
+import "git.example.com/org/package";
+
+// ============================================================================
+// Example Usage
+// ============================================================================
+
+fn main(none) -> i32 {
+    // Use stdlib packages
+    let version: string = core.runtime_version();
+    let trimmed: string = string.trim("  hello world  ");
+    
+    // Use third-party packages
+    let json_data: mypkg::JsonValue = mypkg::parse_json(\"key\": \"value\");
+    let response: http::Response = http::get("https://api.example.com/data");
+    
+    return 0;
+}
+
+// ============================================================================
+// Import Rules and Restrictions
+// ============================================================================
+
+/*
+IMPORT RULES:
+
+1. STDLIB PACKAGES ("stdlib/*"):
+   - Can be imported by any code (user code, stdlib, internal)
+   - Reserved namespace - users cannot create packages starting with "stdlib/"
+   - Examples: "stdlib/string", "stdlib/asthra/core"
+
+2. INTERNAL PACKAGES ("internal/*"):
+   - Can ONLY be imported by stdlib packages or other internal packages
+   - User code attempting to import internal packages will get compile error
+   - Used for implementation details that should not be public API
+   - Examples: "internal/runtime/memory_allocator", "internal/unicode/utf8_validator"
+
+3. THIRD-PARTY PACKAGES:
+   - Domain-based imports for external packages
+   - Follow Go-style import paths
+   - Examples: "github.com/user/package", "gitlab.com/org/lib"
+   - Can be imported by any code
+
+4. LOCAL PACKAGES:
+   - Relative imports within the same project
+   - Examples: "./utils", "../common"
+   - Project-local dependencies
+
+5. IMPORT ALIASES (SYNTAX SUPPORTED, SEMANTIC ANALYSIS PENDING):
+   - Syntax: import "path/to/module" as alias_name;
+   - Examples: import "stdlib/string" as str;
+   - See examples/import_alias_examples.asthra for current implementation status
+
+COMPILATION BEHAVIOR:
+
+✅ ALLOWED:
+- User code importing stdlib packages
+- User code importing third-party packages  
+- Stdlib packages importing other stdlib packages
+- Stdlib packages importing internal packages
+- Internal packages importing stdlib packages
+- Internal packages importing other internal packages
+
+❌ FORBIDDEN (Compile Error):
+- User code importing internal packages
+- Third-party packages importing internal packages (unless explicitly allowed)
+
+EXAMPLE COMPILE ERRORS:
+
+// In user code:
+import "internal/runtime/memory_allocator";  
+// Error: Cannot import internal package 'internal/runtime/memory_allocator' from user code
+
+// In third-party package:
+import "internal/unicode/utf8_validator";
+// Error: Cannot import internal package 'internal/unicode/utf8_validator' from external package
+
+RELATED EXAMPLES:
+- See examples/import_alias_examples.asthra for import alias syntax and limitations
+*/ 

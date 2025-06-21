@@ -1,0 +1,16 @@
+[project]
+name = "simple_calculator"
+version = "1.0.0"
+description = "A simple calculator demonstrating single-package organization"
+authors = ["Asthra Developer <dev@asthra-lang.org>"]
+
+[build]
+target = "x86_64-linux"
+optimization_level = 1
+output_name = "calculator"
+
+[dependencies]
+# No external dependencies for this simple example
+
+[features]
+debug_mode = true 

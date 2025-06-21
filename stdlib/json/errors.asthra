@@ -1,0 +1,52 @@
+// Asthra Standard Library - JSON Errors Module
+// Simplified error types compatible with json-c backend
+
+package stdlib::json;
+
+// ============================================================================
+// JSON Error Enumeration
+// ============================================================================
+
+// Simplified JSON error enumeration compatible with json-c
+pub enum JSONError {
+    ParseError(string),          // JSON parsing failed
+    TypeError(string),           // Type mismatch
+    KeyNotFound(string),         // Object key not found
+    IndexOutOfBounds(usize),     // Array index invalid
+    InvalidInput(string),        // Invalid input data
+    OutOfMemory(string)          // Memory allocation failed
+}
+
+// ============================================================================
+// Error Helper Functions
+// ============================================================================
+
+// Create parse error with message
+pub fn parse_error(message: string) -> JSONError {
+    return JSONError.ParseError(message);
+}
+
+// Create type error with message
+pub fn type_error(message: string) -> JSONError {
+    return JSONError.TypeError(message);
+}
+
+// Create key not found error
+pub fn key_not_found_error(key: string) -> JSONError {
+    return JSONError.KeyNotFound(key);
+}
+
+// Create index out of bounds error
+pub fn index_out_of_bounds_error(index: usize) -> JSONError {
+    return JSONError.IndexOutOfBounds(index);
+}
+
+// Create invalid input error
+pub fn invalid_input_error(message: string) -> JSONError {
+    return JSONError.InvalidInput(message);
+}
+
+// Create out of memory error
+pub fn out_of_memory_error(message: string) -> JSONError {
+    return JSONError.OutOfMemory(message);
+} 

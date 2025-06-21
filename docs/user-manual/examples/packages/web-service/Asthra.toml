@@ -1,0 +1,18 @@
+[project]
+name = "asthra_web_service"
+version = "1.0.0"
+description = "A web service demonstrating multi-package organization"
+authors = ["Asthra Developer <dev@asthra-lang.org>"]
+
+[build]
+target = "x86_64-linux"
+optimization_level = 2
+output_name = "web_service"
+
+[dependencies]
+libc = { version = "2.0", headers = ["stdio.h", "stdlib.h"], libs = ["c"] }
+
+[features]
+debug_mode = false
+production_ready = true
+logging_enabled = true 

@@ -1,0 +1,429 @@
+/**
+ * Test file for Enum Trait Implementations
+ * Tests trait definitions and implementations for enums
+ * Part of Phase 2.3: Enum Foundation and Integration
+ * 
+ * DISABLED: Traits are not implemented in Asthra (forbidden feature per grammar.txt)
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include "parser.h"
+#include "lexer.h"
+#include "ast.h"
+
+// Test helper macros
+#define TEST_ASSERT(condition, message) \
+    do { \
+        if (!(condition)) { \
+            printf("FAIL: %s\n", message); \
+            return false; \
+        } \
+    } while(0)
+
+#define TEST_SUCCESS() \
+    do { \
+        printf("PASS\n"); \
+        return true; \
+    } while(0)
+
+// Helper function to create a parser from source code
+static Parser *create_parser_from_source(const char *source) {
+    Lexer *lexer = lexer_create(source, strlen(source), "test");
+    if (!lexer) return NULL;
+    
+    Parser *parser = parser_create(lexer);
+    if (!parser) {
+        lexer_destroy(lexer);
+        return NULL;
+    }
+    
+    return parser;
+}
+
+// Helper function to cleanup parser and lexer
+static void cleanup_parser(Parser *parser) {
+    if (parser) {
+        Lexer *lexer = parser->lexer;
+        parser_destroy(parser);
+        if (lexer) lexer_destroy(lexer);
+    }
+}
+
+// Test enum trait implementations
+static bool test_enum_trait_implementations() {
+    printf("Testing enum trait implementations... ");
+    
+    const char *source = 
+        "trait Display {\n"
+        "    fn fmt(self) -> String;\n"
+        "}\n"
+        "\n"
+        "impl Display for Direction {\n"
+        "    fn fmt(self) -> String {\n"
+        "        self.to_string()\n"
+        "    }\n"
+        "}\n"
+        "\n"
+        "trait Eq {\n"
+        "    fn eq(self, other: Self) -> bool;\n"
+        "}\n"
+        "\n"
+        "impl Eq for Direction {\n"
+        "    fn eq(self, other: Direction) -> bool {\n"
+        "        match (self, other) {\n"
+        "            (Direction.North, Direction.North) => true,\n"
+        "            (Direction.South, Direction.South) => true,\n"
+        "            (Direction.East, Direction.East) => true,\n"
+        "            (Direction.West, Direction.West) => true,\n"
+        "            _ => false\n"
+        "        }\n"
+        "    }\n"
+        "}";
+    
+    Parser *parser = create_parser_from_source(source);
+    TEST_ASSERT(parser != NULL, "Failed to create parser");
+    
+    // Parse Display trait
+    ASTNode *display_trait = parser_parse_toplevel(parser);
+    TEST_ASSERT(display_trait != NULL, "Failed to parse Display trait");
+    TEST_ASSERT(display_trait->type == AST_TRAIT_DECL, "Expected AST_TRAIT_DECL");
+    TEST_ASSERT(strcmp(display_trait->data.trait_decl.name, "Display") == 0, "Expected 'Display' trait");
+    
+    // Parse Display impl for Direction
+    ASTNode *display_impl = parser_parse_toplevel(parser);
+    TEST_ASSERT(display_impl != NULL, "Failed to parse Display impl");
+    TEST_ASSERT(display_impl->type == AST_TRAIT_IMPL_BLOCK, "Expected AST_TRAIT_IMPL_BLOCK");
+    TEST_ASSERT(strcmp(display_impl->data.trait_impl_block.trait_name, "Display") == 0, "Expected 'Display' trait");
+    TEST_ASSERT(strcmp(display_impl->data.trait_impl_block.type_name, "Direction") == 0, "Expected 'Direction' type");
+    
+    // Check fmt method implementation
+    TEST_ASSERT(display_impl->data.trait_impl_block.methods != NULL, "Expected methods");
+    TEST_ASSERT(ast_node_list_size(display_impl->data.trait_impl_block.methods) == 1, "Expected 1 method");
+    
+    ASTNode *fmt_method = ast_node_list_get(display_impl->data.trait_impl_block.methods, 0);
+    TEST_ASSERT(strcmp(fmt_method->data.function_decl.name, "fmt") == 0, "Expected 'fmt' method");
+    
+    // Parse Eq trait
+    ASTNode *eq_trait = parser_parse_toplevel(parser);
+    TEST_ASSERT(eq_trait != NULL, "Failed to parse Eq trait");
+    TEST_ASSERT(eq_trait->type == AST_TRAIT_DECL, "Expected AST_TRAIT_DECL");
+    TEST_ASSERT(strcmp(eq_trait->data.trait_decl.name, "Eq") == 0, "Expected 'Eq' trait");
+    
+    // Parse Eq impl for Direction
+    ASTNode *eq_impl = parser_parse_toplevel(parser);
+    TEST_ASSERT(eq_impl != NULL, "Failed to parse Eq impl");
+    TEST_ASSERT(eq_impl->type == AST_TRAIT_IMPL_BLOCK, "Expected AST_TRAIT_IMPL_BLOCK");
+    TEST_ASSERT(strcmp(eq_impl->data.trait_impl_block.trait_name, "Eq") == 0, "Expected 'Eq' trait");
+    TEST_ASSERT(strcmp(eq_impl->data.trait_impl_block.type_name, "Direction") == 0, "Expected 'Direction' type");
+    
+    // Check eq method implementation
+    TEST_ASSERT(ast_node_list_size(eq_impl->data.trait_impl_block.methods) == 1, "Expected 1 method");
+    
+    ASTNode *eq_method = ast_node_list_get(eq_impl->data.trait_impl_block.methods, 0);
+    TEST_ASSERT(strcmp(eq_method->data.function_decl.name, "eq") == 0, "Expected 'eq' method");
+    TEST_ASSERT(ast_node_list_size(eq_method->data.function_decl.parameters) == 2, "Expected 2 parameters (self, other)");
+    
+    ast_free_node(display_trait);
+    ast_free_node(display_impl);
+    ast_free_node(eq_trait);
+    ast_free_node(eq_impl);
+    cleanup_parser(parser);
+    TEST_SUCCESS();
+}
+
+// Test trait with multiple method signatures
+static bool test_trait_multiple_methods() {
+    printf("Testing trait with multiple methods... ");
+    
+    const char *source = 
+        "trait Iterator<T> {\n"
+        "    fn next(self) -> Option<T>;\n"
+        "    fn has_next(self) -> bool;\n"
+        "    fn reset(self);\n"
+        "}\n"
+        "\n"
+        "impl Iterator<Direction> for DirectionIterator {\n"
+        "    fn next(self) -> Option<Direction> {\n"
+        "        // Implementation here\n"
+        "        Option.None\n"
+        "    }\n"
+        "\n"
+        "    fn has_next(self) -> bool {\n"
+        "        false\n"
+        "    }\n"
+        "\n"
+        "    fn reset(self) {\n"
+        "        // Reset implementation\n"
+        "    }\n"
+        "}";
+    
+    Parser *parser = create_parser_from_source(source);
+    TEST_ASSERT(parser != NULL, "Failed to create parser");
+    
+    // Parse Iterator trait
+    ASTNode *iterator_trait = parser_parse_toplevel(parser);
+    TEST_ASSERT(iterator_trait != NULL, "Failed to parse Iterator trait");
+    TEST_ASSERT(iterator_trait->type == AST_TRAIT_DECL, "Expected AST_TRAIT_DECL");
+    TEST_ASSERT(strcmp(iterator_trait->data.trait_decl.name, "Iterator") == 0, "Expected 'Iterator' trait");
+    
+    // Check trait has type parameters
+    TEST_ASSERT(iterator_trait->data.trait_decl.type_params != NULL, "Expected type parameters");
+    TEST_ASSERT(ast_node_list_size(iterator_trait->data.trait_decl.type_params) == 1, "Expected 1 type parameter");
+    
+    ASTNode *type_param = ast_node_list_get(iterator_trait->data.trait_decl.type_params, 0);
+    TEST_ASSERT(strcmp(type_param->data.type_parameter.name, "T") == 0, "Expected 'T' type parameter");
+    
+    // Check trait methods
+    TEST_ASSERT(iterator_trait->data.trait_decl.methods != NULL, "Expected trait methods");
+    TEST_ASSERT(ast_node_list_size(iterator_trait->data.trait_decl.methods) == 3, "Expected 3 trait methods");
+    
+    // Parse Iterator impl
+    ASTNode *iterator_impl = parser_parse_toplevel(parser);
+    TEST_ASSERT(iterator_impl != NULL, "Failed to parse Iterator impl");
+    TEST_ASSERT(iterator_impl->type == AST_TRAIT_IMPL_BLOCK, "Expected AST_TRAIT_IMPL_BLOCK");
+    TEST_ASSERT(strcmp(iterator_impl->data.trait_impl_block.trait_name, "Iterator") == 0, "Expected 'Iterator' trait");
+    TEST_ASSERT(strcmp(iterator_impl->data.trait_impl_block.type_name, "DirectionIterator") == 0, "Expected 'DirectionIterator' type");
+    
+    // Check implementation methods
+    TEST_ASSERT(ast_node_list_size(iterator_impl->data.trait_impl_block.methods) == 3, "Expected 3 implementation methods");
+    
+    // Check next method
+    ASTNode *next_method = ast_node_list_get(iterator_impl->data.trait_impl_block.methods, 0);
+    TEST_ASSERT(strcmp(next_method->data.function_decl.name, "next") == 0, "Expected 'next' method");
+    TEST_ASSERT(next_method->data.function_decl.return_type->type == AST_GENERIC_TYPE, "Expected generic return type");
+    
+    // Check has_next method
+    ASTNode *has_next_method = ast_node_list_get(iterator_impl->data.trait_impl_block.methods, 1);
+    TEST_ASSERT(strcmp(has_next_method->data.function_decl.name, "has_next") == 0, "Expected 'has_next' method");
+    TEST_ASSERT(strcmp(has_next_method->data.function_decl.return_type->data.type_name.name, "bool") == 0, 
+                "Expected 'bool' return type");
+    
+    // Check reset method
+    ASTNode *reset_method = ast_node_list_get(iterator_impl->data.trait_impl_block.methods, 2);
+    TEST_ASSERT(strcmp(reset_method->data.function_decl.name, "reset") == 0, "Expected 'reset' method");
+    TEST_ASSERT(reset_method->data.function_decl.return_type == NULL, "Expected no return type (void)");
+    
+    ast_free_node(iterator_trait);
+    ast_free_node(iterator_impl);
+    cleanup_parser(parser);
+    TEST_SUCCESS();
+}
+
+// Test trait bounds and constraints
+static bool test_trait_bounds() {
+    printf("Testing trait bounds and constraints... ");
+    
+    const char *source = 
+        "trait Clone {\n"
+        "    fn clone(self) -> Self;\n"
+        "}\n"
+        "\n"
+        "trait Debug {\n"
+        "    fn debug_fmt(self) -> String;\n"
+        "}\n"
+        "\n"
+        "impl Clone for Direction {\n"
+        "    fn clone(self) -> Direction {\n"
+        "        self\n"
+        "    }\n"
+        "}\n"
+        "\n"
+        "impl Debug for Direction {\n"
+        "    fn debug_fmt(self) -> String {\n"
+        "        format!(\"Direction::{}\", self.to_string())\n"
+        "    }\n"
+        "}";
+    
+    Parser *parser = create_parser_from_source(source);
+    TEST_ASSERT(parser != NULL, "Failed to create parser");
+    
+    // Parse Clone trait
+    ASTNode *clone_trait = parser_parse_toplevel(parser);
+    TEST_ASSERT(clone_trait != NULL, "Failed to parse Clone trait");
+    TEST_ASSERT(clone_trait->type == AST_TRAIT_DECL, "Expected AST_TRAIT_DECL");
+    TEST_ASSERT(strcmp(clone_trait->data.trait_decl.name, "Clone") == 0, "Expected 'Clone' trait");
+    
+    // Check clone method uses Self return type
+    TEST_ASSERT(clone_trait->data.trait_decl.methods != NULL, "Expected trait methods");
+    ASTNode *clone_method = ast_node_list_get(clone_trait->data.trait_decl.methods, 0);
+    TEST_ASSERT(strcmp(clone_method->data.function_decl.name, "clone") == 0, "Expected 'clone' method");
+    TEST_ASSERT(strcmp(clone_method->data.function_decl.return_type->data.type_name.name, "Self") == 0, 
+                "Expected 'Self' return type");
+    
+    // Parse Debug trait
+    ASTNode *debug_trait = parser_parse_toplevel(parser);
+    TEST_ASSERT(debug_trait != NULL, "Failed to parse Debug trait");
+    TEST_ASSERT(debug_trait->type == AST_TRAIT_DECL, "Expected AST_TRAIT_DECL");
+    TEST_ASSERT(strcmp(debug_trait->data.trait_decl.name, "Debug") == 0, "Expected 'Debug' trait");
+    
+    // Parse Clone impl for Direction
+    ASTNode *clone_impl = parser_parse_toplevel(parser);
+    TEST_ASSERT(clone_impl != NULL, "Failed to parse Clone impl");
+    TEST_ASSERT(clone_impl->type == AST_TRAIT_IMPL_BLOCK, "Expected AST_TRAIT_IMPL_BLOCK");
+    TEST_ASSERT(strcmp(clone_impl->data.trait_impl_block.trait_name, "Clone") == 0, "Expected 'Clone' trait");
+    
+    // Parse Debug impl for Direction
+    ASTNode *debug_impl = parser_parse_toplevel(parser);
+    TEST_ASSERT(debug_impl != NULL, "Failed to parse Debug impl");
+    TEST_ASSERT(debug_impl->type == AST_TRAIT_IMPL_BLOCK, "Expected AST_TRAIT_IMPL_BLOCK");
+    TEST_ASSERT(strcmp(debug_impl->data.trait_impl_block.trait_name, "Debug") == 0, "Expected 'Debug' trait");
+    
+    ast_free_node(clone_trait);
+    ast_free_node(debug_trait);
+    ast_free_node(clone_impl);
+    ast_free_node(debug_impl);
+    cleanup_parser(parser);
+    TEST_SUCCESS();
+}
+
+// Test trait method calls
+static bool test_trait_method_calls() {
+    printf("Testing trait method calls... ");
+    
+    const char *source = 
+        "let dir = Direction.North;\n"
+        "let formatted = dir.fmt();\n"
+        "let is_equal = dir.eq(Direction.North);\n"
+        "let cloned = dir.clone();\n"
+        "let debug_str = dir.debug_fmt();";
+    
+    Parser *parser = create_parser_from_source(source);
+    TEST_ASSERT(parser != NULL, "Failed to create parser");
+    
+    // Parse variable declaration
+    ASTNode *dir_stmt = parser_parse_statement(parser);
+    TEST_ASSERT(dir_stmt != NULL, "Failed to parse direction statement");
+    
+    // Parse fmt call (Display trait method)
+    ASTNode *fmt_stmt = parser_parse_statement(parser);
+    TEST_ASSERT(fmt_stmt != NULL, "Failed to parse fmt statement");
+    
+    ASTNode *fmt_init = fmt_stmt->data.var_decl.initializer;
+    TEST_ASSERT(fmt_init->type == AST_METHOD_CALL, "Expected AST_METHOD_CALL");
+    TEST_ASSERT(strcmp(fmt_init->data.method_call.method_name, "fmt") == 0, "Expected 'fmt' method");
+    
+    // Parse eq call (Eq trait method)
+    ASTNode *eq_stmt = parser_parse_statement(parser);
+    TEST_ASSERT(eq_stmt != NULL, "Failed to parse eq statement");
+    
+    ASTNode *eq_init = eq_stmt->data.var_decl.initializer;
+    TEST_ASSERT(eq_init->type == AST_METHOD_CALL, "Expected AST_METHOD_CALL");
+    TEST_ASSERT(strcmp(eq_init->data.method_call.method_name, "eq") == 0, "Expected 'eq' method");
+    TEST_ASSERT(eq_init->data.method_call.arguments != NULL, "Expected arguments");
+    TEST_ASSERT(ast_node_list_size(eq_init->data.method_call.arguments) == 1, "Expected 1 argument");
+    
+    // Parse clone call (Clone trait method)
+    ASTNode *clone_stmt = parser_parse_statement(parser);
+    TEST_ASSERT(clone_stmt != NULL, "Failed to parse clone statement");
+    
+    ASTNode *clone_init = clone_stmt->data.var_decl.initializer;
+    TEST_ASSERT(clone_init->type == AST_METHOD_CALL, "Expected AST_METHOD_CALL");
+    TEST_ASSERT(strcmp(clone_init->data.method_call.method_name, "clone") == 0, "Expected 'clone' method");
+    
+    // Parse debug_fmt call (Debug trait method)
+    ASTNode *debug_stmt = parser_parse_statement(parser);
+    TEST_ASSERT(debug_stmt != NULL, "Failed to parse debug statement");
+    
+    ASTNode *debug_init = debug_stmt->data.var_decl.initializer;
+    TEST_ASSERT(debug_init->type == AST_METHOD_CALL, "Expected AST_METHOD_CALL");
+    TEST_ASSERT(strcmp(debug_init->data.method_call.method_name, "debug_fmt") == 0, "Expected 'debug_fmt' method");
+    
+    ast_free_node(dir_stmt);
+    ast_free_node(fmt_stmt);
+    ast_free_node(eq_stmt);
+    ast_free_node(clone_stmt);
+    ast_free_node(debug_stmt);
+    cleanup_parser(parser);
+    TEST_SUCCESS();
+}
+
+// Test trait inheritance and super traits
+static bool test_trait_inheritance() {
+    printf("Testing trait inheritance... ");
+    
+    const char *source = 
+        "trait PartialEq {\n"
+        "    fn eq(self, other: Self) -> bool;\n"
+        "}\n"
+        "\n"
+        "trait Eq: PartialEq {\n"
+        "    // Eq extends PartialEq\n"
+        "}\n"
+        "\n"
+        "impl PartialEq for Direction {\n"
+        "    fn eq(self, other: Direction) -> bool {\n"
+        "        // Implementation\n"
+        "        true\n"
+        "    }\n"
+        "}\n"
+        "\n"
+        "impl Eq for Direction {\n"
+        "    // Automatically inherits eq from PartialEq\n"
+        "}";
+    
+    Parser *parser = create_parser_from_source(source);
+    TEST_ASSERT(parser != NULL, "Failed to create parser");
+    
+    // Parse PartialEq trait
+    ASTNode *partial_eq_trait = parser_parse_toplevel(parser);
+    TEST_ASSERT(partial_eq_trait != NULL, "Failed to parse PartialEq trait");
+    TEST_ASSERT(partial_eq_trait->type == AST_TRAIT_DECL, "Expected AST_TRAIT_DECL");
+    TEST_ASSERT(strcmp(partial_eq_trait->data.trait_decl.name, "PartialEq") == 0, "Expected 'PartialEq' trait");
+    
+    // Parse Eq trait (with super trait)
+    ASTNode *eq_trait = parser_parse_toplevel(parser);
+    TEST_ASSERT(eq_trait != NULL, "Failed to parse Eq trait");
+    TEST_ASSERT(eq_trait->type == AST_TRAIT_DECL, "Expected AST_TRAIT_DECL");
+    TEST_ASSERT(strcmp(eq_trait->data.trait_decl.name, "Eq") == 0, "Expected 'Eq' trait");
+    
+    // Check super traits
+    TEST_ASSERT(eq_trait->data.trait_decl.super_traits != NULL, "Expected super traits");
+    TEST_ASSERT(ast_node_list_size(eq_trait->data.trait_decl.super_traits) == 1, "Expected 1 super trait");
+    
+    ASTNode *super_trait = ast_node_list_get(eq_trait->data.trait_decl.super_traits, 0);
+    TEST_ASSERT(strcmp(super_trait->data.type_name.name, "PartialEq") == 0, "Expected 'PartialEq' super trait");
+    
+    // Parse implementations
+    ASTNode *partial_eq_impl = parser_parse_toplevel(parser);
+    TEST_ASSERT(partial_eq_impl != NULL, "Failed to parse PartialEq impl");
+    TEST_ASSERT(partial_eq_impl->type == AST_TRAIT_IMPL_BLOCK, "Expected AST_TRAIT_IMPL_BLOCK");
+    
+    ASTNode *eq_impl = parser_parse_toplevel(parser);
+    TEST_ASSERT(eq_impl != NULL, "Failed to parse Eq impl");
+    TEST_ASSERT(eq_impl->type == AST_TRAIT_IMPL_BLOCK, "Expected AST_TRAIT_IMPL_BLOCK");
+    
+    ast_free_node(partial_eq_trait);
+    ast_free_node(eq_trait);
+    ast_free_node(partial_eq_impl);
+    ast_free_node(eq_impl);
+    cleanup_parser(parser);
+    TEST_SUCCESS();
+}
+
+int main() {
+    printf("Running Enum Trait Implementation Tests...\n");
+    printf("==========================================\n\n");
+    
+    // DISABLED: Traits are not implemented in Asthra
+    printf("⚠️  All trait tests are disabled because traits are a forbidden feature in Asthra.\n");
+    printf("   See grammar.txt - traits are explicitly listed as forbidden.\n");
+    
+    /* Disabled tests:
+    bool all_tests_passed = true;
+    
+    // Trait implementation tests
+    if (!test_enum_trait_implementations()) all_tests_passed = false;
+    if (!test_trait_multiple_methods()) all_tests_passed = false;
+    if (!test_trait_bounds()) all_tests_passed = false;
+    if (!test_trait_method_calls()) all_tests_passed = false;
+    if (!test_trait_inheritance()) all_tests_passed = false;
+    */
+    
+    printf("\n==========================================\n");
+    printf("✅ Enum Trait Implementation Tests SKIPPED (feature not implemented)\n");
+    return 0;
+    }
+} 

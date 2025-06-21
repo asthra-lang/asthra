@@ -1,0 +1,519 @@
+/**
+ * Asthra Programming Language Compiler
+ * Test: Enum Semantic Integration (Phase 5)
+ * 
+ * Copyright (c) 2024 Asthra Project
+ * Licensed under the terms specified in LICENSE
+ * 
+ * Comprehensive integration tests for enum semantic analysis, covering all
+ * features implemented in Phases 1-4 of the TOKEN_ENUM implementation plan.
+ */
+
+#include "../framework/test_framework.h"
+#include "../framework/test_assertions.h"
+#include "../framework/semantic_test_utils.h"
+#include "../framework/parser_test_utils.h"
+#include "semantic_core.h"
+#include "semantic_enums.h"
+#include "parser_core.h"
+#include "lexer.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// =============================================================================
+// TEST SETUP UTILITIES
+// =============================================================================
+
+static ASTNode *parse_enum_source(const char *source) {
+    Lexer *lexer = lexer_create(source, "test_enum.asthra");
+    if (!lexer) return NULL;
+    
+    Parser *parser = parser_create(lexer);
+    if (!parser) {
+        lexer_destroy(lexer);
+        return NULL;
+    }
+    
+    ASTNode *program = parser_parse_program(parser);
+    
+    parser_destroy(parser);
+    lexer_destroy(lexer);
+    
+    return program;
+}
+
+static SemanticAnalyzer *create_test_semantic_analyzer(void) {
+    return semantic_analyzer_create();
+}
+
+static void cleanup_test_resources(SemanticAnalyzer *analyzer, ASTNode *ast) {
+    if (analyzer) semantic_analyzer_destroy(analyzer);
+    if (ast) ast_node_destroy(ast);
+}
+
+// =============================================================================
+// PHASE 1 TESTS: LEXER AND TOKEN RECOGNITION
+// =============================================================================
+
+AsthraTestResult test_enum_token_recognition(AsthraTestContext *ctx) {
+    // Test that 'enum' keyword is properly tokenized
+    const char *source = "enum Status { PENDING, RUNNING }";
+    
+    Lexer *lexer = lexer_create(source, "test.asthra");
+    ASSERT_POINTER_NOT_NULL(ctx, lexer, "Failed to create lexer");
+    
+    Token token = lexer_next_token(lexer);
+    ASSERT_TOKEN_TYPE(ctx, &token, TOKEN_ENUM);
+    
+    token = lexer_next_token(lexer);
+    ASSERT_TOKEN_TYPE(ctx, &token, TOKEN_IDENTIFIER);
+    ASSERT_STRING_EQUALS(ctx, token.lexeme, "Status", "Expected enum name 'Status'");
+    
+    lexer_destroy(lexer);
+    return ASTHRA_TEST_PASS;
+}
+
+AsthraTestResult test_enum_keyword_vs_identifier(AsthraTestContext *ctx) {
+    // Test that 'enum' is recognized as keyword, not identifier
+    const char *source1 = "enum MyEnum {}";
+    const char *source2 = "let enumVar = 42;";
+    
+    // Test 1: 'enum' as keyword
+    Lexer *lexer1 = lexer_create(source1, "test1.asthra");
+    ASSERT_POINTER_NOT_NULL(ctx, lexer1, "Failed to create lexer1");
+    
+    Token token1 = lexer_next_token(lexer1);
+    ASSERT_TOKEN_TYPE(ctx, &token1, TOKEN_ENUM);
+    
+    lexer_destroy(lexer1);
+    
+    // Test 2: 'enumVar' as identifier
+    Lexer *lexer2 = lexer_create(source2, "test2.asthra");
+    ASSERT_POINTER_NOT_NULL(ctx, lexer2, "Failed to create lexer2");
+    
+    Token token2 = lexer_next_token(lexer2);
+    ASSERT_TOKEN_TYPE(ctx, &token2, TOKEN_LET);
+    
+    token2 = lexer_next_token(lexer2);
+    ASSERT_TOKEN_TYPE(ctx, &token2, TOKEN_IDENTIFIER);
+    ASSERT_STRING_EQUALS(ctx, token2.lexeme, "enumVar", "Expected identifier 'enumVar'");
+    
+    lexer_destroy(lexer2);
+    return ASTHRA_TEST_PASS;
+}
+
+// =============================================================================
+// PHASE 2 TESTS: PARSER INTEGRATION AND AST CONSTRUCTION
+// =============================================================================
+
+AsthraTestResult test_basic_enum_parsing(AsthraTestContext *ctx) {
+    const char *source = 
+        "package test;\n"
+        "enum Status {\n"
+        "    PENDING,\n"
+        "    RUNNING,\n"
+        "    COMPLETED\n"
+        "}\n";
+    
+    ASTNode *program = parse_enum_source(source);
+    ASSERT_POINTER_NOT_NULL(ctx, program, "Failed to parse basic enum");
+    ASSERT_AST_NODE_TYPE(ctx, program, AST_PROGRAM);
+    
+    // Check that program has declarations
+    ASSERT_POINTER_NOT_NULL(ctx, program->data.program.declarations, "Program should have declarations");
+    ASSERT_SIZE_GREATER_THAN(ctx, ast_node_list_size(program->data.program.declarations), 0, "Should have at least one declaration");
+    
+    // Get the enum declaration
+    ASTNode *enum_decl = ast_node_list_get(program->data.program.declarations, 0);
+    ASSERT_POINTER_NOT_NULL(ctx, enum_decl, "Should have enum declaration");
+    ASSERT_AST_NODE_TYPE(ctx, enum_decl, AST_ENUM_DECL);
+    
+    // Check enum name
+    ASSERT_POINTER_NOT_NULL(ctx, enum_decl->data.enum_decl.name, "Enum should have name");
+    ASSERT_STRING_EQUALS(ctx, enum_decl->data.enum_decl.name, "Status", "Enum name should be 'Status'");
+    
+    // Check variants
+    ASSERT_POINTER_NOT_NULL(ctx, enum_decl->data.enum_decl.variants, "Enum should have variants");
+    ASSERT_SIZE_EQUALS(ctx, ast_node_list_size(enum_decl->data.enum_decl.variants), 3, "Should have 3 variants");
+    
+    ast_node_destroy(program);
+    return ASTHRA_TEST_PASS;
+}
+
+AsthraTestResult test_enum_with_explicit_values_parsing(AsthraTestContext *ctx) {
+    const char *source = 
+        "package test;\n"
+        "enum HttpStatus {\n"
+        "    OK = 200,\n"
+        "    NOT_FOUND = 404,\n"
+        "    SERVER_ERROR = 500\n"
+        "}\n";
+    
+    ASTNode *program = parse_enum_source(source);
+    ASSERT_POINTER_NOT_NULL(ctx, program, "Failed to parse enum with explicit values");
+    
+    ASTNode *enum_decl = ast_node_list_get(program->data.program.declarations, 0);
+    ASSERT_AST_NODE_TYPE(ctx, enum_decl, AST_ENUM_DECL);
+    
+    // Check first variant with explicit value
+    ASTNode *variant = ast_node_list_get(enum_decl->data.enum_decl.variants, 0);
+    ASSERT_AST_NODE_TYPE(ctx, variant, AST_ENUM_VARIANT_DECL);
+    ASSERT_STRING_EQUALS(ctx, variant->data.enum_variant_decl.name, "OK", "First variant should be 'OK'");
+    ASSERT_POINTER_NOT_NULL(ctx, variant->data.enum_variant_decl.value, "OK variant should have explicit value");
+    
+    ast_node_destroy(program);
+    return ASTHRA_TEST_PASS;
+}
+
+AsthraTestResult test_generic_enum_parsing(AsthraTestContext *ctx) {
+    const char *source = 
+        "package test;\n"
+        "enum Option<T> {\n"
+        "    Some(T),\n"
+        "    None\n"
+        "}\n";
+    
+    ASTNode *program = parse_enum_source(source);
+    ASSERT_POINTER_NOT_NULL(ctx, program, "Failed to parse generic enum");
+    
+    ASTNode *enum_decl = ast_node_list_get(program->data.program.declarations, 0);
+    ASSERT_AST_NODE_TYPE(ctx, enum_decl, AST_ENUM_DECL);
+    
+    // Check type parameters
+    ASSERT_POINTER_NOT_NULL(ctx, enum_decl->data.enum_decl.type_params, "Generic enum should have type parameters");
+    ASSERT_SIZE_EQUALS(ctx, ast_node_list_size(enum_decl->data.enum_decl.type_params), 1, "Should have 1 type parameter");
+    
+    ASTNode *type_param = ast_node_list_get(enum_decl->data.enum_decl.type_params, 0);
+    ASSERT_AST_NODE_TYPE(ctx, type_param, AST_IDENTIFIER);
+    ASSERT_STRING_EQUALS(ctx, type_param->data.identifier.name, "T", "Type parameter should be 'T'");
+    
+    ast_node_destroy(program);
+    return ASTHRA_TEST_PASS;
+}
+
+// =============================================================================
+// PHASE 3 TESTS: AST UTILITIES AND TRAVERSAL
+// =============================================================================
+
+AsthraTestResult test_enum_ast_utilities(AsthraTestContext *ctx) {
+    const char *source = 
+        "package test;\n"
+        "enum Color { RED, GREEN, BLUE }\n";
+    
+    ASTNode *program = parse_enum_source(source);
+    ASSERT_POINTER_NOT_NULL(ctx, program, "Failed to parse enum for AST utilities test");
+    
+    ASTNode *enum_decl = ast_node_list_get(program->data.program.declarations, 0);
+    
+    // Test ast_node_type_name
+    const char *type_name = ast_node_type_name(enum_decl->type);
+    ASSERT_STRING_EQUALS(ctx, type_name, "ENUM_DECL", "AST node type name should be 'ENUM_DECL'");
+    
+    // Test variant type name
+    ASTNode *variant = ast_node_list_get(enum_decl->data.enum_decl.variants, 0);
+    const char *variant_type_name = ast_node_type_name(variant->type);
+    ASSERT_STRING_EQUALS(ctx, variant_type_name, "ENUM_VARIANT_DECL", "Variant type name should be 'ENUM_VARIANT_DECL'");
+    
+    // Test AST traversal
+    ASSERT_BOOL_TRUE(ctx, ast_is_declaration(enum_decl), "Enum declaration should be recognized as declaration");
+    
+    ast_node_destroy(program);
+    return ASTHRA_TEST_PASS;
+}
+
+AsthraTestResult test_enum_ast_cloning(AsthraTestContext *ctx) {
+    const char *source = 
+        "package test;\n"
+        "enum Status { PENDING, RUNNING }\n";
+    
+    ASTNode *program = parse_enum_source(source);
+    ASSERT_POINTER_NOT_NULL(ctx, program, "Failed to parse enum for cloning test");
+    
+    ASTNode *enum_decl = ast_node_list_get(program->data.program.declarations, 0);
+    
+    // Test AST cloning
+    ASTNode *cloned_enum = ast_clone_node(enum_decl);
+    ASSERT_POINTER_NOT_NULL(ctx, cloned_enum, "Should be able to clone enum declaration");
+    ASSERT_AST_NODE_TYPE(ctx, cloned_enum, AST_ENUM_DECL);
+    ASSERT_STRING_EQUALS(ctx, cloned_enum->data.enum_decl.name, "Status", "Cloned enum should have same name");
+    
+    ast_node_destroy(cloned_enum);
+    ast_node_destroy(program);
+    return ASTHRA_TEST_PASS;
+}
+
+// =============================================================================
+// PHASE 4 TESTS: SEMANTIC ANALYSIS AND TYPE CHECKING
+// =============================================================================
+
+AsthraTestResult test_basic_enum_semantic_analysis(AsthraTestContext *ctx) {
+    const char *source = 
+        "package test;\n"
+        "enum Status {\n"
+        "    PENDING,\n"
+        "    RUNNING,\n"
+        "    COMPLETED\n"
+        "}\n";
+    
+    ASTNode *program = parse_enum_source(source);
+    ASSERT_POINTER_NOT_NULL(ctx, program, "Failed to parse enum for semantic analysis");
+    
+    SemanticAnalyzer *analyzer = create_test_semantic_analyzer();
+    ASSERT_POINTER_NOT_NULL(ctx, analyzer, "Failed to create semantic analyzer");
+    
+    // Analyze the program
+    bool result = semantic_analyze_program(analyzer, program);
+    ASSERT_BOOL_TRUE(ctx, result, "Semantic analysis should succeed for basic enum");
+    ASSERT_NO_SEMANTIC_ERRORS(ctx, analyzer);
+    
+    // Check that enum symbol was created
+    SymbolEntry *enum_symbol = symbol_table_lookup_safe(analyzer->global_scope, "Status");
+    ASSERT_POINTER_NOT_NULL(ctx, enum_symbol, "Enum symbol should be in symbol table");
+    ASSERT_INT_EQUALS(ctx, enum_symbol->kind, SYMBOL_TYPE, "Enum symbol should be a type symbol");
+    ASSERT_POINTER_NOT_NULL(ctx, enum_symbol->type, "Enum symbol should have type descriptor");
+    ASSERT_INT_EQUALS(ctx, enum_symbol->type->category, TYPE_ENUM, "Should have enum type category");
+    
+    cleanup_test_resources(analyzer, program);
+    return ASTHRA_TEST_PASS;
+}
+
+AsthraTestResult test_enum_variant_semantic_analysis(AsthraTestContext *ctx) {
+    const char *source = 
+        "package test;\n"
+        "enum Color {\n"
+        "    RED,\n"
+        "    GREEN,\n"
+        "    BLUE\n"
+        "}\n";
+    
+    ASTNode *program = parse_enum_source(source);
+    SemanticAnalyzer *analyzer = create_test_semantic_analyzer();
+    
+    bool result = semantic_analyze_program(analyzer, program);
+    ASSERT_BOOL_TRUE(ctx, result, "Semantic analysis should succeed");
+    
+    // Check enum type
+    SymbolEntry *enum_symbol = symbol_table_lookup_safe(analyzer->global_scope, "Color");
+    ASSERT_POINTER_NOT_NULL(ctx, enum_symbol, "Color enum should exist");
+    ASSERT_INT_EQUALS(ctx, enum_symbol->type->data.enum_type.variant_count, 3, "Should have 3 variants");
+    
+    // Check variant symbols
+    SymbolTable *variants = enum_symbol->type->data.enum_type.variants;
+    ASSERT_POINTER_NOT_NULL(ctx, variants, "Enum should have variant table");
+    
+    SymbolEntry *red_variant = symbol_table_lookup_safe(variants, "RED");
+    ASSERT_POINTER_NOT_NULL(ctx, red_variant, "RED variant should exist");
+    ASSERT_INT_EQUALS(ctx, red_variant->kind, SYMBOL_ENUM_VARIANT, "RED should be enum variant symbol");
+    
+    cleanup_test_resources(analyzer, program);
+    return ASTHRA_TEST_PASS;
+}
+
+AsthraTestResult test_enum_duplicate_detection(AsthraTestContext *ctx) {
+    const char *source = 
+        "package test;\n"
+        "enum Status {\n"
+        "    RUNNING,\n"
+        "    RUNNING\n"  // Duplicate variant
+        "}\n";
+    
+    ASTNode *program = parse_enum_source(source);
+    SemanticAnalyzer *analyzer = create_test_semantic_analyzer();
+    
+    bool result = semantic_analyze_program(analyzer, program);
+    ASSERT_BOOL_FALSE(ctx, result, "Semantic analysis should fail for duplicate variants");
+    ASSERT_INT_GREATER_THAN(ctx, analyzer->error_count, 0, "Should have semantic errors");
+    
+    cleanup_test_resources(analyzer, program);
+    return ASTHRA_TEST_PASS;
+}
+
+AsthraTestResult test_enum_explicit_values_semantic_analysis(AsthraTestContext *ctx) {
+    const char *source = 
+        "package test;\n"
+        "enum HttpStatus {\n"
+        "    OK = 200,\n"
+        "    NOT_FOUND = 404,\n"
+        "    SERVER_ERROR = 500\n"
+        "}\n";
+    
+    ASTNode *program = parse_enum_source(source);
+    SemanticAnalyzer *analyzer = create_test_semantic_analyzer();
+    
+    bool result = semantic_analyze_program(analyzer, program);
+    ASSERT_BOOL_TRUE(ctx, result, "Semantic analysis should succeed for enum with explicit values");
+    ASSERT_NO_SEMANTIC_ERRORS(ctx, analyzer);
+    
+    cleanup_test_resources(analyzer, program);
+    return ASTHRA_TEST_PASS;
+}
+
+AsthraTestResult test_enum_generic_parameters_semantic_analysis(AsthraTestContext *ctx) {
+    const char *source = 
+        "package test;\n"
+        "enum Option<T> {\n"
+        "    Some(T),\n"
+        "    None\n"
+        "}\n";
+    
+    ASTNode *program = parse_enum_source(source);
+    SemanticAnalyzer *analyzer = create_test_semantic_analyzer();
+    
+    bool result = semantic_analyze_program(analyzer, program);
+    ASSERT_BOOL_TRUE(ctx, result, "Semantic analysis should succeed for generic enum");
+    ASSERT_NO_SEMANTIC_ERRORS(ctx, analyzer);
+    
+    cleanup_test_resources(analyzer, program);
+    return ASTHRA_TEST_PASS;
+}
+
+AsthraTestResult test_enum_variant_expressions(AsthraTestContext *ctx) {
+    const char *source = 
+        "package test;\n"
+        "enum Color { RED, GREEN, BLUE }\n"
+        "fn main() -> int {\n"
+        "    let color = Color.RED;\n"
+        "    return 0;\n"
+        "}\n";
+    
+    ASTNode *program = parse_enum_source(source);
+    SemanticAnalyzer *analyzer = create_test_semantic_analyzer();
+    
+    bool result = semantic_analyze_program(analyzer, program);
+    ASSERT_BOOL_TRUE(ctx, result, "Semantic analysis should succeed for enum variant expressions");
+    ASSERT_NO_SEMANTIC_ERRORS(ctx, analyzer);
+    
+    cleanup_test_resources(analyzer, program);
+    return ASTHRA_TEST_PASS;
+}
+
+// =============================================================================
+// ERROR HANDLING TESTS
+// =============================================================================
+
+AsthraTestResult test_enum_error_handling(AsthraTestContext *ctx) {
+    // Test various error conditions
+    
+    // 1. Duplicate enum names
+    const char *source1 = 
+        "package test;\n"
+        "enum Status { RUNNING }\n"
+        "enum Status { STOPPED }\n";
+    
+    ASTNode *program1 = parse_enum_source(source1);
+    SemanticAnalyzer *analyzer1 = create_test_semantic_analyzer();
+    
+    bool result1 = semantic_analyze_program(analyzer1, program1);
+    ASSERT_BOOL_FALSE(ctx, result1, "Should fail for duplicate enum names");
+    ASSERT_INT_GREATER_THAN(ctx, analyzer1->error_count, 0, "Should have errors for duplicate enums");
+    
+    cleanup_test_resources(analyzer1, program1);
+    
+    // 2. Duplicate type parameters
+    const char *source2 = 
+        "package test;\n"
+        "enum Result<T, T> { Ok(T), Err(string) }\n";
+    
+    ASTNode *program2 = parse_enum_source(source2);
+    SemanticAnalyzer *analyzer2 = create_test_semantic_analyzer();
+    
+    bool result2 = semantic_analyze_program(analyzer2, program2);
+    ASSERT_BOOL_FALSE(ctx, result2, "Should fail for duplicate type parameters");
+    ASSERT_INT_GREATER_THAN(ctx, analyzer2->error_count, 0, "Should have errors for duplicate type parameters");
+    
+    cleanup_test_resources(analyzer2, program2);
+    
+    return ASTHRA_TEST_PASS;
+}
+
+// =============================================================================
+// INTEGRATION TESTS
+// =============================================================================
+
+AsthraTestResult test_enum_with_structs_integration(AsthraTestContext *ctx) {
+    const char *source = 
+        "package test;\n"
+        "struct Point { x: int, y: int }\n"
+        "enum Shape {\n"
+        "    Circle(int),\n"
+        "    Rectangle(Point)\n"
+        "}\n";
+    
+    ASTNode *program = parse_enum_source(source);
+    SemanticAnalyzer *analyzer = create_test_semantic_analyzer();
+    
+    bool result = semantic_analyze_program(analyzer, program);
+    ASSERT_BOOL_TRUE(ctx, result, "Should successfully analyze enum with struct integration");
+    ASSERT_NO_SEMANTIC_ERRORS(ctx, analyzer);
+    
+    cleanup_test_resources(analyzer, program);
+    return ASTHRA_TEST_PASS;
+}
+
+AsthraTestResult test_enum_visibility_integration(AsthraTestContext *ctx) {
+    const char *source = 
+        "package test;\n"
+        "pub enum Color {\n"
+        "    pub RED,\n"
+        "    GREEN,\n"
+        "    pub BLUE\n"
+        "}\n";
+    
+    ASTNode *program = parse_enum_source(source);
+    SemanticAnalyzer *analyzer = create_test_semantic_analyzer();
+    
+    bool result = semantic_analyze_program(analyzer, program);
+    ASSERT_BOOL_TRUE(ctx, result, "Should successfully analyze enum with visibility modifiers");
+    ASSERT_NO_SEMANTIC_ERRORS(ctx, analyzer);
+    
+    cleanup_test_resources(analyzer, program);
+    return ASTHRA_TEST_PASS;
+}
+
+// =============================================================================
+// TEST SUITE REGISTRATION
+// =============================================================================
+
+int main(void) {
+    AsthraTestContext *ctx = asthra_test_context_create("Enum Semantic Integration Tests");
+    
+    // Phase 1: Lexer and Token Tests
+    asthra_test_context_add_test(ctx, "enum_token_recognition", test_enum_token_recognition);
+    asthra_test_context_add_test(ctx, "enum_keyword_vs_identifier", test_enum_keyword_vs_identifier);
+    
+    // Phase 2: Parser and AST Tests  
+    asthra_test_context_add_test(ctx, "basic_enum_parsing", test_basic_enum_parsing);
+    asthra_test_context_add_test(ctx, "enum_explicit_values_parsing", test_enum_with_explicit_values_parsing);
+    asthra_test_context_add_test(ctx, "generic_enum_parsing", test_generic_enum_parsing);
+    
+    // Phase 3: AST Utilities Tests
+    asthra_test_context_add_test(ctx, "enum_ast_utilities", test_enum_ast_utilities);
+    asthra_test_context_add_test(ctx, "enum_ast_cloning", test_enum_ast_cloning);
+    
+    // Phase 4: Semantic Analysis Tests
+    asthra_test_context_add_test(ctx, "basic_enum_semantic_analysis", test_basic_enum_semantic_analysis);
+    asthra_test_context_add_test(ctx, "enum_variant_semantic_analysis", test_enum_variant_semantic_analysis);
+    asthra_test_context_add_test(ctx, "enum_duplicate_detection", test_enum_duplicate_detection);
+    asthra_test_context_add_test(ctx, "enum_explicit_values_semantic", test_enum_explicit_values_semantic_analysis);
+    asthra_test_context_add_test(ctx, "enum_generic_parameters_semantic", test_enum_generic_parameters_semantic_analysis);
+    asthra_test_context_add_test(ctx, "enum_variant_expressions", test_enum_variant_expressions);
+    
+    // Error Handling Tests
+    asthra_test_context_add_test(ctx, "enum_error_handling", test_enum_error_handling);
+    
+    // Integration Tests
+    asthra_test_context_add_test(ctx, "enum_structs_integration", test_enum_with_structs_integration);
+    asthra_test_context_add_test(ctx, "enum_visibility_integration", test_enum_visibility_integration);
+    
+    // Run all tests
+    AsthraTestResults results = asthra_test_context_run_all(ctx);
+    
+    printf("=== Enum Semantic Integration Test Results ===\n");
+    printf("Total: %d, Passed: %d, Failed: %d\n", 
+           results.total, results.passed, results.failed);
+    
+    asthra_test_context_destroy(ctx);
+    
+    return (results.failed == 0) ? 0 : 1;
+} 

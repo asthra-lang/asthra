@@ -1,0 +1,250 @@
+// Asthra I/O Module Example
+// Demonstrates standard input, output, and error stream functionality
+
+package main;
+
+// Import the I/O module
+import "stdlib/io";
+
+fn main(none) -> i32 {
+    // Example 1: Basic output operations
+    println("=== Asthra I/O Module Example ===");
+    
+    // Print to stdout
+    let print_result: Result<void, io.IOError> = io.print("Hello, ");
+    match print_result {
+        Result.Ok(_) => {
+            let print_line_result: Result<void, io.IOError> = io.print_line("World!");
+            match print_line_result {
+                Result.Ok(_) => {}
+                Result.Err(error) => {
+                    let error_msg: string = format_io_error(error);
+                    let eprint_result: Result<void, io.IOError> = io.eprint_line("Error printing line: " + error_msg);
+                    match eprint_result {
+                        Result.Ok(_) => {}
+                        Result.Err(_) => {}
+                    }
+                }
+            }
+        },
+        Result.Err(error) => {
+            let error_msg: string = format_io_error(error);
+            let eprint_result: Result<void, io.IOError> = io.eprint_line("Error printing: " + error_msg);
+            match eprint_result {
+                Result.Ok(_) => {}
+                Result.Err(_) => {}
+            }
+        }
+    }
+    
+    // Example 2: Error output
+    let stderr_result: Result<void, io.IOError> = io.eprint_line("This message goes to stderr");
+    match stderr_result {
+        Result.Ok(_) => {}
+        Result.Err(error) => {
+            // If we can't even print to stderr, there's not much we can do
+            let error_msg: string = format_io_error(error);
+            // This would be a critical error
+        }
+    }
+    
+    // Example 3: Flush output buffers
+    let flush_stdout_result: Result<void, io.IOError> = io.flush_stdout();
+    let flush_stderr_result: Result<void, io.IOError> = io.flush_stderr();
+    
+    match flush_stdout_result {
+        Result.Ok(_) => {}
+        Result.Err(error) => {
+            let error_msg: string = format_io_error(error);
+            let eprint_result: Result<void, io.IOError> = io.eprint_line("Failed to flush stdout: " + error_msg);
+            match eprint_result {
+                Result.Ok(_) => {}
+                Result.Err(_) => {}
+            }
+        }
+    }
+    
+    match flush_stderr_result {
+        Result.Ok(_) => {}
+        Result.Err(error) => {
+            let error_msg: string = format_io_error(error);
+            // Can't really report this error since stderr flush failed
+        }
+    }
+    
+    // Example 4: Reading from stdin (commented out for automated testing)
+    /*
+    let print_prompt_result: Result<void, io.IOError> = io.print("Enter your name: ");
+    match print_prompt_result {
+        Result.Ok(_) => {
+            let flush_result: Result<void, io.IOError> = io.flush_stdout();
+            match flush_result {
+                Result.Ok(_) => {
+                    let input_result: Result<string, io.IOError> = io.read_line();
+                    match input_result {
+                        Result.Ok(name) => {
+                            let greeting: string = "Hello, " + name + "!";
+                            let print_greeting_result: Result<void, io.IOError> = io.print_line(greeting);
+                            match print_greeting_result {
+                                Result.Ok(_) => {}
+                                Result.Err(error) => {
+                                    let error_msg: string = format_io_error(error);
+                                    let eprint_result: Result<void, io.IOError> = io.eprint_line("Error printing greeting: " + error_msg);
+                                    match eprint_result {
+                                        Result.Ok(_) => {}
+                                        Result.Err(_) => {}
+                                    }
+                                }
+                            }
+                        },
+                        Result.Err(io.IOError.EndOfFile) => {
+                            let eof_result: Result<void, io.IOError> = io.print_line("End of input reached.");
+                            match eof_result {
+                                Result.Ok(_) => {}
+                                Result.Err(_) => {}
+                            }
+                        },
+                        Result.Err(error) => {
+                            let error_msg: string = format_io_error(error);
+                            let eprint_result: Result<void, io.IOError> = io.eprint_line("Error reading input: " + error_msg);
+                            match eprint_result {
+                                Result.Ok(_) => {}
+                                Result.Err(_) => {}
+                            }
+                        }
+                    }
+                },
+                Result.Err(error) => {
+                    let error_msg: string = format_io_error(error);
+                    let eprint_result: Result<void, io.IOError> = io.eprint_line("Error flushing stdout: " + error_msg);
+                    match eprint_result {
+                        Result.Ok(_) => {}
+                        Result.Err(_) => {}
+                    }
+                }
+            }
+        },
+        Result.Err(error) => {
+            let error_msg: string = format_io_error(error);
+            let eprint_result: Result<void, io.IOError> = io.eprint_line("Error printing prompt: " + error_msg);
+            match eprint_result {
+                Result.Ok(_) => {}
+                Result.Err(_) => {}
+            }
+        }
+    }
+    */
+    
+    // Example 5: Byte operations
+    let test_data: []const u8 = [72, 101, 108, 108, 111]; // "Hello" in ASCII
+    let write_bytes_result: Result<usize, io.IOError> = io.write_bytes(test_data);
+    match write_bytes_result {
+        Result.Ok(bytes_written) => {
+            let newline_result: Result<void, io.IOError> = io.print_line("");
+            match newline_result {
+                Result.Ok(_) => {}
+                Result.Err(_) => {}
+            }
+        },
+        Result.Err(error) => {
+            let error_msg: string = format_io_error(error);
+            let eprint_result: Result<void, io.IOError> = io.eprint_line("Error writing bytes: " + error_msg);
+            match eprint_result {
+                Result.Ok(_) => {}
+                Result.Err(_) => {}
+            }
+        }
+    }
+    
+    // Example 6: UTF-8 validation demonstration
+    let valid_utf8: []u8 = [72, 101, 108, 108, 111]; // "Hello"
+    let invalid_utf8: []u8 = [0xFF, 0x80]; // Invalid UTF-8
+    
+    let print_utf8_demo_result: Result<void, io.IOError> = io.print_line("UTF-8 validation examples:");
+    match print_utf8_demo_result {
+        Result.Ok(_) => {}
+        Result.Err(_) => {}
+    }
+    
+    // This would be used internally by the I/O module for validation
+    // but we can demonstrate the concept
+    let print_valid_result: Result<void, io.IOError> = io.print_line("- Valid UTF-8 sequence processed successfully");
+    match print_valid_result {
+        Result.Ok(_) => {}
+        Result.Err(_) => {}
+    }
+    
+    let print_invalid_result: Result<void, io.IOError> = io.print_line("- Invalid UTF-8 would be rejected with IOError.InvalidUtf8");
+    match print_invalid_result {
+        Result.Ok(_) => {}
+        Result.Err(_) => {}
+    }
+    
+    // Example 7: Error handling demonstration
+    demonstrate_error_handling();
+    
+    let print_complete_result: Result<void, io.IOError> = io.print_line("\n=== I/O Example Complete ===");
+    match print_complete_result {
+        Result.Ok(_) => {}
+        Result.Err(_) => {}
+    }
+    
+    return 0;
+}
+
+// Helper function to format I/O errors for display
+fn format_io_error(error: io.IOError) -> string {
+    match error {
+        io.IOError.EndOfFile => return "End of file"
+        io.IOError.PermissionDenied => return "Permission denied"
+        io.IOError.NotFound => return "Not found"
+        io.IOError.Interrupted => return "Interrupted"
+        io.IOError.InvalidInput => return "Invalid input"
+        io.IOError.BrokenPipe => return "Broken pipe"
+        io.IOError.WouldBlock => return "Would block"
+        io.IOError.InvalidUtf8(bytes) => {
+            return "Invalid UTF-8 sequence (length: " + bytes.len + ")";
+        },
+        io.IOError.BufferTooSmall(size) => {
+            return "Buffer too small (required: " + size + ")";
+        },
+        io.IOError.WriteError(msg) => return "Write error: " + msg
+        io.IOError.ReadError(msg) => return "Read error: " + msg
+        io.IOError.Other(msg) => return "Other error: " + msg
+    }
+}
+
+// Demonstrate comprehensive error handling patterns
+fn demonstrate_error_handling(none) -> void {
+    let print_demo_result: Result<void, io.IOError> = io.print_line("\n--- Error Handling Demonstration ---");
+    match print_demo_result {
+        Result.Ok(_) => {}
+        Result.Err(_) => return
+    }
+    
+    // Demonstrate different error types that could occur
+    let error_examples: []string = [
+        "1. EndOfFile: Occurs when reading past end of input",
+        "2. PermissionDenied: File/stream access denied",
+        "3. InvalidInput: Malformed input data",
+        "4. InvalidUtf8: Non-UTF-8 byte sequences",
+        "5. WriteError/ReadError: General I/O failures",
+        "6. BrokenPipe: Output stream disconnected"
+    ];
+    
+    let mut i: usize = 0;
+    while i < error_examples.len {
+        let print_example_result: Result<void, io.IOError> = io.print_line("   " + error_examples[i]);
+        match print_example_result {
+            Result.Ok(_) => {}
+            Result.Err(_) => break
+        }
+        i = i + 1;
+    }
+    
+    let print_pattern_result: Result<void, io.IOError> = io.print_line("\nRecommended pattern: Always match on Result types!");
+    match print_pattern_result {
+        Result.Ok(_) => {}
+        Result.Err(_) => {}
+    }
+} 

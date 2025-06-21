@@ -1,0 +1,40 @@
+/**
+ * Asthra Programming Language Compiler
+ * Grammar toplevel integration file (v1.3 compatibility layer)
+ * 
+ * This file includes all the split grammar toplevel files to maintain
+ * backward compatibility with build systems expecting grammar_toplevel.c
+ * 
+ * Copyright (c) 2024 Asthra Project
+ * Licensed under the terms specified in LICENSE
+ */
+
+#include "grammar_toplevel.h"
+#include "parser.h"
+#include "ast.h"
+#include "lexer.h"
+#include <stdlib.h>
+#include <string.h>
+
+// Include the modularized grammar files
+#include "grammar_toplevel_program.c"
+#include "grammar_toplevel_function.c"
+#include "grammar_toplevel_struct.c"
+#include "grammar_toplevel_enum.c"
+#include "grammar_toplevel_method.c"
+
+#include "grammar_toplevel_extern.c"
+#include "grammar_toplevel_util.c"
+
+// This file serves as a compatibility layer for builds expecting
+// grammar_toplevel.c. In v1.3, the functionality has been split
+// into multiple files for better maintainability and AI editor
+// compatibility.
+
+// =============================================================================
+// MODULE SYSTEM (missing implementations)
+// =============================================================================
+
+
+
+// parse_visibility_modifier is now defined in grammar_toplevel_program.c 

@@ -1,0 +1,338 @@
+// Complete FFI Example in Asthra
+// Demonstrates comprehensive C interoperability with ownership annotations,
+// marshaling, variadic functions, and runtime integration
+
+package ffi_complete_demo;
+
+// =============================================================================
+// EXTERNAL C FUNCTION DECLARATIONS
+// =============================================================================
+
+// Standard C library functions with ownership annotations
+extern "libc" fn malloc(size: usize) -> #[transfer_full] *mut void;
+extern "libc" fn free(#[borrowed] ptr: *mut void) -> void;
+extern "libc" fn strlen(#[borrowed] s: *const u8) -> usize;
+extern "libc" fn strcpy(#[borrowed] dest: *mut u8, #[borrowed] src: *const u8) -> *mut u8;
+
+// Variadic function support
+extern "libc" fn printf(#[borrowed] format: *const u8, ...) -> i32;
+extern "libc" fn sprintf(#[borrowed] buffer: *mut u8, #[borrowed] format: *const u8, ...) -> i32;
+
+// Custom C library functions with complex ownership semantics
+extern "my_crypto_lib" fn encrypt_data(
+    #[transfer_full] plaintext: *mut u8,     // Transfer ownership to C
+    #[transfer_none] key: *const u8,         // Asthra retains ownership
+    #[borrowed] iv: *const u8                // Temporary access only
+) -> #[transfer_full] *mut u8;               // C transfers ownership back
+
+extern "my_crypto_lib" fn hash_data(
+    #[borrowed] data: *const u8,
+    length: usize
+) -> #[transfer_full] *mut u8;
+
+// =============================================================================
+// ASTHRA DATA STRUCTURES WITH OWNERSHIP ANNOTATIONS
+// =============================================================================
+
+// Asthra-managed data structure
+#[ownership(gc)]
+struct AsthraBuffer {
+    data: []u8,
+    capacity: usize,
+    is_encrypted: bool
+}
+
+// C-managed data structure
+#[ownership(c)]
+struct CryptoContext {
+    key_ptr: *mut u8,
+    key_len: usize,
+    algorithm: i32
+}
+
+// Pinned memory structure (for DMA or hardware access)
+#[ownership(pinned)]
+struct HardwareBuffer {
+    dma_ptr: *mut u8,
+    size: usize,
+    device_id: u32
+}
+
+// =============================================================================
+// FFI MARSHALING DEMONSTRATIONS
+// =============================================================================
+
+fn demonstrate_string_marshaling(none) -> Result<void, string> {
+    let asthra_string: string = "Hello, FFI World!";
+    
+    unsafe {
+        // String to C string marshaling (automatic)
+        let c_string: *const u8 = string_to_cstr(asthra_string);
+        
+        // Call C function with marshaled string
+        let length: usize = strlen(c_string);
+        
+        // Variadic function call with string marshaling
+        printf("String: %s, Length: %zu\n", c_string, length);
+        
+        // Create buffer for string operations
+        let buffer: *mut void = malloc(length + 1);
+        if buffer == null {
+            return Result.Err("Failed to allocate memory");
+        }
+        
+        // Copy string using C function
+        strcpy(buffer as *mut u8, c_string);
+        
+        // Convert back to Asthra string
+        let result_string: string = string_from_cstr(buffer as *const u8);
+        
+        // Clean up C memory
+        free(buffer);
+        
+        log("Marshaled string: " + result_string);
+    }
+    
+    return Result.Ok(void);
+}
+
+fn demonstrate_slice_marshaling(none) -> Result<void, string> {
+    let asthra_data: []u8 = [72, 101, 108, 108, 111]; // "Hello"
+    
+    unsafe {
+        // Slice marshaling to pointer + length
+        let data_ptr: *const u8 = asthra_data.ptr;
+        let data_len: usize = asthra_data.len;
+        
+        // Call C function with marshaled slice
+        let hash_result: *mut u8 = hash_data(data_ptr, data_len);
+        if hash_result == null {
+            return Result.Err("Hash function failed");
+        }
+        
+        // Convert result back to Asthra slice
+        // (In real implementation, we'd need to know the hash length)
+        let hash_len: usize = 32; // Assume SHA-256
+        let hash_slice: []u8 = slice_from_raw_parts(hash_result, hash_len);
+        
+        log("Hash computed successfully");
+        
+        // Clean up C memory
+        free(hash_result as *mut void);
+    }
+    
+    return Result.Ok(void);
+}
+
+fn demonstrate_variadic_functions(none) -> Result<void, string> {
+    let name: string = "Asthra";
+    let version: i32 = 12;
+    let pi: f64 = 3.14159;
+    
+    unsafe {
+        // Variadic function calls with different argument types
+        printf("Language: %s\n", string_to_cstr(name));
+        printf("Version: %d.%d\n", version / 10, version % 10);
+        printf("Pi approximation: %.5f\n", pi);
+        
+        // Complex variadic call with mixed types
+        printf("Summary: %s v%d.%d (π ≈ %.2f)\n", 
+               string_to_cstr(name), 
+               version / 10, 
+               version % 10, 
+               pi);
+        
+        // String formatting with sprintf
+        let buffer: *mut void = malloc(256);
+        if buffer == null {
+            return Result.Err("Failed to allocate format buffer");
+        }
+        
+        sprintf(buffer as *mut u8, 
+                "Formatted: %s version %d.%d", 
+                string_to_cstr(name), 
+                version / 10, 
+                version % 10);
+        
+        let formatted: string = string_from_cstr(buffer as *const u8);
+        log("Formatted result: " + formatted);
+        
+        free(buffer);
+    }
+    
+    return Result.Ok(void);
+}
+
+fn demonstrate_ownership_transfer(none) -> Result<void, string> {
+    let plaintext: string = "Secret message for encryption";
+    let key: string = "my-secret-key-32-bytes-long!!";
+    let iv: []u8 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+    
+    unsafe {
+        // Allocate C memory for plaintext (transfer_full)
+        let plaintext_len: usize = string_len(plaintext);
+        let plaintext_buffer: *mut void = malloc(plaintext_len + 1);
+        if plaintext_buffer == null {
+            return Result.Err("Failed to allocate plaintext buffer");
+        }
+        
+        // Copy plaintext to C buffer
+        strcpy(plaintext_buffer as *mut u8, string_to_cstr(plaintext));
+        
+        // Call encryption function with ownership transfer
+        let encrypted: *mut u8 = encrypt_data(
+            plaintext_buffer as *mut u8,  // transfer_full - C takes ownership
+            string_to_cstr(key),          // transfer_none - Asthra retains
+            iv.ptr                        // borrowed - temporary access
+        );
+        
+        if encrypted == null {
+            return Result.Err("Encryption failed");
+        }
+        
+        // Note: plaintext_buffer is now owned by C library
+        // We should not free it ourselves
+        
+        log("Data encrypted successfully");
+        
+        // Clean up encrypted data (C transferred ownership back)
+        free(encrypted as *mut void);
+    }
+    
+    return Result.Ok(void);
+}
+
+fn demonstrate_result_marshaling(none) -> Result<string, string> {
+    let operation_result: Result<i32, string> = perform_risky_operation();
+    
+    match operation_result {
+        Result.Ok(value) => {
+            unsafe {
+                // Marshal successful result to C
+                printf("Operation succeeded with value: %d\n", value);
+            }
+            return Result.Ok("Operation completed successfully");
+        },
+        Result.Err(error) => {
+            unsafe {
+                // Marshal error result to C
+                printf("Operation failed: %s\n", string_to_cstr(error));
+            }
+            return Result.Err("Operation failed: " + error);
+        }
+    }
+}
+
+// =============================================================================
+// HELPER FUNCTIONS AND MAIN DEMONSTRATION
+// =============================================================================
+
+fn perform_risky_operation(none) -> Result<i32, string> {
+    // Simulate an operation that might fail
+    let random_value: i32 = 42; // In real code, this would be random
+    
+    if random_value > 50 {
+        return Result.Err("Value too high");
+    }
+    
+    return Result.Ok(random_value * 2);
+}
+
+fn main(none) -> i32 {
+    log("Starting comprehensive FFI demonstration...");
+    
+    // Test string marshaling
+    let string_result: Result<void, string> = demonstrate_string_marshaling();
+    match string_result {
+        Result.Ok(_) => log("✓ String marshaling test passed")
+        Result.Err(error) => {
+            log("✗ String marshaling test failed: " + error);
+            return 1;
+        }
+    }
+    
+    // Test slice marshaling
+    let slice_result: Result<void, string> = demonstrate_slice_marshaling();
+    match slice_result {
+        Result.Ok(_) => log("✓ Slice marshaling test passed")
+        Result.Err(error) => {
+            log("✗ Slice marshaling test failed: " + error);
+            return 1;
+        }
+    }
+    
+    // Test variadic functions
+    let variadic_result: Result<void, string> = demonstrate_variadic_functions();
+    match variadic_result {
+        Result.Ok(_) => log("✓ Variadic function test passed")
+        Result.Err(error) => {
+            log("✗ Variadic function test failed: " + error);
+            return 1;
+        }
+    }
+    
+    // Test ownership transfer
+    let ownership_result: Result<void, string> = demonstrate_ownership_transfer();
+    match ownership_result {
+        Result.Ok(_) => log("✓ Ownership transfer test passed")
+        Result.Err(error) => {
+            log("✗ Ownership transfer test failed: " + error);
+            return 1;
+        }
+    }
+    
+    // Test result marshaling
+    let result_marshaling: Result<string, string> = demonstrate_result_marshaling();
+    match result_marshaling {
+        Result.Ok(message) => log("✓ Result marshaling test passed: " + message)
+        Result.Err(error) => {
+            log("✗ Result marshaling test failed: " + error);
+            return 1;
+        }
+    }
+    
+    log("All FFI demonstrations completed successfully!");
+    log("FFI implementation provides:");
+    log("  • Complete C interoperability");
+    log("  • Automatic marshaling for primitives");
+    log("  • Ownership transfer semantics");
+    log("  • Variadic function support");
+    log("  • Memory safety at FFI boundaries");
+    log("  • System V AMD64 ABI compliance");
+    
+    return 0;
+}
+
+// =============================================================================
+// UTILITY FUNCTIONS (would be provided by runtime)
+// =============================================================================
+
+fn log(message: string) -> void {
+    unsafe {
+        printf("%s\n", string_to_cstr(message));
+    }
+}
+
+fn string_to_cstr(s: string) -> *const u8 {
+    // Runtime function for string conversion
+    extern "asthra_runtime" fn asthra_string_to_cstr(s: string) -> *const u8;
+    unsafe { return asthra_string_to_cstr(s); }
+}
+
+fn string_from_cstr(cstr: *const u8) -> string {
+    // Runtime function for string conversion
+    extern "asthra_runtime" fn asthra_string_from_cstr(cstr: *const u8) -> string;
+    unsafe { return asthra_string_from_cstr(cstr); }
+}
+
+fn string_len(s: string) -> usize {
+    // Runtime function for string length
+    extern "asthra_runtime" fn asthra_string_len(s: string) -> usize;
+    unsafe { return asthra_string_len(s); }
+}
+
+fn slice_from_raw_parts(ptr: *mut u8, length: usize) -> []u8 {
+    // Runtime function for slice creation
+    extern "asthra_runtime" fn asthra_slice_from_raw_parts(ptr: *mut u8, length: usize) -> []u8;
+    unsafe { return asthra_slice_from_raw_parts(ptr, length); }
+} 

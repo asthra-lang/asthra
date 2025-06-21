@@ -1,0 +1,20 @@
+/**
+ * Asthra Programming Language Compiler - Expression Grammar Productions Implementation
+ * Main entry point for expression parsing - includes all expression parsing modules
+ * 
+ * Copyright (c) 2024 Asthra Project
+ * Licensed under the terms specified in LICENSE
+ */
+
+#include "grammar_expressions.h"
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
+// Include all expression parsing modules
+#include "grammar_expressions_precedence.c"
+#include "grammar_expressions_unary.c"
+#include "grammar_expressions_primary.c"
+#include "grammar_expressions_special.c"
+#include "grammar_expressions_struct.c"
+#include "grammar_expressions_utils.c" 

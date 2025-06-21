@@ -1,0 +1,6 @@
+package test;
+
+pub fn main(none) -> int {
+    let x: int = "string"; // Type error
+    return x;
+}

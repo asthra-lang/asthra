@@ -1,0 +1,805 @@
+// Asthra Tier 3 Concurrency Examples
+// Complex concurrency using external libraries and C FFI
+
+// ============================================================================
+// Example 1: Tokio Async Runtime Integration
+// ============================================================================
+
+// External Tokio runtime declarations
+extern "tokio" {
+    fn tokio_runtime_new(none) -> *mut TokioRuntime;
+    fn tokio_runtime_destroy(runtime: *mut TokioRuntime) -> void;
+    fn tokio_spawn(runtime: *mut TokioRuntime, task: fn() -> ()) -> TaskHandle;
+    fn tokio_spawn_async(runtime: *mut TokioRuntime, future: Future<i32>) -> TaskHandle;
+    fn tokio_block_on(runtime: *mut TokioRuntime, future: Future<T>) -> T;
+    fn tokio_await_all(runtime: *mut TokioRuntime, handles: []TaskHandle) -> Result<[]TaskResult, TokioError>;
+    fn tokio_timeout(runtime: *mut TokioRuntime, duration_ms: i64, future: Future<T>) -> Result<T, TimeoutError>;
+}
+
+// Tokio types
+type TokioRuntime = *mut void;
+type TaskHandle = *mut void;
+type Future<T> = *mut void;
+type TaskResult = i32;
+
+enum TokioError {
+    RuntimeError(string),
+    TaskError(string),
+    JoinError(string),
+}
+
+enum TimeoutError {
+    Timeout,
+    InnerError(string),
+}
+
+fn example_tokio_high_performance(none) -> Result<PerformanceMetrics, string> {
+    println("Starting Tokio high-performance async example...");
+    
+    let runtime: auto  // Manual review needed = tokio_runtime_new();
+    if runtime.is_null() {
+        return Result.Err("Failed to create Tokio runtime".to_string());
+    }
+    
+    let task_count: i32 = 10000;
+    let mut handles = [];
+    
+    // Spawn thousands of lightweight async tasks
+    for i in 0..task_count {
+        let handle: auto  // Manual review needed = tokio_spawn(runtime, move || {;
+            high_performance_task(i);
+        });
+        handles.push(handle);
+    }
+    
+    println("Spawned {} async tasks", task_count);
+    
+    let start_time: auto  // Manual review needed = get_system_time_ms();
+    
+    // Wait for all tasks to complete
+    let results: auto  // Manual review needed = tokio_await_all(runtime, handles);
+        match .map_err(|e| format!("Tokio await failed: " + :?, e)) {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+    
+    let end_time: auto  // Manual review needed = get_system_time_ms();
+    let total_time: auto  // Manual review needed = end_time - start_time;
+    
+    // Cleanup
+    tokio_runtime_destroy(runtime);
+    
+    let metrics: auto  // Manual review needed = PerformanceMetrics {;
+        task_count: task_count,
+        total_time_ms: total_time,
+        tasks_per_second: (task_count as f64) / (total_time as f64 / 1000.0),
+        successful_tasks: results.len() as i32,
+        memory_efficiency: "High (Tokio green threads)".to_string(),
+    };
+    
+    println("Tokio performance: {} tasks in {} ms (" + (:.2).to_string() + " tasks/sec)", 
+             metrics.task_count, metrics.total_time_ms, metrics.tasks_per_second);
+    
+    Result.Ok(metrics)
+}
+
+struct PerformanceMetrics {
+    task_count: i32,
+    total_time_ms: i64,
+    tasks_per_second: f64,
+    successful_tasks: i32,
+    memory_efficiency: string,
+}
+
+fn high_performance_task(task_id: i32) {
+    // Simulate lightweight async work
+    async_compute_operation(task_id);
+}
+
+fn async_compute_operation(input: i32) -> i32 {
+    // Simulate non-blocking computation
+    input * 2 + 1
+}
+
+// ============================================================================
+// Example 2: Rayon Parallel Processing Integration
+// ============================================================================
+
+// External Rayon declarations  
+extern "rayon" {
+    fn rayon_init_thread_pool(num_threads: i32) -> RayonThreadPool;
+    fn rayon_par_iter_map(pool: RayonThreadPool, data: []i32, func: fn(i32) -> i32) -> []i32;
+    fn rayon_par_iter_filter_map(pool: RayonThreadPool, data: []i32, func: fn(i32) -> Option<i32>) -> []i32;
+    fn rayon_par_iter_reduce(pool: RayonThreadPool, data: []i32, identity: i32, func: fn(i32, i32) -> i32) -> i32;
+    fn rayon_destroy_thread_pool(pool: RayonThreadPool) -> void;
+}
+
+type RayonThreadPool = *mut void;
+
+fn example_rayon_parallel_processing(none) -> Result<ProcessingResults, string> {
+    println("Starting Rayon parallel processing example...");
+    
+    let thread_count: i32 = 8;
+    let pool: auto  // Manual review needed = rayon_init_thread_pool(thread_count);
+    
+    // Generate large dataset
+    let data_size: i32 = 1000000;
+    let data: auto  // Manual review needed = generate_large_dataset(data_size);
+    
+    println("Processing {} elements with {} threads", data_size, thread_count);
+    
+    let start_time: auto  // Manual review needed = get_system_time_ms();
+    
+    // Parallel map operation
+    let mapped_data: auto  // Manual review needed = rayon_par_iter_map(pool, data.clone(), |x| x * x);
+    let map_time: auto  // Manual review needed = get_system_time_ms();
+    
+    // Parallel filter-map operation
+    let filtered_data: auto  // Manual review needed = rayon_par_iter_filter_map(pool, mapped_data, |x| {;
+        if x % 2 == 0 {
+            Option.Some(x / 2)
+        } else {
+            Option.None
+        }
+    });
+    let filter_time: auto  // Manual review needed = get_system_time_ms();
+    
+    // Parallel reduce operation
+    let sum: auto  // Manual review needed = rayon_par_iter_reduce(pool, filtered_data.clone(), 0, |a, b| a + b);
+    let reduce_time: auto  // Manual review needed = get_system_time_ms();
+    
+    // Cleanup
+    rayon_destroy_thread_pool(pool);
+    
+    let results: auto  // Manual review needed = ProcessingResults {;
+        original_size: data_size,
+        filtered_size: filtered_data.len() as i32,
+        final_sum: sum,
+        map_time_ms: map_time - start_time,
+        filter_time_ms: filter_time - map_time,
+        reduce_time_ms: reduce_time - filter_time,
+        total_time_ms: reduce_time - start_time,
+        throughput_elements_per_ms: (data_size as f64) / ((reduce_time - start_time) as f64),
+    };
+    
+    println("Rayon processing completed: {} -> {} elements, sum = {}", 
+             results.original_size, results.filtered_size, results.final_sum);
+    println("Performance: " + (:.2).to_string() + " elements/ms", results.throughput_elements_per_ms);
+    
+    Result.Ok(results)
+}
+
+struct ProcessingResults {
+    original_size: i32,
+    filtered_size: i32,
+    final_sum: i32,
+    map_time_ms: i64,
+    filter_time_ms: i64,
+    reduce_time_ms: i64,
+    total_time_ms: i64,
+    throughput_elements_per_ms: f64,
+}
+
+fn generate_large_dataset(size: i32) -> []i32 {
+    let mut data = [];
+    for i in 0..size {
+        data.push(i % 1000); // Values 0-999
+    }
+    data
+}
+
+// ============================================================================
+// Example 3: Actor Model with Actix Integration
+// ============================================================================
+
+// External Actix actor system declarations
+extern "actix" {
+    fn actix_system_new(none) -> ActixSystem;
+    fn actix_system_run(system: ActixSystem) -> Result<(), ActixError>;
+    fn actix_spawn_actor(system: ActixSystem, actor: Actor) -> ActorAddr;
+    fn actix_send_message(addr: ActorAddr, message: Message) -> Future<MessageResult>;
+    fn actix_broadcast_message(addrs: []ActorAddr, message: Message) -> []Future<MessageResult>;
+    fn actix_system_shutdown(system: ActixSystem) -> void;
+}
+
+type ActixSystem = *mut void;
+type ActorAddr = *mut void;
+type Actor = *mut void;
+type Message = *mut void;
+type MessageResult = *mut void;
+
+enum ActixError {
+    SystemError(string),
+    ActorError(string),
+    MessageError(string),
+}
+
+fn example_actor_system(none) -> Result<ActorSystemResults, string> {
+    println("Starting Actix actor system example...");
+    
+    let system: auto  // Manual review needed = actix_system_new();
+    
+    // Create multiple types of actors
+    let worker_actors: auto  // Manual review needed = create_worker_actors(system, 5);
+    let coordinator_actor: auto  // Manual review needed = create_coordinator_actor(system);
+    let monitor_actor: auto  // Manual review needed = create_monitor_actor(system);
+    
+    println("Created {} worker actors + coordinator + monitor", worker_actors.len());
+    
+    let start_time: auto  // Manual review needed = get_system_time_ms();
+    
+    // Distribute work among actors
+    let work_items: auto  // Manual review needed = generate_work_messages(100);
+    let mut message_futures = [];
+    
+    for (index, work_item) in work_items.enumerate() {
+        let target_actor: auto  // Manual review needed = worker_actors[index % worker_actors.len()];
+        let future: auto  // Manual review needed = actix_send_message(target_actor, work_item);
+        message_futures.push(future);
+    }
+    
+    // Monitor progress
+    let monitor_message: auto  // Manual review needed = create_monitor_message("track_progress", work_items.len());
+    actix_send_message(monitor_actor, monitor_message);
+    
+    // Coordinate completion
+    let coordination_message: auto  // Manual review needed = create_coordination_message("await_completion");
+    let completion_future: auto  // Manual review needed = actix_send_message(coordinator_actor, coordination_message);
+    
+    // Wait for all work to complete (this would be more complex in real Actix)
+    let processing_time: auto  // Manual review needed = simulate_actor_processing_time(work_items.len());
+    
+    let end_time: auto  // Manual review needed = get_system_time_ms();
+    
+    // Shutdown system
+    actix_system_shutdown(system);
+    
+    let results: auto  // Manual review needed = ActorSystemResults {;
+        worker_count: worker_actors.len() as i32,
+        messages_processed: work_items.len() as i32,
+        total_time_ms: end_time - start_time,
+        messages_per_second: (work_items.len() as f64) / ((end_time - start_time) as f64 / 1000.0),
+        actor_efficiency: "High (message-passing concurrency)".to_string(),
+    };
+    
+    println("Actor system processed {} messages with {} actors in {} ms", 
+             results.messages_processed, results.worker_count, results.total_time_ms);
+    
+    Result.Ok(results)
+}
+
+struct ActorSystemResults {
+    worker_count: i32,
+    messages_processed: i32,
+    total_time_ms: i64,
+    messages_per_second: f64,
+    actor_efficiency: string,
+}
+
+fn create_worker_actors(system: ActixSystem, count: i32) -> []ActorAddr {
+    let mut actors = [];
+    for i in 0..count {
+        let worker: auto  // Manual review needed = create_worker_actor(i);
+        let addr: auto  // Manual review needed = actix_spawn_actor(system, worker);
+        actors.push(addr);
+    }
+    actors
+}
+
+fn create_worker_actor(worker_id: i32) -> Actor {
+    // Create a worker actor (simplified representation)
+    // In real Actix, this would define message handlers
+    create_actor_with_id(worker_id)
+}
+
+fn create_coordinator_actor(system: ActixSystem) -> ActorAddr {
+    let coordinator: auto  // Manual review needed = create_actor_with_role("coordinator");
+    actix_spawn_actor(system, coordinator)
+}
+
+fn create_monitor_actor(system: ActixSystem) -> ActorAddr {
+    let monitor: auto  // Manual review needed = create_actor_with_role("monitor");
+    actix_spawn_actor(system, monitor)
+}
+
+fn generate_work_messages(count: i32) -> []Message {
+    let mut messages = [];
+    for i in 0..count {
+        let message: auto  // Manual review needed = create_work_message(i, format!("work_data_{}", i));
+        messages.push(message);
+    }
+    messages
+}
+
+// ============================================================================
+// Example 4: Distributed Computing with MPI
+// ============================================================================
+
+// External MPI (Message Passing Interface) declarations
+extern "mpi" {
+    fn MPI_Init(none) -> Result<(), MPIError>;
+    fn MPI_Finalize(none) -> Result<(), MPIError>;
+    fn MPI_Comm_rank(comm: MPIComm) -> Result<i32, MPIError>;
+    fn MPI_Comm_size(comm: MPIComm) -> Result<i32, MPIError>;
+    fn MPI_Send(data: *mut void, count: i32, datatype: MPIDatatype, dest: i32, tag: i32, comm: MPIComm) -> Result<(), MPIError>;
+    fn MPI_Recv(data: *mut void, count: i32, datatype: MPIDatatype, source: i32, tag: i32, comm: MPIComm) -> Result<MPIStatus, MPIError>;
+    fn MPI_Broadcast(data: *mut void, count: i32, datatype: MPIDatatype, root: i32, comm: MPIComm) -> Result<(), MPIError>;
+    fn MPI_Reduce(sendbuf: *mut void, recvbuf: *mut void, count: i32, datatype: MPIDatatype, op: MPIOperation, root: i32, comm: MPIComm) -> Result<(), MPIError>;
+}
+
+type MPIComm = i32; // MPI communicator
+type MPIDatatype = i32; // MPI data type
+type MPIOperation = i32; // MPI operation
+type MPIStatus = *mut void;
+
+enum MPIError {
+    InitError(string),
+    CommError(string),
+    DataError(string),
+}
+
+const MPI_COMM_WORLD: MPIComm = 0;
+const MPI_INT: MPIDatatype = 1;
+const MPI_SUM: MPIOperation = 1;
+
+fn example_distributed_computing(none) -> Result<DistributedResults, string> {
+    println("Starting MPI distributed computing example...");
+    
+    // Initialize MPI
+    match MPI_Init().map_err(|e| format!("MPI initialization failed: " + :?, e)) {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    
+    let rank: auto  // Manual review needed = MPI_Comm_rank(MPI_COMM_WORLD);
+        match .map_err(|e| format!("Failed to get MPI rank: " + :?, e)) {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+    let size: auto  // Manual review needed = MPI_Comm_size(MPI_COMM_WORLD);
+        match .map_err(|e| format!("Failed to get MPI size: " + :?, e)) {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+    
+    println("MPI Process {} of {} started", rank, size);
+    
+    let start_time: auto  // Manual review needed = get_system_time_ms();
+    
+    // Distributed computation based on rank
+    let results: auto  // Manual review needed = if rank == 0 {;
+        // Master process
+        master_process(size)
+    } else {
+        // Worker process  
+        worker_process(rank, size)
+    match } {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    
+    let end_time: auto  // Manual review needed = get_system_time_ms();
+    
+    // Finalize MPI
+    match MPI_Finalize().map_err(|e| format!("MPI finalization failed: " + :?, e)) {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    
+    let distributed_results: auto  // Manual review needed = DistributedResults {;
+        process_rank: rank,
+        total_processes: size,
+        computation_time_ms: end_time - start_time,
+        local_result: results.local_computation,
+        global_result: results.global_sum,
+        communication_efficiency: calculate_communication_efficiency(size),
+    };
+    
+    if rank == 0 {
+        println("Distributed computation completed: {} processes, global result = {}", 
+                 size, distributed_results.global_result);
+    }
+    
+    Result.Ok(distributed_results)
+}
+
+struct DistributedResults {
+    process_rank: i32,
+    total_processes: i32,
+    computation_time_ms: i64,
+    local_result: i32,
+    global_result: i32,
+    communication_efficiency: f64,
+}
+
+struct ComputationResults {
+    local_computation: i32,
+    global_sum: i32,
+}
+
+fn master_process(size: i32) -> Result<ComputationResults, string> {
+    println("Master process distributing work to {} workers", size - 1);
+    
+    // Broadcast work parameters to all workers
+    let work_size: i32 = 1000;
+    let work_size_ptr: auto  // Manual review needed = &work_size as *const i32 as *mut void;
+    MPI_Broadcast(work_size_ptr, 1, MPI_INT, 0, MPI_COMM_WORLD)
+        match .map_err(|e| format!("Broadcast failed: " + :?, e)) {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+    
+    // Perform local computation
+    let local_result: auto  // Manual review needed = distributed_computation_chunk(0, work_size / size);
+    
+    // Collect results from workers
+    let mut global_sum = local_result;
+    for worker_rank in 1..size {
+        let mut worker_result = 0i32;
+        let worker_result_ptr: auto  // Manual review needed = &mut worker_result as *mut i32 as *mut void;
+        
+        MPI_Recv(worker_result_ptr, 1, MPI_INT, worker_rank, 0, MPI_COMM_WORLD)
+            match .map_err(|e| format!("Receive from worker {} failed: " + :?, worker_rank, e)) {
+                Result.Ok(_) => {}
+                Result.Err(e) => return Result.Err(e)
+            }
+        
+        global_sum += worker_result;
+        println("Received result {} from worker {}", worker_result, worker_rank);
+    }
+    
+    Result.Ok(ComputationResults {
+        local_computation: local_result,
+        global_sum: global_sum,
+    })
+}
+
+fn worker_process(rank: i32, size: i32) -> Result<ComputationResults, string> {
+    println("Worker process {} starting computation", rank);
+    
+    // Receive work parameters from master
+    let mut work_size = 0i32;
+    let work_size_ptr: auto  // Manual review needed = &mut work_size as *mut i32 as *mut void;
+    MPI_Broadcast(work_size_ptr, 1, MPI_INT, 0, MPI_COMM_WORLD)
+        match .map_err(|e| format!("Broadcast receive failed: " + :?, e)) {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+    
+    // Perform local computation
+    let chunk_size: auto  // Manual review needed = work_size / size;
+    let start_index: auto  // Manual review needed = rank * chunk_size;
+    let local_result: auto  // Manual review needed = distributed_computation_chunk(start_index, chunk_size);
+    
+    // Send result back to master
+    let local_result_ptr: auto  // Manual review needed = &local_result as *const i32 as *mut void;
+    MPI_Send(local_result_ptr, 1, MPI_INT, 0, 0, MPI_COMM_WORLD)
+        match .map_err(|e| format!("Send to master failed: " + :?, e)) {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+    
+    println("Worker {} completed computation, result = {}", rank, local_result);
+    
+    Result.Ok(ComputationResults {
+        local_computation: local_result,
+        global_sum: 0, // Workers don't know global sum
+    })
+}
+
+fn distributed_computation_chunk(start_index: i32, chunk_size: i32) -> i32 {
+    let mut sum = 0;
+    for i in start_index..(start_index + chunk_size) {
+        sum += compute_expensive_function(i);
+    }
+    sum
+}
+
+fn compute_expensive_function(input: i32) -> i32 {
+    // Simulate expensive computation
+    let mut result = input;
+    for _ in 0..1000 {
+        result = (result * 31 + 17) % 1000000;
+    }
+    result
+}
+
+fn calculate_communication_efficiency(process_count: i32) -> f64 {
+    // Simplified efficiency calculation
+    1.0 - (1.0 / process_count as f64)
+}
+
+// ============================================================================
+// Example 5: GPU Computing with CUDA Integration
+// ============================================================================
+
+// External CUDA declarations
+extern "cuda" {
+    fn cuda_device_count(none) -> Result<i32, CudaError>;
+    fn cuda_set_device(device_id: i32) -> Result<(), CudaError>;
+    fn cuda_malloc(size: usize) -> Result<*mut void, CudaError>;
+    fn cuda_free(ptr: *mut void) -> Result<(), CudaError>;
+    fn cuda_memcpy_host_to_device(dst: *mut void, src: *const void, size: usize) -> Result<(), CudaError>;
+    fn cuda_memcpy_device_to_host(dst: *mut void, src: *const void, size: usize) -> Result<(), CudaError>;
+    fn cuda_launch_kernel(kernel: CudaKernel, grid_size: i32, block_size: i32, args: [](*mut void)) -> Result<(), CudaError>;
+    fn cuda_device_synchronize(none) -> Result<(), CudaError>;
+}
+
+type CudaKernel = *mut void;
+
+enum CudaError {
+    DeviceError(string),
+    MemoryError(string),
+    KernelError(string),
+}
+
+fn example_gpu_computing(none) -> Result<GPUResults, string> {
+    println("Starting CUDA GPU computing example...");
+    
+    // Check for CUDA devices
+    let device_count: auto  // Manual review needed = cuda_device_count();
+        match .map_err(|e| format!("Failed to get CUDA device count: " + :?, e)) {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+    
+    if device_count == 0 {
+        return Result.Err("No CUDA devices available".to_string());
+    }
+    
+    println("Found {} CUDA device(s)", device_count);
+    
+    // Set device
+    cuda_set_device(0)
+        match .map_err(|e| format!("Failed to set CUDA device: " + :?, e)) {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+    
+    let data_size: i32 = 1000000;
+    let data_bytes: auto  // Manual review needed = data_size * 4; // 4 bytes per i32;
+    
+    // Allocate host memory
+    let host_input: auto  // Manual review needed = generate_gpu_input_data(data_size);
+    let mut host_output = vec![0i32; data_size as usize];
+    
+    // Allocate device memory
+    let device_input: auto  // Manual review needed = cuda_malloc(data_bytes as usize);
+        match .map_err(|e| format!("Failed to allocate device input memory: " + :?, e)) {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+    let device_output: auto  // Manual review needed = cuda_malloc(data_bytes as usize);
+        match .map_err(|e| format!("Failed to allocate device output memory: " + :?, e)) {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+    
+    let start_time: auto  // Manual review needed = get_system_time_ms();
+    
+    // Copy data to device
+    cuda_memcpy_host_to_device(
+        device_input, 
+        host_input.as_ptr() as *const void, 
+        data_bytes as usize
+    match ).map_err(|e| format!("Failed to copy data to device: " + :?, e)) {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    
+    let copy_to_device_time: auto  // Manual review needed = get_system_time_ms();
+    
+    // Launch GPU kernel
+    let kernel: auto  // Manual review needed = load_vector_add_kernel();
+    let block_size: i32 = 256;
+    let grid_size: auto  // Manual review needed = (data_size + block_size - 1) / block_size;
+    
+    cuda_launch_kernel(
+        kernel, 
+        grid_size, 
+        block_size, 
+        vec![device_input, device_output, &data_size as *const i32 as *mut void]
+    match ).map_err(|e| format!("Failed to launch kernel: " + :?, e)) {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    
+    // Wait for kernel completion
+    cuda_device_synchronize()
+        match .map_err(|e| format!("Kernel execution failed: " + :?, e)) {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+    
+    let kernel_time: auto  // Manual review needed = get_system_time_ms();
+    
+    // Copy results back to host
+    cuda_memcpy_device_to_host(
+        host_output.as_mut_ptr() as *mut void,
+        device_output,
+        data_bytes as usize
+    match ).map_err(|e| format!("Failed to copy data from device: " + :?, e)) {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    
+    let copy_from_device_time: auto  // Manual review needed = get_system_time_ms();
+    
+    // Cleanup device memory
+    cuda_free(device_input).ok();
+    cuda_free(device_output).ok();
+    
+    let total_time: auto  // Manual review needed = copy_from_device_time - start_time;
+    let kernel_only_time: auto  // Manual review needed = kernel_time - copy_to_device_time;
+    
+    // Validate results
+    let validation_passed: auto  // Manual review needed = validate_gpu_results(&host_input, &host_output);
+    
+    let results: auto  // Manual review needed = GPUResults {;
+        data_size: data_size,
+        total_time_ms: total_time,
+        kernel_time_ms: kernel_only_time,
+        throughput_elements_per_ms: (data_size as f64) / (kernel_only_time as f64),
+        memory_bandwidth_gb_per_s: calculate_memory_bandwidth(data_bytes * 2, kernel_only_time),
+        validation_passed: validation_passed,
+        device_count: device_count,
+    };
+    
+    println("GPU computation completed: {} elements in {} ms (" + (:.2).to_string() + " elements/ms)", 
+             results.data_size, results.kernel_time_ms, results.throughput_elements_per_ms);
+    println("Memory bandwidth: " + (:.2).to_string() + " GB/s", results.memory_bandwidth_gb_per_s);
+    
+    Result.Ok(results)
+}
+
+struct GPUResults {
+    data_size: i32,
+    total_time_ms: i64,
+    kernel_time_ms: i64,
+    throughput_elements_per_ms: f64,
+    memory_bandwidth_gb_per_s: f64,
+    validation_passed: bool,
+    device_count: i32,
+}
+
+fn generate_gpu_input_data(size: i32) -> Vec<i32> {
+    let mut data = [];
+    for i in 0..size {
+        data.push(i);
+    }
+    data
+}
+
+fn load_vector_add_kernel(none) -> CudaKernel {
+    // Load compiled CUDA kernel for vector addition
+    // This would typically load from a .cubin or .ptx file
+    create_kernel_stub("vector_add")
+}
+
+fn validate_gpu_results(input: &Vec<i32>, output: &Vec<i32>) -> bool {
+    if input.len() != output.len() {
+        return false;
+    }
+    
+    for (i, (&inp, &out)) in input.iter().zip(output.iter()).enumerate() {
+        let expected: auto  // Manual review needed = inp * 2; // Assuming kernel doubles the input;
+        if out != expected {
+            println("Validation failed at index {}: expected {}, got {}", i, expected, out);
+            return false;
+        }
+    }
+    
+    true
+}
+
+fn calculate_memory_bandwidth(bytes_transferred: i32, time_ms: i64) -> f64 {
+    let bytes_per_second: auto  // Manual review needed = (bytes_transferred as f64) / (time_ms as f64 / 1000.0);
+    bytes_per_second / (1024.0 * 1024.0 * 1024.0) // Convert to GB/s
+}
+
+// ============================================================================
+// Helper Functions and Stubs
+// ============================================================================
+
+fn get_system_time_ms(none) -> i64 {
+    // System-specific time function
+    123456789i64 // Placeholder
+}
+
+fn simulate_actor_processing_time(message_count: i32) -> i64 {
+    // Simulate time for actor message processing
+    (message_count as i64) * 2 // 2ms per message
+}
+
+fn create_actor_with_id(id: i32) -> Actor {
+    // Create actor stub
+    id as *mut void
+}
+
+fn create_actor_with_role(role: &str) -> Actor {
+    // Create actor stub
+    role.as_ptr() as *mut void
+}
+
+fn create_work_message(id: i32, data: string) -> Message {
+    // Create message stub
+    id as *mut void
+}
+
+fn create_monitor_message(command: &str, param: i32) -> Message {
+    // Create monitor message stub
+    param as *mut void
+}
+
+fn create_coordination_message(command: &str) -> Message {
+    // Create coordination message stub
+    command.as_ptr() as *mut void
+}
+
+fn create_kernel_stub(name: &str) -> CudaKernel {
+    // Create CUDA kernel stub
+    name.as_ptr() as *mut void
+}
+
+// ============================================================================
+// Main Examples Runner
+// ============================================================================
+
+fn main(none) -> Result<(), string> {
+    println("=== Asthra Tier 3 External Library Concurrency Examples ===");
+    println("Note: These examples require external libraries and are for demonstration");
+    println("purposes. Actual implementation would require proper library integration.");
+    
+    // Example 1: Tokio async runtime
+    println!("\n--- Example 1: Tokio High-Performance Async ---");
+    let tokio_results_result: auto  // Manual review needed = example_tokio_high_performance();
+    let tokio_results: auto  // Match unwrap - manual review needed = match tokio_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println!("Tokio achieved " + (:.2).to_string() + " tasks/second", tokio_results.tasks_per_second);
+    
+    // Example 2: Rayon parallel processing
+    println!("\n--- Example 2: Rayon Parallel Processing ---");
+    let rayon_results_result: auto  // Manual review needed = example_rayon_parallel_processing();
+    let rayon_results: auto  // Match unwrap - manual review needed = match rayon_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println!("Rayon processed " + (:.2).to_string() + " elements/ms", rayon_results.throughput_elements_per_ms);
+    
+    // Example 3: Actor system
+    println!("\n--- Example 3: Actix Actor System ---");
+    let actor_results_result: auto  // Manual review needed = example_actor_system();
+    let actor_results: auto  // Match unwrap - manual review needed = match actor_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println!("Actor system achieved " + (:.2).to_string() + " messages/second", actor_results.messages_per_second);
+    
+    // Example 4: Distributed computing
+    println!("\n--- Example 4: MPI Distributed Computing ---");
+    let distributed_results_result: auto  // Manual review needed = example_distributed_computing();
+    let distributed_results: string = match distributed_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println!("Distributed computation across {} processes completed", 
+             distributed_results.total_processes);
+    
+    // Example 5: GPU computing
+    println!("\n--- Example 5: CUDA GPU Computing ---");
+    let gpu_results_result: auto  // Manual review needed = example_gpu_computing();
+    let gpu_results: auto  // Match unwrap - manual review needed = match gpu_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println!("GPU computation achieved " + (:.2).to_string() + " GB/s memory bandwidth", 
+             gpu_results.memory_bandwidth_gb_per_s);
+    
+    println!("\nAll Tier 3 examples completed!");
+    println!("These demonstrate the integration capabilities with external libraries");
+    println!("for high-performance, specialized, and distributed computing scenarios.");
+    
+    Result.Ok(())
+} 

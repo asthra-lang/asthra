@@ -1,0 +1,15 @@
+package main;
+
+fn main(none) -> i32 {
+    let a: i32;           // 32-bit signed integer
+    let b: u32;           // 32-bit unsigned integer
+    let c: u8;            // 8-bit unsigned integer (character)
+    let d: i16;           // 16-bit signed integer
+    let e: i64;           // 64-bit signed integer
+    let f: f32;           // 32-bit floating point
+    let g: f64;           // 64-bit floating point
+    let h: bool;          // Boolean true or false
+    let i: string;        // Asthra native string type
+    let j: usize;         // Platform-dependent size type
+    return 0;
+} 

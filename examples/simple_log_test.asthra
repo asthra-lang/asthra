@@ -1,0 +1,11 @@
+package main;
+
+fn main(none) -> i32 {
+    let flag: bool = true;
+    
+    if flag {
+        log("This should parse correctly now");
+    }
+    
+    return 0;
+} 

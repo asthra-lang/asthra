@@ -1,0 +1,9 @@
+package main;
+
+fn main(none) -> i32 {
+    let flag: bool = true;
+    if flag {
+        log("Inside if block");
+    }
+    return 0;
+} 

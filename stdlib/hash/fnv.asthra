@@ -1,0 +1,89 @@
+// Asthra Standard Library - FNV Hash Implementation
+package stdlib::hash;
+
+// FNV-1a constants
+pub const FNV1A_64_OFFSET_BASIS: u64 = 14695981039346656037ULL;
+pub const FNV1A_64_PRIME: u64 = 1099511628211ULL;
+pub const FNV1A_32_OFFSET_BASIS: u32 = 2166136261UL;
+pub const FNV1A_32_PRIME: u32 = 16777619UL;
+
+// =============================================================================
+// FNV-1a 64-bit Implementation
+// =============================================================================
+
+// Hash bytes using FNV-1a (64-bit)
+pub fn fnv1a_64(data: []u8) -> u64 {
+    let mut hash: u64 = FNV1A_64_OFFSET_BASIS;
+    
+    for i in 0..data.len {
+        hash = hash ^ data[i] as u64;
+        hash = hash * FNV1A_64_PRIME;
+    }
+    
+    return hash;
+}
+
+// Hash string using FNV-1a (64-bit)
+pub fn fnv1a_64_string(s: string) -> u64 {
+    return fnv1a_64(string_to_bytes(s));
+}
+
+// Hash bytes using FNV-1a with custom offset basis
+pub fn fnv1a_64_with_basis(data: []u8, offset_basis: u64) -> u64 {
+    let mut hash: u64 = offset_basis;
+    
+    for i in 0..data.len {
+        hash = hash ^ data[i] as u64;
+        hash = hash * FNV1A_64_PRIME;
+    }
+    
+    return hash;
+}
+
+// =============================================================================
+// FNV-1a 32-bit Implementation
+// =============================================================================
+
+// Hash bytes using FNV-1a (32-bit)
+pub fn fnv1a_32(data: []u8) -> u32 {
+    let mut hash: u32 = FNV1A_32_OFFSET_BASIS;
+    
+    for i in 0..data.len {
+        hash = hash ^ data[i] as u32;
+        hash = hash * FNV1A_32_PRIME;
+    }
+    
+    return hash;
+}
+
+// Hash string using FNV-1a (32-bit)
+pub fn fnv1a_32_string(s: string) -> u32 {
+    return fnv1a_32(string_to_bytes(s));
+}
+
+// =============================================================================
+// Configuration-Based Interface
+// =============================================================================
+
+// Hash with FNV configuration
+pub fn hash_fnv_config(data: []u8, config: HashConfig) -> HashResult {
+    match config.function {
+        HashFunction.FNV_1a => {
+            let hash: u64 = match config.seed {
+                Option.Some(seed) => {
+                    fnv1a_64_with_basis(data, seed)
+                },
+                Option.None => {
+                    fnv1a_64(data)
+                },
+            };
+            return HashResult.Ok(hash);
+        },
+        _ => {
+            return HashResult.InvalidInput("Configuration not for FNV hash function");
+        },
+    }
+}
+
+// External function for string conversion
+extern fn string_to_bytes(s: string) -> []u8; 

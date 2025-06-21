@@ -1,0 +1,51 @@
+repos:
+  - repo: local
+    hooks:
+      - id: asthra-grammar-check
+        name: Asthra Grammar Conformance Check
+        entry: python3 scripts/grammar_conformance_checker.py
+        args: ['--scan', '.', '--fix', 'all', '--dry-run']
+        language: system
+        files: '\.asthra$'
+        pass_filenames: false
+        
+      - id: documentation-examples-check
+        name: Documentation Examples Grammar Check
+        entry: python3 scripts/validate_single_file.py
+        language: system
+        files: '^docs/.*\.md$'
+        pass_filenames: true
+        
+      - id: user-manual-validation
+        name: User Manual Examples Validation
+        entry: scripts/validate_manual_examples.sh
+        args: ['docs/user-manual/']
+        language: system
+        files: '^docs/user-manual/.*\.md$'
+        pass_filenames: false
+        
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.md$'
+      - id: end-of-file-fixer
+        exclude: '\.md$'
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+        
+  - repo: https://github.com/psf/black
+    rev: 23.3.0
+    hooks:
+      - id: black
+        files: '^scripts/.*\.py$'
+        
+  - repo: https://github.com/pycqa/flake8
+    rev: 6.0.0
+    hooks:
+      - id: flake8
+        files: '^scripts/.*\.py$'
+        args: ['--max-line-length=100', '--ignore=E203,W503'] 

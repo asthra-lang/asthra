@@ -1,0 +1,878 @@
+// Asthra Standard Library - File System Module (Improved Implementation)
+// Provides comprehensive file and directory operations with robust error handling
+
+package stdlib::fs;
+
+// Import core functionality
+import "stdlib/asthra/core";
+import "stdlib/io";
+
+// ============================================================================
+// Error Types (Comprehensive)
+// ============================================================================
+
+enum FSError {
+    // File/Directory Not Found
+    NotFound(string),                    // Path does not exist
+    
+    // Permission and Access Errors
+    PermissionDenied(string),            // Insufficient permissions
+    AccessDenied(string),                // File is locked or in use
+    
+    // File State Errors
+    AlreadyExists(string),               // File/directory already exists
+    NotEmpty(string),                    // Directory not empty for removal
+    IsDirectory(string),                 // Expected file, found directory
+    IsFile(string),                      // Expected directory, found file
+    
+    // I/O and System Errors
+    IOError(string),                     // General I/O error
+    DiskFull(string),                    // No space left on device
+    ReadOnly(string),                    // Filesystem is read-only
+    TooManyLinks(string),                // Too many symbolic links
+    
+    // Path and Name Errors
+    InvalidPath(string),                 // Invalid path format
+    PathTooLong(string),                 // Path exceeds system limits
+    InvalidFileName(string),             // Invalid filename characters
+    
+    // Resource Errors
+    TooManyOpenFiles(string),            // File descriptor limit reached
+    OutOfMemory(string),                 // Memory allocation failed
+    
+    // Cross-Platform Specific
+    UnsupportedOperation(string),        // Operation not supported on platform
+    NetworkError(string),                // Network filesystem error
+    
+    // Encoding and Data Errors
+    InvalidUtf8([]u8),                   // Invalid UTF-8 in filename/content
+    CorruptedData(string),               // File data corruption detected
+    
+    // Catch-all
+    Other(string)                        // Other filesystem errors
+}
+
+// ============================================================================
+// Core Types and Structures
+// ============================================================================
+
+// File handle with automatic resource management
+struct File {
+    handle: *mut void,                   // Internal file handle
+    path: string,                        // File path for debugging
+    mode: OpenMode,                      // How file was opened
+    position: u64,                       // Current file position
+    is_closed: bool                      // Track if file is closed
+}
+
+// File open modes with explicit semantics
+enum OpenMode {
+    Read,                                // Read-only access
+    Write,                               // Write-only, truncate if exists
+    Append,                              // Write-only, append to end
+    ReadWrite,                           // Read and write access
+    CreateNew,                           // Create new file, fail if exists
+    CreateOrTruncate,                    // Create or truncate existing
+    CreateOrAppend                       // Create or append to existing
+}
+
+// File seek positions
+enum SeekFrom {
+    Start(u64),                          // Absolute position from start
+    End(i64),                            // Relative position from end
+    Current(i64)                         // Relative position from current
+}
+
+// Advanced open options
+struct OpenOptions {
+    mode: OpenMode,
+    create: bool,                        // Create if doesn't exist
+    create_new: bool,                    // Create new, fail if exists
+    truncate: bool,                      // Truncate existing file
+    append: bool,                        // Open in append mode
+    sync: bool,                          // Synchronous I/O
+    permissions: Option<Permissions>     // Set permissions on creation
+}
+
+// Comprehensive file metadata
+struct Metadata {
+    // Basic properties
+    size: u64,                           // File size in bytes
+    file_type: FileType,                 // Type of filesystem entry
+    
+    // Timestamps (platform-specific precision)
+    created: Option<SystemTime>,         // Creation time (if available)
+    modified: SystemTime,                // Last modification time
+    accessed: Option<SystemTime>,        // Last access time (if available)
+    
+    // Permissions and attributes
+    permissions: Permissions,            // File permissions
+    readonly: bool,                      // Read-only flag
+    hidden: bool,                        // Hidden file flag (Windows/macOS)
+    
+    // Platform-specific
+    device_id: Option<u64>,              // Device ID (Unix)
+    inode: Option<u64>,                  // Inode number (Unix)
+    links: u32,                          // Hard link count
+    
+    // Extended attributes
+    is_symlink: bool,                    // Is symbolic link
+    symlink_target: Option<string>       // Target of symlink (if applicable)
+}
+
+// File type enumeration
+enum FileType {
+    File,                                // Regular file
+    Directory,                           // Directory
+    Symlink,                             // Symbolic link
+    Pipe,                                // Named pipe (FIFO)
+    Socket,                              // Unix domain socket
+    BlockDevice,                         // Block device
+    CharDevice,                          // Character device
+    Unknown                              // Unknown or unsupported type
+}
+
+// Cross-platform permissions
+struct Permissions {
+    // Owner permissions
+    owner_read: bool,
+    owner_write: bool,
+    owner_execute: bool,
+    
+    // Group permissions (Unix)
+    group_read: bool,
+    group_write: bool,
+    group_execute: bool,
+    
+    // Other permissions (Unix)
+    other_read: bool,
+    other_write: bool,
+    other_execute: bool,
+    
+    // Special bits (Unix)
+    setuid: bool,                        // Set user ID on execution
+    setgid: bool,                        // Set group ID on execution
+    sticky: bool                         // Sticky bit
+}
+
+// System time representation
+struct SystemTime {
+    seconds: i64,                        // Seconds since Unix epoch
+    nanoseconds: u32                     // Nanosecond component
+}
+
+// Directory entry with comprehensive information
+struct DirEntry {
+    name: string,                        // Entry name (not full path)
+    path: string,                        // Full path to entry
+    file_type: FileType,                 // Type of entry (if known)
+    metadata: Option<Metadata>           // Cached metadata (if requested)
+}
+
+// Directory iterator with filtering and sorting
+struct DirIterator {
+    handle: *mut void,                   // Internal directory handle
+    path: string,                        // Directory path
+    include_hidden: bool,                // Include hidden files
+    recursive: bool,                     // Recursive traversal
+    follow_symlinks: bool,               // Follow symbolic links
+    max_depth: Option<u32>,              // Maximum recursion depth
+    current_depth: u32,                  // Current recursion depth
+    finished: bool                       // Iterator exhausted
+}
+
+// Directory reading options
+struct DirOptions {
+    recursive: bool,                     // Recursive traversal
+    include_hidden: bool,                // Include hidden files
+    follow_symlinks: bool,               // Follow symbolic links
+    max_depth: Option<u32>,              // Maximum recursion depth
+    load_metadata: bool                  // Pre-load metadata for entries
+}
+
+// ============================================================================
+// Basic File Operations API
+// ============================================================================
+
+// Open file with specified mode
+fn open(path: string, mode: OpenMode) -> Result<File, FSError> {
+    extern "libc" fn fopen(filename: *const u8, mode: *const u8) -> *mut void;
+    extern "libc" fn ferror(stream: *mut void) -> i32;
+    
+    unsafe {
+        let path_cstr: *const u8 = string_to_cstr(path);
+        let mode_str: string = mode_to_string(mode);
+        let mode_cstr: *const u8 = string_to_cstr(mode_str);
+        
+        let handle: *mut void = fopen(path_cstr, mode_cstr);
+        if handle == null {
+            // Check specific error conditions
+            if !path_exists(path) {
+                return Result.Err(FSError.NotFound("File not found: " + path));
+            }
+            if !path_accessible(path, mode) {
+                return Result.Err(FSError.PermissionDenied("Permission denied: " + path));
+            }
+            return Result.Err(FSError.IOError("Failed to open file: " + path));
+        }
+        
+        return Result.Ok(File {
+            handle: handle,
+            path: path,
+            mode: mode,
+            position: 0,
+            is_closed: false
+        });
+    }
+}
+
+// Create a new file (fails if exists)
+fn create(path: string) -> Result<File, FSError> {
+    if exists(path) {
+        return Result.Err(FSError.AlreadyExists("File already exists: " + path));
+    }
+    return open(path, OpenMode.CreateNew);
+}
+
+// Open file with advanced options
+fn open_with_options(path: string, options: OpenOptions) -> Result<File, FSError> {
+    // Validate options
+    if options.create_new && exists(path) {
+        return Result.Err(FSError.AlreadyExists("File already exists: " + path));
+    }
+    
+    // Convert options to appropriate mode
+    let mode: auto  // Manual review needed = if options.create_new {;
+        OpenMode.CreateNew
+    } else if options.truncate {
+        OpenMode.CreateOrTruncate
+    } else if options.append {
+        OpenMode.CreateOrAppend
+    } else {
+        options.mode
+    };
+    
+    let file_result: auto  // Manual review needed = open(path, mode);
+    match file_result {
+        Result.Ok(file) => {
+            // Set permissions if specified
+            match options.permissions {
+                Some(perms) => {
+                    let perm_result: Result<void, FSError> = set_file_permissions(file, perms);
+                    match perm_result {
+                        Result.Err(error) => {
+                            // Close file and return permission error
+                            close_file_handle(file.handle);
+                            return Result.Err(error);
+                        },
+                        Result.Ok(_) => {}
+                    }
+                },
+                None => {}
+            }
+            return Result.Ok(file);
+        },
+        Result.Err(error) => return Result.Err(error)
+    }
+}
+
+// Read entire file to string with encoding validation
+fn read_to_string(path: string) -> Result<string, FSError> {
+    let file_result: Result<File, FSError> = open(path, OpenMode.Read);
+    match file_result {
+        Result.Ok(file) => {
+            let content_result: Result<string, FSError> = read_file_to_string(file);
+            close_file_handle(file.handle);
+            return content_result;
+        },
+        Result.Err(error) => return Result.Err(error)
+    }
+}
+
+// Read entire file to byte array
+fn read_to_bytes(path: string) -> Result<[]u8, FSError> {
+    let file_result: Result<File, FSError> = open(path, OpenMode.Read);
+    match file_result {
+        Result.Ok(file) => {
+            let content_result: Result<[]u8, FSError> = read_file_to_bytes(file);
+            close_file_handle(file.handle);
+            return content_result;
+        },
+        Result.Err(error) => return Result.Err(error)
+    }
+}
+
+// Write string to file (creates or truncates)
+fn write_string(path: string, content: string) -> Result<void, FSError> {
+    let file_result: Result<File, FSError> = open(path, OpenMode.CreateOrTruncate);
+    match file_result {
+        Result.Ok(file) => {
+            let write_result: Result<void, FSError> = write_string_to_file(file, content);
+            close_file_handle(file.handle);
+            return write_result;
+        },
+        Result.Err(error) => return Result.Err(error)
+    }
+}
+
+// Write bytes to file (creates or truncates)
+fn write_bytes(path: string, data: []u8) -> Result<void, FSError> {
+    let file_result: Result<File, FSError> = open(path, OpenMode.CreateOrTruncate);
+    match file_result {
+        Result.Ok(file) => {
+            let write_result: Result<void, FSError> = write_bytes_to_file(file, data);
+            close_file_handle(file.handle);
+            return write_result;
+        },
+        Result.Err(error) => return Result.Err(error)
+    }
+}
+
+// Append string to file
+fn append_string(path: string, content: string) -> Result<void, FSError> {
+    let file_result: Result<File, FSError> = open(path, OpenMode.CreateOrAppend);
+    match file_result {
+        Result.Ok(file) => {
+            let write_result: Result<void, FSError> = write_string_to_file(file, content);
+            close_file_handle(file.handle);
+            return write_result;
+        },
+        Result.Err(error) => return Result.Err(error)
+    }
+}
+
+// Copy file from source to destination
+fn copy(from: string, to: string) -> Result<u64, FSError> {
+    let options: auto  // Manual review needed = CopyOptions {;
+        overwrite: true,
+        preserve_permissions: true,
+        preserve_timestamps: true,
+        follow_symlinks: true,
+        verify_checksum: false
+    };
+    return copy_with_options(from, to, options);
+}
+
+// Copy file with options
+fn copy_with_options(from: string, to: string, options: CopyOptions) -> Result<u64, FSError> {
+    // Check source exists
+    if !exists(from) {
+        return Result.Err(FSError.NotFound("Source file not found: " + from));
+    }
+    
+    // Check if destination exists and handle overwrite
+    if exists(to) && !options.overwrite {
+        return Result.Err(FSError.AlreadyExists("Destination exists and overwrite disabled: " + to));
+    }
+    
+    // Read source file
+    let content_result: Result<[]u8, FSError> = read_to_bytes(from);
+    match content_result {
+        Result.Ok(content) => {
+            // Write to destination
+            let write_result: Result<void, FSError> = write_bytes(to, content);
+            match write_result {
+                Result.Ok(_) => {
+                    // Preserve metadata if requested
+                    if options.preserve_permissions || options.preserve_timestamps {
+                        let metadata_result: Result<FileMetadata, FSError> = metadata(from);
+                        match metadata_result {
+                            Result.Ok(meta) => {
+                                if options.preserve_permissions {
+                                    set_permissions(to, meta.permissions);
+                                }
+                                // Note: Timestamp preservation would require platform-specific code
+                            },
+                            Result.Err(_) => {
+                                // Ignore metadata errors for copy operation
+                            }
+                        }
+                    }
+                    return Result.Ok(content.len as u64);
+                },
+                Result.Err(error) => return Result.Err(error)
+            }
+        },
+        Result.Err(error) => return Result.Err(error)
+    }
+}
+
+// Copy options
+struct CopyOptions {
+    overwrite: bool,                     // Overwrite existing file
+    preserve_permissions: bool,          // Preserve source permissions
+    preserve_timestamps: bool,           // Preserve timestamps
+    follow_symlinks: bool,               // Follow symbolic links
+    verify_checksum: bool                // Verify copy integrity
+}
+
+// Move/rename file or directory
+fn rename(from: string, to: string) -> Result<void, FSError> {
+    extern "libc" fn rename(old: *const u8, new: *const u8) -> i32;
+    
+    unsafe {
+        let from_cstr: *const u8 = string_to_cstr(from);
+        let to_cstr: *const u8 = string_to_cstr(to);
+        
+        let result: i32 = rename(from_cstr, to_cstr);
+        if result != 0 {
+            return Result.Err(FSError.IOError("Failed to rename: " + from + " -> " + to));
+        }
+        return Result.Ok(());
+    }
+}
+
+// Remove file
+fn remove_file(path: string) -> Result<void, FSError> {
+    extern "libc" fn remove(pathname: *const u8) -> i32;
+    
+    // Check if path is actually a file
+    if is_dir(path) {
+        return Result.Err(FSError.IsDirectory("Cannot remove directory as file: " + path));
+    }
+    
+    unsafe {
+        let path_cstr: *const u8 = string_to_cstr(path);
+        let result: i32 = remove(path_cstr);
+        if result != 0 {
+            if !exists(path) {
+                return Result.Err(FSError.NotFound("File not found: " + path));
+            }
+            return Result.Err(FSError.IOError("Failed to remove file: " + path));
+        }
+        return Result.Ok(());
+    }
+}
+
+// ============================================================================
+// File Handle Operations (impl File)
+// ============================================================================
+
+impl File {
+    // Read operations
+    fn read(self, buffer: []mut u8) -> Result<usize, FSError> {
+        extern "libc" fn fread(ptr: *mut void, size: usize, nmemb: usize, stream: *mut void) -> usize;
+        extern "libc" fn ferror(stream: *mut void) -> i32;
+        extern "libc" fn feof(stream: *mut void) -> i32;
+        
+        if self.is_closed {
+            return Result.Err(FSError.IOError("Cannot read from closed file"));
+        }
+        
+        unsafe {
+            let bytes_read: usize = fread(buffer.ptr as *mut void, 1, buffer.len, self.handle);
+            
+            if bytes_read == 0 {
+                if feof(self.handle) != 0 {
+                    return Result.Ok(0);  // End of file
+                }
+                if ferror(self.handle) != 0 {
+                    return Result.Err(FSError.IOError("Error reading file: " + self.path));
+                }
+            }
+            
+            return Result.Ok(bytes_read);
+        }
+    }
+    
+    fn read_to_string(self) -> Result<string, FSError> {
+        let bytes_result: auto  // Manual review needed = self.read_to_end();
+        match bytes_result {
+            Result.Ok(bytes) => {
+                // Validate UTF-8
+                let validation_result: auto  // Manual review needed = validate_utf8(bytes);
+                match validation_result {
+                    Result.Ok(_) => {
+                        let content: auto  // Manual review needed = string_from_bytes(bytes);
+                        return Result.Ok(content);
+                    },
+                    Result.Err(invalid_bytes) => {
+                        return Result.Err(FSError.InvalidUtf8(invalid_bytes));
+                    }
+                }
+            },
+            Result.Err(error) => return Result.Err(error)
+        }
+    }
+    
+    fn read_to_end(self) -> Result<[]u8, FSError> {
+        extern "libc" fn fseek(stream: *mut void, offset: i64, whence: i32) -> i32;
+        extern "libc" fn ftell(stream: *mut void) -> i64;
+        
+        if self.is_closed {
+            return Result.Err(FSError.IOError("Cannot read from closed file"));
+        }
+        
+        unsafe {
+            // Get current position
+            let current_pos: i64 = ftell(self.handle);
+            if current_pos < 0 {
+                return Result.Err(FSError.IOError("Failed to get file position"));
+            }
+            
+            // Seek to end to get file size
+            fseek(self.handle, 0, 2); // SEEK_END
+            let file_size: i64 = ftell(self.handle);
+            if file_size < 0 {
+                return Result.Err(FSError.IOError("Failed to get file size"));
+            }
+            
+            // Seek back to current position
+            fseek(self.handle, current_pos, 0); // SEEK_SET
+            
+            let remaining_size: usize = (file_size - current_pos) as usize;
+            let mut buffer: []u8 = [];
+            
+            // Allocate buffer for remaining content
+            let buffer_ptr: *mut u8 = core.alloc(remaining_size, core.MemoryZone.Manual) as *mut u8;
+            if buffer_ptr == null {
+                return Result.Err(FSError.OutOfMemory("Failed to allocate read buffer"));
+            }
+            
+            let bytes_read_result: auto  // Manual review needed = self.read_into_buffer(buffer_ptr, remaining_size);
+            match bytes_read_result {
+                Result.Ok(bytes_read) => {
+                    // Copy to Asthra slice
+                    let mut i: usize = 0;
+                    while i < bytes_read {
+                        buffer.push(*(buffer_ptr + i));
+                        i = i + 1;
+                    }
+                    
+                    core.free(buffer_ptr as *mut void, core.MemoryZone.Manual);
+                    return Result.Ok(buffer);
+                },
+                Result.Err(error) => {
+                    core.free(buffer_ptr as *mut void, core.MemoryZone.Manual);
+                    return Result.Err(error);
+                }
+            }
+        }
+    }
+    
+    // Write operations
+    fn write_string(self, text: string) -> Result<usize, FSError> {
+        let bytes: auto  // Manual review needed = string_to_bytes(text);
+        return self.write_all(bytes);
+    }
+    
+    fn write_all(self, data: []u8) -> Result<usize, FSError> {
+        extern "libc" fn fwrite(ptr: *const void, size: usize, nmemb: usize, stream: *mut void) -> usize;
+        extern "libc" fn ferror(stream: *mut void) -> i32;
+        
+        if self.is_closed {
+            return Result.Err(FSError.IOError("Cannot write to closed file"));
+        }
+        
+        unsafe {
+            let bytes_written: usize = fwrite(data.ptr as *const void, 1, data.len, self.handle);
+            
+            if bytes_written != data.len {
+                if ferror(self.handle) != 0 {
+                    return Result.Err(FSError.IOError("Error writing to file: " + self.path));
+                }
+                return Result.Err(FSError.DiskFull("Disk full while writing: " + self.path));
+            }
+            
+            return Result.Ok(bytes_written);
+        }
+    }
+    
+    // Position and seeking
+    fn seek(self, pos: SeekFrom) -> Result<u64, FSError> {
+        extern "libc" fn fseek(stream: *mut void, offset: i64, whence: i32) -> i32;
+        extern "libc" fn ftell(stream: *mut void) -> i64;
+        
+        if self.is_closed {
+            return Result.Err(FSError.IOError("Cannot seek in closed file"));
+        }
+        
+        unsafe {
+            let (offset, whence) = match pos {
+                SeekFrom.Start(pos) => (pos as i64, 0),  // SEEK_SET
+                SeekFrom.End(offset) => (offset, 2),     // SEEK_END
+                SeekFrom.Current(offset) => (offset, 1)  // SEEK_CUR
+            };
+            
+            let result: i32 = fseek(self.handle, offset, whence);
+            if result != 0 {
+                return Result.Err(FSError.IOError("Seek failed in file: " + self.path));
+            }
+            
+            let new_pos: i64 = ftell(self.handle);
+            if new_pos < 0 {
+                return Result.Err(FSError.IOError("Failed to get position after seek"));
+            }
+            
+            return Result.Ok(new_pos as u64);
+        }
+    }
+    
+    fn position(self) -> u64 {
+        return self.position;
+    }
+    
+    // File operations
+    fn flush(self) -> Result<void, FSError> {
+        extern "libc" fn fflush(stream: *mut void) -> i32;
+        
+        if self.is_closed {
+            return Result.Err(FSError.IOError("Cannot flush closed file"));
+        }
+        
+        unsafe {
+            let result: i32 = fflush(self.handle);
+            if result != 0 {
+                return Result.Err(FSError.IOError("Failed to flush file: " + self.path));
+            }
+            return Result.Ok(());
+        }
+    }
+    
+    // Resource management
+    fn close(self) -> Result<void, FSError> {
+        if self.is_closed {
+            return Result.Ok(());  // Already closed
+        }
+        
+        let result: auto  // Manual review needed = close_file_handle(self.handle);
+        // Mark as closed regardless of result to prevent double-close
+        self.is_closed = true;
+        return result;
+    }
+    
+    fn is_closed(self) -> bool {
+        return self.is_closed;
+    }
+}
+
+// ============================================================================
+// Directory Operations API
+// ============================================================================
+
+// Create directory
+fn create_dir(path: string) -> Result<void, FSError> {
+    extern "libc" fn mkdir(pathname: *const u8, mode: u32) -> i32;
+    
+    if exists(path) {
+        if is_dir(path) {
+            return Result.Err(FSError.AlreadyExists("Directory already exists: " + path));
+        } else {
+            return Result.Err(FSError.IsFile("Path exists but is not a directory: " + path));
+        }
+    }
+    
+    unsafe {
+        let path_cstr: *const u8 = string_to_cstr(path);
+        let result: i32 = mkdir(path_cstr, 0o755);  // rwxr-xr-x
+        if result != 0 {
+            return Result.Err(FSError.IOError("Failed to create directory: " + path));
+        }
+        return Result.Ok(());
+    }
+}
+
+// Create directory and all parent directories
+fn create_dir_all(path: string) -> Result<void, FSError> {
+    if exists(path) {
+        if is_dir(path) {
+            return Result.Ok(());  // Already exists
+        } else {
+            return Result.Err(FSError.IsFile("Path exists but is not a directory: " + path));
+        }
+    }
+    
+    // Get parent directory
+    let parent_result: auto  // Manual review needed = get_parent_path(path);
+    match parent_result {
+        Some(parent) => {
+            // Recursively create parent
+            let parent_result: auto  // Manual review needed = create_dir_all(parent);
+            match parent_result {
+                Result.Err(error) => return Result.Err(error)
+                Result.Ok(_) => {}
+            }
+        },
+        None => {
+            // No parent (root directory)
+        }
+    }
+    
+    // Create this directory
+    return create_dir(path);
+}
+
+// Remove empty directory
+fn remove_dir(path: string) -> Result<void, FSError> {
+    extern "libc" fn rmdir(pathname: *const u8) -> i32;
+    
+    if !exists(path) {
+        return Result.Err(FSError.NotFound("Directory not found: " + path));
+    }
+    
+    if !is_dir(path) {
+        return Result.Err(FSError.IsFile("Path is not a directory: " + path));
+    }
+    
+    unsafe {
+        let path_cstr: *const u8 = string_to_cstr(path);
+        let result: i32 = rmdir(path_cstr);
+        if result != 0 {
+            // Check if directory is not empty
+            if directory_has_entries(path) {
+                return Result.Err(FSError.NotEmpty("Directory not empty: " + path));
+            }
+            return Result.Err(FSError.IOError("Failed to remove directory: " + path));
+        }
+        return Result.Ok(());
+    }
+}
+
+// Read directory contents (simple)
+fn read_dir(path: string) -> Result<[]DirEntry, FSError> {
+    let options: auto  // Manual review needed = DirOptions {;
+        recursive: false,
+        include_hidden: false,
+        follow_symlinks: true,
+        max_depth: None,
+        load_metadata: false
+    };
+    
+    let iterator_result: auto  // Manual review needed = read_dir_with_options(path, options);
+    match iterator_result {
+        Result.Ok(iterator) => {
+            let entries_result: auto  // Manual review needed = iterator.collect();
+            iterator.close();
+            return entries_result;
+        },
+        Result.Err(error) => return Result.Err(error)
+    }
+}
+
+// Create directory iterator with options
+fn read_dir_with_options(path: string, options: DirOptions) -> Result<DirIterator, FSError> {
+    extern "libc" fn opendir(name: *const u8) -> *mut void;
+    
+    if !exists(path) {
+        return Result.Err(FSError.NotFound("Directory not found: " + path));
+    }
+    
+    if !is_dir(path) {
+        return Result.Err(FSError.IsFile("Path is not a directory: " + path));
+    }
+    
+    unsafe {
+        let path_cstr: *const u8 = string_to_cstr(path);
+        let handle: *mut void = opendir(path_cstr);
+        if handle == null {
+            return Result.Err(FSError.PermissionDenied("Failed to open directory: " + path));
+        }
+        
+        return Result.Ok(DirIterator {
+            handle: handle,
+            path: path,
+            include_hidden: options.include_hidden,
+            recursive: options.recursive,
+            follow_symlinks: options.follow_symlinks,
+            max_depth: options.max_depth,
+            current_depth: 0,
+            finished: false
+        });
+    }
+}
+
+// ============================================================================
+// Helper Functions and Internal Implementation
+// ============================================================================
+
+// Helper functions for file operations
+fn mode_to_string(mode: OpenMode) -> string {
+    match mode {
+        OpenMode.Read => return "r"
+        OpenMode.Write => return "w"
+        OpenMode.Append => return "a"
+        OpenMode.ReadWrite => return "r+"
+        OpenMode.CreateNew => return "wx"
+        OpenMode.CreateOrTruncate => return "w"
+        OpenMode.CreateOrAppend => return "a"
+    }
+}
+
+fn path_exists(path: string) -> bool {
+    extern "libc" fn access(pathname: *const u8, mode: i32) -> i32;
+    
+    unsafe {
+        let path_cstr: *const u8 = string_to_cstr(path);
+        return access(path_cstr, 0) == 0;  // F_OK
+    }
+}
+
+fn path_accessible(path: string, mode: OpenMode) -> bool {
+    extern "libc" fn access(pathname: *const u8, mode: i32) -> i32;
+    
+    unsafe {
+        let path_cstr: *const u8 = string_to_cstr(path);
+        let access_mode: auto  // Match unwrap - manual review needed = match mode {;
+            OpenMode.Read => 4,              // R_OK
+            OpenMode.Write => 2,             // W_OK
+            OpenMode.Append => 2,            // W_OK
+            OpenMode.ReadWrite => 6,         // R_OK | W_OK
+            _ => 0                           // F_OK
+        };
+        return access(path_cstr, access_mode) == 0;
+    }
+}
+
+// String conversion utilities
+fn string_to_cstr(s: string) -> *const u8 {
+    extern "asthra_runtime" fn asthra_string_to_cstr(s: string) -> *const u8;
+    unsafe { return asthra_string_to_cstr(s); }
+}
+
+fn string_from_cstr(cstr: *const u8) -> string {
+    extern "asthra_runtime" fn asthra_string_from_cstr(cstr: *const u8) -> string;
+    unsafe { return asthra_string_from_cstr(cstr); }
+}
+
+fn string_to_bytes(s: string) -> []u8 {
+    extern "asthra_runtime" fn asthra_string_to_bytes(s: string) -> []u8;
+    unsafe { return asthra_string_to_bytes(s); }
+}
+
+fn string_from_bytes(bytes: []u8) -> string {
+    extern "asthra_runtime" fn asthra_string_from_bytes(bytes: []u8) -> string;
+    unsafe { return asthra_string_from_bytes(bytes); }
+}
+
+// UTF-8 validation
+fn validate_utf8(bytes: []u8) -> Result<void, []u8> {
+    extern "asthra_runtime" fn asthra_validate_utf8(bytes: []u8) -> i32;
+    
+    unsafe {
+        let result: i32 = asthra_validate_utf8(bytes);
+        if result == 0 {
+            return Result.Ok(());
+        } else {
+            // Return the problematic bytes (simplified)
+            return Result.Err(bytes);
+        }
+    }
+}
+
+// Error handling utility
+fn handle_fs_error(error: FSError) -> string {
+    match error {
+        FSError.NotFound(path) => return "File not found: " + path
+        FSError.PermissionDenied(path) => return "Permission denied: " + path
+        FSError.AlreadyExists(path) => return "File already exists: " + path
+        FSError.IsDirectory(path) => return "Expected file, found directory: " + path
+        FSError.IsFile(path) => return "Expected directory, found file: " + path
+        FSError.InvalidPath(path) => return "Invalid path: " + path
+        FSError.DiskFull(path) => return "Disk full while writing: " + path
+        FSError.IOError(msg) => return "I/O error: " + msg
+        FSError.InvalidUtf8(bytes) => {
+            return "Invalid UTF-8 in filename (length: " + bytes.len + ")";
+        },
+        FSError.Other(msg) => return "Filesystem error: " + msg
+    }
+} 

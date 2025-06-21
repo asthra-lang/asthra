@@ -1,0 +1,300 @@
+// Asthra Internal - UTF-8 Validator
+// High-performance UTF-8 validation and processing
+// This package is internal and should not be used by user code
+
+package internal::unicode::utf8_validator;
+
+// ============================================================================
+// UTF-8 Validation Constants
+// ============================================================================
+
+// UTF-8 byte patterns
+const UTF8_1_BYTE_MAX: u8 = 0x7F;
+const UTF8_2_BYTE_PREFIX: u8 = 0xC0;
+const UTF8_2_BYTE_MASK: u8 = 0xE0;
+const UTF8_3_BYTE_PREFIX: u8 = 0xE0;
+const UTF8_3_BYTE_MASK: u8 = 0xF0;
+const UTF8_4_BYTE_PREFIX: u8 = 0xF0;
+const UTF8_4_BYTE_MASK: u8 = 0xF8;
+const UTF8_CONTINUATION_PREFIX: u8 = 0x80;
+const UTF8_CONTINUATION_MASK: u8 = 0xC0;
+
+// ============================================================================
+// Fast UTF-8 Validation
+// ============================================================================
+
+// Validate entire byte sequence for UTF-8 compliance
+fn validate_utf8_fast(bytes: []u8) -> Result<void, (usize, string)> {
+    let mut i: usize = 0;
+    
+    while i < bytes.len() {
+        let validation_result: Result<usize, string> = validate_utf8_char_at(bytes, i);
+        match validation_result {
+            Result.Ok(consumed) => {
+                i = i + consumed;
+            },
+            Result.Err(error) => {
+                return Result.Err((i, error));
+            }
+        }
+    }
+    
+    return Result.Ok(());
+}
+
+// Validate single UTF-8 character at position
+fn validate_utf8_char_at(bytes: []u8, pos: usize) -> Result<usize, string> {
+    if pos >= bytes.len() {
+        return Result.Err("Position out of bounds");
+    }
+    
+    let first_byte: u8 = bytes[pos];
+    
+    // ASCII character (0xxxxxxx)
+    if first_byte <= UTF8_1_BYTE_MAX {
+        return Result.Ok(1);
+    }
+    
+    // 2-byte character (110xxxxx 10xxxxxx)
+    if (first_byte & UTF8_2_BYTE_MASK) == UTF8_2_BYTE_PREFIX {
+        if pos + 1 >= bytes.len() {
+            return Result.Err("Incomplete 2-byte UTF-8 sequence");
+        }
+        
+        let second_byte: u8 = bytes[pos + 1];
+        if (second_byte & UTF8_CONTINUATION_MASK) != UTF8_CONTINUATION_PREFIX {
+            return Result.Err("Invalid continuation byte in 2-byte sequence");
+        }
+        
+        // Check for overlong encoding
+        let code_point: u32 = (((first_byte & 0x1F) as u32) << 6) | ((second_byte & 0x3F) as u32);
+        if code_point < 0x80 {
+            return Result.Err("Overlong 2-byte UTF-8 sequence");
+        }
+        
+        return Result.Ok(2);
+    }
+    
+    // 3-byte character (1110xxxx 10xxxxxx 10xxxxxx)
+    if (first_byte & UTF8_3_BYTE_MASK) == UTF8_3_BYTE_PREFIX {
+        if pos + 2 >= bytes.len() {
+            return Result.Err("Incomplete 3-byte UTF-8 sequence");
+        }
+        
+        let second_byte: u8 = bytes[pos + 1];
+        let third_byte: u8 = bytes[pos + 2];
+        
+        if (second_byte & UTF8_CONTINUATION_MASK) != UTF8_CONTINUATION_PREFIX {
+            return Result.Err("Invalid continuation byte in 3-byte sequence");
+        }
+        if (third_byte & UTF8_CONTINUATION_MASK) != UTF8_CONTINUATION_PREFIX {
+            return Result.Err("Invalid continuation byte in 3-byte sequence");
+        }
+        
+        // Check for overlong encoding and surrogate pairs
+        let code_point: u32 = (((first_byte & 0x0F) as u32) << 12) |
+                              (((second_byte & 0x3F) as u32) << 6) |
+                              ((third_byte & 0x3F) as u32);
+        
+        if code_point < 0x800 {
+            return Result.Err("Overlong 3-byte UTF-8 sequence");
+        }
+        if code_point >= 0xD800 && code_point <= 0xDFFF {
+            return Result.Err("UTF-8 sequence encodes surrogate pair");
+        }
+        
+        return Result.Ok(3);
+    }
+    
+    // 4-byte character (11110xxx 10xxxxxx 10xxxxxx 10xxxxxx)
+    if (first_byte & UTF8_4_BYTE_MASK) == UTF8_4_BYTE_PREFIX {
+        if pos + 3 >= bytes.len() {
+            return Result.Err("Incomplete 4-byte UTF-8 sequence");
+        }
+        
+        let second_byte: u8 = bytes[pos + 1];
+        let third_byte: u8 = bytes[pos + 2];
+        let fourth_byte: u8 = bytes[pos + 3];
+        
+        if (second_byte & UTF8_CONTINUATION_MASK) != UTF8_CONTINUATION_PREFIX {
+            return Result.Err("Invalid continuation byte in 4-byte sequence");
+        }
+        if (third_byte & UTF8_CONTINUATION_MASK) != UTF8_CONTINUATION_PREFIX {
+            return Result.Err("Invalid continuation byte in 4-byte sequence");
+        }
+        if (fourth_byte & UTF8_CONTINUATION_MASK) != UTF8_CONTINUATION_PREFIX {
+            return Result.Err("Invalid continuation byte in 4-byte sequence");
+        }
+        
+        // Check for overlong encoding and valid Unicode range
+        let code_point: u32 = (((first_byte & 0x07) as u32) << 18) |
+                              (((second_byte & 0x3F) as u32) << 12) |
+                              (((third_byte & 0x3F) as u32) << 6) |
+                              ((fourth_byte & 0x3F) as u32);
+        
+        if code_point < 0x10000 {
+            return Result.Err("Overlong 4-byte UTF-8 sequence");
+        }
+        if code_point > 0x10FFFF {
+            return Result.Err("UTF-8 sequence exceeds Unicode range");
+        }
+        
+        return Result.Ok(4);
+    }
+    
+    return Result.Err("Invalid UTF-8 start byte");
+}
+
+// ============================================================================
+// UTF-8 Character Counting
+// ============================================================================
+
+// Count UTF-8 characters in byte sequence
+fn count_utf8_chars(bytes: []u8) -> Result<usize, (usize, string)> {
+    let mut count: usize = 0;
+    let mut i: usize = 0;
+    
+    while i < bytes.len() {
+        let validation_result: Result<usize, string> = validate_utf8_char_at(bytes, i);
+        match validation_result {
+            Result.Ok(consumed) => {
+                count = count + 1;
+                i = i + consumed;
+            },
+            Result.Err(error) => {
+                return Result.Err((i, error));
+            }
+        }
+    }
+    
+    return Result.Ok(count);
+}
+
+// Check if byte sequence contains only ASCII characters
+fn is_ascii_fast(bytes: []u8) -> bool {
+    let mut i: usize = 0;
+    
+    // Process 8 bytes at a time for better performance
+    while i + 8 <= bytes.len() {
+        let chunk: u64 = unsafe {
+            *((bytes.ptr + i) as *u64)
+        };
+        
+        // Check if any byte has the high bit set
+        if (chunk & 0x8080808080808080) != 0 {
+            return false;
+        }
+        
+        i = i + 8;
+    }
+    
+    // Process remaining bytes
+    while i < bytes.len() {
+        if bytes[i] > UTF8_1_BYTE_MAX {
+            return false;
+        }
+        i = i + 1;
+    }
+    
+    return true;
+}
+
+// ============================================================================
+// UTF-8 Character Extraction
+// ============================================================================
+
+// Extract UTF-8 character at position
+fn extract_utf8_char(bytes: []u8, pos: usize) -> Result<(u32, usize), string> {
+    let validation_result: Result<usize, string> = validate_utf8_char_at(bytes, pos);
+    match validation_result {
+        Result.Ok(consumed) => {
+            let code_point: u32 = decode_utf8_char_unsafe(bytes, pos, consumed);
+            return Result.Ok((code_point, consumed));
+        },
+        Result.Err(error) => {
+            return Result.Err(error);
+        }
+    }
+}
+
+// Decode UTF-8 character (assumes valid UTF-8)
+fn decode_utf8_char_unsafe(bytes: []u8, pos: usize, length: usize) -> u32 {
+    match length {
+        1 => return bytes[pos] as u32,
+        2 => {
+            return (((bytes[pos] & 0x1F) as u32) << 6) |
+                   ((bytes[pos + 1] & 0x3F) as u32);
+        },
+        3 => {
+            return (((bytes[pos] & 0x0F) as u32) << 12) |
+                   (((bytes[pos + 1] & 0x3F) as u32) << 6) |
+                   ((bytes[pos + 2] & 0x3F) as u32);
+        },
+        4 => {
+            return (((bytes[pos] & 0x07) as u32) << 18) |
+                   (((bytes[pos + 1] & 0x3F) as u32) << 12) |
+                   (((bytes[pos + 2] & 0x3F) as u32) << 6) |
+                   ((bytes[pos + 3] & 0x3F) as u32);
+        },
+        _ => return 0  // Should never happen with valid UTF-8
+    }
+}
+
+// ============================================================================
+// UTF-8 Iteration
+// ============================================================================
+
+// UTF-8 iterator state
+struct Utf8Iterator {
+    bytes: []u8,
+    position: usize
+}
+
+fn create_utf8_iterator(bytes: []u8) -> Utf8Iterator {
+    return Utf8Iterator {
+        bytes: bytes,
+        position: 0
+    };
+}
+
+fn utf8_iterator_next(iter: *mut Utf8Iterator) -> Result<u32, string> {
+    unsafe {
+        if (*iter).position >= (*iter).bytes.len() {
+            return Result.Err("Iterator exhausted");
+        }
+        
+        let extract_result: Result<(u32, usize), string> = extract_utf8_char((*iter).bytes, (*iter).position);
+        match extract_result {
+            Result.Ok((code_point, consumed)) => {
+                (*iter).position = (*iter).position + consumed;
+                return Result.Ok(code_point);
+            },
+            Result.Err(error) => {
+                return Result.Err(error);
+            }
+        }
+    }
+}
+
+fn utf8_iterator_has_next(iter: *Utf8Iterator) -> bool {
+    unsafe {
+        return (*iter).position < (*iter).bytes.len();
+    }
+}
+
+// ============================================================================
+// Performance Optimized Functions
+// ============================================================================
+
+// SIMD-style validation for large buffers (simplified version)
+fn validate_utf8_bulk(bytes: []u8) -> Result<void, (usize, string)> {
+    let mut i: usize = 0;
+    
+    // Fast path for ASCII-only content
+    if is_ascii_fast(bytes) {
+        return Result.Ok(());
+    }
+    
+    // Fall back to character-by-character validation
+    return validate_utf8_fast(bytes);
+} 

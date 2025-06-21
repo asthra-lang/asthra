@@ -1,0 +1,589 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Build System and Deployment Rules for Asthra
+
+## Overview
+
+This rule defines standards for the build system, deployment processes, and release management for the Asthra programming language project. The build system must support cross-platform compilation, multiple compiler toolchains, and various build configurations while maintaining consistency and reliability.
+
+## Build System Architecture
+
+### Core Makefile Structure
+
+**UNDERSTAND** the multi-layered build system:
+
+- **`Makefile`**: Main build system with cross-platform support
+- **`Makefile.concurrency`**: Parallel build optimizations
+- **Platform Detection**: Automatic OS and compiler detection
+- **Feature Detection**: C17 feature availability checking
+- **Target Organization**: Logical grouping of build targets
+
+### Build Configuration
+
+**FOLLOW** established build patterns:
+
+```makefile
+# Platform detection
+ifeq ($(OS),Windows_NT)
+    PLATFORM = Windows
+    CC = cl
+    EXE_EXT = .exe
+    OBJ_EXT = .obj
+    LIB_EXT = .lib
+else ifeq ($(shell uname -s),Darwin)
+    PLATFORM = macOS
+    CC = clang
+    EXE_EXT =
+    OBJ_EXT = .o
+    LIB_EXT = .a
+else
+    PLATFORM = Linux
+    CC = clang
+    EXE_EXT =
+    OBJ_EXT = .o
+    LIB_EXT = .a
+endif
+
+# Compiler-specific flags
+ifeq ($(CC),cl)
+    CFLAGS = /std:c17 /W4 /analyze /D_CRT_SECURE_NO_WARNINGS
+    LDFLAGS = /INCREMENTAL:NO
+else
+    CFLAGS = -std=c17 -Wall -Wextra -Wpedantic
+    LDFLAGS = -pthread
+endif
+```
+
+## Build Target Standards
+
+### 1. Core Build Targets
+
+**MAINTAIN** these essential targets:
+
+```makefile
+# Primary targets
+all: compiler runtime stdlib tools
+clean: clean-all
+install: install-compiler install-runtime install-stdlib
+uninstall: uninstall-all
+
+# Component targets
+compiler: $(BIN_DIR)/asthra$(EXE_EXT)
+runtime: $(LIB_DIR)/libasthra_runtime$(LIB_EXT)
+stdlib: $(LIB_DIR)/libasthra_stdlib$(LIB_EXT)
+tools: $(BIN_DIR)/test_runner$(EXE_EXT)
+
+# Build configurations
+debug: CFLAGS += -g -DDEBUG
+debug: all
+
+release: CFLAGS += -O3 -DNDEBUG
+release: all
+
+profile: CFLAGS += -pg -O2
+profile: all
+```
+
+### 2. Testing Targets
+
+**PROVIDE** comprehensive testing targets:
+
+```makefile
+# Test execution
+test: test-basic test-runtime test-static-analysis test-benchmark
+test-basic: $(TEST_BASIC_TARGETS)
+test-runtime: $(TEST_RUNTIME_TARGETS)
+test-static-analysis: $(TEST_STATIC_ANALYSIS_TARGETS)
+test-benchmark: $(TEST_BENCHMARK_TARGETS)
+
+# Memory analysis
+test-valgrind: CFLAGS += -g
+test-valgrind: $(TEST_TARGETS)
+	valgrind --leak-check=full --show-leak-kinds=all ./run_tests
+
+test-asan: CFLAGS += -fsanitize=address -g
+test-asan: LDFLAGS += -fsanitize=address
+test-asan: $(TEST_TARGETS)
+
+test-tsan: CFLAGS += -fsanitize=thread -g
+test-tsan: LDFLAGS += -fsanitize=thread
+test-tsan: $(TEST_TARGETS)
+```
+
+### 3. Analysis and Quality Targets
+
+**INCLUDE** code quality and analysis targets:
+
+```makefile
+# Static analysis
+analyze: analyze-clang analyze-cppcheck
+analyze-clang:
+	clang-static-analyzer $(SRC_FILES)
+
+analyze-cppcheck:
+	cppcheck --enable=all --std=c17 $(SRC_DIRS)
+
+# Code formatting
+format:
+	clang-format -i $(SRC_FILES) $(HEADER_FILES)
+
+format-check:
+	clang-format --dry-run --Werror $(SRC_FILES) $(HEADER_FILES)
+
+# Documentation generation
+docs: docs-api docs-manual
+docs-api:
+	doxygen Doxyfile
+
+docs-manual:
+	pandoc docs/manual.md -o docs/manual.pdf
+```
+
+## Cross-Platform Build Support
+
+### 1. Platform Abstraction
+
+**USE** platform abstractions consistently:
+
+```makefile
+# Path handling
+ifeq ($(PLATFORM),Windows)
+    MKDIR = if not exist $(subst /,\,$1) mkdir $(subst /,\,$1)
+    RMDIR = if exist $(subst /,\,$1) rmdir /s /q $(subst /,\,$1)
+    CP = copy $(subst /,\,$1) $(subst /,\,$2)
+else
+    MKDIR = mkdir -p $1
+    RMDIR = rm -rf $1
+    CP = cp $1 $2
+endif
+
+# Library creation
+ifeq ($(CC),cl)
+    CREATE_LIB = lib /OUT:$@ $(filter %.obj,$^)
+else
+    CREATE_LIB = ar rcs $@ $(filter %.o,$^)
+endif
+```
+
+### 2. Compiler Feature Detection
+
+**DETECT** and adapt to compiler capabilities:
+
+```makefile
+# C17 feature detection
+HAS_STATIC_ASSERT := $(shell echo '_Static_assert(1, "test");' | $(CC) -std=c17 -x c - -o /dev/null 2>/dev/null && echo yes)
+HAS_GENERIC := $(shell echo '_Generic(1, int: 1, default: 0);' | $(CC) -std=c17 -x c - -o /dev/null 2>/dev/null && echo yes)
+HAS_ATOMICS := $(shell echo '#include <stdatomic.h>' | $(CC) -std=c17 -x c - -o /dev/null 2>/dev/null && echo yes)
+
+# Conditional compilation flags
+ifeq ($(HAS_STATIC_ASSERT),yes)
+    CFLAGS += -DASTHRA_HAS_STATIC_ASSERT=1
+endif
+
+ifeq ($(HAS_GENERIC),yes)
+    CFLAGS += -DASTHRA_HAS_GENERIC=1
+endif
+
+ifeq ($(HAS_ATOMICS),yes)
+    CFLAGS += -DASTHRA_HAS_ATOMICS=1
+endif
+```
+
+### 3. Dependency Management
+
+**HANDLE** dependencies properly across platforms:
+
+```makefile
+# Platform-specific dependencies
+ifeq ($(PLATFORM),macOS)
+    LDFLAGS += -framework CoreFoundation
+    LIBS += -lm
+else ifeq ($(PLATFORM),Linux)
+    LIBS += -lm -lrt -lpthread
+else ifeq ($(PLATFORM),Windows)
+    LIBS += kernel32.lib user32.lib
+endif
+
+# Automatic dependency generation
+%.d: %.c
+	$(CC) -MM -MT $(@:.d=.o) $< > $@
+
+-include $(DEPS)
+```
+
+## Build Performance Optimization
+
+### 1. Parallel Compilation
+
+**ENABLE** parallel builds effectively:
+
+```makefile
+# Detect CPU count
+ifeq ($(PLATFORM),Windows)
+    NPROCS = $(NUMBER_OF_PROCESSORS)
+else ifeq ($(PLATFORM),macOS)
+    NPROCS = $(shell sysctl -n hw.ncpu)
+else
+    NPROCS = $(shell nproc)
+endif
+
+# Parallel make invocation
+.PHONY: parallel
+parallel:
+	$(MAKE) -j$(NPROCS) all
+
+# Parallel test execution
+test-parallel:
+	$(MAKE) -j$(shell echo $$(($(NPROCS) / 2))) test
+```
+
+### 2. Incremental Builds
+
+**OPTIMIZE** for incremental compilation:
+
+```makefile
+# Proper dependency tracking
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(OBJ_DIR)/%.d
+	$(call MKDIR,$(dir $@))
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Timestamp-based rebuilding
+$(BIN_DIR)/asthra$(EXE_EXT): $(COMPILER_OBJECTS) | $(BIN_DIR)
+	$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
+
+# Conditional rebuilding based on changes
+ifneq ($(MAKECMDGOALS),clean)
+    -include $(DEPS)
+endif
+```
+
+### 3. Build Caching
+
+**IMPLEMENT** build result caching:
+
+```makefile
+# Cache directory structure
+CACHE_DIR = .build-cache
+OBJ_CACHE = $(CACHE_DIR)/objects
+DEP_CACHE = $(CACHE_DIR)/deps
+
+# Cached object compilation
+$(OBJ_CACHE)/%.o: %.c
+	@$(call MKDIR,$(dir $@))
+	@echo "Compiling (cached): $<"
+	@$(CC) $(CFLAGS) -c $< -o $@
+```
+
+## Release Management
+
+### 1. Version Management
+
+**MAINTAIN** consistent versioning:
+
+```makefile
+# Version information
+VERSION_MAJOR = 0
+VERSION_MINOR = 1
+VERSION_PATCH = 0
+VERSION_BUILD = $(shell git rev-list --count HEAD)
+VERSION_HASH = $(shell git rev-parse --short HEAD)
+
+VERSION = $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)
+VERSION_FULL = $(VERSION).$(VERSION_BUILD)-$(VERSION_HASH)
+
+# Version header generation
+$(SRC_DIR)/version.h: Makefile
+	@echo "Generating version header..."
+	@echo "#ifndef ASTHRA_VERSION_H" > $@
+	@echo "#define ASTHRA_VERSION_H" >> $@
+	@echo "#define ASTHRA_VERSION_MAJOR $(VERSION_MAJOR)" >> $@
+	@echo "#define ASTHRA_VERSION_MINOR $(VERSION_MINOR)" >> $@
+	@echo "#define ASTHRA_VERSION_PATCH $(VERSION_PATCH)" >> $@
+	@echo "#define ASTHRA_VERSION_BUILD $(VERSION_BUILD)" >> $@
+	@echo "#define ASTHRA_VERSION_STRING \"$(VERSION_FULL)\"" >> $@
+	@echo "#endif" >> $@
+```
+
+### 2. Release Builds
+
+**CREATE** proper release artifacts:
+
+```makefile
+# Release preparation
+release-prepare: clean format analyze test
+	@echo "Preparing release $(VERSION)..."
+	@git status --porcelain | grep -q . && echo "Working directory not clean" && exit 1 || true
+
+# Release build
+release-build: release-prepare
+	$(MAKE) release
+	$(MAKE) test-release
+	$(MAKE) package
+
+# Release packaging
+package: package-source package-binary package-docs
+
+package-source:
+	git archive --format=tar.gz --prefix=asthra-$(VERSION)/ HEAD > asthra-$(VERSION)-src.tar.gz
+
+package-binary: release
+	$(call MKDIR,asthra-$(VERSION)-$(PLATFORM))
+	$(call CP,$(BIN_DIR)/asthra$(EXE_EXT),asthra-$(VERSION)-$(PLATFORM)/)
+	$(call CP,$(LIB_DIR)/*,asthra-$(VERSION)-$(PLATFORM)/)
+	tar -czf asthra-$(VERSION)-$(PLATFORM).tar.gz asthra-$(VERSION)-$(PLATFORM)/
+
+package-docs: docs
+	tar -czf asthra-$(VERSION)-docs.tar.gz docs/
+```
+
+### 3. Installation and Distribution
+
+**PROVIDE** proper installation targets:
+
+```makefile
+# Installation paths
+PREFIX ?= /usr/local
+BINDIR = $(PREFIX)/bin
+LIBDIR = $(PREFIX)/lib
+INCLUDEDIR = $(PREFIX)/include
+DOCDIR = $(PREFIX)/share/doc/asthra
+
+# Installation targets
+install-compiler: $(BIN_DIR)/asthra$(EXE_EXT)
+	$(call MKDIR,$(BINDIR))
+	$(call CP,$<,$(BINDIR)/)
+
+install-runtime: $(LIB_DIR)/libasthra_runtime$(LIB_EXT)
+	$(call MKDIR,$(LIBDIR))
+	$(call CP,$<,$(LIBDIR)/)
+	$(call MKDIR,$(INCLUDEDIR)/asthra)
+	$(call CP,$(RUNTIME_HEADERS),$(INCLUDEDIR)/asthra/)
+
+install-docs: docs
+	$(call MKDIR,$(DOCDIR))
+	$(call CP,docs/*,$(DOCDIR)/)
+
+# Uninstallation
+uninstall:
+	$(call RMDIR,$(BINDIR)/asthra$(EXE_EXT))
+	$(call RMDIR,$(LIBDIR)/libasthra_*)
+	$(call RMDIR,$(INCLUDEDIR)/asthra)
+	$(call RMDIR,$(DOCDIR))
+```
+
+## Continuous Integration Support
+
+### 1. CI Build Targets
+
+**PROVIDE** CI-specific targets:
+
+```makefile
+# CI build pipeline
+ci-build: ci-setup ci-compile ci-test ci-package
+
+ci-setup:
+	@echo "Setting up CI environment..."
+	@echo "Platform: $(PLATFORM)"
+	@echo "Compiler: $(CC) $(shell $(CC) --version | head -1)"
+	@echo "Make: $(MAKE) $(shell $(MAKE) --version | head -1)"
+
+ci-compile: clean all
+
+ci-test: test test-asan test-tsan
+
+ci-package: package-binary
+
+# CI artifact collection
+ci-artifacts:
+	$(call MKDIR,artifacts)
+	$(call CP,asthra-*,artifacts/)
+	$(call CP,test_results.xml,artifacts/)
+	$(call CP,coverage.xml,artifacts/)
+```
+
+### 2. Matrix Build Support
+
+**SUPPORT** multiple build configurations:
+
+```makefile
+# Build matrix configurations
+CONFIGURATIONS = debug release profile
+SANITIZERS = none asan tsan msan ubsan
+
+# Matrix build target
+matrix-build:
+	@for config in $(CONFIGURATIONS); do \
+		for sanitizer in $(SANITIZERS); do \
+			echo "Building $$config with $$sanitizer..."; \
+			$(MAKE) clean; \
+			$(MAKE) $$config SANITIZER=$$sanitizer; \
+			$(MAKE) test SANITIZER=$$sanitizer; \
+		done; \
+	done
+```
+
+## Development Workflow Integration
+
+### 1. Development Targets
+
+**PROVIDE** developer-friendly targets:
+
+```makefile
+# Quick development cycle
+dev: debug test-basic
+	@echo "Development build complete"
+
+# Watch mode (requires inotify-tools or fswatch)
+watch:
+	@echo "Watching for changes..."
+	@while true; do \
+		inotifywait -r -e modify $(SRC_DIRS); \
+		$(MAKE) dev; \
+	done
+
+# Quick syntax check
+check:
+	@for file in $(SRC_FILES); do \
+		$(CC) $(CFLAGS) -fsyntax-only $$file; \
+	done
+```
+
+### 2. Debugging Support
+
+**INCLUDE** debugging assistance:
+
+```makefile
+# Debug builds with symbols
+debug-full: CFLAGS += -g3 -O0 -DDEBUG -fno-omit-frame-pointer
+debug-full: all
+
+# GDB integration
+gdb: debug-full
+	gdb $(BIN_DIR)/asthra$(EXE_EXT)
+
+# Valgrind debugging
+valgrind-debug: debug-full
+	valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all \
+		--track-origins=yes --verbose $(BIN_DIR)/asthra$(EXE_EXT)
+```
+
+## Build System Maintenance
+
+### 1. Makefile Organization
+
+**MAINTAIN** clean Makefile structure:
+
+```makefile
+# File organization
+include config.mk          # Configuration variables
+include platform.mk        # Platform-specific settings
+include rules.mk           # Build rules
+include tests.mk           # Test targets
+include docs.mk            # Documentation targets
+
+# Variable organization
+COMPILER_SOURCES = $(wildcard $(SRC_DIR)/*.c)
+RUNTIME_SOURCES = $(wildcard $(RUNTIME_DIR)/*.c)
+TEST_SOURCES = $(wildcard $(TEST_DIR)/*.c)
+
+COMPILER_OBJECTS = $(COMPILER_SOURCES:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+RUNTIME_OBJECTS = $(RUNTIME_SOURCES:$(RUNTIME_DIR)/%.c=$(OBJ_DIR)/%.o)
+TEST_OBJECTS = $(TEST_SOURCES:$(TEST_DIR)/%.c=$(OBJ_DIR)/%.o)
+```
+
+### 2. Build System Testing
+
+**TEST** the build system itself:
+
+```makefile
+# Build system validation
+test-build-system:
+	@echo "Testing clean build..."
+	$(MAKE) clean
+	$(MAKE) all
+	@echo "Testing incremental build..."
+	touch $(SRC_DIR)/main.c
+	$(MAKE) all
+	@echo "Testing parallel build..."
+	$(MAKE) clean
+	$(MAKE) -j$(NPROCS) all
+	@echo "Build system tests passed"
+```
+
+## Error Handling and Diagnostics
+
+### 1. Build Error Reporting
+
+**PROVIDE** clear error messages:
+
+```makefile
+# Error checking
+check-compiler:
+	@which $(CC) > /dev/null || (echo "Error: Compiler $(CC) not found" && exit 1)
+
+check-dependencies:
+	@echo "Checking build dependencies..."
+	@which make > /dev/null || (echo "Error: make not found" && exit 1)
+	@which git > /dev/null || (echo "Warning: git not found, version info may be incomplete")
+
+# Verbose build mode
+verbose: MAKEFLAGS += --debug=v
+verbose: all
+```
+
+### 2. Build Diagnostics
+
+**INCLUDE** diagnostic capabilities:
+
+```makefile
+# Build information
+info:
+	@echo "Build Configuration:"
+	@echo "  Platform: $(PLATFORM)"
+	@echo "  Compiler: $(CC)"
+	@echo "  Version: $(VERSION_FULL)"
+	@echo "  CFLAGS: $(CFLAGS)"
+	@echo "  LDFLAGS: $(LDFLAGS)"
+	@echo "  Features: $(FEATURES)"
+
+# Dependency analysis
+deps-analyze:
+	@echo "Analyzing dependencies..."
+	@$(CC) -MM $(CFLAGS) $(SRC_FILES) | grep -v '^#'
+```
+
+## Success Criteria
+
+### 1. Build Reliability
+
+**ENSURE** consistent builds:
+
+- 100% reproducible builds across platforms
+- Zero build failures in CI pipeline
+- Proper dependency tracking
+- Clean incremental builds
+
+### 2. Performance Standards
+
+**MAINTAIN** build performance:
+
+- Full clean build under 2 minutes
+- Incremental builds under 10 seconds
+- Parallel builds scale with CPU cores
+- Minimal build artifact size
+
+### 3. Platform Support
+
+**VERIFY** cross-platform functionality:
+
+- Successful builds on macOS, Linux, Windows
+- Proper compiler detection and feature usage
+- Platform-specific optimizations working
+- Consistent behavior across environments
+
+---
+
+**Remember**: The build system is the foundation of the development workflow. It must be reliable, fast, and maintainable to support the continued development of the Asthra programming language.

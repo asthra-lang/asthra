@@ -1,0 +1,170 @@
+// Asthra libc FFI Bindings v1.0
+// Safe wrappers for libc functions with proper error handling
+// 
+// This module provides FFI bindings to common libc functions with
+// proper error handling using the FFIError type.
+
+package stdlib::ffi::libc;
+
+import "stdlib/ffi/error" as error;
+import "stdlib/result" as result;
+import "stdlib/string" as string;
+
+// Common errno values from libc
+// These are typical values, but may vary by platform
+const EPERM: i32 = 1;        // Operation not permitted
+const ENOENT: i32 = 2;       // No such file or directory
+const ESRCH: i32 = 3;        // No such process
+const EINTR: i32 = 4;        // Interrupted system call
+const EIO: i32 = 5;          // I/O error
+const ENXIO: i32 = 6;        // No such device or address
+const E2BIG: i32 = 7;        // Argument list too long
+const ENOEXEC: i32 = 8;      // Exec format error
+const EBADF: i32 = 9;        // Bad file number
+const ECHILD: i32 = 10;      // No child processes
+const EAGAIN: i32 = 11;      // Try again
+const ENOMEM: i32 = 12;      // Out of memory
+const EACCES: i32 = 13;      // Permission denied
+const EFAULT: i32 = 14;      // Bad address
+const ENOTBLK: i32 = 15;     // Block device required
+const EBUSY: i32 = 16;       // Device or resource busy
+const EEXIST: i32 = 17;      // File exists
+const EXDEV: i32 = 18;       // Cross-device link
+const ENODEV: i32 = 19;      // No such device
+const ENOTDIR: i32 = 20;     // Not a directory
+const EISDIR: i32 = 21;      // Is a directory
+const EINVAL: i32 = 22;      // Invalid argument
+const ENFILE: i32 = 23;      // File table overflow
+const EMFILE: i32 = 24;      // Too many open files
+const ENOTTY: i32 = 25;      // Not a typewriter
+const ETXTBSY: i32 = 26;     // Text file busy
+const EFBIG: i32 = 27;       // File too large
+const ENOSPC: i32 = 28;      // No space left on device
+const ESPIPE: i32 = 29;      // Illegal seek
+const EROFS: i32 = 30;       // Read-only file system
+const EMLINK: i32 = 31;      // Too many links
+const EPIPE: i32 = 32;       // Broken pipe
+const EDOM: i32 = 33;        // Math argument out of domain
+const ERANGE: i32 = 34;      // Math result not representable
+const EDEADLK: i32 = 35;     // Resource deadlock would occur
+const ENAMETOOLONG: i32 = 36; // File name too long
+const ENOLCK: i32 = 37;      // No record locks available
+const ENOSYS: i32 = 38;      // Function not implemented
+const ENOTEMPTY: i32 = 39;   // Directory not empty
+const ELOOP: i32 = 40;       // Too many symbolic links encountered
+const EWOULDBLOCK: i32 = EAGAIN; // Operation would block
+const ENOMSG: i32 = 42;      // No message of desired type
+const EIDRM: i32 = 43;       // Identifier removed
+const ECHRNG: i32 = 44;      // Channel number out of range
+const EL2NSYNC: i32 = 45;    // Level 2 not synchronized
+const EL3HLT: i32 = 46;      // Level 3 halted
+const EL3RST: i32 = 47;      // Level 3 reset
+const ELNRNG: i32 = 48;      // Link number out of range
+const EUNATCH: i32 = 49;     // Protocol driver not attached
+const ENOCSI: i32 = 50;      // No CSI structure available
+
+// File open flags
+const O_RDONLY: i32 = 0;     // Open for reading only
+const O_WRONLY: i32 = 1;     // Open for writing only
+const O_RDWR: i32 = 2;       // Open for reading and writing
+const O_CREAT: i32 = 64;     // Create if nonexistent
+const O_EXCL: i32 = 128;     // Error if already exists
+const O_TRUNC: i32 = 512;    // Truncate to zero length
+const O_APPEND: i32 = 1024;  // Append to the file
+const O_NONBLOCK: i32 = 2048; // Non-blocking mode
+
+// Raw FFI bindings to libc functions
+extern fn open(path: *const i8, flags: i32, mode: i32): i32;
+extern fn close(fd: i32): i32;
+extern fn read(fd: i32, buf: *mut u8, count: usize): isize;
+extern fn write(fd: i32, buf: *const u8, count: usize): isize;
+extern fn lseek(fd: i32, offset: i64, whence: i32): i64;
+extern fn unlink(path: *const i8): i32;
+extern fn mkdir(path: *const i8, mode: i32): i32;
+extern fn rmdir(path: *const i8): i32;
+extern fn strerror(errnum: i32): *const i8;
+
+// Safe wrappers around libc functions with proper error handling
+
+// Open a file and return a file descriptor
+// @param path The path to the file
+// @param flags Flags to control how the file is opened
+// @param mode Access mode for the file if it's created
+// @return Result with file descriptor or FFIError
+fn safe_open(path: string, flags: i32, mode: i32): Result<i32, error::FFIError> {
+    let path_ptr: *const i8 = string.to_c_string(path);
+    let fd: i32 = open(path_ptr, flags, mode);
+    string.free_c_string(path_ptr);
+    
+    return error::result_from_code(fd, fn(fd: i32): bool { return fd >= 0; }, "libc");
+}
+
+// Close a file descriptor
+// @param fd The file descriptor to close
+// @return Result with success (0) or FFIError
+fn safe_close(fd: i32): Result<i32, error::FFIError> {
+    let result: i32 = close(fd);
+    return error::result_from_code(result, fn(res: i32): bool { return res == 0; }, "libc");
+}
+
+// Read from a file descriptor
+// @param fd The file descriptor to read from
+// @param buf Buffer to store read data
+// @param count Maximum number of bytes to read
+// @return Result with number of bytes read or FFIError
+fn safe_read(fd: i32, buf: []mut u8): Result<usize, error::FFIError> {
+    let result: isize = read(fd, buf.ptr, buf.len);
+    return error::result_from_code(result, fn(res: isize): bool { return res >= 0; }, "libc");
+}
+
+// Write to a file descriptor
+// @param fd The file descriptor to write to
+// @param buf Buffer containing data to write
+// @param count Number of bytes to write
+// @return Result with number of bytes written or FFIError
+fn safe_write(fd: i32, buf: []const u8): Result<usize, error::FFIError> {
+    let result: isize = write(fd, buf.ptr, buf.len);
+    return error::result_from_code(result, fn(res: isize): bool { return res >= 0; }, "libc");
+}
+
+// Delete a file
+// @param path Path to the file to delete
+// @return Result with success (0) or FFIError
+fn safe_unlink(path: string): Result<i32, error::FFIError> {
+    let path_ptr: *const i8 = string.to_c_string(path);
+    let result: i32 = unlink(path_ptr);
+    string.free_c_string(path_ptr);
+    
+    return error::result_from_code(result, fn(res: i32): bool { return res == 0; }, "libc");
+}
+
+// Create a directory
+// @param path Path to the directory to create
+// @param mode Access mode for the directory
+// @return Result with success (0) or FFIError
+fn safe_mkdir(path: string, mode: i32): Result<i32, error::FFIError> {
+    let path_ptr: *const i8 = string.to_c_string(path);
+    let result: i32 = mkdir(path_ptr, mode);
+    string.free_c_string(path_ptr);
+    
+    return error::result_from_code(result, fn(res: i32): bool { return res == 0; }, "libc");
+}
+
+// Remove a directory
+// @param path Path to the directory to remove
+// @return Result with success (0) or FFIError
+fn safe_rmdir(path: string): Result<i32, error::FFIError> {
+    let path_ptr: *const i8 = string.to_c_string(path);
+    let result: i32 = rmdir(path_ptr);
+    string.free_c_string(path_ptr);
+    
+    return error::result_from_code(result, fn(res: i32): bool { return res == 0; }, "libc");
+}
+
+// Get human-readable error message for an error code
+// @param errnum The error code
+// @return The error message
+fn get_error_message(errnum: i32): string {
+    let msg_ptr: *const i8 = strerror(errnum);
+    return string.from_c_string(msg_ptr);
+} 

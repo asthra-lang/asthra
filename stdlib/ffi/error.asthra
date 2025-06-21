@@ -1,0 +1,208 @@
+// Asthra Standard Library - FFI Error Mapping
+// Provides utilities for mapping C error codes (primarily errno values) to Asthra's Result types
+
+package stdlib::ffi::error;
+
+import "stdlib/asthra/core" as core;
+import "stdlib/asthra/error" as error;
+import "stdlib/result" as result;
+import "stdlib/string" as string;
+
+// Core FFI error representation
+struct FFIError {
+    code: i32;            // Original C error code
+    subsystem: string;    // Subsystem identifier (e.g., "libc", "openssl")
+    message: string;      // Human-readable error message
+    source_file: string;  // Source file where error occurred
+    line: i32;            // Line number where error occurred
+}
+
+// Create FFIError from current errno
+#[builtin]
+fn from_errno(none) -> FFIError;
+
+// Create FFIError from specific error code
+#[builtin]
+fn from_error_code(code: i32, subsystem: string) -> FFIError;
+
+// Convert C function result to Result type based on error predicate
+fn c_result_to_result<T>(result: T, is_error_fn: fn(T) -> bool) -> Result<T, FFIError> {
+    if is_error_fn(result) {
+        return Result.Err(from_errno());
+    }
+    return Result.Ok(result);
+}
+
+// Convert function result with explicit errno
+fn errno_to_result<T>(value: T, errno: i32) -> Result<T, FFIError> {
+    if errno == 0 {
+        return Result.Ok(value);
+    }
+    
+    return Result.Err(from_error_code(errno, "libc"));
+}
+
+// Error predicates for common C functions
+fn is_negative(result: i32) -> bool {
+    return result < 0;
+}
+
+fn is_null<T>(result: *T) -> bool {
+    return result == null;
+}
+
+fn is_socket_error(result: i32) -> bool {
+    // SOCKET_ERROR is typically -1 in socket APIs
+    return result == -1;
+}
+
+fn is_nonzero(result: i32) -> bool {
+    return result != 0;
+}
+
+// Error classification functions
+fn is_temporary(error: FFIError) -> bool {
+    // Check for temporary/transient errors
+    return error.code == EAGAIN || 
+           error.code == EWOULDBLOCK || 
+           error.code == EINTR;
+}
+
+fn is_permission_denied(error: FFIError) -> bool {
+    return error.code == EACCES || 
+           error.code == EPERM;
+}
+
+fn is_not_found(error: FFIError) -> bool {
+    return error.code == ENOENT;
+}
+
+fn is_would_block(error: FFIError) -> bool {
+    return error.code == EAGAIN || 
+           error.code == EWOULDBLOCK;
+}
+
+fn is_connection_error(error: FFIError) -> bool {
+    return error.code == ECONNREFUSED || 
+           error.code == ECONNABORTED || 
+           error.code == ECONNRESET;
+}
+
+// Enhance FFIError with context
+impl FFIError {
+    // Convert FFIError to string
+    fn to_string(self) -> string {
+        return "FFI error (" + self.subsystem + "): [" + self.code + "] " + 
+               self.message + " at " + self.source_file + ":" + self.line;
+    }
+    
+    // Add context to FFIError
+    fn with_context(self, context: string) -> error::ErrorWithContext<FFIError> {
+        return error::error_context(self, context);
+    }
+}
+
+// Extension methods for Result<T, FFIError>
+impl<T> Result<T, FFIError> {
+    // Retry the operation if it fails with a temporary error
+    fn retry_on_temporary(self, max_retries: i32, operation: fn() -> Result<T, FFIError>) -> Result<T, FFIError> {
+        match self {
+            Result.Ok(value) => {
+                return Result.Ok(value);
+            },
+            Result.Err(error) => {
+                if is_temporary(error) && max_retries > 0 {
+                    return operation().retry_on_temporary(max_retries - 1, operation);
+                }
+                return Result.Err(error);
+            }
+        }
+    }
+}
+
+// Asthra FFI Error Handling v1.0
+// Package providing error handling for FFI (Foreign Function Interface) operations
+// 
+// This module provides a way to handle errors from C libraries by mapping C errno
+// values to Asthra's Result types, with detailed error context.
+
+// Create an FFIError from the current errno value
+// @param subsystem The subsystem identifier (e.g., "libc", "openssl")
+// @return A new FFIError with the current errno
+fn from_errno(subsystem: string): FFIError {
+    return builtin.ffi_from_errno(subsystem);
+}
+
+// Create an FFIError from a specific error code
+// @param code The error code (e.g., ENOENT, EACCES)
+// @param subsystem The subsystem identifier
+// @return A new FFIError with the given code
+fn from_error_code(code: i32, subsystem: string): FFIError {
+    return builtin.ffi_from_error_code(code, subsystem);
+}
+
+// Check if the error code indicates a temporary/transient error
+// Temporary errors include EAGAIN, EWOULDBLOCK, EINTR, etc.
+// @param code The error code to check
+// @return true if the error is temporary
+fn is_temporary(code: i32): bool {
+    return builtin.ffi_is_temporary(code);
+}
+
+// Check if the error code indicates a permission denied error
+// Permission errors include EACCES, EPERM, etc.
+// @param code The error code to check
+// @return true if the error is permission denied
+fn is_permission_denied(code: i32): bool {
+    return builtin.ffi_is_permission_denied(code);
+}
+
+// Check if the error code indicates a not found error
+// Not found errors include ENOENT, etc.
+// @param code The error code to check
+// @return true if the error is not found
+fn is_not_found(code: i32): bool {
+    return builtin.ffi_is_not_found(code);
+}
+
+// Utility function to convert a C function result to a Result<T, FFIError>
+// If the predicate returns true, the result is considered successful (Ok)
+// Otherwise, an Err is returned with the current errno
+// 
+// @param result The result from the C function call
+// @param predicate A function that determines if the result is successful
+// @param subsystem The subsystem identifier
+// @return Result<T, FFIError> based on the predicate and errno
+fn result_from_code<T>(result: T, predicate: fn(T) -> bool, subsystem: string): Result<T, FFIError> {
+    if predicate(result) {
+        return Result.Ok(result);
+    } else {
+        return Result.Err(from_errno(subsystem));
+    }
+}
+
+// Retry a function that returns Result<T, FFIError> until it succeeds or
+// the error is not temporary
+// 
+// @param op The operation to retry
+// @param max_attempts Maximum number of retry attempts (default: 3)
+// @return Result<T, FFIError> from the final attempt
+fn retry<T>(op: fn() -> Result<T, FFIError>, max_attempts: i32 = 3): Result<T, FFIError> {
+    var attempts: i32 = 0;
+    while attempts < max_attempts {
+        let result: Result<T, FFIError> = op();
+        match result {
+            Result.Ok(value) => return Result.Ok(value)
+            Result.Err(err) => {
+                if !err.is_temporary() || attempts >= max_attempts - 1 {
+                    return Result.Err(err);
+                }
+                // Wait a bit before retrying (could be more sophisticated)
+                // For now we just increment the counter
+                attempts = attempts + 1;
+            }
+        }
+    }
+    // This should never be reached, but the compiler doesn't know that
+    return Result.Err(from_error_code(-1, "retry"));
+} 

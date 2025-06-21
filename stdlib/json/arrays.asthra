@@ -1,0 +1,156 @@
+// Asthra Standard Library - JSON Arrays Module
+// JSON array manipulation operations
+
+package stdlib::json;
+
+// ============================================================================
+// Array Manipulation Functions
+// ============================================================================
+
+// Push value to array
+pub fn array_push(arr: JSONValue, value: JSONValue) -> Result<JSONValue, JSONError> {
+    if !is_array(arr) {
+        return Result.Err(JSONError.TypeError("Value is not an array"));
+    }
+    
+    let success: bool = asthra_stdlib_json_array_push(arr.handle, value.handle);
+    
+    if !success {
+        return Result.Err(JSONError.OutOfMemory("Failed to push to array"));
+    }
+    
+    return Result.Ok(arr);
+}
+
+// Get array element by index
+pub fn array_get(arr: JSONValue, index: usize) -> Result<JSONValue, JSONError> {
+    if !is_array(arr) {
+        return Result.Err(JSONError.TypeError("Value is not an array"));
+    }
+    
+    let length: usize = asthra_stdlib_json_array_length(arr.handle);
+    if index >= length {
+        return Result.Err(JSONError.IndexOutOfBounds(index));
+    }
+    
+    let handle: *void = asthra_stdlib_json_array_get(arr.handle, index);
+    if handle == null {
+        return Result.Err(JSONError.IndexOutOfBounds(index));
+    }
+    
+    return Result.Ok(JSONValue { handle: handle });
+}
+
+// Get array length
+pub fn array_length(arr: JSONValue) -> Result<usize, JSONError> {
+    if !is_array(arr) {
+        return Result.Err(JSONError.TypeError("Value is not an array"));
+    }
+    
+    return Result.Ok(asthra_stdlib_json_array_length(arr.handle));
+}
+
+// ============================================================================
+// Safe Array Operations (with defaults)
+// ============================================================================
+
+// Safe array get with default value
+pub fn array_get_or(arr: JSONValue, index: usize, default: JSONValue) -> JSONValue {
+    match array_get(arr, index) {
+        Result.Ok(value) => return value,
+        Result.Err(_) => return default
+    }
+}
+
+// Get array length (safe version)
+pub fn array_length_safe(arr: JSONValue) -> usize {
+    if !is_array(arr) {
+        return 0;
+    }
+    
+    return asthra_stdlib_json_array_length(arr.handle);
+}
+
+// ============================================================================
+// Convenience Functions for Common Types
+// ============================================================================
+
+// Push string to array
+pub fn array_push_string(arr: JSONValue, value: string) -> Result<JSONValue, JSONError> {
+    let json_value: JSONValue = string_value(value);
+    return array_push(arr, json_value);
+}
+
+// Push number to array
+pub fn array_push_number(arr: JSONValue, value: f64) -> Result<JSONValue, JSONError> {
+    let json_value: JSONValue = number(value);
+    return array_push(arr, json_value);
+}
+
+// Push boolean to array
+pub fn array_push_bool(arr: JSONValue, value: bool) -> Result<JSONValue, JSONError> {
+    let json_value: JSONValue = bool_value(value);
+    return array_push(arr, json_value);
+}
+
+// Push null to array
+pub fn array_push_null(arr: JSONValue) -> Result<JSONValue, JSONError> {
+    let json_value: JSONValue = null();
+    return array_push(arr, json_value);
+}
+
+// ============================================================================
+// Typed Getters
+// ============================================================================
+
+// Get string from array
+pub fn array_get_string(arr: JSONValue, index: usize) -> Result<string, JSONError> {
+    let value_result: Result<JSONValue, JSONError> = array_get(arr, index);
+    match value_result {
+        Result.Err(error) => return Result.Err(error),
+        Result.Ok(value) => {
+            return get_string(value);
+        }
+    }
+}
+
+// Get number from array
+pub fn array_get_number(arr: JSONValue, index: usize) -> Result<f64, JSONError> {
+    let value_result: Result<JSONValue, JSONError> = array_get(arr, index);
+    match value_result {
+        Result.Err(error) => return Result.Err(error),
+        Result.Ok(value) => {
+            return get_number(value);
+        }
+    }
+}
+
+// Get boolean from array
+pub fn array_get_bool(arr: JSONValue, index: usize) -> Result<bool, JSONError> {
+    let value_result: Result<JSONValue, JSONError> = array_get(arr, index);
+    match value_result {
+        Result.Err(error) => return Result.Err(error),
+        Result.Ok(value) => {
+            return get_bool(value);
+        }
+    }
+}
+
+// ============================================================================
+// Array Utility Functions
+// ============================================================================
+
+// Check if array is empty
+pub fn array_is_empty(arr: JSONValue) -> bool {
+    return array_length_safe(arr) == 0;
+}
+
+// Check if index is valid for array
+pub fn array_has_index(arr: JSONValue, index: usize) -> bool {
+    if !is_array(arr) {
+        return false;
+    }
+    
+    let length: usize = asthra_stdlib_json_array_length(arr.handle);
+    return index < length;
+} 

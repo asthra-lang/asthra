@@ -1,0 +1,742 @@
+// Comprehensive test suite for json-c backed stdlib/json.asthra
+// Tests backward compatibility and enhanced functionality
+
+package test_json_migration;
+
+import "stdlib/json";
+import "stdlib/string";
+
+// Test data structures
+struct TestResult {
+    test_name: string,
+    success: bool,
+    error_message: string
+}
+
+struct TestSuite {
+    name: string,
+    tests: []TestResult,
+    total_tests: usize,
+    passed_tests: usize
+}
+
+// ============================================================================
+// Core Parsing Tests
+// ============================================================================
+
+fn test_basic_parsing() -> TestResult {
+    let test_name: string = "test_basic_parsing";
+    
+    // Test simple JSON parsing
+    let json_str: string = '{"name": "John", "age": 30, "active": true}';
+    let parse_result = json::parse(json_str);
+    
+    match parse_result {
+        Result.Ok(value) => {
+            if json::is_object(value) {
+                return TestResult {
+                    test_name: test_name,
+                    success: true,
+                    error_message: ""
+                };
+            } else {
+                return TestResult {
+                    test_name: test_name,
+                    success: false,
+                    error_message: "Parsed value is not an object"
+                };
+            }
+        },
+        Result.Err(error) => {
+            return TestResult {
+                test_name: test_name,
+                success: false,
+                error_message: "Parse failed"
+            };
+        }
+    }
+}
+
+fn test_array_parsing() -> TestResult {
+    let test_name: string = "test_array_parsing";
+    
+    let json_str: string = '[1, 2, 3, "hello", true, null]';
+    let parse_result = json::parse(json_str);
+    
+    match parse_result {
+        Result.Ok(value) => {
+            if json::is_array(value) {
+                let length_result = json::array_length(value);
+                match length_result {
+                    Result.Ok(length) => {
+                        if length == 6 {
+                            return TestResult {
+                                test_name: test_name,
+                                success: true,
+                                error_message: ""
+                            };
+                        } else {
+                            return TestResult {
+                                test_name: test_name,
+                                success: false,
+                                error_message: "Array length mismatch"
+                            };
+                        }
+                    },
+                    Result.Err(error) => {
+                        return TestResult {
+                            test_name: test_name,
+                            success: false,
+                            error_message: "Failed to get array length"
+                        };
+                    }
+                }
+            } else {
+                return TestResult {
+                    test_name: test_name,
+                    success: false,
+                    error_message: "Parsed value is not an array"
+                };
+            }
+        },
+        Result.Err(error) => {
+            return TestResult {
+                test_name: test_name,
+                success: false,
+                error_message: "Parse failed"
+            };
+        }
+    }
+}
+
+fn test_null_parsing() -> TestResult {
+    let test_name: string = "test_null_parsing";
+    
+    let json_str: string = "null";
+    let parse_result = json::parse(json_str);
+    
+    match parse_result {
+        Result.Ok(value) => {
+            if json::is_null(value) {
+                return TestResult {
+                    test_name: test_name,
+                    success: true,
+                    error_message: ""
+                };
+            } else {
+                return TestResult {
+                    test_name: test_name,
+                    success: false,
+                    error_message: "Parsed value is not null"
+                };
+            }
+        },
+        Result.Err(error) => {
+            return TestResult {
+                test_name: test_name,
+                success: false,
+                error_message: "Parse failed"
+            };
+        }
+    }
+}
+
+// ============================================================================
+// Type Creation Tests
+// ============================================================================
+
+fn test_value_creation() -> TestResult {
+    let test_name: string = "test_value_creation";
+    
+    // Test all value creation functions
+    let null_val = json::null();
+    let bool_val = json::bool_value(true);
+    let num_val = json::number(42.5);
+    let str_val = json::string_value("Hello, World!");
+    let arr_val = json::array();
+    let obj_val = json::object();
+    
+    if json::is_null(null_val) &&
+       json::is_bool(bool_val) &&
+       json::is_number(num_val) &&
+       json::is_string(str_val) &&
+       json::is_array(arr_val) &&
+       json::is_object(obj_val) {
+        return TestResult {
+            test_name: test_name,
+            success: true,
+            error_message: ""
+        };
+    } else {
+        return TestResult {
+            test_name: test_name,
+            success: false,
+            error_message: "Value creation type checking failed"
+        };
+    }
+}
+
+fn test_value_extraction() -> TestResult {
+    let test_name: string = "test_value_extraction";
+    
+    // Test value extraction
+    let bool_val = json::bool_value(true);
+    let num_val = json::number(123.45);
+    let str_val = json::string_value("test string");
+    
+    let bool_result = json::get_bool(bool_val);
+    let num_result = json::get_number(num_val);
+    let str_result = json::get_string(str_val);
+    
+    match bool_result {
+        Result.Ok(b) => {
+            if !b {
+                return TestResult {
+                    test_name: test_name,
+                    success: false,
+                    error_message: "Boolean extraction failed"
+                };
+            }
+        },
+        Result.Err(_) => {
+            return TestResult {
+                test_name: test_name,
+                success: false,
+                error_message: "Boolean extraction error"
+            };
+        }
+    }
+    
+    match num_result {
+        Result.Ok(n) => {
+            if n != 123.45 {
+                return TestResult {
+                    test_name: test_name,
+                    success: false,
+                    error_message: "Number extraction failed"
+                };
+            }
+        },
+        Result.Err(_) => {
+            return TestResult {
+                test_name: test_name,
+                success: false,
+                error_message: "Number extraction error"
+            };
+        }
+    }
+    
+    match str_result {
+        Result.Ok(s) => {
+            if s != "test string" {
+                return TestResult {
+                    test_name: test_name,
+                    success: false,
+                    error_message: "String extraction failed"
+                };
+            }
+        },
+        Result.Err(_) => {
+            return TestResult {
+                test_name: test_name,
+                success: false,
+                error_message: "String extraction error"
+            };
+        }
+    }
+    
+    return TestResult {
+        test_name: test_name,
+        success: true,
+        error_message: ""
+    };
+}
+
+// ============================================================================
+// Object Operations Tests
+// ============================================================================
+
+fn test_object_operations() -> TestResult {
+    let test_name: string = "test_object_operations";
+    
+    // Create object and test operations
+    let obj = json::object();
+    let str_val = json::string_value("value1");
+    let num_val = json::number(42.0);
+    
+    // Test object_set
+    let set_result1 = json::object_set(obj, "key1", str_val);
+    let set_result2 = json::object_set(obj, "key2", num_val);
+    
+    match set_result1 {
+        Result.Err(_) => {
+            return TestResult {
+                test_name: test_name,
+                success: false,
+                error_message: "Failed to set object key1"
+            };
+        },
+        Result.Ok(_) => {}
+    }
+    
+    // Test object_has_key
+    let has_key1_result = json::object_has_key(obj, "key1");
+    let has_key3_result = json::object_has_key(obj, "key3");
+    
+    match has_key1_result {
+        Result.Ok(has) => {
+            if !has {
+                return TestResult {
+                    test_name: test_name,
+                    success: false,
+                    error_message: "Object should have key1"
+                };
+            }
+        },
+        Result.Err(_) => {
+            return TestResult {
+                test_name: test_name,
+                success: false,
+                error_message: "Error checking for key1"
+            };
+        }
+    }
+    
+    // Test object_get
+    let get_result = json::object_get(obj, "key1");
+    match get_result {
+        Result.Ok(value) => {
+            if !json::is_string(value) {
+                return TestResult {
+                    test_name: test_name,
+                    success: false,
+                    error_message: "Retrieved value is not a string"
+                };
+            }
+        },
+        Result.Err(_) => {
+            return TestResult {
+                test_name: test_name,
+                success: false,
+                error_message: "Failed to get key1 from object"
+            };
+        }
+    }
+    
+    return TestResult {
+        test_name: test_name,
+        success: true,
+        error_message: ""
+    };
+}
+
+// ============================================================================
+// Array Operations Tests
+// ============================================================================
+
+fn test_array_operations() -> TestResult {
+    let test_name: string = "test_array_operations";
+    
+    // Create array and test operations
+    let arr = json::array();
+    let val1 = json::string_value("item1");
+    let val2 = json::number(123.0);
+    let val3 = json::bool_value(false);
+    
+    // Test array_push
+    let push_result1 = json::array_push(arr, val1);
+    let push_result2 = json::array_push(arr, val2);
+    let push_result3 = json::array_push(arr, val3);
+    
+    match push_result1 {
+        Result.Err(_) => {
+            return TestResult {
+                test_name: test_name,
+                success: false,
+                error_message: "Failed to push val1 to array"
+            };
+        },
+        Result.Ok(_) => {}
+    }
+    
+    // Test array_length
+    let length_result = json::array_length(arr);
+    match length_result {
+        Result.Ok(length) => {
+            if length != 3 {
+                return TestResult {
+                    test_name: test_name,
+                    success: false,
+                    error_message: "Array length should be 3"
+                };
+            }
+        },
+        Result.Err(_) => {
+            return TestResult {
+                test_name: test_name,
+                success: false,
+                error_message: "Failed to get array length"
+            };
+        }
+    }
+    
+    return TestResult {
+        test_name: test_name,
+        success: true,
+        error_message: ""
+    };
+}
+
+// ============================================================================
+// Serialization Tests
+// ============================================================================
+
+fn test_serialization() -> TestResult {
+    let test_name: string = "test_serialization";
+    
+    // Create a simple JSON structure
+    let obj = json::object();
+    let name_val = json::string_value("John Doe");
+    
+    let _ = json::object_set(obj, "name", name_val);
+    
+    // Test stringify
+    let stringify_result = json::stringify(obj);
+    match stringify_result {
+        Result.Ok(json_str) => {
+            // Parse it back to verify roundtrip
+            let parse_result = json::parse(json_str);
+            match parse_result {
+                Result.Ok(parsed_value) => {
+                    if json::is_object(parsed_value) {
+                        return TestResult {
+                            test_name: test_name,
+                            success: true,
+                            error_message: ""
+                        };
+                    } else {
+                        return TestResult {
+                            test_name: test_name,
+                            success: false,
+                            error_message: "Roundtrip parse failed"
+                        };
+                    }
+                },
+                Result.Err(_) => {
+                    return TestResult {
+                        test_name: test_name,
+                        success: false,
+                        error_message: "Roundtrip parse failed"
+                    };
+                }
+            }
+        },
+        Result.Err(_) => {
+            return TestResult {
+                test_name: test_name,
+                success: false,
+                error_message: "Stringify failed"
+            };
+        }
+    }
+}
+
+fn test_pretty_printing() -> TestResult {
+    let test_name: string = "test_pretty_printing";
+    
+    let obj = json::object();
+    let name_val = json::string_value("Test");
+    let _ = json::object_set(obj, "name", name_val);
+    
+    let config = json::JSONSerializeConfig {
+        pretty_print: true,
+        indent_size: 2,
+        escape_unicode: false,
+        sort_keys: false,
+        compact_arrays: false
+    };
+    
+    let stringify_result = json::stringify_with_config(obj, config);
+    match stringify_result {
+        Result.Ok(json_str) => {
+            return TestResult {
+                test_name: test_name,
+                success: true,
+                error_message: ""
+            };
+        },
+        Result.Err(_) => {
+            return TestResult {
+                test_name: test_name,
+                success: false,
+                error_message: "Pretty print stringify failed"
+            };
+        }
+    }
+}
+
+// ============================================================================
+// Validation Tests
+// ============================================================================
+
+fn test_json_validation() -> TestResult {
+    let test_name: string = "test_json_validation";
+    
+    // Test valid JSON
+    if !json::is_valid_json('{"valid": "json"}') {
+        return TestResult {
+            test_name: test_name,
+            success: false,
+            error_message: "Valid JSON was marked as invalid"
+        };
+    }
+    
+    if !json::is_valid_json('null') {
+        return TestResult {
+            test_name: test_name,
+            success: false,
+            error_message: "Valid null JSON was marked as invalid"
+        };
+    }
+    
+    // Test invalid JSON
+    if json::is_valid_json('{"invalid": json}') {
+        return TestResult {
+            test_name: test_name,
+            success: false,
+            error_message: "Invalid JSON was marked as valid"
+        };
+    }
+    
+    return TestResult {
+        test_name: test_name,
+        success: true,
+        error_message: ""
+    };
+}
+
+// ============================================================================
+// Backward Compatibility Tests
+// ============================================================================
+
+fn test_legacy_aliases() -> TestResult {
+    let test_name: string = "test_legacy_aliases";
+    
+    // Test legacy function names
+    let parse_result = json::json_parse('{"test": true}');
+    match parse_result {
+        Result.Ok(value) => {
+            let stringify_result = json::json_stringify(value);
+            match stringify_result {
+                Result.Ok(json_str) => {
+                    if json::json_is_valid(json_str) {
+                        return TestResult {
+                            test_name: test_name,
+                            success: true,
+                            error_message: ""
+                        };
+                    } else {
+                        return TestResult {
+                            test_name: test_name,
+                            success: false,
+                            error_message: "Legacy json_is_valid failed"
+                        };
+                    }
+                },
+                Result.Err(_) => {
+                    return TestResult {
+                        test_name: test_name,
+                        success: false,
+                        error_message: "Legacy json_stringify failed"
+                    };
+                }
+            }
+        },
+        Result.Err(_) => {
+            return TestResult {
+                test_name: test_name,
+                success: false,
+                error_message: "Legacy json_parse failed"
+            };
+        }
+    }
+}
+
+fn test_type_conversion_helpers() -> TestResult {
+    let test_name: string = "test_type_conversion_helpers";
+    
+    // Test type conversion helpers
+    let bool_val = json::from_bool(true);
+    let i32_val = json::from_i32(42);
+    let str_val = json::from_string("converted");
+    
+    if !json::is_bool(bool_val) {
+        return TestResult {
+            test_name: test_name,
+            success: false,
+            error_message: "from_bool conversion failed"
+        };
+    }
+    
+    if !json::is_number(i32_val) {
+        return TestResult {
+            test_name: test_name,
+            success: false,
+            error_message: "from_i32 conversion failed"
+        };
+    }
+    
+    if !json::is_string(str_val) {
+        return TestResult {
+            test_name: test_name,
+            success: false,
+            error_message: "from_string conversion failed"
+        };
+    }
+    
+    return TestResult {
+        test_name: test_name,
+        success: true,
+        error_message: ""
+    };
+}
+
+// ============================================================================
+// Error Handling Tests
+// ============================================================================
+
+fn test_error_handling() -> TestResult {
+    let test_name: string = "test_error_handling";
+    
+    // Test parse error
+    let parse_result = json::parse('{"invalid": json}');
+    match parse_result {
+        Result.Ok(_) => {
+            return TestResult {
+                test_name: test_name,
+                success: false,
+                error_message: "Invalid JSON should have failed to parse"
+            };
+        },
+        Result.Err(error) => {
+            match error {
+                json::JSONError.ParseError(_) => {
+                    // Expected error type
+                },
+                _ => {
+                    return TestResult {
+                        test_name: test_name,
+                        success: false,
+                        error_message: "Wrong error type for parse failure"
+                    };
+                }
+            }
+        }
+    }
+    
+    // Test type error
+    let str_val = json::string_value("not a number");
+    let num_result = json::get_number(str_val);
+    match num_result {
+        Result.Ok(_) => {
+            return TestResult {
+                test_name: test_name,
+                success: false,
+                error_message: "Should have failed to extract number from string"
+            };
+        },
+        Result.Err(error) => {
+            match error {
+                json::JSONError.TypeError(_) => {
+                    // Expected error type
+                },
+                _ => {
+                    return TestResult {
+                        test_name: test_name,
+                        success: false,
+                        error_message: "Wrong error type for type mismatch"
+                    };
+                }
+            }
+        }
+    }
+    
+    return TestResult {
+        test_name: test_name,
+        success: true,
+        error_message: ""
+    };
+}
+
+// ============================================================================
+// Main Test Runner
+// ============================================================================
+
+fn run_test_suite() -> TestSuite {
+    let mut suite = TestSuite {
+        name: "JSON Migration Test Suite",
+        tests: [],
+        total_tests: 0,
+        passed_tests: 0
+    };
+    
+    // Run all tests
+    let tests = [
+        test_basic_parsing(),
+        test_array_parsing(),
+        test_null_parsing(),
+        test_value_creation(),
+        test_value_extraction(),
+        test_object_operations(),
+        test_array_operations(),
+        test_serialization(),
+        test_pretty_printing(),
+        test_json_validation(),
+        test_legacy_aliases(),
+        test_type_conversion_helpers(),
+        test_error_handling()
+    ];
+    
+    suite.tests = tests;
+    suite.total_tests = tests.len();
+    
+    // Count passed tests
+    for test in tests {
+        if test.success {
+            suite.passed_tests = suite.passed_tests + 1;
+        }
+    }
+    
+    return suite;
+}
+
+fn print_test_results(suite: TestSuite) {
+    println("========================================");
+    println("Test Suite: " + suite.name);
+    println("========================================");
+    
+    for test in suite.tests {
+        if test.success {
+            println("✓ " + test.test_name);
+        } else {
+            println("✗ " + test.test_name + " - " + test.error_message);
+        }
+    }
+    
+    println("========================================");
+    let success_rate: f64 = (suite.passed_tests as f64) / (suite.total_tests as f64) * 100.0;
+    println("Results: " + string::from_usize(suite.passed_tests) + "/" + string::from_usize(suite.total_tests) + " tests passed");
+    
+    if suite.passed_tests == suite.total_tests {
+        println("🎉 All tests passed! JSON migration successful.");
+    } else {
+        println("❌ Some tests failed. Please review the implementation.");
+    }
+    println("========================================");
+}
+
+// Main entry point
+pub fn main() {
+    let suite = run_test_suite();
+    print_test_results(suite);
+} 

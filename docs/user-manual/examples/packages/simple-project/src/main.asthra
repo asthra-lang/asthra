@@ -1,0 +1,20 @@
+package main;
+
+import "system/libc";
+
+pub fn main() -> i32 {
+    let a: f64 = 10.5;
+    let b: f64 = 3.2;
+    
+    let sum: f64 = add(a, b);
+    let product: f64 = multiply(a, b);
+    let formatted_sum: string = format_result("Addition", a, b, sum);
+    let formatted_product: string = format_result("Multiplication", a, b, product);
+    
+    unsafe {
+        libc.puts(formatted_sum);
+        libc.puts(formatted_product);
+    }
+    
+    return 0;
+} 

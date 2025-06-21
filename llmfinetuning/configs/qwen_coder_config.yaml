@@ -1,0 +1,182 @@
+# Qwen2.5-Coder 3B Instruct Configuration for Asthra LLM Fine-tuning
+# Version: 1.0
+# Created: January 2025
+# Model: Qwen/Qwen2.5-Coder-3B-Instruct (3B parameters) - Fully open coding model
+
+# Model Configuration
+model:
+  name: "Qwen/Qwen2.5-Coder-3B-Instruct"
+  tokenizer_name: "Qwen/Qwen2.5-Coder-3B-Instruct" 
+  max_length: 32768  # 32K context window - excellent for long code files
+  trust_remote_code: false
+  
+  # No quantization for better compatibility
+  quantization:
+    load_in_4bit: false  # Disable for better stability
+
+# Training Configuration
+training:
+  output_dir: "./outputs/models/qwen_coder/"
+  overwrite_output_dir: true
+  
+  # Optimized batch sizes for 3B model
+  per_device_train_batch_size: 2
+  per_device_eval_batch_size: 2
+  gradient_accumulation_steps: 4
+  dataloader_num_workers: 2
+  
+  # Learning rate and optimization
+  learning_rate: 0.00003  # 3e-5 as decimal - optimized for coding tasks
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.1
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  
+  # Training duration (efficient for 3B coding model)
+  num_train_epochs: 2
+  max_steps: 500  # Good for demonstration
+  
+  # Logging and evaluation
+  logging_dir: "./outputs/logs/qwen_coder/"
+  logging_steps: 20
+  eval_strategy: "steps"
+  eval_steps: 100
+  save_strategy: "steps"
+  save_steps: 100
+  save_total_limit: 3
+  
+  # Mixed precision training
+  fp16: false
+  bf16: true  # Qwen supports bfloat16
+  
+  # Other training settings
+  remove_unused_columns: false
+  group_by_length: true
+  ddp_find_unused_parameters: false
+
+# LoRA Configuration (Parameter-Efficient Fine-tuning)
+lora:
+  rank: 32
+  alpha: 64
+  dropout: 0.1
+  bias: "none"
+  task_type: "CAUSAL_LM"
+  target_modules: 
+    - "q_proj"
+    - "k_proj" 
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+  modules_to_save: null
+
+# Data Configuration
+data:
+  dataset_path: "./data/processed/"
+  raw_data_path: "./data/raw/"
+  cache_dir: "./outputs/cache/qwen_coder/"
+  
+  # Dataset splits
+  train_split: 0.9
+  validation_split: 0.1
+  test_split: 0.0
+  
+  # Data processing
+  max_samples: 2500  # Good balance for 3B coding model
+  max_seq_length: 4096  # Longer sequences for complex Asthra code
+  preprocessing_num_workers: 2
+  
+  # Data quality filters
+  min_code_length: 30
+  max_code_length: 4096
+  quality_threshold: 0.8
+
+# Evaluation Configuration
+evaluation:
+  # Compilation testing (disabled without Asthra compiler)
+  enable_compilation_testing: false
+  asthra_compiler_path: null
+  compilation_timeout: 30
+  
+  # Semantic analysis testing (disabled for demo)
+  enable_semantic_testing: false
+  semantic_timeout: 15
+  
+  # Quality metrics (higher targets for coding-specialized model)
+  target_compilation_rate: 0.90
+  target_semantic_rate: 0.85
+  target_quality_score: 0.80
+
+# Single-stage Training
+stages:
+  stage1:
+    name: "asthra_qwen_coder_training"
+    dataset: "instruction_tuning.jsonl"
+    epochs: 2
+    learning_rate: 0.00003
+    description: "Specialize Qwen2.5-Coder for Asthra programming language"
+
+# Monitoring and Logging
+monitoring:
+  # Weights & Biases (disabled for demo)
+  use_wandb: false
+  wandb_project: "asthra-qwen-coder-finetuning"
+  wandb_entity: null
+  
+  # Tensorboard
+  use_tensorboard: true
+  tensorboard_log_dir: "./outputs/logs/qwen_coder/tensorboard/"
+  
+  # Custom metrics
+  track_compilation_success: false
+  track_semantic_correctness: false
+  track_code_quality: true
+
+# Hardware and Performance
+hardware:
+  # Device settings optimized for Qwen Coder
+  device_map: "auto"
+  max_memory: null
+  offload_folder: "./outputs/offload/qwen_coder/"
+  
+  # Performance optimizations
+  gradient_checkpointing: true  # Enable for memory efficiency
+  dataloader_pin_memory: true
+  use_cache: false
+  
+  # Memory management
+  max_memory_mb: 14000  # 3B model requires moderate memory
+  cleanup_cache_every_n_steps: 50
+
+# Export and Deployment
+export:
+  # GGUF export settings
+  gguf_output_dir: "./outputs/exported/qwen_coder/gguf/"
+  gguf_quantization: "Q4_K_M"
+  
+  # Ollama integration
+  ollama_model_name: "asthra-qwen-coder"
+  ollama_model_file: "./outputs/exported/qwen_coder/ollama/Modelfile"
+  
+  # Model registry
+  registry_url: null
+  model_version: "1.0"
+
+# Advanced Settings
+advanced:
+  # Gradient accumulation optimization
+  gradient_accumulation_kwargs:
+    sync_each_batch: false
+  
+  # Memory optimization
+  max_memory_mapping: null
+  seed: 42
+  
+  # Qwen-specific settings
+  attention_implementation: "eager"  # Use eager attention for stability
+  torch_compile: false  # Disable for compatibility
+  
+  # Coding-specific optimizations
+  use_flash_attention: false  # Disable for CPU compatibility
+  enable_gradient_clipping: true 

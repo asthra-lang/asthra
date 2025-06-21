@@ -1,0 +1,321 @@
+// Advanced Concurrency Example in Asthra
+// Demonstrates spawn_with_handle, await, channels, and select operations
+
+package advanced_concurrency_example;
+
+import "stdlib/io";
+
+// Example 1: Task handles with await
+fn compute_fibonacci(n: i32) -> i32 {
+    if n <= 1 {
+        return n;
+    }
+    return compute_fibonacci(n - 1) + compute_fibonacci(n - 2);
+}
+
+fn demonstrate_task_handles(none) -> void {
+    log("=== Task Handles with Await ===");
+    
+    // Spawn tasks with handles for awaiting results
+    spawn_with_handle handle1 = compute_fibonacci(10);
+    spawn_with_handle handle2 = compute_fibonacci(15);
+    spawn_with_handle handle3 = compute_fibonacci(20);
+    
+    log("Tasks spawned, now awaiting results...");
+    
+    // Await results
+    let result1: i32 = await handle1;
+    let result2: i32 = await handle2;
+    let result3: i32 = await handle3;
+    
+    log("Fibonacci(10) = " + result1);
+    log("Fibonacci(15) = " + result2);
+    log("Fibonacci(20) = " + result3);
+}
+
+// Example 2: Channel-based communication
+fn producer_task(ch: channel<i32>, start: i32, count: i32) -> void {
+    log("Producer starting: " + start + " to " + start + count);
+    
+    for i in range(start, start + count) {
+        send ch, i;
+        log("Sent: " + i);
+    }
+    
+    log("Producer finished");
+}
+
+fn consumer_task(ch: channel<i32>, consumer_id: i32) -> void {
+    log("Consumer " + consumer_id + " starting");
+    
+    for _ in range(0, 5) {
+        let value: i32 = recv ch;
+        log("Consumer " + consumer_id + " received: " + value);
+    }
+    
+    log("Consumer " + consumer_id + " finished");
+}
+
+fn demonstrate_channels(none) -> void {
+    log("=== Channel Communication ===");
+    
+    // Create a buffered channel for integers
+    channel data_channel: channel<i32>(10);  // Buffer size of 10
+    
+    // Spawn producers
+    spawn producer_task(data_channel, 1, 5);
+    spawn producer_task(data_channel, 100, 5);
+    
+    // Spawn consumers
+    spawn consumer_task(data_channel, 1);
+    spawn consumer_task(data_channel, 2);
+    
+    log("Channel communication demo started");
+}
+
+// Example 3: Select operations for multi-channel coordination
+fn coordinator_task(input1: channel<string>, input2: channel<i32>, output: channel<string>) -> void {
+    log("Coordinator starting");
+    
+    for _ in range(0, 10) {
+        select {
+            recv input1 => {
+                let msg: string = recv input1;
+                send output, "String: " + msg;
+            },
+            recv input2 => {
+                let num: i32 = recv input2;
+                send output, "Number: " + num;
+            },
+            default => {
+                log("No data available, continuing...");
+            }
+        }
+    }
+    
+    log("Coordinator finished");
+}
+
+fn string_producer(ch: channel<string>) -> void {
+    let messages: []string = ["hello", "world", "asthra", "concurrency"];
+    
+    for msg in messages {
+        send ch, msg;
+        log("String producer sent: " + msg);
+    }
+}
+
+fn number_producer(ch: channel<i32>) -> void {
+    for i in range(1, 5) {
+        send ch, i * 10;
+        log("Number producer sent: " + i * 10);
+    }
+}
+
+fn demonstrate_select(none) -> void {
+    log("=== Select Operations ===");
+    
+    // Create channels for different data types
+    channel string_ch: channel<string>(5);
+    channel number_ch: channel<i32>(5);
+    channel result_ch: channel<string>(10);
+    
+    // Spawn producers
+    spawn string_producer(string_ch);
+    spawn number_producer(number_ch);
+    
+    // Spawn coordinator with select
+    spawn coordinator_task(string_ch, number_ch, result_ch);
+    
+    // Consume results
+    spawn_with_handle result_consumer = consume_results(result_ch);
+    await result_consumer;
+    
+    log("Select operations demo completed");
+}
+
+fn consume_results(ch: channel<string>) -> void {
+    log("Result consumer starting");
+    
+    for _ in range(0, 8) {
+        let result: string = recv ch;
+        log("Result: " + result);
+    }
+    
+    log("Result consumer finished");
+}
+
+// Example 4: Pipeline pattern
+fn stage1_processor(input: channel<i32>, output: channel<i32>) -> void {
+    log("Stage 1 processor starting");
+    
+    for _ in range(0, 5) {
+        let value: i32 = recv input;
+        let processed: i32 = value * 2;  // Double the value
+        send output, processed;
+        log("Stage 1: " + value + " -> " + processed);
+    }
+    
+    log("Stage 1 processor finished");
+}
+
+fn stage2_processor(input: channel<i32>, output: channel<i32>) -> void {
+    log("Stage 2 processor starting");
+    
+    for _ in range(0, 5) {
+        let value: i32 = recv input;
+        let processed: i32 = value + 10;  // Add 10
+        send output, processed;
+        log("Stage 2: " + value + " -> " + processed);
+    }
+    
+    log("Stage 2 processor finished");
+}
+
+fn stage3_processor(input: channel<i32>, output: channel<string>) -> void {
+    log("Stage 3 processor starting");
+    
+    for _ in range(0, 5) {
+        let value: i32 = recv input;
+        let processed: string = "Result: " + value;  // Convert to string
+        send output, processed;
+        log("Stage 3: " + value + " -> " + processed);
+    }
+    
+    log("Stage 3 processor finished");
+}
+
+fn demonstrate_pipeline(none) -> void {
+    log("=== Pipeline Pattern ===");
+    
+    // Create pipeline channels
+    channel input_ch: channel<i32>(3);
+    channel stage1_to_stage2: channel<i32>(3);
+    channel stage2_to_stage3: channel<i32>(3);
+    channel output_ch: channel<string>(3);
+    
+    // Set up pipeline stages
+    spawn stage1_processor(input_ch, stage1_to_stage2);
+    spawn stage2_processor(stage1_to_stage2, stage2_to_stage3);
+    spawn stage3_processor(stage2_to_stage3, output_ch);
+    
+    // Feed data into pipeline
+    spawn_with_handle feeder = feed_pipeline(input_ch);
+    
+    // Collect results
+    spawn_with_handle collector = collect_pipeline_results(output_ch);
+    
+    // Wait for completion
+    await feeder;
+    await collector;
+    
+    log("Pipeline pattern demo completed");
+}
+
+fn feed_pipeline(ch: channel<i32>) -> void {
+    log("Pipeline feeder starting");
+    
+    let inputs: []i32 = [1, 2, 3, 4, 5];
+    for value in inputs {
+        send ch, value;
+        log("Fed into pipeline: " + value);
+    }
+    
+    log("Pipeline feeder finished");
+}
+
+fn collect_pipeline_results(ch: channel<string>) -> void {
+    log("Pipeline collector starting");
+    
+    for _ in range(0, 5) {
+        let result: string = recv ch;
+        log("Pipeline output: " + result);
+    }
+    
+    log("Pipeline collector finished");
+}
+
+// Example 5: Fan-out/Fan-in pattern
+fn worker_task_fanout(worker_id: i32, input: channel<i32>, output: channel<i32>) -> void {
+    log("Worker " + worker_id + " starting");
+    
+    for _ in range(0, 3) {
+        let work_item: i32 = recv input;
+        let result: i32 = work_item * worker_id;  // Process with worker ID
+        send output, result;
+        log("Worker " + worker_id + ": " + work_item + " -> " + result);
+    }
+    
+    log("Worker " + worker_id + " finished");
+}
+
+fn demonstrate_fan_out_fan_in(none) -> void {
+    log("=== Fan-out/Fan-in Pattern ===");
+    
+    // Create channels
+    channel work_queue: channel<i32>(10);
+    channel results_queue: channel<i32>(10);
+    
+    // Fan-out: distribute work to multiple workers
+    spawn worker_task_fanout(1, work_queue, results_queue);
+    spawn worker_task_fanout(2, work_queue, results_queue);
+    spawn worker_task_fanout(3, work_queue, results_queue);
+    
+    // Feed work items
+    spawn_with_handle work_feeder = feed_work(work_queue);
+    
+    // Fan-in: collect results from all workers
+    spawn_with_handle result_collector = collect_fan_in_results(results_queue);
+    
+    // Wait for completion
+    await work_feeder;
+    await result_collector;
+    
+    log("Fan-out/Fan-in pattern demo completed");
+}
+
+fn feed_work(ch: channel<i32>) -> void {
+    log("Work feeder starting");
+    
+    for i in range(10, 19) {  // 9 work items for 3 workers
+        send ch, i;
+        log("Queued work item: " + i);
+    }
+    
+    log("Work feeder finished");
+}
+
+fn collect_fan_in_results(ch: channel<i32>) -> void {
+    log("Result collector starting");
+    
+    for _ in range(0, 9) {  // Collect 9 results
+        let result: i32 = recv ch;
+        log("Collected result: " + result);
+    }
+    
+    log("Result collector finished");
+}
+
+// Main function demonstrating all patterns
+fn main(none) -> i32 {
+    log("=== Advanced Concurrency Features Demo ===");
+    
+    // Demonstrate task handles with await
+    demonstrate_task_handles();
+    
+    // Demonstrate channel communication
+    demonstrate_channels();
+    
+    // Demonstrate select operations
+    demonstrate_select();
+    
+    // Demonstrate pipeline pattern
+    demonstrate_pipeline();
+    
+    // Demonstrate fan-out/fan-in pattern
+    demonstrate_fan_out_fan_in();
+    
+    log("=== All Advanced Concurrency Demos Completed ===");
+    
+    return 0;
+} 

@@ -1,0 +1,254 @@
+// Asthra Standard Library - TOML Common Types
+package stdlib::toml;
+
+import "stdlib/asthra/core";
+
+// TOML value types enumeration
+pub enum TomlValueType {
+    String,
+    Integer,
+    Float,
+    Boolean,
+    DateTime,
+    Array,
+    Table,
+    InlineTable,
+}
+
+// TOML value representation
+pub enum TomlValue {
+    String(string),
+    Integer(i64),
+    Float(f64),
+    Boolean(bool),
+    DateTime(string),  // ISO 8601 string representation
+    Array([]TomlValue),
+    Table(TomlTable),
+    InlineTable(TomlTable),
+}
+
+// TOML table structure (key-value pairs)
+pub struct TomlTable {
+    pub keys: []string,
+    pub values: []TomlValue,
+    pub count: usize,
+    pub capacity: usize,
+}
+
+// TOML document structure
+pub struct TomlDocument {
+    pub root_table: TomlTable,
+    pub parse_errors: []TomlError,
+    pub has_errors: bool,
+}
+
+// TOML parsing and generation errors
+pub enum TomlError {
+    ParseError(TomlParseError),
+    TypeError(TomlTypeError),
+    KeyError(TomlKeyError),
+    InternalError(string),
+}
+
+// Detailed parse error information
+pub struct TomlParseError {
+    pub message: string,
+    pub line: usize,
+    pub column: usize,
+    pub position: usize,
+    pub context: string,
+}
+
+// Type conversion error
+pub struct TomlTypeError {
+    pub expected: TomlValueType,
+    pub actual: TomlValueType,
+    pub key_path: string,
+    pub message: string,
+}
+
+// Key access error
+pub struct TomlKeyError {
+    pub key: string,
+    pub operation: string,  // "get", "set", "delete"
+    pub message: string,
+}
+
+// TOML parsing result
+pub enum TomlResult<T> {
+    Ok(T),
+    Err(TomlError),
+}
+
+// TOML configuration options
+pub struct TomlConfig {
+    pub preserve_order: bool,
+    pub allow_mixed_arrays: bool,
+    pub strict_mode: bool,
+    pub max_depth: usize,
+    pub datetime_format: TomlDateTimeFormat,
+}
+
+// DateTime format options
+pub enum TomlDateTimeFormat {
+    RFC3339,        // Standard TOML format
+    ISO8601,        // Alternative format
+    Custom(string), // Custom format string
+}
+
+// =============================================================================
+// Common Utility Functions
+// =============================================================================
+
+// Create empty TOML table
+pub fn new_table() -> TomlTable {
+    return TomlTable {
+        keys: [],
+        values: [],
+        count: 0,
+        capacity: 0,
+    };
+}
+
+// Create empty TOML document
+pub fn new_document() -> TomlDocument {
+    return TomlDocument {
+        root_table: new_table(),
+        parse_errors: [],
+        has_errors: false,
+    };
+}
+
+// Default TOML configuration
+pub fn default_config() -> TomlConfig {
+    return TomlConfig {
+        preserve_order: true,
+        allow_mixed_arrays: false,
+        strict_mode: true,
+        max_depth: 64,
+        datetime_format: TomlDateTimeFormat.RFC3339,
+    };
+}
+
+// Lenient TOML configuration
+pub fn lenient_config() -> TomlConfig {
+    return TomlConfig {
+        preserve_order: false,
+        allow_mixed_arrays: true,
+        strict_mode: false,
+        max_depth: 128,
+        datetime_format: TomlDateTimeFormat.RFC3339,
+    };
+}
+
+// Create TOML string value
+pub fn string_value(s: string) -> TomlValue {
+    return TomlValue.String(s);
+}
+
+// Create TOML integer value
+pub fn integer_value(i: i64) -> TomlValue {
+    return TomlValue.Integer(i);
+}
+
+// Create TOML float value
+pub fn float_value(f: f64) -> TomlValue {
+    return TomlValue.Float(f);
+}
+
+// Create TOML boolean value
+pub fn boolean_value(b: bool) -> TomlValue {
+    return TomlValue.Boolean(b);
+}
+
+// Create TOML array value
+pub fn array_value(values: []TomlValue) -> TomlValue {
+    return TomlValue.Array(values);
+}
+
+// Create TOML table value
+pub fn table_value(table: TomlTable) -> TomlValue {
+    return TomlValue.Table(table);
+}
+
+// Get value type
+pub fn get_value_type(value: TomlValue) -> TomlValueType {
+    match value {
+        TomlValue.String(_) => return TomlValueType.String,
+        TomlValue.Integer(_) => return TomlValueType.Integer,
+        TomlValue.Float(_) => return TomlValueType.Float,
+        TomlValue.Boolean(_) => return TomlValueType.Boolean,
+        TomlValue.DateTime(_) => return TomlValueType.DateTime,
+        TomlValue.Array(_) => return TomlValueType.Array,
+        TomlValue.Table(_) => return TomlValueType.Table,
+        TomlValue.InlineTable(_) => return TomlValueType.InlineTable,
+    }
+}
+
+// Check if value is primitive (not array or table)
+pub fn is_primitive(value: TomlValue) -> bool {
+    match value {
+        TomlValue.String(_) => return true,
+        TomlValue.Integer(_) => return true,
+        TomlValue.Float(_) => return true,
+        TomlValue.Boolean(_) => return true,
+        TomlValue.DateTime(_) => return true,
+        _ => return false,
+    }
+}
+
+// =============================================================================
+// Error Helper Functions
+// =============================================================================
+
+// Create parse error
+pub fn parse_error(message: string, line: usize, column: usize) -> TomlError {
+    let parse_err: TomlParseError = TomlParseError {
+        message: message,
+        line: line,
+        column: column,
+        position: 0,
+        context: "",
+    };
+    return TomlError.ParseError(parse_err);
+}
+
+// Create type error
+pub fn type_error(expected: TomlValueType, actual: TomlValueType, key_path: string) -> TomlError {
+    let type_err: TomlTypeError = TomlTypeError {
+        expected: expected,
+        actual: actual,
+        key_path: key_path,
+        message: "Type mismatch",
+    };
+    return TomlError.TypeError(type_err);
+}
+
+// Create key error
+pub fn key_error(key: string, operation: string) -> TomlError {
+    let key_err: TomlKeyError = TomlKeyError {
+        key: key,
+        operation: operation,
+        message: "Key operation failed",
+    };
+    return TomlError.KeyError(key_err);
+}
+
+// Format error message
+pub fn format_error(error: TomlError) -> string {
+    match error {
+        TomlError.ParseError(parse_err) => {
+            return "Parse error at line " + string(parse_err.line) + 
+                   ", column " + string(parse_err.column) + ": " + parse_err.message;
+        },
+        TomlError.TypeError(type_err) => {
+            return "Type error for key '" + type_err.key_path + "': " + type_err.message;
+        },
+        TomlError.KeyError(key_err) => {
+            return "Key error for '" + key_err.key + "' during " + key_err.operation + ": " + key_err.message;
+        },
+        TomlError.InternalError(msg) => {
+            return "Internal error: " + msg;
+        },
+    }
+} 

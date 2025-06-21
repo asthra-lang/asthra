@@ -1,0 +1,92 @@
+# Optional Elements Phase 2 Examples
+# Demonstrating explicit syntax improvements for AI generation reliability
+
+# Example 1: Explicit Import Syntax (No Aliases)
+# OLD AMBIGUOUS: import "stdlib/string" as str;
+# NEW EXPLICIT:
+import "stdlib/string";
+import "stdlib/collections";
+
+# Example 2: Explicit Function Arguments
+# OLD AMBIGUOUS: main() vs processData(data)  
+# NEW EXPLICIT:
+pub fn main(void) -> void {
+    let data: string = "Hello World";
+    processData(data);
+    cleanup(void);
+}
+
+priv fn processData(data: string) -> void {
+    # Process the data
+    return;
+}
+
+priv fn cleanup(void) -> void {
+    # Cleanup resources  
+    return;
+}
+
+# Example 3: Explicit Pattern Arguments
+# OLD AMBIGUOUS: Option.Some(_) vs Option.None
+# NEW EXPLICIT:
+pub fn handleOption(opt: Option<i32>) -> i32 {
+    match opt {
+        Option.Some(value) => {
+            return value;
+        }
+        Option.None(void) => {  # Explicit void for no arguments
+            return 0;
+        }
+    }
+}
+
+# Example 4: Explicit Annotation Parameters  
+# OLD AMBIGUOUS: #[cache_friendly] vs #[cache_friendly()]
+# NEW EXPLICIT:
+#[cache_friendly(void)]  # Explicit void for no parameters
+pub fn computeSum(data: []i32) -> i32 {
+    let sum: i32 = 0;
+    # Implementation here
+    return sum;
+}
+
+#[performance_critical(target="high", memory="low")]  # Explicit parameters
+pub fn optimizedSort(data: []i32) -> void {
+    # Implementation here
+    return;
+}
+
+# Example 5: Explicit Array Elements
+# OLD AMBIGUOUS: [] vs [1, 2, 3]
+# NEW EXPLICIT:
+pub fn arrayExamples(void) -> void {
+    let empty: []i32 = [void];           # Explicit empty array
+    let numbers: []i32 = [1, 2, 3, 4];   # Explicit elements
+    let mixed: []string = ["hello", "world"];  # Explicit string elements
+    
+    return;
+}
+
+# Example 6: Consistent AI Generation Benefits
+# Before: AI could generate any of these equivalent forms
+# After: AI can only generate one correct form
+
+# BEFORE (AI CONFUSION):
+# import "stdlib/string" as str;  OR  import "stdlib/string";
+# main() { ... }                 OR  main(void) { ... }
+# Option.None                    OR  Option.None(void)
+# []                             OR  [void]
+
+# AFTER (AI CLARITY):
+# import "stdlib/string";        # Only one way
+# main(void) { ... }             # Only one way  
+# Option.None(void)              # Only one way
+# [void]                         # Only one way
+
+# Benefits Demonstrated:
+# 1. ✅ No ambiguity about intended syntax
+# 2. ✅ Self-documenting code patterns
+# 3. ✅ Predictable AI generation
+# 4. ✅ Consistent codebase formatting
+# 5. ✅ Reduced cognitive load for developers
+# 6. ✅ Enhanced tooling support potential 

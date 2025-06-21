@@ -1,0 +1,64 @@
+{
+  "timestamp": "2025-06-10T20:35:36.857332",
+  "summary": {
+    "total_files": 137,
+    "total_size_kb": 1671.642578125,
+    "average_quality": 0.9317518248175183,
+    "dataset_sizes": {
+      "instruction_tuning": 1905,
+      "code_completion": 14031,
+      "explanation": 408,
+      "validation": 6
+    }
+  },
+  "by_category": {
+    "grammar": {
+      "file_count": 1,
+      "total_size_kb": 18.7958984375,
+      "average_quality": 0.95,
+      "high_quality_files": 1
+    },
+    "specification": {
+      "file_count": 10,
+      "total_size_kb": 246.1171875,
+      "average_quality": 0.9650000000000001,
+      "high_quality_files": 10
+    },
+    "user_manual": {
+      "file_count": 23,
+      "total_size_kb": 345.3115234375,
+      "average_quality": 0.957608695652174,
+      "high_quality_files": 23
+    },
+    "examples": {
+      "file_count": 26,
+      "total_size_kb": 89.38671875,
+      "average_quality": 0.9009615384615385,
+      "high_quality_files": 26
+    },
+    "stdlib": {
+      "file_count": 51,
+      "total_size_kb": 633.14453125,
+      "average_quality": 0.9245098039215682,
+      "high_quality_files": 51
+    },
+    "ai_docs": {
+      "file_count": 6,
+      "total_size_kb": 178.0693359375,
+      "average_quality": 0.9625,
+      "high_quality_files": 6
+    },
+    "tests": {
+      "file_count": 20,
+      "total_size_kb": 160.8173828125,
+      "average_quality": 0.9337500000000004,
+      "high_quality_files": 20
+    }
+  },
+  "quality_distribution": {
+    "excellent": 96,
+    "good": 41,
+    "fair": 0,
+    "poor": 0
+  }
+}

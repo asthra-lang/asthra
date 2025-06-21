@@ -1,0 +1,10 @@
+package main;
+
+pub fn main(none) -> i32 {
+    let flag: bool = true;
+    if flag {
+        let x: i32 = 42;
+	log("x: %d ?", x);
+    }
+    return 0;
+} 

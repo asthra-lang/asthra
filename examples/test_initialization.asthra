@@ -1,0 +1,9 @@
+package main;
+
+fn main(none) -> i32 {
+    let a: i32 = 0;
+    let greeting_a: []u8 = ['H', 'e', 'l', 'l', 'o'];
+    let greeting_b: string = "Hello";
+    let greeting_c: *const u8 = "Hello";  // C-style string pointer
+    return 0;
+} 

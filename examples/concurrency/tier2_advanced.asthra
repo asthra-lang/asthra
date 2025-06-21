@@ -1,0 +1,991 @@
+// Asthra Tier 2 Concurrency Examples
+// Advanced patterns using stdlib modules with #[non_deterministic] annotation
+
+import "stdlib/concurrent/channels";
+import "stdlib/concurrent/coordination";
+import "stdlib/concurrent/patterns";
+
+// ============================================================================
+// Example 1: Basic Channel Communication
+// ============================================================================
+
+#[non_deterministic]
+fn example_basic_channels(none) -> Result<Vec<i32>, string> {
+    println("Starting basic channel communication...");
+    
+    // Create a buffered channel
+    let channel_pair_result: auto  // Manual review needed = channels.channel_pair<i32>(10);
+    let (sender, receiver) = match channel_pair_result {
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    
+    // Producer task
+    let producer: auto  // Manual review needed = spawn_with_handle move || {;
+        println("Producer starting...");
+        for i in 0..20 {
+            match sender.send(i * 2) {
+                channels.SendResult.Ok() => {
+                    println("Sent: {}", i * 2);
+                },
+                channels.SendResult.Error(msg) => {
+                    return Result.Err(format!("Send failed: {}", msg));
+                },
+                _ => {
+                    return Result.Err("Unexpected send result".to_string());
+                }
+            }
+        }
+        match sender.close() {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+        println("Producer finished");
+        Result.Ok(())
+    };
+    
+    // Consumer task
+    let consumer: auto  // Manual review needed = spawn_with_handle move || {;
+        println("Consumer starting...");
+        let mut results = [];
+        loop {
+            match receiver.recv() {
+                channels.RecvResult.Ok(value) => {
+                    println("Received: {}", value);
+                    results.push(value);
+                },
+                channels.RecvResult.Closed() => {
+                    println("Channel closed, consumer finishing");
+                    break;
+                },
+                channels.RecvResult.Error(msg) => {
+                    return Result.Err(format!("Receive failed: {}", msg));
+                },
+                _ => continue
+            }
+        }
+        println("Consumer finished with {} items", results.len());
+        Result.Ok(results)
+    };
+    
+    // Wait for both tasks to complete
+    match await producer {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    let results_result: auto  // Manual review needed = await consumer;
+    let results: auto  // Match unwrap - manual review needed = match results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    
+    println("Basic channel communication completed");
+    Result.Ok(results)
+}
+
+// ============================================================================
+// Example 2: Multiple Producers, Single Consumer
+// ============================================================================
+
+#[non_deterministic]
+fn example_multi_producer(none) -> Result<ProcessingReport, string> {
+    println("Starting multi-producer pattern...");
+    
+    let channel_pair_result: auto  // Manual review needed = channels.channel_pair<WorkMessage>(50);
+    let (sender, receiver) = match channel_pair_result {
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    let num_producers: i32 = 5;
+    
+    // Spawn multiple producers
+    let mut producer_handles = [];
+    for producer_id in 0..num_producers {
+        let sender_clone: auto  // Manual review needed = sender.clone();
+        let handle: auto  // Manual review needed = spawn_with_handle move || {;
+            producer_worker(producer_id, sender_clone)
+        };
+        producer_handles.push(handle);
+    }
+    
+    // Single consumer task
+    let consumer: auto  // Manual review needed = spawn_with_handle move || {;
+        consumer_worker(receiver)
+    };
+    
+    // Wait for all producers to finish
+    for (index, handle) in producer_handles.enumerate() {
+        match await handle {
+            Result.Ok(()) => println("Producer {} completed", index)
+            Result.Err(error) => return Result.Err(format!("Producer {} failed: {}", index, error))
+        }
+    }
+    
+    // Close the sender so consumer knows to stop
+    match sender.close() {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    
+    // Get consumer results
+    let report_result: auto  // Manual review needed = await consumer;
+    let report: auto  // Match unwrap - manual review needed = match report_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    
+    println("Multi-producer pattern completed");
+    Result.Ok(report)
+}
+
+struct WorkMessage {
+    producer_id: i32,
+    sequence: i32,
+    data: string,
+}
+
+struct ProcessingReport {
+    total_messages: i32,
+    messages_per_producer: Vec<i32>,
+    processing_time_ms: i64,
+}
+
+fn producer_worker(producer_id: i32, sender: channels.Sender<WorkMessage>) -> Result<(), string> {
+    println("Producer {} starting work", producer_id);
+    
+    for sequence in 0..10 {
+        let message: auto  // Manual review needed = WorkMessage {;
+            producer_id: producer_id,
+            sequence: sequence,
+            data: format!("data_{}_{}", producer_id, sequence),
+        };
+        
+        match sender.send(message) {
+            channels.SendResult.Ok() => {
+                println("Producer {} sent message {}", producer_id, sequence);
+            },
+            channels.SendResult.Error(msg) => {
+                return Result.Err(format!("Producer {} send failed: {}", producer_id, msg));
+            },
+            _ => {
+                return Result.Err(format!("Producer {} unexpected send result", producer_id));
+            }
+        }
+        
+        // Simulate variable work time
+        simulate_work(producer_id * 10 + sequence);
+    }
+    
+    println("Producer {} finished", producer_id);
+    Result.Ok(())
+}
+
+fn consumer_worker(receiver: channels.Receiver<WorkMessage>) -> Result<ProcessingReport, string> {
+    println("Consumer starting work");
+    
+    let mut total_messages = 0;
+    let mut messages_per_producer = vec![0; 5]; // Assuming 5 producers
+    let start_time: auto  // Manual review needed = get_current_time_ms();
+    
+    loop {
+        match receiver.recv() {
+            channels.RecvResult.Ok(message) => {
+                println("Processing message from producer {}: {}", message.producer_id, message.data);
+                total_messages += 1;
+                if message.producer_id >= 0 && (message.producer_id as usize) < messages_per_producer.len() {
+                    messages_per_producer[message.producer_id as usize] += 1;
+                }
+                
+                // Simulate message processing
+                simulate_processing(message.data);
+            },
+            channels.RecvResult.Closed() => {
+                println("Consumer detected channel closure");
+                break;
+            },
+            channels.RecvResult.Error(msg) => {
+                return Result.Err(format!("Consumer receive failed: {}", msg));
+            },
+            _ => continue
+        }
+    }
+    
+    let end_time: auto  // Manual review needed = get_current_time_ms();
+    let processing_time: auto  // Manual review needed = end_time - start_time;
+    
+    println("Consumer finished processing {} messages in {} ms", total_messages, processing_time);
+    
+    Result.Ok(ProcessingReport {
+        total_messages: total_messages,
+        messages_per_producer: messages_per_producer,
+        processing_time_ms: processing_time,
+    })
+}
+
+// ============================================================================
+// Example 3: Select Operations with Multiple Channels
+// ============================================================================
+
+#[non_deterministic]
+fn example_select_operations(none) -> Result<SelectionResults, string> {
+    println("Starting select operations example...");
+    
+    // Create multiple channels for different types of data
+    let ch_numbers_result: auto  // Manual review needed = channels.channel<i32>(5);
+    let ch_numbers: f64 = match ch_numbers_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    let ch_strings_result: auto  // Manual review needed = channels.channel<string>(5);
+    let ch_strings: string = match ch_strings_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    let ch_control_result: auto  // Manual review needed = channels.channel<ControlMessage>(2);
+    let ch_control: auto  // Match unwrap - manual review needed = match ch_control_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    
+    // Start data producers
+    let number_producer: auto  // Manual review needed = spawn_with_handle move || {;
+        produce_numbers(ch_numbers.clone())
+    };
+    
+    let string_producer: auto  // Manual review needed = spawn_with_handle move || {;
+        produce_strings(ch_strings.clone())
+    };
+    
+    let control_producer: auto  // Manual review needed = spawn_with_handle move || {;
+        produce_control_messages(ch_control.clone())
+    };
+    
+    // Main selector task
+    let selector: auto  // Manual review needed = spawn_with_handle move || {;
+        select_coordinator(ch_numbers, ch_strings, ch_control)
+    };
+    
+    // Wait for all producers
+    match await number_producer {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    match await string_producer {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    match await control_producer {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    
+    // Get selection results
+    let results_result: auto  // Manual review needed = await selector;
+    let results: auto  // Match unwrap - manual review needed = match results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    
+    println("Select operations completed");
+    Result.Ok(results)
+}
+
+enum ControlMessage {
+    Stop,
+    Pause,
+    Resume,
+}
+
+struct SelectionResults {
+    numbers_received: Vec<i32>,
+    strings_received: Vec<string>,
+    control_messages: Vec<string>,
+    total_selections: i32,
+}
+
+fn produce_numbers(ch: channels.Channel<i32>) -> Result<(), string> {
+    for i in 0..10 {
+        match channels.send_blocking(ch.clone(), i * 3) {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+        simulate_work(i);
+    }
+    match channels.close(ch) {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    Result.Ok(())
+}
+
+fn produce_strings(ch: channels.Channel<string>) -> Result<(), string> {
+    let strings: auto  // Manual review needed = vec!["hello", "world", "asthra", "concurrent", "programming"];
+    for s in strings {
+        match channels.send_blocking(ch.clone(), s.to_string()) {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+        simulate_work(s.len() as i32);
+    }
+    match channels.close(ch) {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    Result.Ok(())
+}
+
+fn produce_control_messages(ch: channels.Channel<ControlMessage>) -> Result<(), string> {
+    let messages: auto  // Manual review needed = vec![ControlMessage.Pause, ControlMessage.Resume, ControlMessage.Stop];
+    for msg in messages {
+        match channels.send_blocking(ch.clone(), msg) {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+        simulate_work(100); // Longer delay for control messages
+    }
+    match channels.close(ch) {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    Result.Ok(())
+}
+
+fn select_coordinator(
+    ch_numbers: channels.Channel<i32>,
+    ch_strings: channels.Channel<string>,
+    ch_control: channels.Channel<ControlMessage>,
+) -> Result<SelectionResults, string> {
+    let mut results = SelectionResults {
+        numbers_received: [],
+        strings_received: [],
+        control_messages: [],
+        total_selections: 0,
+    };
+    
+    let mut running = true;
+    let mut paused = false;
+    
+    while running {
+        if paused {
+            // When paused, only listen for control messages
+            match coordination.SelectBuilder::new()
+                .recv(ch_control.clone())
+                .timeout(1000)
+                .execute() {
+                coordination.SelectResult.RecvOk(0, msg) => {
+                    match msg {
+                        ControlMessage.Resume => {
+                            paused = false;
+                            results.control_messages.push("Resumed".to_string());
+                        },
+                        ControlMessage.Stop => {
+                            running = false;
+                            results.control_messages.push("Stopped".to_string());
+                        },
+                        _ => {}
+                    }
+                },
+                coordination.SelectResult.Timeout() => {
+                    println("Timeout while paused");
+                },
+                _ => {}
+            }
+        } else {
+            // Normal operation: listen to all channels
+            match coordination.SelectBuilder::new()
+                .recv(ch_numbers.clone())
+                .recv(ch_strings.clone())
+                .recv(ch_control.clone())
+                .timeout(500)
+                .execute() {
+                coordination.SelectResult.RecvOk(0, number) => {
+                    println("Selected number: {}", number);
+                    results.numbers_received.push(number);
+                    results.total_selections += 1;
+                },
+                coordination.SelectResult.RecvOk(1, text) => {
+                    println("Selected string: {}", text);
+                    results.strings_received.push(text);
+                    results.total_selections += 1;
+                },
+                coordination.SelectResult.RecvOk(2, msg) => {
+                    match msg {
+                        ControlMessage.Pause => {
+                            paused = true;
+                            results.control_messages.push("Paused".to_string());
+                        },
+                        ControlMessage.Stop => {
+                            running = false;
+                            results.control_messages.push("Stopped".to_string());
+                        },
+                        ControlMessage.Resume => {
+                            // Already running, ignore
+                        },
+                    }
+                    results.total_selections += 1;
+                },
+                coordination.SelectResult.Timeout() => {
+                    println("Selection timeout, checking if all channels are closed");
+                    // Check if all channels are closed
+                    if channels.is_closed(ch_numbers) && 
+                       channels.is_closed(ch_strings) && 
+                       channels.is_closed(ch_control) {
+                        running = false;
+                    }
+                },
+                coordination.SelectResult.Error(msg) => {
+                    return Result.Err(format!("Select operation failed: {}", msg));
+                },
+                _ => {}
+            }
+        }
+    }
+    
+    println("Select coordinator finished");
+    Result.Ok(results)
+}
+
+// ============================================================================
+// Example 4: Worker Pool Pattern
+// ============================================================================
+
+#[non_deterministic]
+fn example_worker_pool(none) -> Result<WorkerPoolResults, string> {
+    println("Starting worker pool example...");
+    
+    let pool_size: i32 = 4;
+    let task_count: i32 = 20;
+    
+    // Create worker pool
+    let pool_result: auto  // Function call - manual review needed = patterns.WorkerPool::<TaskResult>::new(pool_size);
+    let pool: auto  // Match unwrap - manual review needed = match pool_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    
+    // Submit tasks to the pool
+    for task_id in 0..task_count {
+        let task: auto  // Manual review needed = Task {;
+            id: task_id,
+            workload: (task_id % 5) + 1, // Workload between 1-5
+            data: format!("task_data_{}", task_id),
+        };
+        
+        pool.submit_function(move || {
+            process_task(task)
+        match }) {
+            Result.Ok(_) => {}
+            Result.Err(e) => return Result.Err(e)
+        }
+    }
+    
+    // Collect results
+    let mut successful_tasks = [];
+    let mut failed_tasks = [];
+    let mut total_processing_time = 0i64;
+    
+    for task_index in 0..task_count {
+        match pool.get_result()? {
+            Result.Ok(task_result) => {
+                println!("Task {} completed in {} ms", task_result.task_id, task_result.processing_time_ms);
+                total_processing_time += task_result.processing_time_ms;
+                successful_tasks.push(task_result);
+            },
+            Result.Err(error_msg) => {
+                println!("Task {} failed: {}", task_index, error_msg);
+                failed_tasks.push(TaskFailure {
+                    task_index: task_index,
+                    error: error_msg,
+                });
+            }
+        }
+    }
+    
+    // Shutdown the pool
+    match pool.shutdown() {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    
+    let results: auto  // Manual review needed = WorkerPoolResults {;
+        total_tasks: task_count,
+        successful_tasks: successful_tasks.len() as i32,
+        failed_tasks: failed_tasks.len() as i32,
+        average_processing_time_ms: if successful_tasks.len() > 0 {
+            total_processing_time / successful_tasks.len() as i64
+        } else {
+            0
+        },
+        task_failures: failed_tasks,
+    };
+    
+    println!("Worker pool completed: {}/{} tasks successful", 
+             results.successful_tasks, results.total_tasks);
+    
+    Result.Ok(results)
+}
+
+struct Task {
+    id: i32,
+    workload: i32,
+    data: string,
+}
+
+struct TaskResult {
+    task_id: i32,
+    result_data: string,
+    processing_time_ms: i64,
+}
+
+struct TaskFailure {
+    task_index: i32,
+    error: string,
+}
+
+struct WorkerPoolResults {
+    total_tasks: i32,
+    successful_tasks: i32,
+    failed_tasks: i32,
+    average_processing_time_ms: i64,
+    task_failures: Vec<TaskFailure>,
+}
+
+fn process_task(task: Task) -> Result<TaskResult, string> {
+    let start_time: auto  // Manual review needed = get_current_time_ms();
+    
+    // Simulate potential task failure
+    if task.id % 13 == 0 {
+        return Result.Err(format!("Task {} encountered simulated error", task.id));
+    }
+    
+    // Simulate work based on workload
+    for _ in 0..(task.workload * 50) {
+        perform_computation_unit();
+    }
+    
+    let end_time: auto  // Manual review needed = get_current_time_ms();
+    let processing_time: auto  // Manual review needed = end_time - start_time;
+    
+    Result.Ok(TaskResult {
+        task_id: task.id,
+        result_data: format!("processed_{}", task.data),
+        processing_time_ms: processing_time,
+    })
+}
+
+// ============================================================================
+// Example 5: Barrier Synchronization
+// ============================================================================
+
+#[non_deterministic]
+fn example_barrier_synchronization(none) -> Result<BarrierResults, string> {
+    println("Starting barrier synchronization example...");
+    
+    let worker_count: i32 = 4;
+    let barrier_result: auto  // Manual review needed = coordination.create_barrier(worker_count);
+    let barrier: auto  // Match unwrap - manual review needed = match barrier_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    
+    let mut worker_handles = [];
+    
+    // Start all workers
+    for worker_id in 0..worker_count {
+        let barrier_ref: auto  // Manual review needed = barrier.clone();
+        let handle: auto  // Manual review needed = spawn_with_handle move || {;
+            barrier_worker(worker_id, barrier_ref)
+        };
+        worker_handles.push(handle);
+    }
+    
+    // Wait for all workers to complete
+    let mut worker_results = [];
+    for handle in worker_handles {
+        let result_result: auto  // Manual review needed = await handle;
+        let result: auto  // Match unwrap - manual review needed = match result_result {;
+            Result.Ok(value) => value
+            Result.Err(e) => return Result.Err(e)
+        };
+        worker_results.push(result);
+    }
+    
+    let results: auto  // Manual review needed = BarrierResults {;
+        worker_count: worker_count,
+        phase_completion_times: combine_phase_times(worker_results),
+        total_synchronization_points: 3, // We have 3 phases
+    };
+    
+    println!("Barrier synchronization completed");
+    Result.Ok(results)
+}
+
+struct WorkerResult {
+    worker_id: i32,
+    phase_times: Vec<i64>,
+    total_time: i64,
+}
+
+struct BarrierResults {
+    worker_count: i32,
+    phase_completion_times: Vec<i64>,
+    total_synchronization_points: i32,
+}
+
+fn barrier_worker(worker_id: i32, barrier: coordination.Barrier) -> Result<WorkerResult, string> {
+    let start_time: auto  // Manual review needed = get_current_time_ms();
+    let mut phase_times = [];
+    
+    println!("Worker {} starting", worker_id);
+    
+    // Phase 1: Individual preparation
+    let phase1_start: auto  // Manual review needed = get_current_time_ms();
+    for i in 0..(worker_id + 1) * 10 {
+        perform_phase1_work(i);
+    }
+    let phase1_time: auto  // Manual review needed = get_current_time_ms() - phase1_start;
+    phase_times.push(phase1_time);
+    
+    println!("Worker {} completed phase 1 in {} ms", worker_id, phase1_time);
+    
+    // Synchronization point 1
+    match coordination.barrier_wait(barrier.clone()) {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    println!("Worker {} passed barrier 1", worker_id);
+    
+    // Phase 2: Collaborative work
+    let phase2_start: auto  // Manual review needed = get_current_time_ms();
+    for i in 0..20 {
+        perform_phase2_work(worker_id, i);
+    }
+    let phase2_time: auto  // Manual review needed = get_current_time_ms() - phase2_start;
+    phase_times.push(phase2_time);
+    
+    println!("Worker {} completed phase 2 in {} ms", worker_id, phase2_time);
+    
+    // Synchronization point 2
+    match coordination.barrier_wait(barrier.clone()) {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    println!("Worker {} passed barrier 2", worker_id);
+    
+    // Phase 3: Final processing
+    let phase3_start: auto  // Manual review needed = get_current_time_ms();
+    for i in 0..15 {
+        perform_phase3_work(worker_id, i);
+    }
+    let phase3_time: auto  // Manual review needed = get_current_time_ms() - phase3_start;
+    phase_times.push(phase3_time);
+    
+    println!("Worker {} completed phase 3 in {} ms", worker_id, phase3_time);
+    
+    // Final synchronization
+    match coordination.barrier_wait(barrier) {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    println!("Worker {} passed final barrier", worker_id);
+    
+    let total_time: auto  // Manual review needed = get_current_time_ms() - start_time;
+    
+    Result.Ok(WorkerResult {
+        worker_id: worker_id,
+        phase_times: phase_times,
+        total_time: total_time,
+    })
+}
+
+fn combine_phase_times(worker_results: Vec<WorkerResult>) -> Vec<i64> {
+    let mut combined_times = vec![0i64; 3]; // 3 phases
+    
+    for result in worker_results {
+        for (phase, time) in result.phase_times.enumerate() {
+            if phase < combined_times.len() {
+                combined_times[phase] += time;
+            }
+        }
+    }
+    
+    // Calculate average times
+    for time in combined_times.iter_mut() {
+        *time = *time / worker_results.len() as i64;
+    }
+    
+    combined_times
+}
+
+// ============================================================================
+// Example 6: Producer-Consumer with Backpressure
+// ============================================================================
+
+#[non_deterministic]
+fn example_backpressure_control(none) -> Result<BackpressureResults, string> {
+    println("Starting backpressure control example...");
+    
+    let buffer_size: auto  // Manual review needed = 5; // Small buffer to demonstrate backpressure;
+    let channel_pair_result: auto  // Manual review needed = channels.channel_pair<DataPacket>(buffer_size);
+    let (sender, receiver) = match channel_pair_result {
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    
+    // Fast producer
+    let producer: auto  // Manual review needed = spawn_with_handle move || {;
+        fast_producer(sender)
+    };
+    
+    // Slow consumer
+    let consumer: auto  // Manual review needed = spawn_with_handle move || {;
+        slow_consumer(receiver)
+    };
+    
+    // Wait for both to complete
+    let producer_stats_result: auto  // Manual review needed = await producer;
+    let producer_stats: auto  // Match unwrap - manual review needed = match producer_stats_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    let consumer_stats_result: auto  // Manual review needed = await consumer;
+    let consumer_stats: auto  // Match unwrap - manual review needed = match consumer_stats_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    
+    let results: auto  // Manual review needed = BackpressureResults {;
+        packets_produced: producer_stats.packets_sent,
+        packets_consumed: consumer_stats.packets_received,
+        producer_blocked_time_ms: producer_stats.blocked_time_ms,
+        consumer_processing_time_ms: consumer_stats.total_processing_time_ms,
+        buffer_size: buffer_size,
+    };
+    
+    println!("Backpressure control completed");
+    println!("Produced: {}, Consumed: {}, Producer blocked: {} ms", 
+             results.packets_produced, results.packets_consumed, results.producer_blocked_time_ms);
+    
+    Result.Ok(results)
+}
+
+struct DataPacket {
+    id: i32,
+    payload: string,
+    timestamp: i64,
+}
+
+struct ProducerStats {
+    packets_sent: i32,
+    blocked_time_ms: i64,
+}
+
+struct ConsumerStats {
+    packets_received: i32,
+    total_processing_time_ms: i64,
+}
+
+struct BackpressureResults {
+    packets_produced: i32,
+    packets_consumed: i32,
+    producer_blocked_time_ms: i64,
+    consumer_processing_time_ms: i64,
+    buffer_size: i32,
+}
+
+fn fast_producer(sender: channels.Sender<DataPacket>) -> Result<ProducerStats, string> {
+    let mut packets_sent = 0;
+    let mut blocked_time_ms = 0i64;
+    
+    for i in 0..50 {
+        let packet: auto  // Manual review needed = DataPacket {;
+            id: i,
+            payload: format!("data_packet_{}", i),
+            timestamp: get_current_time_ms(),
+        };
+        
+        let send_start: auto  // Manual review needed = get_current_time_ms();
+        
+        match sender.send_blocking(packet) {
+            channels.SendResult.Ok() => {
+                let send_time: auto  // Manual review needed = get_current_time_ms() - send_start;
+                if send_time > 10 {  // Consider blocking if send took more than 10ms
+                    blocked_time_ms += send_time;
+                    println!("Producer blocked for {} ms on packet {}", send_time, i);
+                }
+                packets_sent += 1;
+            },
+            channels.SendResult.Error(msg) => {
+                return Result.Err(format!("Producer send failed: {}", msg));
+            },
+            _ => {
+                return Result.Err("Producer unexpected send result".to_string());
+            }
+        }
+        
+        // Fast production rate
+        simulate_work(1);
+    }
+    
+    match sender.close() {
+        Result.Ok(_) => {}
+        Result.Err(e) => return Result.Err(e)
+    }
+    println!("Producer finished sending {} packets", packets_sent);
+    
+    Result.Ok(ProducerStats {
+        packets_sent: packets_sent,
+        blocked_time_ms: blocked_time_ms,
+    })
+}
+
+fn slow_consumer(receiver: channels.Receiver<DataPacket>) -> Result<ConsumerStats, string> {
+    let mut packets_received = 0;
+    let start_time: auto  // Manual review needed = get_current_time_ms();
+    
+    loop {
+        match receiver.recv() {
+            channels.RecvResult.Ok(packet) => {
+                println!("Processing packet {}: {}", packet.id, packet.payload);
+                
+                // Slow processing - simulate heavy work
+                simulate_work(50);
+                
+                packets_received += 1;
+            },
+            channels.RecvResult.Closed() => {
+                println!("Consumer detected channel closure");
+                break;
+            },
+            channels.RecvResult.Error(msg) => {
+                return Result.Err(format!("Consumer receive failed: {}", msg));
+            },
+            _ => continue
+        }
+    }
+    
+    let total_processing_time: auto  // Manual review needed = get_current_time_ms() - start_time;
+    println!("Consumer finished processing {} packets in {} ms", 
+             packets_received, total_processing_time);
+    
+    Result.Ok(ConsumerStats {
+        packets_received: packets_received,
+        total_processing_time_ms: total_processing_time,
+    })
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+fn simulate_work(units: i32) {
+    // Simulate work by performing computation
+    for _ in 0..units {
+        perform_computation_unit();
+    }
+}
+
+fn simulate_processing(data: string) {
+    // Simulate processing the data
+    for _ in 0..data.len() {
+        perform_computation_unit();
+    }
+}
+
+fn perform_computation_unit() {
+    // Simulate a basic computation unit
+    let mut dummy = 0;
+    for i in 0..100 {
+        dummy += i;
+    }
+}
+
+fn perform_phase1_work(index: i32) {
+    perform_computation_unit();
+}
+
+fn perform_phase2_work(worker_id: i32, index: i32) {
+    perform_computation_unit();
+}
+
+fn perform_phase3_work(worker_id: i32, index: i32) {
+    perform_computation_unit();
+}
+
+fn get_current_time_ms(none) -> i64 {
+    // Return current time in milliseconds
+    // This would typically call a system function
+    123456789i64 // Placeholder for this example
+}
+
+// ============================================================================
+// Main Examples Runner
+// ============================================================================
+
+#[non_deterministic]
+fn main(none) -> Result<(), string> {
+    println("=== Asthra Tier 2 Advanced Concurrency Examples ===");
+    
+    // Example 1: Basic channels
+    println!("\n--- Example 1: Basic Channel Communication ---");
+    let channel_results_result: auto  // Manual review needed = example_basic_channels();
+    let channel_results: auto  // Match unwrap - manual review needed = match channel_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println!("Channel communication processed {} items", channel_results.len());
+    
+    // Example 2: Multi-producer
+    println!("\n--- Example 2: Multiple Producers ---");
+    let multi_results_result: auto  // Manual review needed = example_multi_producer();
+    let multi_results: auto  // Match unwrap - manual review needed = match multi_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println!("Multi-producer processed {} total messages", multi_results.total_messages);
+    
+    // Example 3: Select operations
+    println!("\n--- Example 3: Select Operations ---");
+    let select_results_result: auto  // Manual review needed = example_select_operations();
+    let select_results: auto  // Match unwrap - manual review needed = match select_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println!("Select operations completed {} total selections", select_results.total_selections);
+    
+    // Example 4: Worker pool
+    println!("\n--- Example 4: Worker Pool ---");
+    let pool_results_result: auto  // Manual review needed = example_worker_pool();
+    let pool_results: auto  // Match unwrap - manual review needed = match pool_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println!("Worker pool completed {}/{} tasks successfully", 
+             pool_results.successful_tasks, pool_results.total_tasks);
+    
+    // Example 5: Barrier synchronization
+    println!("\n--- Example 5: Barrier Synchronization ---");
+    let barrier_results_result: auto  // Manual review needed = example_barrier_synchronization();
+    let barrier_results: auto  // Match unwrap - manual review needed = match barrier_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println!("Barrier synchronization coordinated {} workers through {} phases", 
+             barrier_results.worker_count, barrier_results.total_synchronization_points);
+    
+    // Example 6: Backpressure control
+    println!("\n--- Example 6: Backpressure Control ---");
+    let backpressure_results_result: auto  // Manual review needed = example_backpressure_control();
+    let backpressure_results: auto  // Match unwrap - manual review needed = match backpressure_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println!("Backpressure control: {} produced, {} consumed", 
+             backpressure_results.packets_produced, backpressure_results.packets_consumed);
+    
+    println!("\nAll Tier 2 examples completed successfully!");
+    println!("Note: These examples demonstrate advanced concurrency patterns");
+    println!("that require explicit #[non_deterministic] annotation.");
+    
+    Result.Ok(())
+} 

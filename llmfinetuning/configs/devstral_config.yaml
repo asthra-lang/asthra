@@ -1,0 +1,209 @@
+# Devstral-Small-2505 Configuration for Asthra LLM Fine-tuning
+# Version: 1.0
+# Created: January 2025
+# Model: mistralai/Devstral-Small-2505 (24B parameters)
+
+# Model Configuration
+model:
+  name: "mistralai/Devstral-Small-2505"
+  tokenizer_name: "mistralai/Devstral-Small-2505" 
+  max_length: 128000  # 128K context window
+  trust_remote_code: true
+  
+  # Quantization for efficient training
+  quantization:
+    load_in_4bit: true
+    bnb_4bit_compute_dtype: "bfloat16"
+    bnb_4bit_quant_type: "nf4"
+    bnb_4bit_use_double_quant: true
+
+# Training Configuration
+training:
+  output_dir: "./outputs/models/"
+  overwrite_output_dir: true
+  
+  # Batch size and accumulation
+  per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1
+  gradient_accumulation_steps: 16
+  dataloader_num_workers: 4
+  
+  # Learning rate and optimization
+  learning_rate: 0.00005  # 5e-5 as decimal to avoid YAML parsing issues
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.1
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  
+  # Training duration
+  num_train_epochs: 3
+  max_steps: -1  # Use epochs instead
+  
+  # Logging and evaluation
+  logging_dir: "./outputs/logs/"
+  logging_steps: 50
+  eval_strategy: "steps"
+  eval_steps: 500
+  save_strategy: "steps"
+  save_steps: 1000
+  save_total_limit: 3
+  
+  # Mixed precision training
+  fp16: false
+  bf16: true
+  
+  # Other training settings
+  remove_unused_columns: false
+  group_by_length: true
+  ddp_find_unused_parameters: false
+
+# LoRA Configuration (Parameter-Efficient Fine-tuning)
+lora:
+  rank: 64
+  alpha: 32
+  dropout: 0.1
+  bias: "none"
+  task_type: "CAUSAL_LM"
+  target_modules: 
+    - "q_proj"
+    - "k_proj" 
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+  modules_to_save: null
+
+# Data Configuration
+data:
+  dataset_path: "./data/processed/"
+  raw_data_path: "./data/raw/"
+  cache_dir: "./outputs/cache/"
+  
+  # Dataset splits
+  train_split: 0.8
+  validation_split: 0.1
+  test_split: 0.1
+  
+  # Data processing
+  max_samples: null  # Use all available data
+  max_seq_length: 8192  # Sequences longer than this will be truncated
+  preprocessing_num_workers: 8
+  
+  # Data quality filters
+  min_code_length: 50    # Minimum characters in code examples
+  max_code_length: 4096  # Maximum characters in code examples
+  quality_threshold: 0.8 # Minimum quality score (0-1)
+
+# Evaluation Configuration
+evaluation:
+  # Compilation testing
+  enable_compilation_testing: true
+  asthra_compiler_path: "../build/asthra"
+  compilation_timeout: 30  # seconds
+  
+  # Semantic analysis testing
+  enable_semantic_testing: true
+  semantic_timeout: 15  # seconds
+  
+  # Quality metrics
+  target_compilation_rate: 0.90   # 90% compilation success
+  target_semantic_rate: 0.85      # 85% semantic correctness
+  target_quality_score: 0.80      # 80% idiomatic quality
+  
+  # Benchmark datasets
+  benchmark_datasets:
+    - "asthra_syntax_test"
+    - "asthra_semantics_test"
+    - "asthra_idioms_test"
+    - "asthra_complex_features_test"
+
+# Multi-stage Training
+stages:
+  # Stage 1: Instruction Tuning (Basic syntax and semantics)
+  stage1:
+    name: "instruction_tuning"
+    dataset: "instruction_tuning.jsonl"
+    epochs: 1
+    learning_rate: 0.00005  # 5e-5 as decimal
+    description: "Learn basic Asthra syntax and semantics"
+  
+  # Stage 2: Code Completion (Advanced patterns)
+  stage2:
+    name: "code_completion"
+    dataset: "code_completion.jsonl" 
+    epochs: 1
+    learning_rate: 0.00003  # 3e-5 as decimal
+    description: "Learn code completion and advanced patterns"
+  
+  # Stage 3: Quality Optimization (DPO on high-quality examples)
+  stage3:
+    name: "quality_optimization"
+    dataset: "quality_pairs.jsonl"
+    epochs: 1
+    learning_rate: 0.00001  # 1e-5 as decimal
+    description: "Optimize for high-quality, idiomatic code"
+
+# Monitoring and Logging
+monitoring:
+  # Weights & Biases (disabled for demo)
+  use_wandb: false  # Set to true when you have valid API key
+  wandb_project: "asthra-llm-finetuning"
+  wandb_entity: null  # Set your wandb username/organization
+  
+  # Tensorboard
+  use_tensorboard: true
+  tensorboard_log_dir: "./outputs/logs/tensorboard/"
+  
+  # Custom metrics
+  track_compilation_success: true
+  track_semantic_correctness: true
+  track_code_quality: true
+
+# Hardware and Performance
+hardware:
+  # GPU settings
+  device_map: "auto"
+  max_memory: null  # Auto-detect
+  offload_folder: "./outputs/offload/"
+  
+  # Performance optimizations
+  gradient_checkpointing: true
+  dataloader_pin_memory: true
+  use_cache: false  # Disable during training
+  
+  # Memory management
+  max_memory_mb: 24000  # Adjust based on your GPU
+  cleanup_cache_every_n_steps: 100
+
+# Export and Deployment
+export:
+  # GGUF export settings
+  gguf_output_dir: "./outputs/exported/gguf/"
+  gguf_quantization: "Q4_K_M"  # Good balance of size/quality
+  
+  # Ollama integration
+  ollama_model_name: "asthra-coder"
+  ollama_model_file: "./outputs/exported/ollama/Modelfile"
+  
+  # Model registry
+  registry_url: null  # Set if using model registry
+  model_version: "1.0"
+
+# Advanced Settings
+advanced:
+  # Gradient accumulation optimization
+  gradient_accumulation_kwargs:
+    sync_each_batch: false
+  
+  # Memory optimization
+  max_memory_mapping: null
+  low_cpu_mem_usage: true
+  
+  # Debugging
+  debug_mode: false
+  debug_dataset_size: 100  # Use small dataset for debugging
+  
+  # Reproducibility
+  seed: 42
+  deterministic: true 

@@ -1,0 +1,80 @@
+# Core ML framework (updated for Devstral-Small-2505 compatibility)
+torch>=2.3.0
+transformers>=4.46.0
+datasets>=2.20.0
+accelerate>=0.34.0
+tokenizers>=0.20.0
+
+# Mistral/Devstral specific
+mistral-common>=1.5.5
+tiktoken>=0.7.0
+
+# Training framework (updated for latest features)
+trl>=0.9.6
+peft>=0.12.0
+# bitsandbytes>=0.43.0  # Commented out - not compatible with macOS ARM64
+
+# Evaluation and monitoring
+wandb>=0.17.0
+tensorboard>=2.17.0
+evaluate>=0.4.2
+
+# Data processing
+jsonlines>=4.0.0
+tqdm>=4.66.1
+numpy>=1.26.0
+pandas>=2.2.0
+pyyaml>=6.0.1
+python-dotenv>=1.0.0
+
+# Text processing and quality validation
+nltk>=3.8.1
+scikit-learn>=1.5.0
+textstat>=0.7.3
+
+# GGUF export for Ollama deployment (macOS compatible)
+# llama-cpp-python>=0.2.88  # Can be complex on macOS, install separately if needed
+# gguf>=0.9.1  # Part of llama-cpp-python
+
+# Inference and deployment (macOS compatible)
+# vllm>=0.8.5  # Not supported on macOS
+# ollama>=0.3.0  # Install via homebrew instead
+
+# Hardware monitoring (macOS compatible)
+# nvidia-ml-py>=12.560.30  # NVIDIA only, not applicable on macOS
+psutil>=5.9.8
+
+# Development tools
+pytest>=8.0.0
+black>=24.0.0
+isort>=5.13.0
+flake8>=7.0.0
+mypy>=1.10.0
+
+# Jupyter notebooks and visualization
+jupyter>=1.0.0
+ipywidgets>=8.0.0
+matplotlib>=3.9.0
+seaborn>=0.13.0
+plotly>=5.19.0
+
+# Configuration management
+hydra-core>=1.3.2
+omegaconf>=2.3.0
+
+# File handling and utilities
+# pathlib-mate>=1.0.0  # Not essential
+click>=8.1.7
+rich>=13.7.0
+
+# Memory optimization
+safetensors>=0.4.3
+# deepspeed>=0.14.0  # Not well supported on macOS
+
+# Model optimization
+optimum>=1.21.0
+# onnx>=1.16.0  # Can be problematic on macOS ARM64
+
+# macOS-specific alternatives
+huggingface-hub>=0.23.0
+sentencepiece>=0.2.0

@@ -1,0 +1,202 @@
+/**
+ * Asthra Standard Library - Concurrent Coordination
+ * 
+ * This module provides advanced coordination primitives for the Asthra programming language,
+ * including select statements, barriers, semaphores, and other synchronization mechanisms.
+ * These are Tier 2/3 concurrency features that require explicit #[non_deterministic] annotation.
+ * 
+ * Part of Phase 6: Standard Library Migration
+ * From the Pragmatic Concurrency Balance Plan
+ */
+
+package concurrent::coordination;
+
+import concurrent::channels::{Channel, SendResult, RecvResult};
+
+// =============================================================================
+// SELECT OPERATION SUPPORT
+// =============================================================================
+
+/**
+ * Represents an operation that can be selected over
+ */
+pub enum SelectOp<T> {
+    Send(Channel<T>, T),            // Send value to channel
+    Recv(Channel<T>),               // Receive value from channel
+    Timeout(i64),                   // Timeout operation (milliseconds)
+    Default(),                      // Default/immediate case
+}
+
+/**
+ * Result of a select operation
+ */
+pub enum SelectResult<T> {
+    SendOk(usize),                  // Send succeeded on channel index
+    RecvOk(usize, T),              // Received value from channel index
+    Timeout(),                      // Operation timed out
+    Default(),                      // Default case executed
+    Error(string),                  // Runtime error occurred
+}
+
+/**
+ * Select statement builder for multiple channel operations
+ * Requires #[non_deterministic] annotation on calling function
+ */
+pub struct SelectBuilder<T> {
+    operations: []SelectOp<T>,
+    timeout_ms: i64,
+    has_default: bool,
+}
+
+impl SelectBuilder<T> {
+    /**
+     * Create a new select builder
+     */
+    pub fn new(none) -> SelectBuilder<T> {
+        SelectBuilder {
+            operations: [],
+            timeout_ms: -1,
+            has_default: false,
+        }
+    }
+    
+    /**
+     * Add a send operation to the select
+     */
+    pub fn send(mut self, channel: Channel<T>, value: T) -> SelectBuilder<T> {
+        self.operations.push(SelectOp.Send(channel, value));
+        self
+    }
+    
+    /**
+     * Add a receive operation to the select
+     */
+    pub fn recv(mut self, channel: Channel<T>) -> SelectBuilder<T> {
+        self.operations.push(SelectOp.Recv(channel));
+        self
+    }
+    
+    /**
+     * Add a timeout to the select
+     */
+    pub fn timeout(mut self, timeout_ms: i64) -> SelectBuilder<T> {
+        self.timeout_ms = timeout_ms;
+        self
+    }
+    
+    /**
+     * Add a default case (makes select non-blocking)
+     */
+    pub fn default(mut self) -> SelectBuilder<T> {
+        self.has_default = true;
+        self
+    }
+    
+    /**
+     * Execute the select operation
+     * Requires #[non_deterministic] annotation on calling function
+     */
+    #[non_deterministic]
+    pub fn execute(self) -> SelectResult<T> {
+        ffi_execute_select_operation(self.operations, self.timeout_ms, self.has_default)
+    }
+}
+
+/**
+ * FFI function for executing select operations
+ */
+#[ffi("Asthra_select_execute")]
+extern fn ffi_execute_select_operation<T>(
+    operations: []SelectOp<T>, 
+    timeout_ms: i64, 
+    has_default: bool
+) -> SelectResult<T>;
+
+/**
+ * Convenience function for simple select between two channels
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[non_deterministic]
+pub fn select2<T>(ch1: Channel<T>, ch2: Channel<T>) -> SelectResult<T> {
+    SelectBuilder::new()
+        .recv(ch1)
+        .recv(ch2)
+        .execute()
+}
+
+// =============================================================================
+// BARRIERS AND SYNCHRONIZATION
+// =============================================================================
+
+/**
+ * Barrier synchronization primitive
+ * All tasks must reach the barrier before any can proceed
+ */
+pub struct Barrier {
+    party_count: usize,
+}
+
+/**
+ * Create a new barrier for N parties
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[ffi("Asthra_barrier_create")]
+extern fn create_barrier(party_count: usize) -> Result<Barrier, string>;
+
+/**
+ * Wait at the barrier until all parties arrive
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[ffi("Asthra_barrier_wait")]
+extern fn barrier_wait(barrier: *Barrier) -> Result<bool, string>; // Returns true for the "leader"
+
+/**
+ * Check how many parties are currently waiting at the barrier
+ */
+#[ffi("Asthra_barrier_waiting_count")]
+extern fn barrier_waiting_count(barrier: *Barrier) -> usize;
+
+// =============================================================================
+// SEMAPHORES
+// =============================================================================
+
+/**
+ * Counting semaphore for resource management
+ */
+pub struct Semaphore {
+    max_permits: usize,
+}
+
+/**
+ * Create a new semaphore with the specified number of permits
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[ffi("Asthra_semaphore_create")]
+extern fn create_semaphore(permits: usize) -> Result<Semaphore, string>;
+
+/**
+ * Acquire a permit from the semaphore (blocking)
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[ffi("Asthra_semaphore_acquire")]
+extern fn semaphore_acquire(semaphore: *Semaphore) -> Result<(), string>;
+
+/**
+ * Try to acquire a permit (non-blocking)
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[ffi("Asthra_semaphore_try_acquire")]
+extern fn semaphore_try_acquire(semaphore: *Semaphore) -> bool;
+
+/**
+ * Release a permit back to the semaphore
+ * Requires #[non_deterministic] annotation on calling function
+ */
+#[ffi("Asthra_semaphore_release")]
+extern fn semaphore_release(semaphore: *Semaphore) -> Result<(), string>;
+
+/**
+ * Get the current number of available permits
+ */
+#[ffi("Asthra_semaphore_available_permits")]
+extern fn semaphore_available_permits(semaphore: *Semaphore) -> usize; 

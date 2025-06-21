@@ -1,0 +1,24 @@
+// Hello World example in Asthra
+// Demonstrates basic syntax and logging
+
+package main;
+
+pub fn main(none) -> i32 {
+
+    // Simple loop demonstration
+    for i in range(3) {
+        log("Hello, Baiju Asthra!");
+    }
+    
+    log("This is an AI-native programming language");
+    
+    // Demonstrate if condition
+    let should_greet: bool = true;
+    if should_greet {
+        log("AAAA Conditional greeting activated!");
+        let message: string = "Welcome to " + "Asthra";
+        log(message);
+    }
+    
+    return 0;
+} 

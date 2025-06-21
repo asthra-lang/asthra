@@ -1,0 +1,866 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# C17 Modernization Standards for Asthra
+
+## Overview
+
+This rule defines standards and best practices for modernizing the Asthra compiler codebase to fully utilize C17 features. The goal is to leverage C17's improvements while maintaining compatibility across GCC and Clang compilers and preserving the project's core design principles.
+
+## Core C17 Features to Utilize
+
+### Generic Selections (`_Generic`)
+
+Use `_Generic` for type-safe polymorphic operations without function overloading:
+
+```c
+✅ DO: Type-safe AST node operations
+#define AST_NODE_PRINT(node) _Generic((node), \
+    ExprNode*: print_expr_node, \
+    StmtNode*: print_stmt_node, \
+    DeclNode*: print_decl_node \
+    )(node)
+
+// Type-safe memory allocation
+#define ASTHRA_ALLOC(type, count) _Generic((type*)0, \
+    AsthraSliceHeader*: asthra_alloc_slice_headers, \
+    AsthraASTNode*: asthra_alloc_ast_nodes, \
+    default: asthra_alloc_generic \
+    )(sizeof(type), count)
+
+❌ DON'T: Manual type checking with void pointers
+void* generic_operation(void* node, int type_tag) {
+    switch (type_tag) {
+        case EXPR_NODE: return print_expr_node(node);
+        case STMT_NODE: return print_stmt_node(node);
+        // Error-prone and not type-safe
+    }
+}
+```
+
+### Static Assertions (`_Static_assert`)
+
+Add compile-time validation for assumptions and invariants:
+
+```c
+✅ DO: Validate critical assumptions at compile time
+// Validate struct layout assumptions
+_Static_assert(sizeof(AsthraSliceHeader) <= 64, 
+               "SliceHeader must fit in cache line for performance");
+
+// Validate ABI compatibility
+_Static_assert(sizeof(AsthraResult) == 32, 
+               "Result type size affects ABI compatibility");
+
+// Validate parser assumptions
+_Static_assert(MAX_TOKEN_LENGTH < UINT16_MAX, 
+               "Token length must fit in uint16_t");
+
+// Validate type system invariants
+_Static_assert(offsetof(AsthraASTNode, type) == 0, 
+               "Node type must be first field for fast dispatch");
+
+❌ DON'T: Runtime checks for compile-time knowable conditions
+if (sizeof(AsthraSliceHeader) > 64) {
+    // This should be caught at compile time
+    abort();
+}
+```
+
+### Atomic Operations (`<stdatomic.h>`)
+
+Use atomic operations for thread-safe counters and lock-free data structures:
+
+```c
+✅ DO: Thread-safe statistics with proper memory ordering
+#include <stdatomic.h>
+
+typedef struct {
+    atomic_size_t total_allocations;
+    atomic_size_t current_memory;
+    atomic_size_t peak_memory;
+    atomic_size_t gc_collections;
+} AsthraMemoryStats;
+
+// Performance counters with relaxed ordering
+static inline void increment_allocation_count(void) {
+    atomic_fetch_add_explicit(&memory_stats.total_allocations, 1, 
+                              memory_order_relaxed);
+}
+
+// Synchronization with acquire-release ordering
+static atomic_flag gc_in_progress = ATOMIC_FLAG_INIT;
+
+bool try_start_gc(void) {
+    return !atomic_flag_test_and_set_explicit(&gc_in_progress, 
+                                             memory_order_acquire);
+}
+
+void finish_gc(void) {
+    atomic_flag_clear_explicit(&gc_in_progress, memory_order_release);
+}
+
+❌ DON'T: Mutex-protected simple counters
+static pthread_mutex_t stats_mutex = PTHREAD_MUTEX_INITIALIZER;
+static size_t allocation_count = 0;
+
+void increment_allocation_count(void) {
+    pthread_mutex_lock(&stats_mutex);  // Overkill for simple counter
+    allocation_count++;
+    pthread_mutex_unlock(&stats_mutex);
+}
+```
+
+### Thread-Local Storage (`_Thread_local`)
+
+Use thread-local storage for per-thread state without explicit management:
+
+```c
+✅ DO: Per-thread state with _Thread_local
+// Per-thread GC roots for better performance
+_Thread_local struct {
+    void **roots;
+    size_t count;
+    size_t capacity;
+} thread_gc_roots = {0};
+
+// Thread-local error state
+_Thread_local AsthraError last_error = {ASTHRA_ERROR_NONE};
+
+// Per-thread parser state
+_Thread_local struct {
+    AsthraToken *tokens;
+    size_t position;
+    size_t count;
+} parser_state = {0};
+
+❌ DON'T: Manual thread-specific data management
+static pthread_key_t gc_roots_key;
+static pthread_once_t gc_roots_key_once = PTHREAD_ONCE_INIT;
+
+void init_gc_roots_key(void) {
+    pthread_key_create(&gc_roots_key, free);
+}
+
+AsthraGCRoots* get_thread_gc_roots(void) {
+    pthread_once(&gc_roots_key_once, init_gc_roots_key);
+    // Complex manual management
+}
+```
+
+### Aligned Allocation (`aligned_alloc`)
+
+Use aligned allocation for performance-critical data structures:
+
+```c
+✅ DO: Cache-aligned allocations with fallback
+#include <stdlib.h>
+
+// Feature detection and fallback
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201710L && \
+    !defined(__STDC_NO_ALIGNED_ALLOC__)
+    #define ASTHRA_HAS_ALIGNED_ALLOC 1
+#else
+    #define ASTHRA_HAS_ALIGNED_ALLOC 0
+#endif
+
+static inline void* asthra_aligned_alloc(size_t alignment, size_t size) {
+#if ASTHRA_HAS_ALIGNED_ALLOC
+    return aligned_alloc(alignment, size);
+#else
+    void *ptr;
+    if (posix_memalign(&ptr, alignment, size) == 0) {
+        return ptr;
+    }
+    return NULL;
+#endif
+}
+
+// Cache-aligned slice headers for better performance
+AsthraSliceHeader* create_aligned_slice_header(void) {
+    AsthraSliceHeader *slice = asthra_aligned_alloc(64, sizeof(AsthraSliceHeader));
+    if (slice) {
+        *slice = (AsthraSliceHeader){
+            .ptr = NULL,
+            .len = 0,
+            .cap = 0,
+            .element_size = 0,
+            .ownership = ASTHRA_OWNERSHIP_GC,
+            .is_mutable = false,
+            .type_id = 0
+        };
+    }
+    return slice;
+}
+
+❌ DON'T: Manual alignment calculations
+void* manually_aligned_alloc(size_t alignment, size_t size) {
+    void *ptr = malloc(size + alignment - 1);
+    if (!ptr) return NULL;
+    
+    // Complex manual alignment - error-prone
+    uintptr_t addr = (uintptr_t)ptr;
+    uintptr_t aligned = (addr + alignment - 1) & ~(alignment - 1);
+    return (void*)aligned;  // Lost original pointer for free()
+}
+```
+
+### Designated Initializers (Enhanced)
+
+Use designated initializers for clear, maintainable structure initialization:
+
+```c
+✅ DO: Clear initialization with designated initializers
+// Compiler options with clear defaults
+AsthraCompilerOptions create_default_options(void) {
+    return (AsthraCompilerOptions){
+        .input_file = NULL,
+        .output_file = NULL,
+        .opt_level = ASTHRA_OPT_STANDARD,
+        .target_arch = ASTHRA_TARGET_NATIVE,
+        .debug_info = true,
+        .verbose = false,
+        .emit_llvm = false,
+        .emit_asm = false,
+        .no_stdlib = false,
+        .include_paths = NULL,
+        .include_path_count = 0,
+        .library_paths = NULL,
+        .library_path_count = 0,
+        .libraries = NULL,
+        .library_count = 0
+    };
+}
+
+// AST node creation with clear field assignment
+AsthraASTNode* create_binary_expr_node(AsthraASTNode *left, AsthraASTNode *right, 
+                                       AsthraOperator op) {
+    AsthraASTNode *node = malloc(sizeof(*node) + 2 * sizeof(AsthraASTNode*));
+    if (!node) return NULL;
+    
+    *node = (AsthraASTNode){
+        .type = AST_BINARY_EXPR,
+        .child_count = 2,
+        .location = {.line = current_line, .column = current_column},
+        .data.binary_expr = {.operator = op}
+    };
+    node->children[0] = left;
+    node->children[1] = right;
+    return node;
+}
+
+❌ DON'T: Positional initialization or manual field assignment
+AsthraCompilerOptions create_default_options(void) {
+    AsthraCompilerOptions opts;
+    memset(&opts, 0, sizeof(opts));  // Manual zeroing
+    opts.opt_level = ASTHRA_OPT_STANDARD;  // Field by field
+    opts.target_arch = ASTHRA_TARGET_NATIVE;
+    opts.debug_info = true;
+    // Easy to miss fields, no clear structure
+    return opts;
+}
+```
+
+### Compound Literals (Enhanced)
+
+Use compound literals for temporary objects and cleaner function calls:
+
+```c
+✅ DO: Compound literals for temporary objects
+// Temporary result objects
+AsthraResult create_error_result(const char *message) {
+    return (AsthraResult){
+        .tag = ASTHRA_RESULT_ERR,
+        .data.err = {
+            .error = strdup(message),
+            .error_size = strlen(message),
+            .error_type_id = STRING_TYPE_ID
+        },
+        .ownership = ASTHRA_OWNERSHIP_GC
+    };
+}
+
+// Temporary configuration for function calls
+int result = asthra_compile_with_options(
+    (AsthraCompilerOptions){
+        .input_file = "test.asthra",
+        .output_file = "test.o",
+        .opt_level = ASTHRA_OPT_DEBUG,
+        .debug_info = true
+    }
+);
+
+// Temporary arrays for function parameters
+process_tokens((AsthraToken[]){
+    {.type = TOKEN_KEYWORD, .value = "fn"},
+    {.type = TOKEN_IDENTIFIER, .value = "main"},
+    {.type = TOKEN_LPAREN, .value = "("}
+}, 3);
+
+❌ DON'T: Unnecessary temporary variables
+AsthraResult create_error_result(const char *message) {
+    AsthraResult result;  // Unnecessary temporary
+    result.tag = ASTHRA_RESULT_ERR;
+    result.data.err.error = strdup(message);
+    result.data.err.error_size = strlen(message);
+    result.data.err.error_type_id = STRING_TYPE_ID;
+    result.ownership = ASTHRA_OWNERSHIP_GC;
+    return result;
+}
+```
+
+### Flexible Array Members (Enhanced)
+
+Use flexible array members for variable-length structures:
+
+```c
+✅ DO: Flexible array members for dynamic structures
+// Variable-length AST nodes
+typedef struct AsthraASTNode {
+    AsthraNodeType type;
+    size_t child_count;
+    AsthraSourceLocation location;
+    union {
+        struct { AsthraOperator operator; } binary_expr;
+        struct { AsthraType *type; } type_decl;
+        struct { char *name; } identifier;
+    } data;
+    struct AsthraASTNode *children[];  // Flexible array member
+} AsthraASTNode;
+
+// Allocation with proper size calculation
+AsthraASTNode* create_ast_node(AsthraNodeType type, size_t child_count) {
+    AsthraASTNode *node = malloc(sizeof(*node) + 
+                                child_count * sizeof(AsthraASTNode*));
+    if (!node) return NULL;
+    
+    *node = (AsthraASTNode){
+        .type = type,
+        .child_count = child_count,
+        .location = get_current_location()
+    };
+    return node;
+}
+
+// Variable-length token lists
+typedef struct {
+    size_t count;
+    size_t capacity;
+    AsthraToken tokens[];  // Flexible array member
+} AsthraTokenList;
+
+AsthraTokenList* create_token_list(size_t initial_capacity) {
+    AsthraTokenList *list = malloc(sizeof(*list) + 
+                                  initial_capacity * sizeof(AsthraToken));
+    if (!list) return NULL;
+    
+    *list = (AsthraTokenList){
+        .count = 0,
+        .capacity = initial_capacity
+    };
+    return list;
+}
+
+❌ DON'T: Fixed-size arrays or separate allocations
+typedef struct AsthraASTNode {
+    AsthraNodeType type;
+    size_t child_count;
+    AsthraASTNode **children;  // Separate allocation needed
+} AsthraASTNode;
+
+AsthraASTNode* create_ast_node(AsthraNodeType type, size_t child_count) {
+    AsthraASTNode *node = malloc(sizeof(*node));
+    if (!node) return NULL;
+    
+    node->children = malloc(child_count * sizeof(AsthraASTNode*));
+    if (!node->children) {
+        free(node);  // Two allocations, two failure points
+        return NULL;
+    }
+    // More complex memory management
+}
+```
+
+### Restrict Pointers
+
+Use restrict pointers for optimization hints in performance-critical functions:
+
+```c
+✅ DO: Restrict pointers for non-aliasing guarantees
+// String concatenation with optimization hints
+AsthraString asthra_string_concat_optimized(
+    const char *restrict src1, size_t len1,
+    const char *restrict src2, size_t len2,
+    char *restrict dest_buffer, size_t dest_capacity
+) {
+    // Compiler can optimize knowing pointers don't alias
+    if (len1 + len2 >= dest_capacity) {
+        return (AsthraString){.data = NULL, .len = 0};
+    }
+    
+    memcpy(dest_buffer, src1, len1);
+    memcpy(dest_buffer + len1, src2, len2);
+    dest_buffer[len1 + len2] = '\0';
+    
+    return (AsthraString){
+        .data = dest_buffer,
+        .len = len1 + len2,
+        .cap = dest_capacity,
+        .ownership = ASTHRA_OWNERSHIP_GC
+    };
+}
+
+// Memory copy operations
+void asthra_memory_copy(void *restrict dest, const void *restrict src, 
+                       size_t size) {
+    // Better optimization than standard memcpy in some cases
+    memcpy(dest, src, size);
+}
+
+// Code generation buffer operations
+void emit_instruction(char *restrict buffer, size_t *restrict pos,
+                     const char *restrict instruction) {
+    size_t len = strlen(instruction);
+    memcpy(buffer + *pos, instruction, len);
+    *pos += len;
+}
+
+❌ DON'T: Missing restrict where beneficial
+void slow_string_concat(const char *src1, const char *src2, char *dest) {
+    // Compiler must assume potential aliasing, limiting optimization
+    strcpy(dest, src1);
+    strcat(dest, src2);
+}
+```
+
+## Feature Detection and Compatibility
+
+### Preprocessor Macros
+
+Always use feature detection macros for C17 features:
+
+```c
+✅ DO: Comprehensive feature detection
+// C17 standard detection
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201710L
+    #define ASTHRA_HAS_C17 1
+#else
+    #define ASTHRA_HAS_C17 0
+#endif
+
+// Atomic operations availability
+#if ASTHRA_HAS_C17 && !defined(__STDC_NO_ATOMICS__)
+    #define ASTHRA_HAS_ATOMICS 1
+    #include <stdatomic.h>
+#else
+    #define ASTHRA_HAS_ATOMICS 0
+#endif
+
+// Thread-local storage
+#if ASTHRA_HAS_C17 && !defined(__STDC_NO_THREADS__)
+    #define ASTHRA_HAS_THREAD_LOCAL 1
+#else
+    #define ASTHRA_HAS_THREAD_LOCAL 0
+#endif
+
+// Aligned allocation
+#if ASTHRA_HAS_C17 && !defined(__STDC_NO_ALIGNED_ALLOC__)
+    #define ASTHRA_HAS_ALIGNED_ALLOC 1
+#else
+    #define ASTHRA_HAS_ALIGNED_ALLOC 0
+#endif
+
+❌ DON'T: Assume C17 features are always available
+#include <stdatomic.h>  // May not exist on all systems
+atomic_int counter;     // Will fail compilation on older systems
+```
+
+### Fallback Implementations
+
+Provide fallback implementations for older compilers:
+
+```c
+✅ DO: Fallback implementations with feature detection
+// Static assertion fallback
+#if ASTHRA_HAS_C17
+    #define ASTHRA_STATIC_ASSERT(cond, msg) _Static_assert(cond, msg)
+#else
+    #define ASTHRA_STATIC_ASSERT(cond, msg) \
+        typedef char static_assert_##__LINE__[(cond) ? 1 : -1]
+#endif
+
+// Thread-local storage fallback
+#if ASTHRA_HAS_THREAD_LOCAL
+    #define ASTHRA_THREAD_LOCAL _Thread_local
+#else
+    #define ASTHRA_THREAD_LOCAL __thread  // GCC/Clang extension
+#endif
+
+// Atomic operations fallback
+#if ASTHRA_HAS_ATOMICS
+    typedef atomic_size_t asthra_atomic_size_t;
+    #define asthra_atomic_fetch_add(ptr, val) \
+        atomic_fetch_add_explicit(ptr, val, memory_order_relaxed)
+#else
+    typedef struct { size_t value; pthread_mutex_t mutex; } asthra_atomic_size_t;
+    size_t asthra_atomic_fetch_add(asthra_atomic_size_t *ptr, size_t val);
+#endif
+
+❌ DON'T: No fallback for missing features
+_Static_assert(sizeof(int) == 4, "int size assumption");  // Fails on older compilers
+```
+
+## Compiler-Specific Optimizations
+
+### GCC-Specific Features
+
+Use GCC-specific optimizations when available:
+
+```c
+✅ DO: GCC-specific optimizations with detection
+#ifdef __GNUC__
+    #define ASTHRA_LIKELY(x)   __builtin_expect(!!(x), 1)
+    #define ASTHRA_UNLIKELY(x) __builtin_expect(!!(x), 0)
+    #define ASTHRA_PURE        __attribute__((pure))
+    #define ASTHRA_CONST       __attribute__((const))
+    #define ASTHRA_HOT         __attribute__((hot))
+    #define ASTHRA_COLD        __attribute__((cold))
+#else
+    #define ASTHRA_LIKELY(x)   (x)
+    #define ASTHRA_UNLIKELY(x) (x)
+    #define ASTHRA_PURE
+    #define ASTHRA_CONST
+    #define ASTHRA_HOT
+    #define ASTHRA_COLD
+#endif
+
+// Usage in performance-critical code
+ASTHRA_HOT ASTHRA_PURE
+size_t asthra_string_length(const AsthraString *str) {
+    if (ASTHRA_UNLIKELY(!str)) {
+        return 0;
+    }
+    return str->len;
+}
+```
+
+### Clang-Specific Features
+
+Use Clang-specific optimizations when available:
+
+```c
+✅ DO: Clang-specific optimizations
+#ifdef __clang__
+    #define ASTHRA_NO_SANITIZE(x) __attribute__((no_sanitize(x)))
+    #define ASTHRA_FALLTHROUGH    __attribute__((fallthrough))
+    #define ASTHRA_ASSUME(x)      __builtin_assume(x)
+#else
+    #define ASTHRA_NO_SANITIZE(x)
+    #define ASTHRA_FALLTHROUGH
+    #define ASTHRA_ASSUME(x)      do { if (!(x)) __builtin_unreachable(); } while(0)
+#endif
+
+// Usage in switch statements
+switch (token_type) {
+    case TOKEN_KEYWORD:
+        process_keyword(token);
+        break;
+    case TOKEN_IDENTIFIER:
+        process_identifier(token);
+        ASTHRA_FALLTHROUGH;  // Intentional fallthrough
+    case TOKEN_OPERATOR:
+        validate_token(token);
+        break;
+}
+```
+
+## Memory Ordering and Concurrency
+
+### Atomic Memory Ordering
+
+Use appropriate memory ordering for different use cases:
+
+```c
+✅ DO: Appropriate memory ordering for different scenarios
+// Performance counters - relaxed ordering
+static atomic_size_t allocation_count = ATOMIC_VAR_INIT(0);
+
+void increment_allocations(void) {
+    atomic_fetch_add_explicit(&allocation_count, 1, memory_order_relaxed);
+}
+
+// Synchronization flags - acquire-release ordering
+static atomic_bool gc_requested = ATOMIC_VAR_INIT(false);
+static atomic_bool gc_completed = ATOMIC_VAR_INIT(false);
+
+void request_gc(void) {
+    atomic_store_explicit(&gc_requested, true, memory_order_release);
+}
+
+bool check_gc_request(void) {
+    return atomic_load_explicit(&gc_requested, memory_order_acquire);
+}
+
+// Critical synchronization - sequential consistency
+static atomic_int critical_state = ATOMIC_VAR_INIT(0);
+
+bool try_enter_critical_section(void) {
+    int expected = 0;
+    return atomic_compare_exchange_strong(&critical_state, &expected, 1);
+}
+
+❌ DON'T: Always use sequential consistency (performance impact)
+void increment_allocations(void) {
+    atomic_fetch_add(&allocation_count, 1);  // Unnecessarily strong ordering
+}
+```
+
+## Error Handling Patterns
+
+### Result Type Integration
+
+Integrate C17 features with Asthra's Result type system:
+
+```c
+✅ DO: C17 features with Result type patterns
+// Generic result creation
+#define ASTHRA_RESULT_OK(value, type) _Generic((value), \
+    int: asthra_result_ok_int, \
+    size_t: asthra_result_ok_size_t, \
+    char*: asthra_result_ok_string, \
+    default: asthra_result_ok_generic \
+    )(value)
+
+// Static assertions for result type layout
+_Static_assert(offsetof(AsthraResult, tag) == 0, 
+               "Result tag must be first for fast checking");
+
+// Thread-local error state
+ASTHRA_THREAD_LOCAL AsthraError last_error = {ASTHRA_ERROR_NONE};
+
+AsthraResult asthra_safe_operation(void) {
+    if (ASTHRA_UNLIKELY(some_error_condition())) {
+        last_error = (AsthraError){
+            .code = ASTHRA_ERROR_INVALID_ARGUMENT,
+            .message = "Invalid operation parameters",
+            .file = __FILE__,
+            .line = __LINE__,
+            .function = __func__
+        };
+        return ASTHRA_RESULT_ERR(&last_error);
+    }
+    
+    return ASTHRA_RESULT_OK(42);
+}
+```
+
+## Testing and Validation
+
+### Compile-Time Testing
+
+Use static assertions for compile-time testing:
+
+```c
+✅ DO: Comprehensive compile-time validation
+// Test struct layout assumptions
+_Static_assert(sizeof(AsthraSliceHeader) == 32, 
+               "SliceHeader size affects performance");
+_Static_assert(alignof(AsthraSliceHeader) >= 8, 
+               "SliceHeader alignment for atomic operations");
+
+// Test enum value assumptions
+_Static_assert(ASTHRA_RESULT_OK == 0, 
+               "OK result must be zero for fast checking");
+_Static_assert(ASTHRA_RESULT_ERR == 1, 
+               "Error result must be one");
+
+// Test configuration limits
+_Static_assert(MAX_INCLUDE_PATHS <= UINT16_MAX, 
+               "Include path count must fit in uint16_t");
+
+// Test type compatibility
+_Static_assert(sizeof(size_t) == sizeof(void*), 
+               "size_t and pointer size must match");
+```
+
+### Runtime Testing with C17 Features
+
+Use C17 features in test code:
+
+```c
+✅ DO: C17 features in test framework
+// Generic test assertions
+#define ASSERT_EQ(actual, expected) _Generic((actual), \
+    int: assert_int_eq, \
+    size_t: assert_size_t_eq, \
+    char*: assert_string_eq, \
+    AsthraResult: assert_result_eq \
+    )(actual, expected, __FILE__, __LINE__)
+
+// Test configuration with designated initializers
+void test_compiler_options(void) {
+    AsthraCompilerOptions opts = {
+        .opt_level = ASTHRA_OPT_DEBUG,
+        .debug_info = true,
+        .verbose = true
+    };
+    
+    ASSERT_EQ(opts.opt_level, ASTHRA_OPT_DEBUG);
+    ASSERT_EQ(opts.debug_info, true);
+    ASSERT_EQ(opts.emit_llvm, false);  // Default value
+}
+
+// Atomic test counters
+static atomic_size_t tests_run = ATOMIC_VAR_INIT(0);
+static atomic_size_t tests_passed = ATOMIC_VAR_INIT(0);
+
+void record_test_result(bool passed) {
+    atomic_fetch_add_explicit(&tests_run, 1, memory_order_relaxed);
+    if (passed) {
+        atomic_fetch_add_explicit(&tests_passed, 1, memory_order_relaxed);
+    }
+}
+```
+
+## Documentation Standards
+
+### Code Documentation
+
+Document C17 feature usage in code:
+
+```c
+✅ DO: Document C17 feature usage and rationale
+/**
+ * @brief Thread-safe memory statistics using C17 atomic operations
+ * 
+ * Uses atomic operations with relaxed memory ordering for performance
+ * counters that don't require synchronization. The relaxed ordering
+ * provides better performance on weakly-ordered architectures while
+ * maintaining accuracy for statistical purposes.
+ * 
+ * @note Requires C17 with atomic support. Falls back to mutex-protected
+ *       counters on older compilers.
+ */
+typedef struct {
+    atomic_size_t total_allocations;  ///< Total allocations (relaxed ordering)
+    atomic_size_t current_memory;     ///< Current memory usage (relaxed ordering)
+    atomic_size_t peak_memory;        ///< Peak memory usage (relaxed ordering)
+} AsthraMemoryStats;
+
+/**
+ * @brief Create AST node with flexible array member for children
+ * 
+ * Uses C17 flexible array member to store variable number of child nodes
+ * in a single allocation. This improves cache locality and reduces memory
+ * fragmentation compared to separate allocations.
+ * 
+ * @param type Node type identifier
+ * @param child_count Number of child nodes
+ * @return Allocated AST node or NULL on failure
+ * 
+ * @note The returned node must be freed with free() since it's a single
+ *       allocation including the flexible array member.
+ */
+AsthraASTNode* create_ast_node(AsthraNodeType type, size_t child_count);
+```
+
+## Build System Integration
+
+### Compilation Flags
+
+Use appropriate compilation flags for C17:
+
+```makefile
+✅ DO: Proper C17 compilation flags
+# Strict C17 compliance
+CFLAGS = -std=c17 -pedantic-errors -Wall -Wextra -Wpedantic
+
+# Debug build with C17 features
+DEBUG_CFLAGS = -std=c17 -pedantic-errors -Wall -Wextra -Wpedantic \
+               -O0 -g -DDEBUG -fsanitize=address
+
+# Release build with optimizations
+RELEASE_CFLAGS = -std=c17 -pedantic-errors -Wall -Wextra -Wpedantic \
+                 -O3 -DNDEBUG -flto -march=native
+
+# Feature detection in build system
+check-c17-support:
+	@echo "Checking C17 support..."
+	@echo "int main(){return 0;}" | $(CC) -std=c17 -x c - -o /dev/null 2>/dev/null && \
+		echo "C17 supported" || echo "C17 not supported"
+```
+
+## Performance Considerations
+
+### Optimization Guidelines
+
+Follow these guidelines for optimal performance with C17 features:
+
+```c
+✅ DO: Performance-conscious C17 usage
+// Use relaxed ordering for performance counters
+static inline void increment_counter(atomic_size_t *counter) {
+    atomic_fetch_add_explicit(counter, 1, memory_order_relaxed);
+}
+
+// Use restrict for hot paths
+ASTHRA_HOT void process_tokens(AsthraToken *restrict tokens, 
+                              size_t count,
+                              AsthraASTNode *restrict *restrict output) {
+    // Compiler can optimize aggressively with restrict hints
+    for (size_t i = 0; i < count; i++) {
+        output[i] = parse_token(&tokens[i]);
+    }
+}
+
+// Use likely/unlikely for branch prediction
+ASTHRA_HOT bool validate_token(const AsthraToken *token) {
+    if (ASTHRA_LIKELY(token != NULL)) {
+        if (ASTHRA_LIKELY(token->type < TOKEN_COUNT)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+❌ DON'T: Overuse atomic operations or strong memory ordering
+// Don't use atomic for single-threaded counters
+atomic_size_t single_threaded_counter;  // Unnecessary overhead
+
+// Don't use sequential consistency for simple counters
+atomic_fetch_add(&counter, 1);  // Too strong, use relaxed ordering
+```
+
+## Migration Strategy
+
+### Gradual Adoption
+
+Adopt C17 features gradually:
+
+1. **Phase 1**: Add static assertions and designated initializers
+2. **Phase 2**: Introduce atomic operations for statistics
+3. **Phase 3**: Use _Generic for type-safe operations
+4. **Phase 4**: Add thread-local storage where beneficial
+5. **Phase 5**: Optimize with restrict pointers and compiler hints
+
+```c
+✅ DO: Gradual migration with feature flags
+// Start with low-risk features
+#define ASTHRA_USE_DESIGNATED_INITIALIZERS 1
+#define ASTHRA_USE_STATIC_ASSERTIONS 1
+
+// Add more features as confidence grows
+#if ASTHRA_HAS_ATOMICS
+    #define ASTHRA_USE_ATOMIC_COUNTERS 1
+#endif
+
+#if ASTHRA_HAS_THREAD_LOCAL
+    #define ASTHRA_USE_THREAD_LOCAL_STATE 1
+#endif
+```
+
+## Conclusion
+
+This rule provides comprehensive guidelines for modernizing the Asthra compiler codebase with C17 features. Follow these patterns to improve performance, maintainability, and type safety while maintaining compatibility across GCC and Clang compilers. Always use feature detection and provide fallback implementations for maximum portability.

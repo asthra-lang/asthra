@@ -1,0 +1,567 @@
+// FFI Annotations Examples - Comprehensive demonstration of FFI-specific annotations
+// This file shows proper usage of FFI annotations for memory safety and ownership transfer
+
+package examples;
+
+// =============================================================================
+// TRANSFER_FULL ANNOTATIONS - Full ownership transfer
+// =============================================================================
+
+#[human_review(medium, context = "ffi")]
+extern "libc" fn malloc(size: usize) -> #[transfer_full] *mut u8;
+
+#[human_review(medium, context = "ffi")]
+extern "libc" fn free(#[transfer_full] ptr: *mut u8) -> void;
+
+#[human_review(medium, context = "ffi")]
+extern "crypto_lib" fn encrypt_data(
+    input: *const u8,
+    input_len: usize,
+    #[transfer_full] output: *mut u8  // Caller owns the output buffer
+) -> i32;
+
+#[human_review(medium, context = "ffi")]
+pub fn safe_encrypt_wrapper(data: []u8) -> Result<[]u8, string> {
+    // Demonstrates proper handling of transfer_full ownership
+    let output_size: usize = data.len + 16; // Add space for padding
+    let output_buffer: *mut u8 = unsafe { malloc(output_size) };
+    
+    if output_buffer.is_null() {
+        return Result.Err("Memory allocation failed");
+    }
+    
+    let result: i32 = unsafe {
+        encrypt_data(data.ptr, data.len, output_buffer)
+    };
+    
+    if result != 0 {
+        unsafe { free(output_buffer) }; // Clean up on error
+        return Result.Err("Encryption failed");
+    }
+    
+    // Transfer ownership to Asthra slice
+    let encrypted: []u8 = unsafe { slice_from_raw_parts(output_buffer, output_size) };
+    return Result.Ok(encrypted);
+}
+
+#[human_review(high, context = "ffi")]
+extern "secure_lib" fn create_secure_context(
+    config: *const SecurityConfig
+) -> #[transfer_full] *mut SecureContext;
+
+#[human_review(high, context = "ffi")]
+extern "secure_lib" fn destroy_secure_context(
+    #[transfer_full] context: *mut SecureContext
+) -> void;
+
+#[human_review(high, context = "ffi")]
+pub fn secure_context_wrapper(void) -> Result<SecureContextWrapper, string> {
+    // Complex ownership transfer example with security context
+    let config: SecurityConfig = SecurityConfig.new(void);
+    
+    let context: *mut SecureContext = unsafe {
+        create_secure_context(&config as *const SecurityConfig)
+    };
+    
+    if context.is_null() {
+        return Result.Err("Failed to create secure context");
+    }
+    
+    // Wrap in Asthra type that handles cleanup
+    let wrapper: SecureContextWrapper = SecureContextWrapper.new(context);
+    return Result.Ok(wrapper);
+}
+
+// =============================================================================
+// TRANSFER_NONE ANNOTATIONS - No ownership transfer
+// =============================================================================
+
+#[human_review(low, context = "ffi")]
+extern "libc" fn strlen(
+    #[transfer_none] s: *const u8  // Caller retains ownership
+) -> usize;
+
+#[human_review(low, context = "ffi")]
+pub fn get_string_length(s: string) -> usize {
+    // String remains owned by caller
+    let c_str: *const u8 = s.as_ptr();
+    let length: usize = unsafe { strlen(c_str) };
+    return length;
+    // s is still valid here and will be cleaned up by caller
+}
+
+#[human_review(medium, context = "ffi")]
+extern "image_lib" fn process_image(
+    #[transfer_none] input_data: *const u8,
+    input_size: usize,
+    #[transfer_full] output_data: *mut u8,
+    output_size: *mut usize
+) -> i32;
+
+#[human_review(medium, context = "ffi")]
+fn safe_image_processing(image_data: []u8) -> Result<[]u8, string> {
+    // Input data is borrowed, output data is transferred
+    let max_output_size: usize = image_data.len * 2; // Estimate
+    let output_buffer: *mut u8 = unsafe { malloc(max_output_size) };
+    
+    if output_buffer.is_null() {
+        return Result.Err("Memory allocation failed");
+    }
+    
+    let actual_output_size: usize = 0;
+    let result: i32 = unsafe {
+        process_image(
+            image_data.ptr,           // transfer_none - we keep ownership
+            image_data.len,
+            output_buffer,            // transfer_full - C library owns this
+            &actual_output_size as *mut usize
+        )
+    };
+    
+    if result != 0 {
+        unsafe { free(output_buffer) };
+        return Result.Err("Image processing failed");
+    }
+    
+    // Create slice from processed data
+    let processed: []u8 = unsafe { 
+        slice_from_raw_parts(output_buffer, actual_output_size) 
+    };
+    
+    return Result.Ok(processed);
+    // image_data is still valid and owned by caller
+}
+
+#[human_review(low, context = "ffi")]
+extern "utils" fn calculate_checksum(
+    #[transfer_none] data: *const u8,
+    length: usize
+) -> u32;
+
+#[human_review(low, context = "ffi")]
+fn compute_data_checksum(data: []u8) -> u32 {
+    // Simple FFI call with no ownership transfer
+    let checksum: u32 = unsafe {
+        calculate_checksum(data.ptr, data.len)
+    };
+    return checksum;
+    // data remains valid and owned by caller
+}
+
+// =============================================================================
+// BORROWED ANNOTATIONS - Lifetime annotations
+// =============================================================================
+
+#[human_review(medium, context = "ffi")]
+extern "crypto_lib" fn hash_data(
+    #[borrowed] input: *const u8,  // Borrowed for duration of call
+    input_len: usize,
+    #[transfer_full] output: *mut u8
+) -> i32;
+
+#[human_review(medium, context = "ffi")]
+fn compute_hash(data: []u8) -> Result<[]u8, string> {
+    let hash_buffer: *mut u8 = unsafe { malloc(32) }; // SHA-256 output
+    
+    if hash_buffer.is_null() {
+        return Result.Err("Memory allocation failed");
+    }
+    
+    // data is borrowed for the duration of the hash_data call
+    let result: i32 = unsafe {
+        hash_data(data.ptr, data.len, hash_buffer)
+    };
+    // data is still valid here
+    
+    if result != 0 {
+        unsafe { free(hash_buffer) };
+        return Result.Err("Hash computation failed");
+    }
+    
+    let hash: []u8 = unsafe { slice_from_raw_parts(hash_buffer, 32) };
+    return Result.Ok(hash);
+}
+
+#[human_review(high, context = "ffi")]
+extern "database" fn execute_query(
+    #[borrowed] connection: *const DatabaseConnection,
+    #[borrowed] query: *const u8,
+    query_len: usize,
+    #[transfer_full] result_buffer: *mut u8,
+    buffer_size: usize
+) -> i32;
+
+#[human_review(high, context = "ffi")]
+fn safe_database_query(
+    connection: DatabaseConnection, 
+    query: string
+) -> Result<string, string> {
+    // Both connection and query are borrowed during the call
+    let result_buffer_size: usize = 4096; // 4KB result buffer
+    let result_buffer: *mut u8 = unsafe { malloc(result_buffer_size) };
+    
+    if result_buffer.is_null() {
+        return Result.Err("Memory allocation failed");
+    }
+    
+    let query_bytes: []u8 = query.as_bytes();
+    let result: i32 = unsafe {
+        execute_query(
+            &connection as *const DatabaseConnection,  // borrowed
+            query_bytes.ptr,                           // borrowed
+            query_bytes.len,
+            result_buffer,                             // transfer_full
+            result_buffer_size
+        )
+    };
+    // connection and query are still valid here
+    
+    if result != 0 {
+        unsafe { free(result_buffer) };
+        return Result.Err("Database query failed");
+    }
+    
+    // Convert result to string
+    let result_string: string = unsafe {
+        string_from_raw_parts(result_buffer, result_buffer_size)
+    };
+    
+    return Result.Ok(result_string);
+}
+
+// =============================================================================
+// COMPLEX FFI ANNOTATION COMBINATIONS
+// =============================================================================
+
+#[human_review(high, context = "ffi")]
+extern "secure_lib" fn secure_operation(
+    #[borrowed] input: *const u8,
+    input_len: usize,
+    #[transfer_full] output: *mut u8,
+    output_len: *mut usize,
+    #[borrowed] key: *const u8,
+    key_len: usize
+) -> i32;
+
+#[human_review(high, context = "ffi")]
+fn comprehensive_secure_operation(
+    data: []u8, 
+    key: []u8
+) -> Result<[]u8, string> {
+    // Complex FFI call with multiple annotation types
+    let max_output_size: usize = data.len + 64; // Add space for metadata
+    let output_buffer: *mut u8 = unsafe { malloc(max_output_size) };
+    
+    if output_buffer.is_null() {
+        return Result.Err("Memory allocation failed");
+    }
+    
+    let actual_output_size: usize = 0;
+    let result: i32 = unsafe {
+        secure_operation(
+            data.ptr,                                    // borrowed
+            data.len,
+            output_buffer,                               // transfer_full
+            &actual_output_size as *mut usize,
+            key.ptr,                                     // borrowed
+            key.len
+        )
+    };
+    // data and key are still valid here
+    
+    if result != 0 {
+        unsafe { free(output_buffer) };
+        return Result.Err("Secure operation failed with code: " + result);
+    }
+    
+    // Create slice from output
+    let output: []u8 = unsafe {
+        slice_from_raw_parts(output_buffer, actual_output_size)
+    };
+    
+    return Result.Ok(output);
+}
+
+#[human_review(medium, context = "ffi")]
+extern "compression" fn compress_data(
+    #[transfer_none] input: *const u8,
+    input_size: usize,
+    #[transfer_full] output: *mut u8,
+    output_size: *mut usize,
+    compression_level: i32
+) -> i32;
+
+#[human_review(medium, context = "ffi")]
+extern "compression" fn decompress_data(
+    #[transfer_none] input: *const u8,
+    input_size: usize,
+    #[transfer_full] output: *mut u8,
+    output_size: *mut usize
+) -> i32;
+
+#[human_review(medium, context = "ffi")]
+fn compression_round_trip(data: []u8) -> Result<[]u8, string> {
+    // Demonstrates multiple FFI calls with consistent annotation patterns
+    
+    // Compress data
+    let compressed_buffer_size: usize = data.len + 1024; // Add compression overhead
+    let compressed_buffer: *mut u8 = unsafe { malloc(compressed_buffer_size) };
+    
+    if compressed_buffer.is_null() {
+        return Result.Err("Compressed buffer allocation failed");
+    }
+    
+    let actual_compressed_size: usize = 0;
+    let compress_result: i32 = unsafe {
+        compress_data(
+            data.ptr,                                    // transfer_none
+            data.len,
+            compressed_buffer,                           // transfer_full
+            &actual_compressed_size as *mut usize,
+            6  // compression level
+        )
+    };
+    
+    if compress_result != 0 {
+        unsafe { free(compressed_buffer) };
+        return Result.Err("Compression failed");
+    }
+    
+    // Decompress data
+    let decompressed_buffer_size: usize = data.len * 2; // Estimate original size
+    let decompressed_buffer: *mut u8 = unsafe { malloc(decompressed_buffer_size) };
+    
+    if decompressed_buffer.is_null() {
+        unsafe { free(compressed_buffer) };
+        return Result.Err("Decompressed buffer allocation failed");
+    }
+    
+    let actual_decompressed_size: usize = 0;
+    let decompress_result: i32 = unsafe {
+        decompress_data(
+            compressed_buffer,                           // transfer_none
+            actual_compressed_size,
+            decompressed_buffer,                         // transfer_full
+            &actual_decompressed_size as *mut usize
+        )
+    };
+    
+    // Clean up compressed buffer
+    unsafe { free(compressed_buffer) };
+    
+    if decompress_result != 0 {
+        unsafe { free(decompressed_buffer) };
+        return Result.Err("Decompression failed");
+    }
+    
+    // Create slice from decompressed data
+    let decompressed: []u8 = unsafe {
+        slice_from_raw_parts(decompressed_buffer, actual_decompressed_size)
+    };
+    
+    return Result.Ok(decompressed);
+}
+
+// =============================================================================
+// FFI ANNOTATION BEST PRACTICES
+// =============================================================================
+
+#[human_review(low, context = "ffi")]
+extern "utils" fn simple_function(
+    #[transfer_none] input: *const u8
+) -> i32;
+
+#[human_review(medium, context = "ffi")]
+extern "complex_lib" fn complex_function(
+    #[borrowed] context: *const Context,
+    #[transfer_none] input: *const u8,
+    input_len: usize,
+    #[transfer_full] output: *mut u8,
+    output_len: *mut usize
+) -> i32;
+
+#[human_review(high, context = "ffi")]
+extern "critical_lib" fn critical_function(
+    #[borrowed] session: *const Session,
+    #[transfer_none] request: *const u8,
+    request_len: usize,
+    #[transfer_full] response: *mut u8,
+    response_len: *mut usize,
+    #[borrowed] credentials: *const Credentials
+) -> i32;
+
+// Pattern: Simple wrapper for low-risk FFI calls
+#[human_review(low, context = "ffi")]
+fn simple_ffi_wrapper(data: []u8) -> i32 {
+    let result: i32 = unsafe { simple_function(data.ptr) };
+    return result;
+}
+
+// Pattern: Medium complexity with proper error handling
+#[human_review(medium, context = "ffi")]
+fn complex_ffi_wrapper(context: Context, input: []u8) -> Result<[]u8, string> {
+    let output_buffer_size: usize = input.len * 2;
+    let output_buffer: *mut u8 = unsafe { malloc(output_buffer_size) };
+    
+    if output_buffer.is_null() {
+        return Result.Err("Memory allocation failed");
+    }
+    
+    let actual_output_size: usize = 0;
+    let result: i32 = unsafe {
+        complex_function(
+            &context as *const Context,
+            input.ptr,
+            input.len,
+            output_buffer,
+            &actual_output_size as *mut usize
+        )
+    };
+    
+    if result != 0 {
+        unsafe { free(output_buffer) };
+        return Result.Err("Complex function failed with code: " + result);
+    }
+    
+    let output: []u8 = unsafe {
+        slice_from_raw_parts(output_buffer, actual_output_size)
+    };
+    
+    return Result.Ok(output);
+}
+
+// Pattern: High-risk operations with comprehensive error handling
+#[human_review(high, context = "ffi")]
+fn critical_ffi_wrapper(
+    session: Session,
+    request: []u8,
+    credentials: Credentials
+) -> Result<[]u8, string> {
+    // Validate inputs
+    if request.len == 0 {
+        return Result.Err("Request cannot be empty");
+    }
+    
+    if request.len > 1048576 { // 1MB limit
+        return Result.Err("Request too large");
+    }
+    
+    let response_buffer_size: usize = 65536; // 64KB response buffer
+    let response_buffer: *mut u8 = unsafe { malloc(response_buffer_size) };
+    
+    if response_buffer.is_null() {
+        return Result.Err("Memory allocation failed");
+    }
+    
+    let actual_response_size: usize = 0;
+    let result: i32 = unsafe {
+        critical_function(
+            &session as *const Session,
+            request.ptr,
+            request.len,
+            response_buffer,
+            &actual_response_size as *mut usize,
+            &credentials as *const Credentials
+        )
+    };
+    
+    if result != 0 {
+        unsafe { free(response_buffer) };
+        
+        // Detailed error handling for critical operations
+        match result {
+            -1 => return Result.Err("Authentication failed")
+            -2 => return Result.Err("Authorization denied")
+            -3 => return Result.Err("Session expired")
+            -4 => return Result.Err("Invalid request format")
+            -5 => return Result.Err("Server error")
+            _ => return Result.Err("Unknown error code: " + result)
+        }
+    }
+    
+    // Validate response size
+    if actual_response_size == 0 {
+        unsafe { free(response_buffer) };
+        return Result.Err("Empty response received");
+    }
+    
+    if actual_response_size > response_buffer_size {
+        unsafe { free(response_buffer) };
+        return Result.Err("Response size exceeds buffer capacity");
+    }
+    
+    let response: []u8 = unsafe {
+        slice_from_raw_parts(response_buffer, actual_response_size)
+    };
+    
+    return Result.Ok(response);
+}
+
+// =============================================================================
+// HELPER TYPES AND STRUCTURES
+// =============================================================================
+
+struct SecurityConfig {
+    pub encryption_enabled: bool;
+    pub key_size: u32;
+    pub algorithm: string;
+}
+
+impl SecurityConfig {
+    pub fn new(none) -> SecurityConfig {
+        return SecurityConfig {
+            encryption_enabled: true,
+            key_size: 256,
+            algorithm: "AES-256-GCM"
+        };
+    }
+}
+
+struct SecureContext {
+    // Opaque C structure
+}
+
+struct SecureContextWrapper {
+    context: *mut SecureContext;
+}
+
+impl SecureContextWrapper {
+    pub fn new(context: *mut SecureContext) -> SecureContextWrapper {
+        return SecureContextWrapper {
+            context: context
+        };
+    }
+    
+    // Destructor ensures proper cleanup
+    pub fn destroy(self) -> void {
+        if !self.context.is_null() {
+            unsafe { destroy_secure_context(self.context) };
+        }
+    }
+}
+
+struct DatabaseConnection {
+    pub host: string;
+    pub port: u16;
+    pub database: string;
+}
+
+struct Context {
+    pub id: u32;
+    pub flags: u32;
+}
+
+struct Session {
+    pub session_id: string;
+    pub user_id: u32;
+    pub expires_at: i64;
+}
+
+struct Credentials {
+    pub username: string;
+    pub token: string;
+}
+
+// External utility functions
+extern "utils" fn slice_from_raw_parts(ptr: *mut u8, len: usize) -> []u8;
+extern "utils" fn string_from_raw_parts(ptr: *mut u8, len: usize) -> string; 

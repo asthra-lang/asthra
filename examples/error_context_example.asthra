@@ -1,0 +1,185 @@
+// Error Context Enhancement Example
+// Demonstrates how to use contextual error handling in Asthra
+
+package examples;
+
+// Import the error context utilities
+import "stdlib/asthra/error" as error;
+import "stdlib/io" as io;
+import "stdlib/fs" as fs;
+import "stdlib/string" as string;
+
+// A function that may fail with a network error
+fn fetch_data(url: string) -> Result<string, string> {
+    // Simulate a network error
+    if string.len(url) < 10 {
+        return Result.Err("Invalid URL: too short");
+    }
+    
+    // Simulate successful data fetch
+    return Result.Ok("Some data fetched from " + url);
+}
+
+// A function that parses data and may fail
+fn parse_data(data: string) -> Result<[]string, string> {
+    // Simulate a parsing error
+    if string.len(data) < 20 {
+        return Result.Err("Data too short to parse");
+    }
+    
+    // Simulate successful parsing
+    return Result.Ok(string.split(data, " "));
+}
+
+// A function that processes data and may fail
+fn process_data(items: []string) -> Result<i32, string> {
+    // Simulate a processing error
+    if items.len < 3 {
+        return Result.Err("Not enough items to process");
+    }
+    
+    // Simulate successful processing
+    return Result.Ok(items.len);
+}
+
+// Without error context enhancement - traditional approach
+fn perform_operation_traditional(none) -> Result<i32, string> {
+    let url: string = "http://example.com";
+    
+    let fetch_result: auto  // Manual review needed = fetch_data(url);
+    let data: auto  // Match unwrap - manual review needed = match fetch_result {;
+        Result.Ok(data) => data
+        Result.Err(error) => {
+            return Result.Err("Failed to fetch data: " + error);
+        }
+    };
+    
+    let parse_result: auto  // Manual review needed = parse_data(data);
+    let items: json::JSONValue = match parse_result {;
+        Result.Ok(items) => items
+        Result.Err(error) => {
+            return Result.Err("Failed to parse data: " + error);
+        }
+    };
+    
+    let process_result: auto  // Manual review needed = process_data(items);
+    match process_result {
+        Result.Ok(count) => {
+            return Result.Ok(count);
+        },
+        Result.Err(error) => {
+            return Result.Err("Failed to process items: " + error);
+        }
+    }
+}
+
+// With error context enhancement
+fn perform_operation_with_context(none) -> Result<i32, error::ErrorWithContext<string>> {
+    let url: string = "http://example.com";
+    
+    // Add context to each potential error
+    let data: auto  // Manual review needed = fetch_data(url).with_context("Failed to fetch data from URL");
+    let items: auto  // Manual review needed = parse_data(data?).with_context("Failed to parse fetched data");
+    let count: auto  // Manual review needed = process_data(items?).with_context("Failed to process parsed items");
+    
+    return Result.Ok(count?);
+}
+
+// Example using the context builder for complex error hierarchies
+fn perform_complex_operation(none) -> Result<i32, error::ErrorWithContext<string>> {
+    let url: auto  // Manual review needed = "api";  // This will fail (too short);
+    
+    // Try to fetch data
+    let fetch_result: auto  // Manual review needed = fetch_data(url);
+    if let Result.Err(err) = fetch_result {
+        // Create a context builder with the original error
+        let context: auto  // Function call - manual review needed = error::new_context_builder(err);
+            .add("Failed to fetch from API")
+            .add("Network operation failed")
+            .add("Connection timed out")
+            .build();
+            
+        return Result.Err(context);
+    }
+    
+    // If we got here, fetch was successful
+    let data: auto  // Manual review needed = fetch_result.unwrap();
+    return Result.Ok(42);
+}
+
+// Demonstrate using multiple layers of context
+fn multilayer_context_example(none) -> Result<i32, error::ErrorWithContext<string>> {
+    // This will fail with "Data too short to parse"
+    let data: string = "Short data";
+    
+    let parsed: auto  // Manual review needed = parse_data(data).with_context("Failed in first parsing step");
+    
+    // If parse_data fails, this match arm will execute
+    match parsed {
+        Result.Ok(items) => {
+            return Result.Ok(items.len);
+        },
+        Result.Err(context) => {
+            // Add another layer of context to the existing error context
+            let enhanced: auto  // Manual review needed = context.add_context("Validation phase encountered an error");
+            return Result.Err(enhanced);
+        }
+    }
+}
+
+// Main function to demonstrate the error context enhancement
+fn main(none) -> i32 {
+    // Try the traditional approach
+    io::print_line("---- Traditional approach ----");
+    let traditional_result: auto  // Manual review needed = perform_operation_traditional();
+    match traditional_result {
+        Result.Ok(count) => {
+            io::print_line("Success! Processed " + count + " items.");
+        },
+        Result.Err(error) => {
+            io::print_line("Error: " + error);
+        }
+    }
+    
+    // Try with context enhancement
+    io::print_line("\n---- Context enhancement approach ----");
+    let context_result: auto  // Manual review needed = perform_operation_with_context();
+    match context_result {
+        Result.Ok(count) => {
+            io::print_line("Success! Processed " + count + " items.");
+        },
+        Result.Err(context) => {
+            // Use the formatted error with source location
+            io::print_line("Error: " + context.to_string());
+            
+            // Or use the utility function to format the error chain
+            io::print_line(error::format_error_chain(context));
+        }
+    }
+    
+    // Try the complex operation (will fail)
+    io::print_line("\n---- Complex context builder example ----");
+    let complex_result: auto  // Manual review needed = perform_complex_operation();
+    match complex_result {
+        Result.Ok(count) => {
+            io::print_line("Success! Result: " + count);
+        },
+        Result.Err(context) => {
+            io::print_line("Error: " + context.to_string());
+        }
+    }
+    
+    // Try multilayer context example
+    io::print_line("\n---- Multilayer context example ----");
+    let multilayer_result: auto  // Manual review needed = multilayer_context_example();
+    match multilayer_result {
+        Result.Ok(count) => {
+            io::print_line("Success! Result: " + count);
+        },
+        Result.Err(context) => {
+            io::print_line("Error: " + context.to_string());
+        }
+    }
+    
+    return 0;
+} 

@@ -1,0 +1,54 @@
+name: Asthra Release Preparation
+
+on:
+  workflow_call:
+
+jobs:
+  release-preparation:
+    name: Release Preparation
+    runs-on: ubuntu-22.04
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: release-artifacts
+        
+    - name: Prepare release package
+      shell: bash
+      run: |
+        echo "=== Preparing Release Package ==="
+        mkdir -p release-package
+        
+        # Copy documentation
+        cp README.md release-package/ 2>/dev/null || true
+        cp -r docs release-package/ 2>/dev/null || true
+        
+        # Copy source code
+        cp -r src runtime stdlib tools release-package/
+        
+        # Copy build system
+        cp CMakeLists.txt release-package/
+        cp -r cmake release-package/ 2>/dev/null || true
+        
+        # Copy platform-specific binaries
+        mkdir -p release-package/bin
+        find release-artifacts -name "asthra*" -executable -type f | \
+          while read file; do
+            platform=$(echo "$file" | cut -d'/' -f2 | cut -d'-' -f2-4)
+            cp "$file" "release-package/bin/asthra-$platform" 2>/dev/null || true
+          done
+          
+        echo "Release package contents:"
+        find release-package -type f | sort
+        
+    - name: Upload release package
+      uses: actions/upload-artifact@v4
+      with:
+        name: asthra-release-package
+        path: release-package/
+        retention-days: 30 

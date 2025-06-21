@@ -1,0 +1,21 @@
+package main;
+
+fn safe_divide(a: i32, b: i32) -> Result<i32, string> {
+    if b == 0 {
+        return Result.Err("Division by zero");
+    }
+    return Result.Ok(a / b);
+}
+
+fn main(none) -> i32 {
+    let result: Result<i32, string> = safe_divide(10, 2);
+    match result {
+        Result.Ok(value) => {
+            log("Division result: " + value);
+        },
+        Result.Err(error) => {
+            log("Error: " + error);
+        }
+    }
+    return 0;
+} 

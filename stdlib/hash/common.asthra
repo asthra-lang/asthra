@@ -1,0 +1,53 @@
+// Asthra Standard Library - Hash Common Types
+package stdlib::hash;
+
+import "stdlib/asthra/core";
+
+// Hash function result type for error handling
+pub enum HashResult {
+    Ok(u64),
+    InvalidInput(string),
+    InternalError(string),
+}
+
+// Hash function variants enumeration
+pub enum HashFunction {
+    SipHash_2_4,        // Standard SipHash
+    SipHash_1_3,        // Fast SipHash
+    FNV_1a,             // FNV-1a (for compatibility)
+    CityHash,           // CityHash (future)
+}
+
+// Configuration for hash functions
+pub struct HashConfig {
+    pub function: HashFunction,
+    pub seed: Option<u64>,
+    pub use_random_seed: bool,
+}
+
+// Default configuration using SipHash-2-4 with random seed
+pub fn default_config(none) -> HashConfig {
+    return HashConfig {
+        function: HashFunction.SipHash_2_4,
+        seed: Option.None,
+        use_random_seed: true,
+    };
+}
+
+// Create configuration with specific function
+pub fn config_with_function(func: HashFunction) -> HashConfig {
+    return HashConfig {
+        function: func,
+        seed: Option.None,
+        use_random_seed: true,
+    };
+}
+
+// Create configuration with custom seed
+pub fn config_with_seed(func: HashFunction, seed: u64) -> HashConfig {
+    return HashConfig {
+        function: func,
+        seed: Option.Some(seed),
+        use_random_seed: false,
+    };
+} 

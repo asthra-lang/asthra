@@ -1,0 +1,98 @@
+package main;
+
+import "stdlib/io";
+
+fn main() {
+    // Basic string literals with escape sequences
+    let newline_demo: string = "Line 1\nLine 2\nLine 3";
+    let tab_demo: string = "Name\tAge\tCity";
+    let quote_demo: string = "She said \"Hello, World!\" to everyone";
+    let path_demo: string = "C:\\Users\\Documents\\my_file.txt";
+    let mixed_demo: string = "Header:\n\tFile: \"data.txt\"\n\tPath: C:\\temp\\";
+    
+    // Print basic examples
+    io::print_line("=== Basic Escape Sequences ===");
+    io::print_line(newline_demo);
+    io::print_line("");
+    
+    io::print_line("Tab-separated values:");
+    io::print_line(tab_demo);
+    io::print_line("");
+    
+    io::print_line("Quoted text:");
+    io::print_line(quote_demo);
+    io::print_line("");
+    
+    io::print_line("File path:");
+    io::print_line(path_demo);
+    io::print_line("");
+    
+    io::print_line("Mixed escape sequences:");
+    io::print_line(mixed_demo);
+    io::print_line("");
+    
+    // String concatenation with escape sequences (string interpolation removed in v1.21)
+    let name: string = "Alice";
+    let age: i32 = 30;
+    let department: string = "Engineering";
+    
+    io::print_line("=== String Concatenation with Escapes ===");
+    
+    let employee_info: string = "Employee Record:\n\tName: \"" + name + "\"\n\tAge: " + string::from_int(age) + "\n\tDepartment: \"" + department + "\"";
+    io::print_line(employee_info);
+    io::print_line("");
+    
+    let json_like: string = \n\t\"name\": \"" + name + "\",\n\t\"age\": " + string::from_int(age) + ",\n\t\"department\": \"" + department + "\"\n;
+    io::print_line("JSON-like format:");
+    io::print_line(json_like);
+    io::print_line("");
+    
+    let file_output: string = "Saving employee data to: C:\\data\\" + name + "_profile.json";
+    io::print_line(file_output);
+    io::print_line("");
+    
+    // Character literals with escape sequences
+    io::print_line("=== Character Escape Sequences ===");
+    let newline_char: char = '\n';
+    let tab_char: char = '\t';
+    let quote_char: char = '\'';
+    let double_quote_char: char = '"';
+    let backslash_char: char = '\\';
+    
+    // Note: In a real implementation, you'd show the character values
+    io::print_line("Newline character code: (would show numeric value)");
+    io::print_line("Tab character code: (would show numeric value)");
+    io::print_line("Quote characters: ' and \"");
+    io::print_line("Backslash character: \\");
+    io::print_line("");
+    
+    // Real-world examples
+    io::print_line("=== Real-World Examples ===");
+    
+    let log_entry: string = "[INFO] " + get_timestamp() + ": User \"" + name + "\" logged in\n\tSession: " + generate_session_id() + "\n\tIP: 192.168.1.100";
+    io::print_line("Log entry format:");
+    io::print_line(log_entry);
+    io::print_line("");
+    
+    let csv_header: string = "Name\tEmail\tPhone\tAddress";
+    let csv_data: string = name + "\talice@example.com\t555-1234\t\"123 Main St, Apt 4B\"";
+    io::print_line("CSV format:");
+    io::print_line(csv_header);
+    io::print_line(csv_data);
+    io::print_line("");
+    
+    let sql_query: string = "SELECT * FROM users\nWHERE name = \"" + name + "\"\n  AND active = true\nORDER BY created_at DESC;";
+    io::print_line("SQL query:");
+    io::print_line(sql_query);
+    io::print_line("");
+    
+    io::print_line("=== All escape sequences work correctly! ===");
+}
+
+fn get_timestamp(none) -> string {
+    return "2024-12-28 10:30:45";
+}
+
+fn generate_session_id(none) -> string {
+    return "sess_abc123def456";
+} 

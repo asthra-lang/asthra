@@ -1,0 +1,248 @@
+{
+  "name": "Asthra Language Support",
+  "displayName": "Asthra Programming Language",
+  "description": "AI-powered language support for Asthra programming language",
+  "version": "1.0.0",
+  "publisher": "asthra-team",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Language Packs",
+    "AI",
+    "Code Completion"
+  ],
+  "keywords": [
+    "asthra",
+    "programming",
+    "language",
+    "ai",
+    "code-completion",
+    "lsp"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "asthra",
+        "aliases": [
+          "Asthra",
+          "asthra"
+        ],
+        "extensions": [
+          ".asthra"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "asthra",
+        "scopeName": "source.asthra",
+        "path": "./syntaxes/asthra.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Asthra Language Server",
+      "properties": {
+        "asthra.lsp.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Asthra Language Server Protocol support"
+        },
+        "asthra.lsp.serverPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Path to Python executable for LSP server"
+        },
+        "asthra.lsp.serverArgs": {
+          "type": "array",
+          "default": [
+            "-m",
+            "llmfinetuning.servers.lsp_server"
+          ],
+          "description": "Arguments for LSP server"
+        },
+        "asthra.lsp.serverHost": {
+          "type": "string",
+          "default": "127.0.0.1",
+          "description": "LSP server host"
+        },
+        "asthra.lsp.serverPort": {
+          "type": "number",
+          "default": 9000,
+          "description": "LSP server port"
+        },
+        "asthra.lsp.modelApi": {
+          "type": "string",
+          "default": "http://localhost:8000/v1",
+          "description": "Fine-tuned model API endpoint"
+        },
+        "asthra.ai.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable AI-powered features"
+        },
+        "asthra.ai.completionMode": {
+          "type": "string",
+          "enum": [
+            "hybrid",
+            "ai-only",
+            "static-only"
+          ],
+          "default": "hybrid",
+          "description": "Code completion mode"
+        },
+        "asthra.ai.temperature": {
+          "type": "number",
+          "default": 0.3,
+          "minimum": 0.0,
+          "maximum": 2.0,
+          "description": "AI model temperature for code generation"
+        },
+        "asthra.ai.maxTokens": {
+          "type": "number",
+          "default": 256,
+          "minimum": 16,
+          "maximum": 2048,
+          "description": "Maximum tokens for AI completion"
+        },
+        "asthra.compiler.path": {
+          "type": "string",
+          "default": "",
+          "description": "Path to Asthra compiler (optional)"
+        },
+        "asthra.compiler.flags": {
+          "type": "array",
+          "default": [],
+          "description": "Additional compiler flags"
+        },
+        "asthra.diagnostics.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable real-time diagnostics"
+        },
+        "asthra.formatting.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable code formatting"
+        },
+        "asthra.logging.level": {
+          "type": "string",
+          "enum": [
+            "debug",
+            "info",
+            "warning",
+            "error"
+          ],
+          "default": "info",
+          "description": "Logging level"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "asthra.restartLsp",
+        "title": "Restart Asthra LSP Server",
+        "category": "Asthra"
+      },
+      {
+        "command": "asthra.showLspStatus",
+        "title": "Show LSP Status",
+        "category": "Asthra"
+      },
+      {
+        "command": "asthra.generateCode",
+        "title": "Generate Asthra Code",
+        "category": "Asthra"
+      },
+      {
+        "command": "asthra.explainCode",
+        "title": "Explain Selected Code",
+        "category": "Asthra"
+      },
+      {
+        "command": "asthra.optimizeCode",
+        "title": "Optimize Code",
+        "category": "Asthra"
+      },
+      {
+        "command": "asthra.compileFile",
+        "title": "Compile Current File",
+        "category": "Asthra"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "resourceLangId == asthra",
+          "command": "asthra.generateCode",
+          "group": "asthra@1"
+        },
+        {
+          "when": "resourceLangId == asthra && editorHasSelection",
+          "command": "asthra.explainCode",
+          "group": "asthra@2"
+        },
+        {
+          "when": "resourceLangId == asthra && editorHasSelection",
+          "command": "asthra.optimizeCode",
+          "group": "asthra@3"
+        }
+      ],
+      "explorer/context": [
+        {
+          "when": "resourceExtname == .asthra",
+          "command": "asthra.compileFile",
+          "group": "asthra@1"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "asthra.generateCode",
+        "key": "ctrl+shift+g",
+        "mac": "cmd+shift+g",
+        "when": "resourceLangId == asthra"
+      },
+      {
+        "command": "asthra.explainCode",
+        "key": "ctrl+shift+e",
+        "mac": "cmd+shift+e",
+        "when": "resourceLangId == asthra && editorHasSelection"
+      },
+      {
+        "command": "asthra.compileFile",
+        "key": "ctrl+shift+c",
+        "mac": "cmd+shift+c",
+        "when": "resourceLangId == asthra"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "asthra",
+        "path": "./snippets/asthra.json"
+      }
+    ]
+  },
+  "activationEvents": [
+    "onLanguage:asthra"
+  ],
+  "dependencies": {
+    "vscode-languageclient": "^8.1.0",
+    "vscode-languageserver": "^8.1.0",
+    "vscode-languageserver-textdocument": "^1.0.8"
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "16.x",
+    "typescript": "^4.9.4"
+  }
+} 

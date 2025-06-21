@@ -1,0 +1,220 @@
+# Gemma 3 4B IT Configuration for Asthra Fine-Tuning
+# Model: google/gemma-3-4b-it (4.3B parameters, multimodal)
+# Purpose: Latest Gemma 3 with improved performance and multimodal support
+# Hardware: 12-16GB VRAM recommended
+
+model:
+  name: "google/gemma-3-4b-it"
+  tokenizer_name: "google/gemma-3-4b-it"
+  max_length: 32768  # 32K context for 4B model (vs 128K for larger variants)
+  trust_remote_code: true
+  
+  # Quantization configuration
+  quantization:
+    load_in_4bit: false  # Disable for macOS/CPU compatibility
+    bnb_4bit_compute_dtype: "bfloat16"
+    bnb_4bit_use_double_quant: true
+    bnb_4bit_quant_type: "nf4"
+
+training:
+  output_dir: "./outputs/asthra-gemma3-4b-training"
+  overwrite_output_dir: true
+  
+  # Batch sizes for 4.3B model
+  per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1
+  gradient_accumulation_steps: 16
+  dataloader_num_workers: 0  # Disable multiprocessing for macOS compatibility
+  
+  # Learning rate and optimization
+  learning_rate: 0.0002  # 2e-4 as decimal
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.1
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  
+  # Training duration
+  num_train_epochs: 3
+  max_steps: 1000
+  
+  # Logging and evaluation
+  logging_dir: "./outputs/logs/asthra-gemma3-4b"
+  logging_steps: 50
+  eval_strategy: "steps"
+  eval_steps: 100
+  save_strategy: "steps"
+  save_steps: 250
+  save_total_limit: 3
+  
+  # Mixed precision (enable for GPU)
+  fp16: false
+  bf16: false  # Disable for macOS/CPU compatibility
+  
+  # Other training settings
+  remove_unused_columns: false
+  group_by_length: false
+  ddp_find_unused_parameters: false
+
+# LoRA Configuration (Parameter-Efficient Fine-tuning)
+lora:
+  rank: 32  # Moderate rank for 4.3B model
+  alpha: 16  # alpha = rank/2 for balanced adaptation
+  dropout: 0.05
+  bias: "none"
+  task_type: "CAUSAL_LM"
+  target_modules:
+    - "q_proj"
+    - "v_proj" 
+    - "k_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+  modules_to_save: null
+
+evaluation:
+  # Compilation testing
+  enable_compilation_testing: false
+  asthra_compiler_path: null
+  compilation_timeout: 30
+  
+  # Semantic analysis testing
+  enable_semantic_testing: false
+  semantic_timeout: 15
+  
+  # Quality metrics
+  target_compilation_rate: 0.85
+  target_semantic_rate: 0.80
+  target_quality_score: 0.75
+
+data:
+  dataset_path: "./data/processed/"
+  raw_data_path: "./data/raw/"
+  cache_dir: "./outputs/cache/gemma3/"
+  
+  # Dataset splits
+  train_split: 0.9
+  validation_split: 0.1
+  test_split: 0.0
+  
+  # Data processing
+  max_samples: 2000  # Reasonable for 4.3B model
+  max_seq_length: 4096  # Reasonable for training efficiency
+  preprocessing_num_workers: 4
+  
+  # Data quality filters
+  min_code_length: 20
+  max_code_length: 4096
+  quality_threshold: 0.7
+
+monitoring:
+  # Weights & Biases
+  use_wandb: false  # Disabled to avoid interactive prompts
+  wandb_project: "asthra-llm-finetuning"
+  wandb_entity: null
+  wandb_run_name: "asthra-gemma3-4b-v1"
+  
+  # Tensorboard
+  use_tensorboard: true
+  tensorboard_log_dir: "./outputs/logs/asthra-gemma3-4b/tensorboard/"
+  
+  # Custom metrics
+  track_compilation_success: false
+  track_semantic_correctness: false
+  track_code_quality: true
+
+# Hardware and Performance
+hardware:
+  # Device settings
+  device_map: "auto"
+  max_memory: null
+  offload_folder: "./outputs/offload/gemma3/"
+  
+  # Performance optimizations
+  gradient_checkpointing: false  # Disable to avoid LoRA gradient issues
+  dataloader_pin_memory: false  # Disable for macOS/MPS compatibility
+  use_cache: true
+  
+  # Memory management
+  max_memory_mb: 16000  # For 16GB VRAM
+  cleanup_cache_every_n_steps: 50
+
+# Single-stage Training
+stages:
+  stage1:
+    name: "asthra_code_training"
+    dataset: "instruction_tuning.jsonl"
+    epochs: 3
+    learning_rate: 0.0002
+    description: "Learn Asthra programming syntax and patterns"
+
+# Export and Deployment
+export:
+  # Model export configuration
+  output_dir: "./outputs/asthra-gemma3-4b-v1"
+  hub_model_id: "asthra-team/asthra-gemma3-4b"
+  push_to_hub: false
+  
+  # GGUF export for Ollama deployment
+  gguf_export:
+    enabled: true
+    output_path: "./outputs/asthra-gemma3-4b-q4_k_m.gguf"
+    quantization: "Q4_K_M"
+    
+  # Ollama deployment
+  ollama:
+    model_name: "asthra-gemma3-4b"
+    template_path: "./templates/asthra_template.txt"
+
+# Advanced Settings
+advanced:
+  # Gradient accumulation optimization
+  gradient_accumulation_kwargs:
+    sync_each_batch: false
+  
+  # Memory optimization
+  max_memory_mapping: null
+  seed: 42
+  debug_dataset_size: 100
+  
+comments:
+  model_info: |
+    Gemma 3 4B IT (google/gemma-3-4b-it) Configuration
+    
+    Key Features:
+    - 4.3B parameters with multimodal capabilities (text + image)
+    - 32K context window (vs 128K for larger variants)
+    - Built on Gemma 3 architecture with improved performance
+    - Supports bfloat16 precision natively
+    - Requires Hugging Face authentication and terms acceptance
+    
+    Advantages for Asthra:
+    - Smaller model size = faster training and inference
+    - Multimodal support could help with code visualization/documentation
+    - Latest Google technology with strong coding capabilities
+    - Good balance of performance and resource requirements
+    
+    Training Strategy:
+    - Conservative batch sizes due to 4.3B parameter count
+    - Moderate LoRA settings (r=32, alpha=16)
+    - 4-bit quantization for memory efficiency
+    - Focus on core Asthra patterns rather than complex multimodal features
+    
+  hardware_notes: |
+    Hardware Requirements:
+    - 12-16GB VRAM recommended (24GB for best performance)
+    - 32-64GB system RAM
+    - CUDA-compatible GPU (RTX 3090/4090, A100, H100)
+    - Fast NVMe storage for dataset loading
+    
+  training_notes: |
+    Training Considerations:
+    - Requires HF authentication and license acceptance
+    - Model uses Tekken tokenizer (part of Gemma 3)
+    - Supports both text and image inputs (focus on text for Asthra)
+    - Consider leveraging multimodal capabilities for code documentation
+    - Expected training time: 6-12 hours on RTX 4090 
+
+# New logging configuration
+logging_dir: "./outputs/logs/asthra-gemma3-4b"
+run_name: "asthra-gemma3-4b-v1" 

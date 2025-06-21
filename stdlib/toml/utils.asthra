@@ -1,0 +1,477 @@
+// Asthra Standard Library - TOML Utility Functions
+package stdlib::toml;
+
+import "stdlib/asthra/core";
+
+// =============================================================================
+// High-Level Convenience Functions
+// =============================================================================
+
+// Parse TOML from string and get specific value by path
+pub fn get_value_from_string(toml_content: string, path: string) -> TomlResult<TomlValue> {
+    let parse_result: TomlResult<TomlDocument> = parse_string(toml_content);
+    match parse_result {
+        TomlResult.Ok(document) => {
+            return table_get_path(document.root_table, path);
+        },
+        TomlResult.Err(error) => {
+            return TomlResult.Err(error);
+        },
+    }
+}
+
+// Parse TOML from file and get specific value by path
+pub fn get_value_from_file(filename: string, path: string) -> TomlResult<TomlValue> {
+    let parse_result: TomlResult<TomlDocument> = parse_file(filename);
+    match parse_result {
+        TomlResult.Ok(document) => {
+            return table_get_path(document.root_table, path);
+        },
+        TomlResult.Err(error) => {
+            return TomlResult.Err(error);
+        },
+    }
+}
+
+// Quick function to check if TOML string is valid
+pub fn is_valid_toml(toml_content: string) -> bool {
+    let parse_result: TomlResult<TomlDocument> = parse_string(toml_content);
+    match parse_result {
+        TomlResult.Ok(document) => {
+            return !document.has_errors;
+        },
+        TomlResult.Err(_) => {
+            return false;
+        },
+    }
+}
+
+// Validate TOML file
+pub fn validate_toml_file(filename: string) -> TomlResult<void> {
+    let parse_result: TomlResult<TomlDocument> = parse_file(filename);
+    match parse_result {
+        TomlResult.Ok(document) => {
+            if document.has_errors {
+                return TomlResult.Err(TomlError.InternalError("TOML file contains errors"));
+            } else {
+                return TomlResult.Ok(void);
+            }
+        },
+        TomlResult.Err(error) => {
+            return TomlResult.Err(error);
+        },
+    }
+}
+
+// =============================================================================
+// Type Conversion Utilities
+// =============================================================================
+
+// Convert TomlValue to string representation
+pub fn value_to_string(value: TomlValue) -> string {
+    match value {
+        TomlValue.String(s) => return s,
+        TomlValue.Integer(i) => return string(i),
+        TomlValue.Float(f) => return string(f),
+        TomlValue.Boolean(b) => return if b { "true" } else { "false" },
+        TomlValue.DateTime(dt) => return dt,
+        TomlValue.Array(arr) => return array_to_string(arr),
+        TomlValue.Table(table) => return "[Table]",
+        TomlValue.InlineTable(table) => return "[InlineTable]",
+    }
+}
+
+// Convert array to string representation
+pub fn array_to_string(arr: []TomlValue) -> string {
+    let mut result: string = "[";
+    
+    for i in 0..arr.len {
+        if i > 0 {
+            result = result + ", ";
+        }
+        result = result + value_to_string(arr[i]);
+    }
+    
+    result = result + "]";
+    return result;
+}
+
+// Try to convert TomlValue to specific type with error handling
+pub fn value_as_string(value: TomlValue) -> TomlResult<string> {
+    match value {
+        TomlValue.String(s) => return TomlResult.Ok(s),
+        _ => return TomlResult.Err(type_error(TomlValueType.String, get_value_type(value), "conversion")),
+    }
+}
+
+pub fn value_as_integer(value: TomlValue) -> TomlResult<i64> {
+    match value {
+        TomlValue.Integer(i) => return TomlResult.Ok(i),
+        TomlValue.Float(f) => {
+            let i: i64 = f as i64;
+            if i as f64 == f {
+                return TomlResult.Ok(i);
+            } else {
+                return TomlResult.Err(TomlError.InternalError("Float cannot be converted to integer without loss"));
+            }
+        },
+        _ => return TomlResult.Err(type_error(TomlValueType.Integer, get_value_type(value), "conversion")),
+    }
+}
+
+pub fn value_as_float(value: TomlValue) -> TomlResult<f64> {
+    match value {
+        TomlValue.Float(f) => return TomlResult.Ok(f),
+        TomlValue.Integer(i) => return TomlResult.Ok(i as f64),
+        _ => return TomlResult.Err(type_error(TomlValueType.Float, get_value_type(value), "conversion")),
+    }
+}
+
+pub fn value_as_boolean(value: TomlValue) -> TomlResult<bool> {
+    match value {
+        TomlValue.Boolean(b) => return TomlResult.Ok(b),
+        _ => return TomlResult.Err(type_error(TomlValueType.Boolean, get_value_type(value), "conversion")),
+    }
+}
+
+// =============================================================================
+// Array Utilities
+// =============================================================================
+
+// Extract string array from TomlValue
+pub fn extract_string_array(value: TomlValue) -> TomlResult<[]string> {
+    match value {
+        TomlValue.Array(arr) => {
+            let mut strings: []string = allocate_string_array(arr.len);
+            
+            for i in 0..arr.len {
+                let str_result: TomlResult<string> = value_as_string(arr[i]);
+                match str_result {
+                    TomlResult.Ok(s) => {
+                        strings[i] = s;
+                    },
+                    TomlResult.Err(error) => {
+                        return TomlResult.Err(error);
+                    },
+                }
+            }
+            
+            return TomlResult.Ok(strings);
+        },
+        _ => return TomlResult.Err(type_error(TomlValueType.Array, get_value_type(value), "string_array_extraction")),
+    }
+}
+
+// Extract integer array from TomlValue
+pub fn extract_integer_array(value: TomlValue) -> TomlResult<[]i64> {
+    match value {
+        TomlValue.Array(arr) => {
+            let mut integers: []i64 = allocate_integer_array(arr.len);
+            
+            for i in 0..arr.len {
+                let int_result: TomlResult<i64> = value_as_integer(arr[i]);
+                match int_result {
+                    TomlResult.Ok(num) => {
+                        integers[i] = num;
+                    },
+                    TomlResult.Err(error) => {
+                        return TomlResult.Err(error);
+                    },
+                }
+            }
+            
+            return TomlResult.Ok(integers);
+        },
+        _ => return TomlResult.Err(type_error(TomlValueType.Array, get_value_type(value), "integer_array_extraction")),
+    }
+}
+
+// Create TOML array from string array
+pub fn string_array_to_toml(strings: []string) -> TomlValue {
+    let mut values: []TomlValue = allocate_value_array(strings.len);
+    
+    for i in 0..strings.len {
+        values[i] = TomlValue.String(strings[i]);
+    }
+    
+    return TomlValue.Array(values);
+}
+
+// Create TOML array from integer array
+pub fn integer_array_to_toml(integers: []i64) -> TomlValue {
+    let mut values: []TomlValue = allocate_value_array(integers.len);
+    
+    for i in 0..integers.len {
+        values[i] = TomlValue.Integer(integers[i]);
+    }
+    
+    return TomlValue.Array(values);
+}
+
+// =============================================================================
+// Configuration File Utilities
+// =============================================================================
+
+// Configuration loading with defaults
+pub struct ConfigLoader {
+    pub default_values: TomlTable,
+    pub config_paths: []string,
+    pub strict_mode: bool,
+}
+
+// Create new configuration loader
+pub fn new_config_loader() -> ConfigLoader {
+    return ConfigLoader {
+        default_values: new_table(),
+        config_paths: [],
+        strict_mode: false,
+    };
+}
+
+// Add default value to configuration loader
+pub fn config_loader_add_default(loader: *mut ConfigLoader, key: string, value: TomlValue) -> void {
+    table_set(&mut loader.default_values, key, value);
+}
+
+// Add configuration file path
+pub fn config_loader_add_path(loader: *mut ConfigLoader, path: string) -> void {
+    loader.config_paths.push(path);
+}
+
+// Load configuration with defaults and multiple file support
+pub fn config_loader_load(loader: ConfigLoader) -> TomlResult<TomlTable> {
+    let mut config: TomlTable = table_clone(loader.default_values);
+    
+    for i in 0..loader.config_paths.len {
+        let file_path: string = loader.config_paths[i];
+        
+        // Check if file exists before trying to parse
+        if file_exists(file_path) {
+            let parse_result: TomlResult<TomlDocument> = parse_file(file_path);
+            match parse_result {
+                TomlResult.Ok(document) => {
+                    if document.has_errors && loader.strict_mode {
+                        return TomlResult.Err(TomlError.InternalError("Config file has errors: " + file_path));
+                    }
+                    
+                    // Merge this config into the accumulated config
+                    config = table_merge(config, document.root_table);
+                },
+                TomlResult.Err(error) => {
+                    if loader.strict_mode {
+                        return TomlResult.Err(error);
+                    }
+                    // In non-strict mode, skip files that can't be parsed
+                },
+            }
+        } else if loader.strict_mode {
+            return TomlResult.Err(TomlError.InternalError("Config file not found: " + file_path));
+        }
+    }
+    
+    return TomlResult.Ok(config);
+}
+
+// =============================================================================
+// Data Transformation Utilities
+// =============================================================================
+
+// Convert TOML table to flat key-value map with dotted keys
+pub fn table_to_flat_map(table: TomlTable) -> TomlResult<TomlTable> {
+    let mut flat_map: TomlTable = new_table();
+    let empty_prefix: string = "";
+    
+    let flatten_result: TomlResult<void> = flatten_table_recursive(table, &mut flat_map, empty_prefix);
+    match flatten_result {
+        TomlResult.Ok(_) => return TomlResult.Ok(flat_map),
+        TomlResult.Err(error) => return TomlResult.Err(error),
+    }
+}
+
+// Recursively flatten table structure
+priv fn flatten_table_recursive(table: TomlTable, flat_map: *mut TomlTable, prefix: string) -> TomlResult<void> {
+    for i in 0..table.count {
+        let key: string = table.keys[i];
+        let value: TomlValue = table.values[i];
+        
+        let full_key: string = if prefix == "" {
+            key
+        } else {
+            prefix + "." + key
+        };
+        
+        match value {
+            TomlValue.Table(nested_table) => {
+                let recurse_result: TomlResult<void> = flatten_table_recursive(nested_table, flat_map, full_key);
+                match recurse_result {
+                    TomlResult.Ok(_) => continue,
+                    TomlResult.Err(error) => return TomlResult.Err(error),
+                }
+            },
+            TomlValue.InlineTable(inline_table) => {
+                let recurse_result: TomlResult<void> = flatten_table_recursive(inline_table, flat_map, full_key);
+                match recurse_result {
+                    TomlResult.Ok(_) => continue,
+                    TomlResult.Err(error) => return TomlResult.Err(error),
+                }
+            },
+            _ => {
+                let set_result: TomlResult<void> = table_set(flat_map, full_key, value);
+                match set_result {
+                    TomlResult.Ok(_) => continue,
+                    TomlResult.Err(error) => return TomlResult.Err(error),
+                }
+            },
+        }
+    }
+    
+    return TomlResult.Ok(void);
+}
+
+// =============================================================================
+// TOML Comparison and Diffing
+// =============================================================================
+
+// Compare two TOML documents and report differences
+pub struct TomlDiff {
+    pub added_keys: []string,
+    pub removed_keys: []string,
+    pub changed_keys: []string,
+    pub type_changes: []string,
+}
+
+// Compare two TOML documents
+pub fn compare_toml_documents(doc1: TomlDocument, doc2: TomlDocument) -> TomlDiff {
+    return compare_toml_tables(doc1.root_table, doc2.root_table);
+}
+
+// Compare two TOML tables
+pub fn compare_toml_tables(table1: TomlTable, table2: TomlTable) -> TomlDiff {
+    let mut diff: TomlDiff = TomlDiff {
+        added_keys: [],
+        removed_keys: [],
+        changed_keys: [],
+        type_changes: [],
+    };
+    
+    // Find added and changed keys
+    for i in 0..table2.count {
+        let key: string = table2.keys[i];
+        if table_contains(table1, key) {
+            let value1: TomlValue = table_get(table1, key);
+            let value2: TomlValue = table2.values[i];
+            
+            if get_value_type(value1) != get_value_type(value2) {
+                diff.type_changes.push(key);
+            } else if !values_equal(value1, value2) {
+                diff.changed_keys.push(key);
+            }
+        } else {
+            diff.added_keys.push(key);
+        }
+    }
+    
+    // Find removed keys
+    for i in 0..table1.count {
+        let key: string = table1.keys[i];
+        if !table_contains(table2, key) {
+            diff.removed_keys.push(key);
+        }
+    }
+    
+    return diff;
+}
+
+// =============================================================================
+// TOML Schema Validation
+// =============================================================================
+
+// Simple schema definition for TOML validation
+pub struct TomlSchema {
+    pub required_keys: []string,
+    pub optional_keys: []string,
+    pub key_types: TomlTable,  // key -> expected type
+    pub allow_extra_keys: bool,
+}
+
+// Create new schema
+pub fn new_schema() -> TomlSchema {
+    return TomlSchema {
+        required_keys: [],
+        optional_keys: [],
+        key_types: new_table(),
+        allow_extra_keys: true,
+    };
+}
+
+// Add required key to schema
+pub fn schema_add_required(schema: *mut TomlSchema, key: string, expected_type: TomlValueType) -> void {
+    schema.required_keys.push(key);
+    table_set(&mut schema.key_types, key, integer_value(expected_type as i64));
+}
+
+// Add optional key to schema
+pub fn schema_add_optional(schema: *mut TomlSchema, key: string, expected_type: TomlValueType) -> void {
+    schema.optional_keys.push(key);
+    table_set(&mut schema.key_types, key, integer_value(expected_type as i64));
+}
+
+// Validate TOML document against schema
+pub fn validate_against_schema(document: TomlDocument, schema: TomlSchema) -> TomlResult<void> {
+    return validate_table_against_schema(document.root_table, schema);
+}
+
+// Validate table against schema
+pub fn validate_table_against_schema(table: TomlTable, schema: TomlSchema) -> TomlResult<void> {
+    // Check required keys
+    for i in 0..schema.required_keys.len {
+        let required_key: string = schema.required_keys[i];
+        if !table_contains(table, required_key) {
+            return TomlResult.Err(key_error(required_key, "required key missing"));
+        }
+    }
+    
+    // Check key types
+    for i in 0..table.count {
+        let key: string = table.keys[i];
+        let value: TomlValue = table.values[i];
+        let actual_type: TomlValueType = get_value_type(value);
+        
+        if table_contains(schema.key_types, key) {
+            let expected_type_value: TomlValue = table_get(schema.key_types, key);
+            match expected_type_value {
+                TomlValue.Integer(type_int) => {
+                    let expected_type: TomlValueType = type_int as TomlValueType;
+                    if actual_type != expected_type {
+                        return TomlResult.Err(type_error(expected_type, actual_type, key));
+                    }
+                },
+                _ => {
+                    return TomlResult.Err(TomlError.InternalError("Invalid schema type definition"));
+                },
+            }
+        } else if !schema.allow_extra_keys {
+            return TomlResult.Err(key_error(key, "unexpected key not in schema"));
+        }
+    }
+    
+    return TomlResult.Ok(void);
+}
+
+// =============================================================================
+// Helper Functions
+// =============================================================================
+
+// Check if values are equal (helper function)
+priv fn values_equal(value1: TomlValue, value2: TomlValue) -> bool {
+    // This would use the implementation from table.asthra
+    // For now, simplified comparison
+    return get_value_type(value1) == get_value_type(value2) &&
+           value_to_string(value1) == value_to_string(value2);
+}
+
+// External functions (implemented in runtime)
+extern fn allocate_string_array(size: usize) -> []string;
+extern fn allocate_value_array(size: usize) -> []TomlValue;
+extern fn allocate_integer_array(size: usize) -> []i64;
+extern fn file_exists(path: string) -> bool; 

@@ -1,0 +1,85 @@
+// Concurrency Example in Asthra
+// Demonstrates lightweight tasks with spawn and pattern matching
+
+package concurrency_example;
+
+import "std/io";
+import "std/concurrency";
+
+// Simple worker function that performs computation
+fn worker_task(id: i32) -> i32 {
+    log("Worker " + id + " starting");
+    
+    // Simulate some work
+    let result: auto  // Manual review needed = id * 2;
+    
+    log("Worker " + id + " completed with result " + result);
+    return result;
+}
+
+// Worker function with multiple parameters
+fn complex_worker(id: i32, multiplier: i32, name: string) -> i32 {
+    log("Complex worker " + name + " (id: " + id + ") starting with multiplier " + multiplier);
+    
+    let result: auto  // Manual review needed = id * multiplier;
+    
+    log("Complex worker " + name + " completed with result " + result);
+    return result;
+}
+
+// Function that spawns multiple tasks
+fn parallel_computation(data: []i32) -> i32 {
+    log("Starting parallel computation with " + (data.len).to_string() + " elements");
+    
+    // Spawn tasks for each element
+    for i in range(data.len) {
+        spawn worker_task(data[i]);
+    }
+    
+    log("All " + (data.len).to_string() + " tasks spawned");
+    return data.len;
+}
+
+// Function demonstrating different spawn patterns
+fn demonstrate_spawn_patterns() {
+    log("Demonstrating various spawn patterns");
+    
+    // 1. Simple spawn with single argument
+    spawn worker_task(42);
+    
+    // 2. Spawn with multiple arguments
+    spawn complex_worker(1, 5, "alpha");
+    spawn complex_worker(2, 10, "beta");
+    
+    // 3. Spawn with expressions as arguments
+    let base_id: i32 = 100;
+    spawn worker_task(base_id + 1);
+    spawn worker_task(base_id * 2);
+    
+    // 4. Spawn in a loop
+    for i in range(3) {
+        spawn worker_task(i + 200);
+    }
+    
+    log("All demonstration tasks spawned");
+}
+
+fn main(none) -> i32 {
+    log("Starting concurrency example");
+    
+    let data: auto  // Array - manual review needed = [1, 2, 3, 4, 5];
+    
+    // Demonstrate basic spawn
+    spawn worker_task(42);
+    
+    // Demonstrate parallel computation
+    let task_count: auto  // Manual review needed = parallel_computation(data);
+    log("Spawned " + task_count + " parallel tasks");
+    
+    // Demonstrate various spawn patterns
+    demonstrate_spawn_patterns();
+    
+    log("All tasks spawned, main thread continuing");
+    
+    return 0;
+} 

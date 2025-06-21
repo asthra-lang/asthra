@@ -1,0 +1,413 @@
+/**
+ * Asthra Programming Language
+ * Multi-line String Literals - Complete Implementation Demo (Phases 1-5)
+ * 
+ * Copyright (c) 2024 Asthra Project
+ * Licensed under the terms specified in LICENSE
+ * 
+ * This file demonstrates the complete multi-line string literals feature
+ * implemented across all phases of the development plan.
+ */
+
+// =============================================================================
+// PHASE 1: GRAMMAR ENHANCEMENT (v1.23) - RAW AND PROCESSED STRINGS
+// =============================================================================
+
+// ✅ Raw multi-line strings (r"""content""") - no escape processing
+let sql_query: string = r"""
+    SELECT 
+        users.name,
+        users.email,
+        profiles.bio,
+        COUNT(posts.id) as post_count
+    FROM users
+    LEFT JOIN profiles ON users.id = profiles.user_id
+    LEFT JOIN posts ON users.id = posts.author_id
+    WHERE users.active = true
+      AND users.created_at >= '2024-01-01'
+    GROUP BY users.id, users.name, users.email, profiles.bio
+    ORDER BY post_count DESC, users.created_at DESC
+    LIMIT 50
+""";
+
+// ✅ Processed multi-line strings ("""content""") - with escape sequences
+let nginx_config: string = """
+    server {
+        listen 80;
+        listen [::]:80;
+        server_name example.com www.example.com;
+        
+        # Security headers
+        add_header X-Frame-Options \"DENY\";
+        add_header X-Content-Type-Options \"nosniff\";
+        add_header X-XSS-Protection \"1; mode=block\";
+        
+        location / {
+            proxy_pass http://127.0.0.1:3000;
+            proxy_set_header Host \$host;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto \$scheme;
+            
+            # Timeout settings
+            proxy_connect_timeout 30s;
+            proxy_send_timeout 30s;
+            proxy_read_timeout 30s;
+        }
+        
+        location /static/ {
+            alias /var/www/static/;
+            expires 1y;
+            add_header Cache-Control \"public, immutable\";
+        }
+    }
+""";
+
+// =============================================================================
+// PHASE 2: LEXER IMPLEMENTATION - TOKEN RECOGNITION
+// =============================================================================
+
+// ✅ The lexer now recognizes both raw and processed multi-line strings
+// ✅ scan_multiline_raw_string() handles r"""content"""
+// ✅ scan_multiline_processed_string() handles """content"""
+// ✅ Both generate TOKEN_STRING tokens with proper content
+
+// Example: Shell script generation with raw strings
+let install_script: string = r"""
+    #!/bin/bash
+    set -euo pipefail
+    
+    # Asthra Application Installer
+    echo "Installing Asthra application..."
+    
+    # Create application directory
+    sudo mkdir -p /opt/asthra
+    sudo chown $USER:$USER /opt/asthra
+    
+    # Copy application files
+    cp -r ./target/release/* /opt/asthra/
+    chmod +x /opt/asthra/asthra
+    
+    # Create systemd service
+    sudo tee /etc/systemd/system/asthra.service > /dev/null << 'EOF'
+    [Unit]
+    Description=Asthra Application
+    After=network.target
+    
+    [Service]
+    Type=simple
+    User=asthra
+    WorkingDirectory=/opt/asthra
+    ExecStart=/opt/asthra/asthra
+    Restart=always
+    RestartSec=10
+    
+    [Install]
+    WantedBy=multi-user.target
+    EOF
+    
+    # Enable and start service
+    sudo systemctl daemon-reload
+    sudo systemctl enable asthra
+    sudo systemctl start asthra
+    
+    echo "Installation complete!"
+    echo "Service status:"
+    sudo systemctl status asthra
+""";
+
+// =============================================================================
+// PHASE 3: PARSER INTEGRATION - AST NODE CREATION
+// =============================================================================
+
+// ✅ Parser creates AST_STRING_LITERAL nodes for both string types
+// ✅ String content stored in ast_node.data.string_literal.value
+// ✅ Compatible with existing expression parsing infrastructure
+
+// Example: Configuration template function
+fn generate_docker_compose(service_name: string, port: u16) -> string {
+    // The parser creates proper AST nodes for this multi-line string
+    let template: string = """
+        version: '3.8'
+        
+        services:
+          {service_name}:
+            build: .
+            ports:
+              - \"{port}:3000\"
+            environment:
+              - NODE_ENV=production
+              - PORT=3000
+            volumes:
+              - ./data:/app/data
+            restart: unless-stopped
+            healthcheck:
+              test: [\"CMD\", \"curl\", \"-f\", \"http://localhost:3000/health\"]
+              interval: 30s
+              timeout: 10s
+              retries: 3
+              start_period: 40s
+        
+        volumes:
+          data:
+            driver: local
+    """;
+    
+    return string::format(template, [
+        FormatArg.String(service_name),
+        FormatArg.UInt(port as u64)
+    ]);
+}
+
+// =============================================================================
+// PHASE 4: SEMANTIC ANALYSIS - TYPE CHECKING AND INDENTATION NORMALIZATION
+// =============================================================================
+
+// ✅ All multi-line strings resolve to 'string' type
+// ✅ Indentation normalization via normalize_multiline_indentation()
+// ✅ Smart common leading whitespace detection and removal
+// ✅ Semantic validation with comprehensive error handling
+
+// Example: Documentation generation
+fn generate_api_documentation() -> string {
+    // Semantic analysis automatically normalizes indentation
+    let api_docs: string = """
+        # User Management API
+        
+        ## Authentication
+        All endpoints require a valid JWT token in the Authorization header:
+        ```
+        Authorization: Bearer <your-jwt-token>
+        ```
+        
+        ## Endpoints
+        
+        ### GET /api/users
+        Retrieve a list of users.
+        
+        **Parameters:**
+        - `page` (optional): Page number (default: 1)
+        - `limit` (optional): Items per page (default: 20)
+        - `sort` (optional): Sort field (default: "created_at")
+        
+        **Response:**
+        ```json
+        {
+          \"users\": [
+            {
+              \"id\": 1,
+              \"name\": \"John Doe\",
+              \"email\": \"john@example.com\",
+              \"created_at\": \"2024-01-15T10:30:00Z\"
+            }
+          ],
+          \"pagination\": {
+            \"page\": 1,
+            \"limit\": 20,
+            \"total\": 150,
+            \"pages\": 8
+          }
+        }
+        ```
+        
+        ### POST /api/users
+        Create a new user.
+        
+        **Request Body:**
+        ```json
+        {
+          \"name\": \"Jane Smith\",
+          \"email\": \"jane@example.com\",
+          \"password\": \"secure-password\"
+        }
+        ```
+        
+        **Response:**
+        ```json
+        {
+          \"id\": 2,
+          \"name\": \"Jane Smith\",
+          \"email\": \"jane@example.com\",
+          \"created_at\": \"2024-01-15T11:45:00Z\"
+        }
+        ```
+    """;
+    
+    return api_docs;
+}
+
+// =============================================================================
+// PHASE 5: CODE GENERATION - C-COMPATIBLE STRING ESCAPING
+// =============================================================================
+
+// ✅ Enhanced AST_STRING_LITERAL code generation
+// ✅ Multi-line string detection via is_multiline_string_content()
+// ✅ C-compatible escaping via escape_string_for_c_generation()
+// ✅ Proper label creation and LEA instruction generation
+// ✅ Debug comments and assembly output optimization
+
+// Example: Email template generation
+fn send_welcome_email(user_name: string, activation_link: string) -> Result<(), EmailError> {
+    // Phase 5 code generation properly escapes this multi-line content
+    let email_template: string = """
+        Subject: Welcome to Asthra Platform!
+        
+        Dear {user_name},
+        
+        Welcome to the Asthra Platform! We're excited to have you join our community
+        of developers building the next generation of systems programming tools.
+        
+        To complete your registration, please click the activation link below:
+        
+        {activation_link}
+        
+        This link will expire in 24 hours for security reasons.
+        
+        Getting Started:
+        • Check out our documentation at https://docs.asthra.dev
+        • Join our Discord community for support and discussions
+        • Follow @AsthraDev on Twitter for updates
+        
+        If you have any questions, don't hesitate to reach out to our support team
+        at support@asthra.dev or reply to this email.
+        
+        Happy coding!
+        
+        The Asthra Team
+        https://asthra.dev
+        
+        ---
+        This email was sent to you because you signed up for an Asthra Platform account.
+        If you did not sign up, please ignore this email or contact support.
+    """;
+    
+    let formatted_email = string::format(email_template, [
+        FormatArg.String(user_name),
+        FormatArg.String(activation_link)
+    ]);
+    
+    return EmailService.send(formatted_email);
+}
+
+// =============================================================================
+// REAL-WORLD INTEGRATION EXAMPLES
+// =============================================================================
+
+// Database migration with raw strings (preserves exact SQL formatting)
+let create_users_table: string = r"""
+    CREATE TABLE users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        email_verified BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+    
+    CREATE INDEX idx_users_email ON users(email);
+    CREATE INDEX idx_users_created_at ON users(created_at);
+    
+    -- Insert default admin user
+    INSERT INTO users (name, email, password_hash, email_verified) VALUES
+    ('Administrator', 'admin@asthra.dev', '$2b$12$LQv3c1yqBwkunFiHhrtkFuJr.wJA.aOLQFQbwGIB9QxPD.Q.Q7LZ6', TRUE);
+""";
+
+// Kubernetes deployment with processed strings (supports variable interpolation)
+fn generate_k8s_deployment(app_name: string, image_tag: string, replicas: u32) -> string {
+    let deployment_yaml: string = """
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: {app_name}
+          labels:
+            app: {app_name}
+        spec:
+          replicas: {replicas}
+          selector:
+            matchLabels:
+              app: {app_name}
+          template:
+            metadata:
+              labels:
+                app: {app_name}
+            spec:
+              containers:
+              - name: {app_name}
+                image: {image_tag}
+                ports:
+                - containerPort: 3000
+                env:
+                - name: NODE_ENV
+                  value: \"production\"
+                - name: PORT
+                  value: \"3000\"
+                resources:
+                  requests:
+                    memory: \"128Mi\"
+                    cpu: \"100m\"
+                  limits:
+                    memory: \"256Mi\"
+                    cpu: \"200m\"
+                livenessProbe:
+                  httpGet:
+                    path: /health
+                    port: 3000
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+                readinessProbe:
+                  httpGet:
+                    path: /ready
+                    port: 3000
+                  initialDelaySeconds: 5
+                  periodSeconds: 5
+    """;
+    
+    return string::format(deployment_yaml, [
+        FormatArg.String(app_name),
+        FormatArg.String(image_tag),
+        FormatArg.UInt(replicas as u64)
+    ]);
+}
+
+// =============================================================================
+// SUMMARY OF COMPLETED PHASES
+// =============================================================================
+
+/*
+✅ PHASE 1: Grammar Enhancement (v1.23)
+   - Added MultiLineString := RawString | ProcessedString
+   - RawString := 'r"""' RawContent* '"""'
+   - ProcessedString := '"""' StringContent* '"""'
+
+✅ PHASE 2: Lexer Implementation
+   - scan_multiline_raw_string() for r"""content"""
+   - scan_multiline_processed_string() for """content"""
+   - Proper token generation and content extraction
+
+✅ PHASE 3: Parser Integration  
+   - AST_STRING_LITERAL nodes for multi-line strings
+   - Compatible with existing expression parsing
+   - Seamless integration with grammar rules
+
+✅ PHASE 4: Semantic Analysis
+   - Type resolution to 'string' type
+   - normalize_multiline_indentation() implementation
+   - Smart common leading whitespace detection
+   - Comprehensive validation and error handling
+
+✅ PHASE 5: Code Generation
+   - Enhanced AST_STRING_LITERAL handling
+   - is_multiline_string_content() detection
+   - escape_string_for_c_generation() for C compatibility
+   - Proper label creation and LEA instruction generation
+   - Debug support and assembly optimization
+
+🎉 Multi-line String Literals implementation complete!
+   Perfect alignment with all 5 Asthra design principles:
+   1. ✅ Minimal syntax for AI generation efficiency
+   2. ✅ Safe C interoperability through existing infrastructure
+   3. ✅ Deterministic execution with consistent parsing
+   4. ✅ Enhanced observability through better formatted output
+   5. ✅ Essential feature for practical systems programming
+*/ 

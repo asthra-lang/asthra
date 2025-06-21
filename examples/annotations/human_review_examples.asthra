@@ -1,0 +1,712 @@
+// Human Review Examples - Comprehensive demonstration of annotation usage
+// This file shows proper usage of human review annotations across different priority levels
+
+package examples;
+
+// =============================================================================
+// LOW PRIORITY EXAMPLES - Standard operations, well-established patterns
+// =============================================================================
+
+#[human_review(low)]
+fn calculate_simple_checksum(data: []u8) -> u32 {
+    // Simple checksum calculation using well-established XOR algorithm
+    let checksum: u32 = 0;
+    for byte in data {
+        checksum = checksum ^ (byte as u32);
+    }
+    return checksum;
+}
+
+#[human_review(low)]
+fn format_log_message(level: string, message: string) -> string {
+    // Simple string formatting with no security implications
+    return "[" + level + "] " + message;
+}
+
+#[human_review(low)]
+fn validate_positive_number(num: i32) -> Result<i32, string> {
+    // Basic validation with straightforward logic
+    if num <= 0 {
+        return Result.Err("Number must be positive");
+    }
+    return Result.Ok(num);
+}
+
+#[human_review(low)]
+fn array_sum(numbers: []i32) -> i32 {
+    // Standard array summation - well-understood pattern
+    let sum: i32 = 0;
+    for num in numbers {
+        sum = sum + num;
+    }
+    return sum;
+}
+
+// =============================================================================
+// MEDIUM PRIORITY EXAMPLES - Complex logic, benefits from human review
+// =============================================================================
+
+#[human_review(medium)]
+fn parse_configuration_file(content: string) -> Result<Config, string> {
+    // Complex parsing logic with multiple validation steps and error paths
+    let lines: []string = content.split('\n');
+    let config: Config = Config.new();
+    
+    for line in lines {
+        let trimmed: string = line.trim();
+        if trimmed.starts_with('#') || trimmed.is_empty() {
+            continue; // Skip comments and empty lines
+        }
+        
+        let parts: []string = trimmed.split('=');
+        if parts.len != 2 {
+            return Result.Err("Invalid configuration line: " + line);
+        }
+        
+        let key: string = parts[0].trim();
+        let value: string = parts[1].trim();
+        
+        match key {
+            "timeout" => {
+                let timeout_value: Result<i32, string> = value.parse_int();
+                match timeout_value {
+                    Result.Ok(val) => {
+                        if val < 1 || val > 3600 {
+                            return Result.Err("Timeout must be between 1 and 3600 seconds");
+                        }
+                        config.timeout = val;
+                    },
+                    Result.Err(_) => return Result.Err("Invalid timeout value: " + value)
+                }
+            },
+            "host" => {
+                if value.is_empty() {
+                    return Result.Err("Host cannot be empty");
+                }
+                config.host = value;
+            },
+            "port" => {
+                let port_value: Result<u16, string> = value.parse_uint();
+                match port_value {
+                    Result.Ok(val) => {
+                        if val < 1024 || val > 65535 {
+                            return Result.Err("Port must be between 1024 and 65535");
+                        }
+                        config.port = val;
+                    },
+                    Result.Err(_) => return Result.Err("Invalid port value: " + value)
+                }
+            },
+            "max_connections" => {
+                let conn_value: Result<i32, string> = value.parse_int();
+                match conn_value {
+                    Result.Ok(val) => {
+                        if val < 1 || val > 10000 {
+                            return Result.Err("Max connections must be between 1 and 10000");
+                        }
+                        config.max_connections = val;
+                    },
+                    Result.Err(_) => return Result.Err("Invalid max_connections value: " + value)
+                }
+            },
+            _ => return Result.Err("Unknown configuration key: " + key)
+        }
+    }
+    
+    // Validate required fields
+    if config.host.is_empty() {
+        return Result.Err("Host is required");
+    }
+    
+    return Result.Ok(config);
+}
+
+#[human_review(medium)]
+fn complex_data_transformation(input: []DataRecord) -> Result<[]ProcessedRecord, string> {
+    // Complex data processing with multiple transformation steps
+    let processed: []ProcessedRecord = allocate_slice(input.len);
+    let processed_count: usize = 0;
+    
+    for i in range(0, input.len) {
+        let record: DataRecord = input[i];
+        
+        // Validate record
+        if record.id <= 0 {
+            continue; // Skip invalid records
+        }
+        
+        // Apply transformations
+        let transformed: ProcessedRecord = ProcessedRecord.new();
+        transformed.id = record.id;
+        
+        // Complex business logic
+        match record.type {
+            "user" => {
+                transformed.category = "USER_DATA";
+                transformed.priority = calculate_user_priority(record);
+            },
+            "system" => {
+                transformed.category = "SYSTEM_DATA";
+                transformed.priority = calculate_system_priority(record);
+            },
+            "audit" => {
+                transformed.category = "AUDIT_DATA";
+                transformed.priority = 1; // Always high priority
+            },
+            _ => {
+                // Unknown type - log and skip
+                log("WARN", "Unknown record type: " + record.type);
+                continue;
+            }
+        }
+        
+        // Apply filters
+        if should_include_record(transformed) {
+            processed[processed_count] = transformed;
+            processed_count = processed_count + 1;
+        }
+    }
+    
+    // Resize array to actual count
+    let final_result: []ProcessedRecord = allocate_slice(processed_count);
+    for i in range(0, processed_count) {
+        final_result[i] = processed[i];
+    }
+    
+    return Result.Ok(final_result);
+}
+
+#[human_review(medium)]
+fn retry_with_backoff(operation: fn() -> Result<string, string>, max_retries: i32) -> Result<string, string> {
+    // Complex retry logic with exponential backoff
+    let attempt: i32 = 0;
+    let base_delay: i32 = 100; // milliseconds
+    
+    while attempt < max_retries {
+        let result: Result<string, string> = operation();
+        
+        match result {
+            Result.Ok(value) => {
+                if attempt > 0 {
+                    log("INFO", "Operation succeeded after " + attempt + " retries");
+                }
+                return Result.Ok(value);
+            },
+            Result.Err(error) => {
+                attempt = attempt + 1;
+                
+                if attempt >= max_retries {
+                    return Result.Err("Operation failed after " + max_retries + " attempts: " + error);
+                }
+                
+                // Calculate exponential backoff delay
+                let delay: i32 = base_delay * (2 ^ attempt);
+                let max_delay: i32 = 30000; // 30 seconds max
+                let actual_delay: i32 = if delay > max_delay { max_delay } else { delay };
+                
+                log("WARN", "Attempt " + attempt + " failed, retrying in " + actual_delay + "ms: " + error);
+                sleep(actual_delay);
+            }
+        }
+    }
+    
+    return Result.Err("Retry loop exited unexpectedly");
+}
+
+// =============================================================================
+// HIGH PRIORITY EXAMPLES - Critical systems, security-sensitive code
+// =============================================================================
+
+#[human_review(high)]
+fn authenticate_user(username: string, password: string) -> Result<AuthToken, string> {
+    // Authentication logic requires careful review for security vulnerabilities
+    
+    // Input validation
+    if username.is_empty() || password.is_empty() {
+        return Result.Err("Username and password are required");
+    }
+    
+    if username.len > 255 || password.len > 1000 {
+        return Result.Err("Username or password too long");
+    }
+    
+    // Rate limiting check
+    let rate_limit_result: Result<void, string> = check_rate_limit(username);
+    match rate_limit_result {
+        Result.Err(error) => return Result.Err("Rate limit exceeded: " + error)
+        Result.Ok(_) => {}
+    }
+    
+    let user_record: Result<User, string> = database.find_user(username);
+    
+    match user_record {
+        Result.Err(_) => {
+            // Constant-time response to prevent username enumeration
+            let dummy_hash: []u8 = generate_dummy_hash();
+            verify_password_hash(password, dummy_hash);
+            
+            // Log failed attempt
+            audit_log("AUTH_FAILURE", "Authentication failed for user: " + username);
+            
+            return Result.Err("Authentication failed");
+        },
+        Result.Ok(user) => {
+            // Check if account is locked
+            if user.is_locked {
+                audit_log("AUTH_LOCKED", "Authentication attempt on locked account: " + username);
+                return Result.Err("Account is locked");
+            }
+            
+            // Verify password
+            let password_valid: bool = verify_password_hash(password, user.password_hash);
+            if password_valid {
+                // Update last login
+                let update_result: Result<void, string> = database.update_last_login(user.id);
+                match update_result {
+                    Result.Err(error) => {
+                        log("ERROR", "Failed to update last login: " + error);
+                        // Continue anyway - don't fail auth for this
+                    },
+                    Result.Ok(_) => {}
+                }
+                
+                // Generate secure token
+                let token: AuthToken = generate_auth_token(user.id, user.role);
+                
+                audit_log("AUTH_SUCCESS", "User authenticated: " + username);
+                return Result.Ok(token);
+            } else {
+                // Increment failed attempts
+                let increment_result: Result<void, string> = database.increment_failed_attempts(user.id);
+                match increment_result {
+                    Result.Err(error) => {
+                        log("ERROR", "Failed to increment failed attempts: " + error);
+                    },
+                    Result.Ok(_) => {}
+                }
+                
+                audit_log("AUTH_FAILURE", "Invalid password for user: " + username);
+                return Result.Err("Authentication failed");
+            }
+        }
+    }
+}
+
+#[human_review(high)]
+fn process_financial_transaction(transaction: Transaction) -> Result<Receipt, string> {
+    // Financial operations require high-priority review for correctness and security
+    
+    // Comprehensive validation
+    let validation_result: Result<void, string> = validate_transaction_comprehensive(transaction);
+    match validation_result {
+        Result.Err(error) => {
+            audit_log("TRANSACTION_VALIDATION_FAILED", "Transaction " + (transaction.id).to_string() + ": " + error);
+            return Result.Err("Transaction validation failed: " + error);
+        },
+        Result.Ok(_) => {}
+    }
+    
+    // Check account balances and limits
+    let balance_check: Result<void, string> = check_account_balance(transaction.from_account, transaction.amount);
+    match balance_check {
+        Result.Err(error) => {
+            audit_log("TRANSACTION_INSUFFICIENT_FUNDS", "Transaction " + (transaction.id).to_string() + ": " + error);
+            return Result.Err("Insufficient funds: " + error);
+        },
+        Result.Ok(_) => {}
+    }
+    
+    let limit_check: Result<void, string> = check_transaction_limits(transaction);
+    match limit_check {
+        Result.Err(error) => {
+            audit_log("TRANSACTION_LIMIT_EXCEEDED", "Transaction " + (transaction.id).to_string() + ": " + error);
+            return Result.Err("Transaction limit exceeded: " + error);
+        },
+        Result.Ok(_) => {}
+    }
+    
+    // Fraud detection
+    let fraud_check: Result<void, string> = run_fraud_detection(transaction);
+    match fraud_check {
+        Result.Err(error) => {
+            audit_log("TRANSACTION_FRAUD_DETECTED", "Transaction " + (transaction.id).to_string() + ": " + error);
+            // Flag for manual review
+            flag_for_manual_review(transaction, "Fraud detection triggered");
+            return Result.Err("Transaction flagged for review: " + error);
+        },
+        Result.Ok(_) => {}
+    }
+    
+    // Begin database transaction
+    let db_transaction: Result<DatabaseTransaction, string> = database.begin_transaction();
+    match db_transaction {
+        Result.Err(error) => {
+            return Result.Err("Failed to begin database transaction: " + error);
+        },
+        Result.Ok(db_tx) => {
+            // Debit from source account
+            let debit_result: Result<void, string> = database.debit_account(
+                db_tx, 
+                transaction.from_account, 
+                transaction.amount
+            );
+            
+            match debit_result {
+                Result.Err(error) => {
+                    database.rollback_transaction(db_tx);
+                    audit_log("TRANSACTION_DEBIT_FAILED", "Transaction " + (transaction.id).to_string() + ": " + error);
+                    return Result.Err("Debit failed: " + error);
+                },
+                Result.Ok(_) => {
+                    // Credit to destination account
+                    let credit_result: Result<void, string> = database.credit_account(
+                        db_tx,
+                        transaction.to_account,
+                        transaction.amount
+                    );
+                    
+                    match credit_result {
+                        Result.Err(error) => {
+                            database.rollback_transaction(db_tx);
+                            audit_log("TRANSACTION_CREDIT_FAILED", "Transaction " + (transaction.id).to_string() + ": " + error);
+                            return Result.Err("Credit failed: " + error);
+                        },
+                        Result.Ok(_) => {
+                            // Record transaction
+                            let record_result: Result<void, string> = database.record_transaction(
+                                db_tx,
+                                transaction
+                            );
+                            
+                            match record_result {
+                                Result.Err(error) => {
+                                    database.rollback_transaction(db_tx);
+                                    audit_log("TRANSACTION_RECORD_FAILED", "Transaction " + (transaction.id).to_string() + ": " + error);
+                                    return Result.Err("Failed to record transaction: " + error);
+                                },
+                                Result.Ok(_) => {
+                                    // Commit transaction
+                                    let commit_result: Result<void, string> = database.commit_transaction(db_tx);
+                                    match commit_result {
+                                        Result.Err(error) => {
+                                            audit_log("TRANSACTION_COMMIT_FAILED", "Transaction " + (transaction.id).to_string() + ": " + error);
+                                            return Result.Err("Failed to commit transaction: " + error);
+                                        },
+                                        Result.Ok(_) => {
+                                            // Generate receipt
+                                            let receipt: Receipt = Receipt.new(
+                                                transaction.id,
+                                                transaction.amount,
+                                                get_current_timestamp()
+                                            );
+                                            
+                                            audit_log("TRANSACTION_SUCCESS", "Transaction " + (transaction.id).to_string() + " completed successfully");
+                                            return Result.Ok(receipt);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[human_review(high)]
+fn secure_data_encryption(plaintext: []u8, key: []u8) -> Result<EncryptedData, string> {
+    // High-security encryption operation requiring expert review
+    
+    // Validate inputs
+    if plaintext.len == 0 {
+        return Result.Err("Plaintext cannot be empty");
+    }
+    
+    if key.len != 32 {
+        return Result.Err("Key must be exactly 32 bytes (256 bits)");
+    }
+    
+    // Generate random IV
+    let iv: []u8 = allocate_slice(16); // 128-bit IV for AES
+    let iv_result: Result<void, string> = generate_secure_random(iv);
+    match iv_result {
+        Result.Err(error) => return Result.Err("Failed to generate IV: " + error)
+        Result.Ok(_) => {}
+    }
+    
+    // Allocate output buffer (plaintext + padding)
+    let padded_size: usize = calculate_padded_size(plaintext.len, 16);
+    let ciphertext: []u8 = allocate_slice(padded_size);
+    
+    // Perform encryption
+    let encrypt_result: Result<void, string> = aes_256_cbc_encrypt(
+        plaintext,
+        key,
+        iv,
+        ciphertext
+    );
+    
+    match encrypt_result {
+        Result.Err(error) => {
+            // Clear sensitive data on failure
+            secure_zero(ciphertext);
+            secure_zero(iv);
+            return Result.Err("Encryption failed: " + error);
+        },
+        Result.Ok(_) => {
+            // Generate HMAC for authentication
+            let hmac: []u8 = allocate_slice(32); // SHA-256 HMAC
+            let hmac_result: Result<void, string> = generate_hmac_sha256(
+                ciphertext,
+                key,
+                hmac
+            );
+            
+            match hmac_result {
+                Result.Err(error) => {
+                    secure_zero(ciphertext);
+                    secure_zero(iv);
+                    secure_zero(hmac);
+                    return Result.Err("HMAC generation failed: " + error);
+                },
+                Result.Ok(_) => {
+                    let encrypted_data: EncryptedData = EncryptedData.new(
+                        ciphertext,
+                        iv,
+                        hmac
+                    );
+                    
+                    return Result.Ok(encrypted_data);
+                }
+            }
+        }
+    }
+}
+
+// =============================================================================
+// CONTEXT-SPECIFIC EXAMPLES
+// =============================================================================
+
+#[human_review(medium, context = "crypto")]
+fn generate_cryptographic_salt(none) -> Result<[]u8, string> {
+    // Cryptographic salt generation - medium priority with crypto context
+    let salt: []u8 = allocate_slice(16); // 128-bit salt
+    let result: Result<void, string> = fill_random_bytes(salt);
+    
+    match result {
+        Result.Ok(_) => return Result.Ok(salt)
+        Result.Err(error) => return Result.Err("Failed to generate salt: " + error)
+    }
+}
+
+#[human_review(high, context = "concurrency")]
+fn parallel_data_processing(data: []DataChunk) -> Result<[]ProcessedData, string> {
+    // Complex concurrency patterns need careful review for race conditions
+    let results: []Result<ProcessedData, string> = allocate_slice(data.len);
+    let tasks: []Task = allocate_slice(data.len);
+    
+    // Spawn parallel processing tasks
+    for i in range(0, data.len) {
+        tasks[i] = spawn_task(|| {
+            return process_data_chunk(data[i]);
+        });
+    }
+    
+    // Collect results with timeout handling
+    for i in range(0, tasks.len) {
+        let result: Result<ProcessedData, string> = await_task_timeout(tasks[i], 30000);
+        results[i] = result;
+    }
+    
+    // Check for any failures
+    for result in results {
+        match result {
+            Result.Err(error) => return Result.Err("Processing failed: " + error)
+            Result.Ok(_) => continue
+        }
+    }
+    
+    // Extract successful results
+    let processed: []ProcessedData = allocate_slice(results.len);
+    for i in range(0, results.len) {
+        match results[i] {
+            Result.Ok(data) => processed[i] = data
+            Result.Err(_) => {} // Already handled above
+        }
+    }
+    
+    return Result.Ok(processed);
+}
+
+#[human_review(low, context = "ffi")]
+extern "libc" fn strlen(s: *const u8) -> usize;
+
+#[human_review(medium, context = "ffi")]
+fn safe_c_string_length(input: string) -> Result<usize, string> {
+    // FFI wrapper with safety checks - medium priority
+    if input.is_empty() {
+        return Result.Ok(0);
+    }
+    
+    let c_str: *const u8 = input.as_ptr();
+    let length: usize = unsafe { strlen(c_str) };
+    return Result.Ok(length);
+}
+
+#[human_review(high, context = "security")]
+fn validate_and_sanitize_input(input: string) -> Result<string, string> {
+    // Security-critical input validation and sanitization
+    if input.len > 10000 {
+        return Result.Err("Input too long - potential DoS attack");
+    }
+    
+    // Check for potential injection attacks
+    let dangerous_patterns: []string = [
+        "<script",
+        "javascript:",
+        "data:",
+        "vbscript:",
+        "onload=",
+        "onerror=",
+        "eval(",
+        "setTimeout(",
+        "setInterval("
+    ];
+    
+    let lower_input: string = input.to_lowercase();
+    for pattern in dangerous_patterns {
+        if lower_input.contains(pattern) {
+            audit_log("SECURITY_THREAT", "Dangerous pattern detected: " + pattern);
+            return Result.Err("Potentially dangerous input detected");
+        }
+    }
+    
+    // Sanitize HTML entities
+    let sanitized: string = input
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\"", "&quot;")
+        .replace("'", "&#x27;")
+        .replace("/", "&#x2F;");
+    
+    // Additional validation for SQL injection patterns
+    let sql_patterns: []string = [
+        "union select",
+        "drop table",
+        "delete from",
+        "insert into",
+        "update set",
+        "exec(",
+        "execute("
+    ];
+    
+    let lower_sanitized: string = sanitized.to_lowercase();
+    for pattern in sql_patterns {
+        if lower_sanitized.contains(pattern) {
+            audit_log("SECURITY_THREAT", "SQL injection pattern detected: " + pattern);
+            return Result.Err("Potentially malicious SQL pattern detected");
+        }
+    }
+    
+    return Result.Ok(sanitized);
+}
+
+// =============================================================================
+// HELPER FUNCTIONS (for completeness of examples)
+// =============================================================================
+
+struct Config {
+    pub timeout: i32;
+    pub host: string;
+    pub port: u16;
+    pub max_connections: i32;
+}
+
+impl Config {
+    pub fn new(none) -> Config {
+        return Config {
+            timeout: 30,
+            host: "",
+            port: 8080,
+            max_connections: 100
+        };
+    }
+}
+
+struct DataRecord {
+    pub id: i32;
+    pub type: string;
+    pub data: []u8;
+}
+
+struct ProcessedRecord {
+    pub id: i32;
+    pub category: string;
+    pub priority: i32;
+}
+
+impl ProcessedRecord {
+    pub fn new(none) -> ProcessedRecord {
+        return ProcessedRecord {
+            id: 0,
+            category: "",
+            priority: 0
+        };
+    }
+}
+
+struct AuthToken {
+    pub token: string;
+    pub expires_at: i64;
+    pub user_id: i32;
+}
+
+struct User {
+    pub id: i32;
+    pub username: string;
+    pub password_hash: []u8;
+    pub is_locked: bool;
+    pub role: string;
+}
+
+struct Transaction {
+    pub id: string;
+    pub from_account: string;
+    pub to_account: string;
+    pub amount: i64;
+    pub currency: string;
+}
+
+struct Receipt {
+    pub transaction_id: string;
+    pub amount: i64;
+    pub timestamp: i64;
+}
+
+impl Receipt {
+    pub fn new(transaction_id: string, amount: i64, timestamp: i64) -> Receipt {
+        return Receipt {
+            transaction_id: transaction_id,
+            amount: amount,
+            timestamp: timestamp
+        };
+    }
+}
+
+struct EncryptedData {
+    pub ciphertext: []u8;
+    pub iv: []u8;
+    pub hmac: []u8;
+}
+
+impl EncryptedData {
+    pub fn new(ciphertext: []u8, iv: []u8, hmac: []u8) -> EncryptedData {
+        return EncryptedData {
+            ciphertext: ciphertext,
+            iv: iv,
+            hmac: hmac
+        };
+    }
+} 

@@ -1,0 +1,86 @@
+package concurrency_demo;
+
+fn worker_a(none) -> i32 {
+    log("Worker A: Starting computation");
+    log("Worker A: Completed");
+    return 100;
+}
+
+fn worker_b(none) -> i32 {
+    log("Worker B: Starting computation");
+    log("Worker B: Completed");
+    return 200;
+}
+
+fn worker_c(none) -> i32 {
+    log("Worker C: Starting computation");
+    log("Worker C: Completed");
+    return 300;
+}
+
+fn background_logger(none) -> i32 {
+    log("Background logger: Monitoring system");
+    log("Background logger: All systems operational");
+    return 0;
+}
+
+fn main(none) -> i32 {
+    println("Starting Tier 1 concurrency demo");
+    
+    // Example 1: spawn_with_handle and await (Tier 1 concurrency)
+    let handle: TaskHandle<i32> = spawn_with_handle process_data(42);
+    println("Spawned task, waiting for result...");
+    let result: i32 = await handle;
+    println("Task completed with result: " + result.to_string());
+    
+    // Example 2: Multiple concurrent tasks
+    let handle1: TaskHandle<i32> = spawn_with_handle worker_a();
+    let handle2: TaskHandle<i32> = spawn_with_handle worker_b();
+    let handle3: TaskHandle<i32> = spawn_with_handle worker_c();
+    
+    // Await all results
+    let result1: i32 = await handle1;
+    let result2: i32 = await handle2; 
+    let result3: i32 = await handle3;
+    
+    let total: i32 = result1 + result2 + result3;
+    println("Total from all workers: " + total.to_string());
+    
+    // Example 3: Background task (fire and forget)
+    spawn background_logger();
+    
+    // Example 4: Processing arrays with spawn tasks
+    let numbers: [i32] = [1, 2, 3, 4, 5];
+    let handle_list: [TaskHandle<i32>] = [];
+    
+    // Spawn a task for each number
+    for item in numbers {
+        let h: TaskHandle<i32> = spawn_with_handle process_data(item);
+        // In a real implementation, we'd append to handle_list
+    }
+    
+    println("Tier 1 concurrency demo completed");
+    return 0;
+}
+
+fn process_data(n: i32) -> i32 {
+    // Simulate some processing
+    println("Processing data: " + n.to_string());
+    
+    // Simulate work with proper iterator-based for loop
+    let steps: [i32] = [1, 2, 3];
+    for step in steps {
+        println("Working... step " + step.to_string());
+        // In real runtime, this would call sleep function
+    }
+    
+    return n * 2;
+}
+
+fn log(message: string) {
+    println(message);
+}
+
+fn println(message: string) {
+    // Built-in function for output
+} 

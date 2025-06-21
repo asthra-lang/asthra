@@ -1,0 +1,298 @@
+// Simple Hash Package Example
+// Practical usage of stdlib/hash in a real application
+package main;
+
+import "stdlib/hash";
+
+// Simple user session cache
+pub struct UserSession {
+    pub user_id: u32,
+    pub session_token: string,
+    pub expires_at: u64,
+}
+
+// Document cache with hash-based lookup
+pub struct DocumentCache {
+    pub hasher: hash.TableHasher,
+    pub documents: []Document,
+    pub lookup_hashes: []u64,
+}
+
+pub struct Document {
+    pub id: string,
+    pub title: string,
+    pub content: string,
+}
+
+// =============================================================================
+// Session Token Generation
+// =============================================================================
+
+pub fn generate_session_token(user_id: u32, timestamp: u64) -> string {
+    // Create a secure token using SipHash
+    let key: hash.SipHashKey = hash.generate_key(none);
+    
+    // Combine user ID and timestamp for uniqueness
+    let data: string = string(user_id) + ":" + string(timestamp);
+    let token_hash: u64 = hash.hash_string(data, key);
+    
+    // Convert to hex string (simplified)
+    return "session_" + string(token_hash);
+}
+
+// =============================================================================
+// Document Cache Implementation
+// =============================================================================
+
+pub fn create_document_cache(none) -> DocumentCache {
+    return DocumentCache {
+        hasher: hash.new_table_hasher(none),  // DoS protection enabled
+        documents: [],
+        lookup_hashes: [],
+    };
+}
+
+pub fn add_document(cache: *mut DocumentCache, doc: Document) -> void {
+    // Hash the document ID for fast lookup
+    let doc_hash: u64 = hash.table_hash_string(cache.hasher, doc.id);
+    
+    // Store document and its hash
+    cache.documents.push(doc);
+    cache.lookup_hashes.push(doc_hash);
+    
+    log("Added document '" + doc.title + "' with hash: " + string(doc_hash));
+}
+
+pub fn find_document(cache: DocumentCache, doc_id: string) -> Option<Document> {
+    // Hash the search ID
+    let search_hash: u64 = hash.table_hash_string(cache.hasher, doc_id);
+    
+    // Linear search through hashes (in real implementation, use hash table)
+    for i in 0..cache.lookup_hashes.len {
+        if cache.lookup_hashes[i] == search_hash {
+            // Double-check the actual ID to avoid hash collisions
+            if cache.documents[i].id == doc_id {
+                return Option.Some(cache.documents[i]);
+            }
+        }
+    }
+    
+    return Option.None;
+}
+
+// =============================================================================
+// Data Integrity Checking
+// =============================================================================
+
+pub fn compute_document_checksum(doc: Document) -> u64 {
+    // Use streaming interface for large content
+    let key: hash.SipHashKey = hash.key_from_u64(0xDEADBEEFCAFEBABEULL, 0x123456789ABCDEF0ULL);
+    let mut ctx: hash.SipHashContext = hash.new_context(key, hash.SipHashVariant.SipHash_2_4);
+    
+    // Hash the document components
+    hash.update(&mut ctx, string_to_bytes(doc.id));
+    hash.update(&mut ctx, string_to_bytes(doc.title));
+    hash.update(&mut ctx, string_to_bytes(doc.content));
+    
+    return hash.finalize(&mut ctx);
+}
+
+pub fn verify_document_integrity(doc: Document, expected_checksum: u64) -> bool {
+    let actual_checksum: u64 = compute_document_checksum(doc);
+    return hash.compare_hashes(actual_checksum, expected_checksum);
+}
+
+// =============================================================================
+// Password Hashing (Simple Example)
+// =============================================================================
+
+pub fn hash_password(password: string, salt: string) -> u64 {
+    // Combine password and salt
+    let combined: string = password + ":" + salt;
+    
+    // Use SipHash with a fixed key for consistency
+    let key: hash.SipHashKey = hash.key_from_u64(0x9876543210FEDCBAULL, 0xABCDEF0123456789ULL);
+    
+    return hash.hash_string(combined, key);
+}
+
+pub fn verify_password(password: string, salt: string, stored_hash: u64) -> bool {
+    let computed_hash: u64 = hash_password(password, salt);
+    return hash.compare_hashes(computed_hash, stored_hash);
+}
+
+// =============================================================================
+// Batch File Processing
+// =============================================================================
+
+pub fn process_file_batch(filenames: []string) -> void {
+    log("Processing batch of " + string(filenames.len) + " files...");
+    
+    // Configure for fast hashing (FNV for file names)
+    let config: hash.HashConfig = hash.config_with_function(hash.HashFunction.FNV_1a);
+    
+    // Batch hash all filenames
+    match hash.hash_string_batch(filenames, config) {
+        Result.Ok(hashes) => {
+            log("File hash results:");
+            for i in 0..hashes.len {
+                log("  " + filenames[i] + " -> " + string(hashes[i]));
+            }
+        },
+        Result.Err(error) => {
+            log("Batch processing failed: " + error);
+        },
+    }
+}
+
+// =============================================================================
+// Simple Usage Examples
+// =============================================================================
+
+pub fn demo_simple_usage(none) -> void {
+    log("=== Simple Hash Usage Examples ===");
+    
+    // 1. Quick string hashing
+    let quick_hash: u64 = hash.hash_string("Hello, World!");
+    log("Quick hash: " + string(quick_hash));
+    
+    // 2. Generate session token
+    let session_token: string = generate_session_token(123, 1640995200);
+    log("Session token: " + session_token);
+    
+    // 3. Password hashing
+    let password_hash: u64 = hash_password("mypassword", "randomsalt123");
+    log("Password hash: " + string(password_hash));
+    
+    // 4. Verify password
+    let is_valid: bool = verify_password("mypassword", "randomsalt123", password_hash);
+    log("Password valid: " + string(is_valid));
+    
+    let is_invalid: bool = verify_password("wrongpassword", "randomsalt123", password_hash);
+    log("Wrong password valid: " + string(is_invalid));
+    
+    log("");
+}
+
+pub fn demo_document_cache(none) -> void {
+    log("=== Document Cache Demo ===");
+    
+    // Create document cache
+    let mut cache: DocumentCache = create_document_cache(none);
+    
+    // Add some documents
+    add_document(&mut cache, Document {
+        id: "doc1",
+        title: "Getting Started",
+        content: "This is an introduction to Asthra programming..."
+    });
+    
+    add_document(&mut cache, Document {
+        id: "doc2", 
+        title: "Advanced Features",
+        content: "This covers advanced topics in Asthra..."
+    });
+    
+    add_document(&mut cache, Document {
+        id: "doc3",
+        title: "Standard Library",
+        content: "Overview of Asthra's standard library..."
+    });
+    
+    // Search for documents
+    match find_document(cache, "doc2") {
+        Option.Some(doc) => {
+            log("Found document: " + doc.title);
+        },
+        Option.None => {
+            log("Document not found");
+        },
+    }
+    
+    match find_document(cache, "doc999") {
+        Option.Some(doc) => {
+            log("Found document: " + doc.title);
+        },
+        Option.None => {
+            log("Document 'doc999' not found (expected)");
+        },
+    }
+    
+    log("");
+}
+
+pub fn demo_data_integrity(none) -> void {
+    log("=== Data Integrity Demo ===");
+    
+    let doc: Document = Document {
+        id: "integrity_test",
+        title: "Test Document",
+        content: "This is test content for integrity checking."
+    };
+    
+    // Compute checksum
+    let checksum: u64 = compute_document_checksum(doc);
+    log("Document checksum: " + string(checksum));
+    
+    // Verify integrity (should pass)
+    let is_valid: bool = verify_document_integrity(doc, checksum);
+    log("Document integrity valid: " + string(is_valid));
+    
+    // Test with modified document (should fail)
+    let modified_doc: Document = Document {
+        id: "integrity_test",
+        title: "Test Document",
+        content: "This content has been modified!"
+    };
+    
+    let modified_valid: bool = verify_document_integrity(modified_doc, checksum);
+    log("Modified document integrity valid: " + string(modified_valid));
+    
+    log("");
+}
+
+pub fn demo_batch_processing(none) -> void {
+    log("=== Batch File Processing Demo ===");
+    
+    let filenames: []string = [
+        "config.json",
+        "main.asthra", 
+        "utils.asthra",
+        "README.md",
+        "Makefile"
+    ];
+    
+    process_file_batch(filenames);
+    
+    log("");
+}
+
+// =============================================================================
+// Main Function
+// =============================================================================
+
+pub fn main(none) -> i32 {
+    log("=======================================");
+    log("Simple Hash Package Usage Examples");
+    log("=======================================");
+    log("");
+    
+    demo_simple_usage(none);
+    demo_document_cache(none);
+    demo_data_integrity(none);
+    demo_batch_processing(none);
+    
+    log("=======================================");
+    log("Examples Complete!");
+    log("=======================================");
+    
+    return 0;
+}
+
+// External function declarations
+extern fn log(message: string) -> void;
+extern fn string(value: u64) -> string;
+extern fn string(value: u32) -> string;
+extern fn string(value: usize) -> string;
+extern fn string(value: bool) -> string;
+extern fn string_to_bytes(s: string) -> []u8; 

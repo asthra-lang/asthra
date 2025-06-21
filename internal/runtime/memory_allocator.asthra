@@ -1,0 +1,159 @@
+// Asthra Internal - Memory Allocator
+// Low-level memory allocation primitives for stdlib use only
+// This package is internal and should not be used by user code
+
+package internal::runtime::memory_allocator;
+
+// Internal packages can import stdlib packages
+import "stdlib/asthra/core";
+
+// ============================================================================
+// Internal Memory Allocation Primitives
+// ============================================================================
+
+// Low-level memory allocation with specific alignment
+fn alloc_aligned(size: usize, alignment: usize, zone: core::MemoryZone) -> Result<*mut void, string> {
+    extern "asthra_runtime" fn asthra_alloc_aligned(size: usize, alignment: usize, zone: u32) -> *mut void;
+    
+    unsafe {
+        let zone_id: u32 = match zone {
+            core::MemoryZone.GC => 0,
+            core::MemoryZone.Manual => 1,
+            core::MemoryZone.Pinned => 2,
+            core::MemoryZone.Stack => 3
+        };
+        
+        let ptr: *mut void = asthra_alloc_aligned(size, alignment, zone_id);
+        if ptr == null {
+            return Result.Err("Failed to allocate aligned memory");
+        }
+        
+        return Result.Ok(ptr);
+    }
+}
+
+// Memory pool management for high-performance allocations
+struct MemoryPool {
+    base_ptr: *mut void,
+    size: usize,
+    used: usize,
+    alignment: usize,
+    zone: core::MemoryZone
+}
+
+fn create_memory_pool(size: usize, alignment: usize, zone: core::MemoryZone) -> Result<MemoryPool, string> {
+    let alloc_result: Result<*mut void, string> = alloc_aligned(size, alignment, zone);
+    match alloc_result {
+        Result.Ok(ptr) => {
+            return Result.Ok(MemoryPool {
+                base_ptr: ptr,
+                size: size,
+                used: 0,
+                alignment: alignment,
+                zone: zone
+            });
+        },
+        Result.Err(error) => {
+            return Result.Err("Failed to create memory pool: " + error);
+        }
+    }
+}
+
+fn pool_alloc(pool: *mut MemoryPool, size: usize) -> Result<*mut void, string> {
+    unsafe {
+        let aligned_size: usize = align_up(size, (*pool).alignment);
+        
+        if (*pool).used + aligned_size > (*pool).size {
+            return Result.Err("Memory pool exhausted");
+        }
+        
+        let ptr: *mut void = (*pool).base_ptr + (*pool).used;
+        (*pool).used = (*pool).used + aligned_size;
+        
+        return Result.Ok(ptr);
+    }
+}
+
+fn destroy_memory_pool(pool: MemoryPool) -> Result<void, string> {
+    return core::free(pool.base_ptr, pool.zone);
+}
+
+// Memory debugging and profiling
+struct AllocationInfo {
+    ptr: *mut void,
+    size: usize,
+    zone: core::MemoryZone,
+    timestamp: u64,
+    call_site: string
+}
+
+static mut allocation_log: []AllocationInfo = [];
+
+fn log_allocation(ptr: *mut void, size: usize, zone: core::MemoryZone, call_site: string) -> void {
+    extern "asthra_runtime" fn asthra_get_timestamp(none) -> u64;
+    
+    unsafe {
+        let info: AllocationInfo = AllocationInfo {
+            ptr: ptr,
+            size: size,
+            zone: zone,
+            timestamp: asthra_get_timestamp(),
+            call_site: call_site
+        };
+        
+        allocation_log.push(info);
+    }
+}
+
+fn get_allocation_stats(none) -> (usize, usize, usize) {
+    unsafe {
+        let mut total_allocations: usize = 0;
+        let mut total_size: usize = 0;
+        let mut active_allocations: usize = 0;
+        
+        let mut i: usize = 0;
+        while i < allocation_log.len() {
+            total_allocations = total_allocations + 1;
+            total_size = total_size + allocation_log[i].size;
+            
+            // Check if allocation is still active (simplified check)
+            if allocation_log[i].ptr != null {
+                active_allocations = active_allocations + 1;
+            }
+            
+            i = i + 1;
+        }
+        
+        return (total_allocations, total_size, active_allocations);
+    }
+}
+
+// ============================================================================
+// Internal Helper Functions
+// ============================================================================
+
+fn align_up(value: usize, alignment: usize) -> usize {
+    return (value + alignment - 1) & !(alignment - 1);
+}
+
+fn is_power_of_two(value: usize) -> bool {
+    return value != 0 && (value & (value - 1)) == 0;
+}
+
+// Memory pattern filling for debugging
+fn fill_memory_pattern(ptr: *mut void, size: usize, pattern: u8) -> void {
+    extern "libc" fn memset(ptr: *mut void, value: i32, size: usize) -> *mut void;
+    
+    unsafe {
+        memset(ptr, pattern as i32, size);
+    }
+}
+
+// Memory validation
+fn validate_memory_region(ptr: *mut void, size: usize) -> bool {
+    extern "asthra_runtime" fn asthra_validate_memory(ptr: *mut void, size: usize) -> bool;
+    
+    unsafe {
+        return asthra_validate_memory(ptr, size);
+    }
+} 

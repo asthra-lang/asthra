@@ -1,0 +1,423 @@
+// Asthra Standard Library - TOML Parser Implementation
+package stdlib::toml;
+
+import "stdlib/asthra/core";
+
+// Parser state structure
+pub struct TomlParser {
+    pub input: string,
+    pub position: usize,
+    pub line: usize,
+    pub column: usize,
+    pub config: TomlConfig,
+    pub errors: []TomlError,
+    pub current_table_path: []string,
+}
+
+// =============================================================================
+// Main Parsing Functions
+// =============================================================================
+
+// Parse TOML string into document
+pub fn parse_string(input: string) -> TomlResult<TomlDocument> {
+    let config: TomlConfig = default_config();
+    return parse_string_with_config(input, config);
+}
+
+// Parse TOML string with configuration
+pub fn parse_string_with_config(input: string, config: TomlConfig) -> TomlResult<TomlDocument> {
+    let mut parser: TomlParser = new_parser(input, config);
+    let result: TomlResult<TomlDocument> = parse_document(&mut parser);
+    
+    match result {
+        TomlResult.Ok(doc) => {
+            if parser.errors.len > 0 {
+                let mut error_doc: TomlDocument = doc;
+                error_doc.parse_errors = parser.errors;
+                error_doc.has_errors = true;
+                return TomlResult.Ok(error_doc);
+            } else {
+                return TomlResult.Ok(doc);
+            }
+        },
+        TomlResult.Err(error) => {
+            return TomlResult.Err(error);
+        },
+    }
+}
+
+// Parse TOML from file
+pub fn parse_file(filename: string) -> TomlResult<TomlDocument> {
+    let file_result: Result<string, string> = read_file_to_string(filename);
+    match file_result {
+        Result.Ok(content) => {
+            return parse_string(content);
+        },
+        Result.Err(error) => {
+            return TomlResult.Err(TomlError.InternalError("File read error: " + error));
+        },
+    }
+}
+
+// =============================================================================
+// Parser Implementation
+// =============================================================================
+
+// Create new parser
+pub fn new_parser(input: string, config: TomlConfig) -> TomlParser {
+    return TomlParser {
+        input: input,
+        position: 0,
+        line: 1,
+        column: 1,
+        config: config,
+        errors: [],
+        current_table_path: [],
+    };
+}
+
+// Parse complete TOML document
+pub fn parse_document(parser: *mut TomlParser) -> TomlResult<TomlDocument> {
+    let mut document: TomlDocument = new_document();
+    
+    skip_whitespace_and_comments(parser);
+    
+    while parser.position < parser.input.len {
+        if is_at_end(parser) {
+            break;
+        }
+        
+        let parse_result: TomlResult<void> = parse_top_level_element(parser, &mut document);
+        match parse_result {
+            TomlResult.Ok(_) => {
+                skip_whitespace_and_comments(parser);
+            },
+            TomlResult.Err(error) => {
+                parser.errors.push(error);
+                advance_to_next_line(parser);
+            },
+        }
+    }
+    
+    return TomlResult.Ok(document);
+}
+
+// Parse top-level element (key-value pair or table header)
+pub fn parse_top_level_element(parser: *mut TomlParser, document: *mut TomlDocument) -> TomlResult<void> {
+    let current_char: u8 = peek_char(parser);
+    
+    if current_char == '[' as u8 {
+        return parse_table_header(parser, document);
+    } else if is_identifier_start(current_char) {
+        return parse_key_value_pair(parser, &mut document.root_table);
+    } else {
+        return TomlResult.Err(parse_error("Unexpected character", parser.line, parser.column));
+    }
+}
+
+// Parse table header [table.name]
+pub fn parse_table_header(parser: *mut TomlParser, document: *mut TomlDocument) -> TomlResult<void> {
+    consume_char(parser, '[' as u8);
+    
+    let is_array_table: bool = false;
+    if peek_char(parser) == '[' as u8 {
+        consume_char(parser, '[' as u8);
+        is_array_table = true;
+    }
+    
+    let table_name_result: TomlResult<[]string> = parse_table_name(parser);
+    match table_name_result {
+        TomlResult.Ok(table_path) => {
+            parser.current_table_path = table_path;
+            
+            consume_char(parser, ']' as u8);
+            if is_array_table {
+                consume_char(parser, ']' as u8);
+            }
+            
+            return create_table_if_needed(document, table_path, is_array_table);
+        },
+        TomlResult.Err(error) => {
+            return TomlResult.Err(error);
+        },
+    }
+}
+
+// Parse table name (dotted key path)
+pub fn parse_table_name(parser: *mut TomlParser) -> TomlResult<[]string> {
+    let mut path_parts: []string = [];
+    
+    loop {
+        let key_result: TomlResult<string> = parse_key(parser);
+        match key_result {
+            TomlResult.Ok(key) => {
+                path_parts.push(key);
+            },
+            TomlResult.Err(error) => {
+                return TomlResult.Err(error);
+            },
+        }
+        
+        skip_whitespace(parser);
+        if peek_char(parser) == '.' as u8 {
+            consume_char(parser, '.' as u8);
+            skip_whitespace(parser);
+        } else {
+            break;
+        }
+    }
+    
+    return TomlResult.Ok(path_parts);
+}
+
+// Parse key-value pair
+pub fn parse_key_value_pair(parser: *mut TomlParser, table: *mut TomlTable) -> TomlResult<void> {
+    let key_result: TomlResult<string> = parse_key(parser);
+    match key_result {
+        TomlResult.Ok(key) => {
+            skip_whitespace(parser);
+            consume_char(parser, '=' as u8);
+            skip_whitespace(parser);
+            
+            let value_result: TomlResult<TomlValue> = parse_value(parser);
+            match value_result {
+                TomlResult.Ok(value) => {
+                    return table_set(table, key, value);
+                },
+                TomlResult.Err(error) => {
+                    return TomlResult.Err(error);
+                },
+            }
+        },
+        TomlResult.Err(error) => {
+            return TomlResult.Err(error);
+        },
+    }
+}
+
+// Parse key (identifier or quoted string)
+pub fn parse_key(parser: *mut TomlParser) -> TomlResult<string> {
+    let current_char: u8 = peek_char(parser);
+    
+    if current_char == '"' as u8 {
+        return parse_quoted_key(parser);
+    } else if current_char == '\'' as u8 {
+        return parse_literal_string(parser);
+    } else if is_identifier_start(current_char) {
+        return parse_identifier(parser);
+    } else {
+        return TomlResult.Err(parse_error("Invalid key character", parser.line, parser.column));
+    }
+}
+
+// Parse identifier (unquoted key)
+pub fn parse_identifier(parser: *mut TomlParser) -> TomlResult<string> {
+    let start_pos: usize = parser.position;
+    
+    while parser.position < parser.input.len {
+        let ch: u8 = peek_char(parser);
+        if is_identifier_char(ch) {
+            advance_char(parser);
+        } else {
+            break;
+        }
+    }
+    
+    if parser.position == start_pos {
+        return TomlResult.Err(parse_error("Empty identifier", parser.line, parser.column));
+    }
+    
+    let identifier: string = substring(parser.input, start_pos, parser.position);
+    return TomlResult.Ok(identifier);
+}
+
+// Parse quoted key
+pub fn parse_quoted_key(parser: *mut TomlParser) -> TomlResult<string> {
+    return parse_basic_string(parser);
+}
+
+// Parse TOML value
+pub fn parse_value(parser: *mut TomlParser) -> TomlResult<TomlValue> {
+    skip_whitespace(parser);
+    let current_char: u8 = peek_char(parser);
+    
+    if current_char == '"' as u8 {
+        return parse_string_value(parser);
+    } else if current_char == '\'' as u8 {
+        let literal_result: TomlResult<string> = parse_literal_string(parser);
+        match literal_result {
+            TomlResult.Ok(s) => return TomlResult.Ok(TomlValue.String(s)),
+            TomlResult.Err(error) => return TomlResult.Err(error),
+        }
+    } else if current_char == '[' as u8 {
+        return parse_array(parser);
+    } else if current_char == '{' as u8 {
+        return parse_inline_table(parser);
+    } else if is_digit(current_char) || current_char == '+' as u8 || current_char == '-' as u8 {
+        return parse_number_or_datetime(parser);
+    } else if current_char == 't' as u8 || current_char == 'f' as u8 {
+        return parse_boolean(parser);
+    } else {
+        return TomlResult.Err(parse_error("Invalid value", parser.line, parser.column));
+    }
+}
+
+// Parse string value (basic or multiline)
+pub fn parse_string_value(parser: *mut TomlParser) -> TomlResult<TomlValue> {
+    if peek_ahead(parser, 3) == "\"\"\"" {
+        let multiline_result: TomlResult<string> = parse_multiline_basic_string(parser);
+        match multiline_result {
+            TomlResult.Ok(s) => return TomlResult.Ok(TomlValue.String(s)),
+            TomlResult.Err(error) => return TomlResult.Err(error),
+        }
+    } else {
+        let basic_result: TomlResult<string> = parse_basic_string(parser);
+        match basic_result {
+            TomlResult.Ok(s) => return TomlResult.Ok(TomlValue.String(s)),
+            TomlResult.Err(error) => return TomlResult.Err(error),
+        }
+    }
+}
+
+// Parse basic string
+pub fn parse_basic_string(parser: *mut TomlParser) -> TomlResult<string> {
+    consume_char(parser, '"' as u8);
+    let mut result: string = "";
+    
+    while parser.position < parser.input.len {
+        let ch: u8 = peek_char(parser);
+        
+        if ch == '"' as u8 {
+            consume_char(parser, '"' as u8);
+            return TomlResult.Ok(result);
+        } else if ch == '\\' as u8 {
+            advance_char(parser);
+            let escape_result: TomlResult<string> = parse_escape_sequence(parser);
+            match escape_result {
+                TomlResult.Ok(escaped) => {
+                    result = result + escaped;
+                },
+                TomlResult.Err(error) => {
+                    return TomlResult.Err(error);
+                },
+            }
+        } else if ch == '\n' as u8 || ch == '\r' as u8 {
+            return TomlResult.Err(parse_error("Unescaped newline in string", parser.line, parser.column));
+        } else {
+            result = result + char_to_string(ch);
+            advance_char(parser);
+        }
+    }
+    
+    return TomlResult.Err(parse_error("Unterminated string", parser.line, parser.column));
+}
+
+// Parse number or datetime
+pub fn parse_number_or_datetime(parser: *mut TomlParser) -> TomlResult<TomlValue> {
+    let start_pos: usize = parser.position;
+    let number_text: string = parse_number_text(parser);
+    
+    // Check if it's a datetime (contains 'T' or 'Z')
+    if string_contains(number_text, "T") || string_contains(number_text, "Z") || string_contains(number_text, ":") {
+        return TomlResult.Ok(TomlValue.DateTime(number_text));
+    }
+    
+    // Try to parse as integer first
+    if !string_contains(number_text, ".") && !string_contains(number_text, "e") && !string_contains(number_text, "E") {
+        let int_result: Result<i64, string> = parse_i64(number_text);
+        match int_result {
+            Result.Ok(i) => return TomlResult.Ok(TomlValue.Integer(i)),
+            Result.Err(_) => {
+                // Fall through to float parsing
+            },
+        }
+    }
+    
+    // Parse as float
+    let float_result: Result<f64, string> = parse_f64(number_text);
+    match float_result {
+        Result.Ok(f) => return TomlResult.Ok(TomlValue.Float(f)),
+        Result.Err(error) => return TomlResult.Err(parse_error("Invalid number: " + error, parser.line, parser.column)),
+    }
+}
+
+// Parse boolean value
+pub fn parse_boolean(parser: *mut TomlParser) -> TomlResult<TomlValue> {
+    if match_string(parser, "true") {
+        advance_string(parser, "true");
+        return TomlResult.Ok(TomlValue.Boolean(true));
+    } else if match_string(parser, "false") {
+        advance_string(parser, "false");
+        return TomlResult.Ok(TomlValue.Boolean(false));
+    } else {
+        return TomlResult.Err(parse_error("Invalid boolean value", parser.line, parser.column));
+    }
+}
+
+// =============================================================================
+// Helper Functions
+// =============================================================================
+
+// Check if at end of input
+priv fn is_at_end(parser: *TomlParser) -> bool {
+    return parser.position >= parser.input.len;
+}
+
+// Peek current character
+priv fn peek_char(parser: *TomlParser) -> u8 {
+    if is_at_end(parser) {
+        return 0;
+    }
+    return string_byte_at(parser.input, parser.position);
+}
+
+// Advance to next character
+priv fn advance_char(parser: *mut TomlParser) -> void {
+    if !is_at_end(parser) {
+        let ch: u8 = string_byte_at(parser.input, parser.position);
+        parser.position = parser.position + 1;
+        
+        if ch == '\n' as u8 {
+            parser.line = parser.line + 1;
+            parser.column = 1;
+        } else {
+            parser.column = parser.column + 1;
+        }
+    }
+}
+
+// Skip whitespace
+priv fn skip_whitespace(parser: *mut TomlParser) -> void {
+    while !is_at_end(parser) {
+        let ch: u8 = peek_char(parser);
+        if ch == ' ' as u8 || ch == '\t' as u8 {
+            advance_char(parser);
+        } else {
+            break;
+        }
+    }
+}
+
+// Skip whitespace and comments
+priv fn skip_whitespace_and_comments(parser: *mut TomlParser) -> void {
+    loop {
+        skip_whitespace(parser);
+        
+        if peek_char(parser) == '#' as u8 {
+            skip_comment(parser);
+        } else if peek_char(parser) == '\n' as u8 || peek_char(parser) == '\r' as u8 {
+            advance_char(parser);
+        } else {
+            break;
+        }
+    }
+}
+
+// External functions (implemented in runtime)
+extern fn read_file_to_string(filename: string) -> Result<string, string>;
+extern fn substring(s: string, start: usize, end: usize) -> string;
+extern fn string_byte_at(s: string, index: usize) -> u8;
+extern fn char_to_string(ch: u8) -> string;
+extern fn string_contains(s: string, substr: string) -> bool;
+extern fn parse_i64(s: string) -> Result<i64, string>;
+extern fn parse_f64(s: string) -> Result<f64, string>; 

@@ -1,0 +1,17 @@
+/**
+ * Asthra Programming Language Compiler - Statement Grammar Productions Implementation
+ * Statement parsing including control flow and declarations
+ * 
+ * Copyright (c) 2024 Asthra Project
+ * Licensed under the terms specified in LICENSE
+ */
+
+// This file now serves as a wrapper for the modularized statement grammar components.
+// The actual implementations are split across multiple focused files for better maintainability.
+
+// Include all the modular statement grammar implementations
+#include "grammar_statements_core.c"       // Core statements (var_decl, return_stmt, expr_stmt, etc.)
+#include "grammar_statements_control.c"    // Control flow statements (if, for, match)
+#include "grammar_statements_concurrency.c" // Concurrency statements (spawn, log)
+#include "grammar_statements_types.c"      // Type parsing functions
+#include "grammar_statements_utils.c"      // Helper functions and utilities 

@@ -1,0 +1,441 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Asthra Grammar Compliance Rules
+
+## Overview
+
+This rule ensures that **ALL** Asthra code generation strictly conforms to the PEG grammar defined in `grammar.txt`. These rules are critical for maintaining AI generation compatibility and preventing syntax errors in generated code.
+
+## Master Grammar Authority
+
+**CRITICAL**: The `grammar.txt` file is the **single source of truth** for all Asthra language syntax. No code should be generated that violates this grammar specification.
+
+### Grammar Compliance Priorities
+
+1. **AI Generation Compatibility**: Use only simple, predictable syntax patterns
+2. **Strict Grammar Adherence**: Every token and construct must be defined in `grammar.txt`
+3. **No Undefined Features**: Never use language features not explicitly defined
+4. **Consistent Patterns**: Follow established conventions for maximum predictability
+
+## Forbidden Language Features
+
+### ❌ **NEVER USE - Not Defined in Grammar**
+
+**Traits and Interfaces**:
+```asthra
+// ❌ FORBIDDEN: trait syntax does not exist
+trait Serializable {
+    fn serialize(self) -> []u8;
+}
+
+// ❌ FORBIDDEN: impl trait syntax does not exist
+impl Serializable for MyStruct {
+    fn serialize(self) -> []u8 { ... }
+}
+
+// ❌ FORBIDDEN: trait bounds do not exist
+fn process<T: Clone + Debug>(item: T) -> T { ... }
+
+// ❌ FORBIDDEN: dyn trait objects do not exist
+let items: []Box<dyn Drawable> = [...];
+```
+
+**Advanced Generic Features**:
+```asthra
+// ❌ FORBIDDEN: generic type constraints not in grammar
+fn sort<T: Ord>(items: []T) -> []T { ... }
+
+// ❌ FORBIDDEN: where clauses do not exist
+fn complex<T>(item: T) -> T where T: Clone + Send { ... }
+
+// ❌ FORBIDDEN: associated types do not exist
+type Output = T::Item;
+
+// ❌ FORBIDDEN: generic lifetime parameters not in grammar
+fn borrow<'a>(item: &'a T) -> &'a T { ... }
+```
+
+**Advanced Syntax Features**:
+```asthra
+// ❌ FORBIDDEN: closures/lambdas not in grammar
+let closure = |x| x + 1;
+let mapped = items.map(|x| x * 2);
+
+// ❌ FORBIDDEN: async/await beyond basic spawn/await
+async fn fetch_data() -> Result<Data, Error> { ... }
+
+// ❌ FORBIDDEN: macros not in grammar
+macro_rules! debug_print { ... }
+
+// ❌ FORBIDDEN: tuple types not in grammar
+let point: (f64, f64) = (3.0, 4.0);
+
+// ❌ FORBIDDEN: reference types beyond pointers
+let borrowed: &T = &value;
+let mutable: &mut T = &mut value;
+```
+
+## ✅ **Required Grammar-Compliant Patterns**
+
+### Program Structure
+```asthra
+// ✅ REQUIRED: Every file must start with package declaration
+package my_module;
+
+// ✅ ALLOWED: Import declarations with string paths
+import "concurrent/channels";
+import "system/io" as io;
+
+// ✅ REQUIRED: Top-level declarations only
+fn main() -> int { return 0; }
+pub struct Point { x: f64; y: f64; }
+pub enum Result<T, E> { Ok(T), Err(E) }
+```
+
+### Function Declarations
+```asthra
+// ✅ CORRECT: Standard function declaration
+fn calculate_distance(x1: f64, y1: f64, x2: f64, y2: f64) -> f64 {
+    let dx: f64 = x2 - x1;
+    let dy: f64 = y2 - y1;
+    return sqrt(dx * dx + dy * dy);
+}
+
+// ✅ CORRECT: External function declaration
+extern "libc" fn malloc(size: usize) -> *mut void;
+
+// ✅ CORRECT: Method in impl block
+impl Point {
+    pub fn new(x: f64, y: f64) -> Point {
+        return Point { x: x, y: y };
+    }
+    
+    pub fn distance(self) -> f64 {
+        return sqrt(self.x * self.x + self.y * self.y);
+    }
+}
+```
+
+### Type System Compliance
+```asthra
+// ✅ CORRECT: Only grammar-defined types
+fn process_data(
+    numbers: []int,           // Slice type
+    result: Result<int, string>, // Result type
+    ptr: *mut u8,            // Pointer type
+    size: usize              // Base type
+) -> bool {
+    return true;
+}
+
+// ✅ CORRECT: Struct and enum definitions
+pub struct Config {
+    pub debug_mode: bool;
+    timeout_ms: u32;
+}
+
+pub enum Status {
+    Pending,
+    Running(u32),
+    Complete(string),
+    Failed(string)
+}
+```
+
+### Pattern Matching and Control Flow
+```asthra
+// ✅ CORRECT: Match statements with enum patterns
+fn handle_result(result: Result<int, string>) -> int {
+    match result {
+        Result.Ok(value) => {
+            return value;
+        },
+        Result.Err(msg) => {
+            return -1;
+        }
+    }
+}
+
+// ✅ CORRECT: If-let patterns
+if let Result.Ok(value) = try_parse(input) {
+    return value;
+} else {
+    return 0;
+}
+
+// ✅ CORRECT: For loops with ranges
+for i in 0..10 {
+    process_item(i);
+}
+```
+
+### Expressions and Operators
+```asthra
+// ✅ CORRECT: Grammar-defined expressions
+fn calculate() -> f64 {
+    let a: f64 = 10.0;
+    let b: f64 = 20.0;
+    
+    // Arithmetic
+    let sum: f64 = a + b;
+    let product: f64 = a * b;
+    
+    // Comparison
+    let is_greater: bool = a > b;
+    let is_equal: bool = a == b;
+    
+    // Logical
+    let result: bool = is_greater && !is_equal;
+    
+    // Function calls
+    let distance: f64 = Point::new(a, b).distance();
+    
+    return distance;
+}
+```
+
+### Concurrency Patterns (Tier 1 Only)
+```asthra
+// ✅ CORRECT: Basic spawn and await
+#[non_deterministic]
+fn concurrent_example() -> Result<int, string> {
+    // Basic spawn
+    spawn process_background_task();
+    
+    // Spawn with handle and await
+    let handle = spawn_with_handle calculate_value(42);
+    let result = await handle;
+    
+    return result;
+}
+```
+
+### Annotations and Attributes
+```asthra
+// ✅ CORRECT: Grammar-defined annotations
+#[human_review(high)]
+#[non_deterministic]
+pub fn critical_function() -> Result<(), string> {
+    return Result.Ok(());
+}
+
+#[ownership(gc)]
+pub struct ManagedData {
+    data: []u8;
+}
+
+// ✅ CORRECT: FFI annotations
+extern "libc" fn read(
+    #[transfer_none] fd: int,
+    #[transfer_full] buf: *mut u8,
+    count: usize
+) -> #[transfer_none] isize;
+```
+
+## AI-Friendly Code Generation Guidelines
+
+### Use Simple, Predictable Patterns
+```asthra
+// ✅ AI-FRIENDLY: Explicit, verbose, predictable
+fn process_user_data(user_id: int) -> Result<string, string> {
+    let user_result = database_get_user(user_id);
+    match user_result {
+        Result.Ok(user) => {
+            let profile_result = build_user_profile(user);
+            match profile_result {
+                Result.Ok(profile) => {
+                    return Result.Ok(profile);
+                },
+                Result.Err(error) => {
+                    return Result.Err("Profile error: " + error);
+                }
+            }
+        },
+        Result.Err(error) => {
+            return Result.Err("Database error: " + error);
+        }
+    }
+}
+
+// ❌ AVOID: Implicit, complex chaining
+fn process_user_data_complex(user_id: int) -> Result<string, string> {
+    database_get_user(user_id)?.build_profile()?.optimize()
+}
+```
+
+### Function Pointer Patterns (Instead of Traits)
+```asthra
+// ✅ AI-FRIENDLY: Function pointers for polymorphism
+pub type TaskFunction = fn(*const void) -> Result<*mut void, string>;
+pub type CleanupFunction = fn(*mut void) -> void;
+
+pub struct Task {
+    execute_fn: TaskFunction;
+    cleanup_fn: CleanupFunction;
+    data: *mut void;
+}
+
+impl Task {
+    pub fn execute(self) -> Result<*mut void, string> {
+        return (self.execute_fn)(self.data);
+    }
+}
+```
+
+### Enum-Based Polymorphism (Instead of Traits)
+```asthra
+// ✅ AI-FRIENDLY: Enums for tagged unions
+pub enum Shape {
+    Circle(Circle),
+    Rectangle(Rectangle),
+    Triangle(Triangle)
+}
+
+impl Shape {
+    pub fn area(self) -> f64 {
+        match self {
+            Shape.Circle(c) => {
+                return 3.14159 * c.radius * c.radius;
+            },
+            Shape.Rectangle(r) => {
+                return r.width * r.height;
+            },
+            Shape.Triangle(t) => {
+                return 0.5 * t.base * t.height;
+            }
+        }
+    }
+}
+```
+
+## Grammar Validation Checklist
+
+Before generating any Asthra code, verify:
+
+### ✅ **Syntax Validation**
+- [ ] Package declaration present and correctly formatted
+- [ ] All imports use string literals, not angle brackets
+- [ ] Function signatures match `FunctionDecl` grammar rule
+- [ ] All types are defined in `Type` grammar rule
+- [ ] Variable declarations follow `VarDecl` pattern
+- [ ] Control flow uses only `IfStmt`, `ForStmt`, `MatchStmt`
+- [ ] Expressions follow `Expr` precedence rules
+
+### ✅ **Token Validation**
+- [ ] All identifiers avoid reserved keywords
+- [ ] Operators use only grammar-defined symbols
+- [ ] String literals use proper escape sequences
+- [ ] Numeric literals follow `INT`/`FLOAT` patterns
+- [ ] Comments use `//` or `/* */` syntax
+
+### ✅ **Structure Validation**
+- [ ] Impl blocks only contain method declarations
+- [ ] Struct fields use proper `StructField` syntax
+- [ ] Enum variants follow `EnumVariant` patterns
+- [ ] Pattern matching uses only defined patterns
+- [ ] Annotations use grammar-defined format
+
+### ✅ **Feature Restriction Validation**
+- [ ] No trait definitions or implementations
+- [ ] No generic constraints or where clauses
+- [ ] No closure or lambda syntax
+- [ ] No tuple types or destructuring
+- [ ] No reference types beyond pointers
+- [ ] No async/await beyond basic spawn/await
+- [ ] No macro definitions or calls
+
+## Error Prevention Rules
+
+### Common Grammar Violations to Avoid
+
+**Incorrect Import Syntax**:
+```asthra
+// ❌ WRONG: Angle bracket imports don't exist
+import <stdio>;
+
+// ✅ CORRECT: String imports only
+import "system/stdio";
+```
+
+**Incorrect Generic Syntax**:
+```asthra
+// ❌ WRONG: Generic constraints not in grammar
+struct Container<T: Clone> { ... }
+
+// ✅ CORRECT: Simple generic parameters only
+enum Option<T> {
+    Some(T),
+    None
+}
+```
+
+**Incorrect Method Syntax**:
+```asthra
+// ❌ WRONG: Methods must be in impl blocks
+struct Point {
+    x: f64;
+    y: f64;
+    
+    fn distance(self) -> f64 { ... } // Not allowed in struct
+}
+
+// ✅ CORRECT: Methods in separate impl block
+struct Point { x: f64; y: f64; }
+
+impl Point {
+    fn distance(self) -> f64 { ... }
+}
+```
+
+**Incorrect Expression Syntax**:
+```asthra
+// ❌ WRONG: Chained calls not in grammar
+result.map(|x| x + 1).filter(|x| x > 0);
+
+// ✅ CORRECT: Explicit control flow
+match result {
+    Result.Ok(value) => {
+        let incremented = value + 1;
+        if incremented > 0 {
+            return Result.Ok(incremented);
+        } else {
+            return Result.Err("Value too small");
+        }
+    },
+    Result.Err(error) => {
+        return Result.Err(error);
+    }
+}
+```
+
+## Integration with Other Rules
+
+This grammar compliance rule works in conjunction with:
+
+- **Document Purpose and Scope**: Grammar examples in documentation must be compliant
+- **Testing and Benchmarking**: All test code must follow grammar rules
+- **C17 Modernization**: FFI code must use proper extern declarations
+- **Build and Deployment**: Generated build scripts must use valid syntax
+
+## Maintenance and Updates
+
+### When Grammar Changes
+1. Update this rule file immediately
+2. Audit existing code for compliance
+3. Update code generation templates
+4. Validate all documentation examples
+5. Run full test suite for syntax errors
+
+### Validation Process
+1. Parse all generated code with grammar rules
+2. Check for forbidden language features
+3. Verify AI-friendly pattern usage
+4. Ensure consistent style and structure
+5. Test compilation and execution
+
+**Last Updated**: 2024-12-28
+**Grammar Version**: Asthra v1.4 (grammar.txt)
+**Rule Version**: 1.0

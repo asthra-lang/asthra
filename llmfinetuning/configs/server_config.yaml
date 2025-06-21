@@ -1,0 +1,191 @@
+# OpenAI-Compatible Server Configuration for Asthra Models
+# Supports both vLLM and FastAPI server implementations
+
+server:
+  # Basic server settings
+  host: "0.0.0.0"
+  port: 8000
+  log_level: "info"
+  
+  # Model settings
+  served_model_name: "asthra-gemma3-4b"
+  max_model_len: 32768
+  max_context_length: 30720  # Leave room for generation
+  
+  # Performance settings
+  gpu_memory_utilization: 0.9
+  tensor_parallel_size: 1
+  dtype: "auto"
+  
+  # Generation defaults
+  default_temperature: 0.7
+  default_top_p: 0.9
+  default_top_k: 50
+  default_max_tokens: 2048
+  
+  # Advanced settings
+  quantization: null  # or "awq", "gptq" for quantized models
+  chat_template: null  # Auto-detect from model
+  response_role: "assistant"
+  
+  # Security settings
+  cors_enabled: true
+  cors_origins: ["*"]
+  api_key_required: false
+  api_key: null
+
+# Model-specific configurations
+models:
+  asthra-gemma3-4b:
+    base_model: "google/gemma-3-4b-it"
+    description: "Fine-tuned Gemma 3 4B for Asthra programming"
+    max_tokens: 32768
+    context_window: 32768
+    specialized_for: ["code_generation", "asthra_programming", "debugging"]
+    
+  asthra-codellama-7b:
+    base_model: "codellama/CodeLlama-7b-Instruct-hf"
+    description: "Fine-tuned CodeLlama 7B for Asthra programming"
+    max_tokens: 16384
+    context_window: 16384
+    specialized_for: ["code_generation", "asthra_programming", "completion"]
+
+# vLLM-specific settings
+vllm:
+  # Engine settings
+  worker_use_ray: false
+  engine_use_ray: false
+  disable_log_stats: false
+  disable_log_requests: false
+  
+  # Memory management
+  swap_space: 4  # GB
+  cpu_offload_gb: 0
+  
+  # Performance optimizations
+  enable_prefix_caching: true
+  enable_chunked_prefill: true
+  max_num_batched_tokens: 8192
+  max_num_seqs: 256
+  
+  # Speculative decoding (if supported)
+  speculative_model: null
+  num_speculative_tokens: 0
+
+# FastAPI-specific settings
+fastapi:
+  # Server settings
+  workers: 1
+  reload: false
+  access_log: true
+  
+  # Model loading
+  device_map: "auto"
+  torch_dtype: "float16"  # or "float32" for CPU
+  low_cpu_mem_usage: true
+  
+  # Generation settings
+  use_cache: true
+  do_sample: true
+  repetition_penalty: 1.1
+  
+  # Streaming settings
+  streaming_timeout: 30
+  chunk_size: 1
+
+# Monitoring and logging
+monitoring:
+  # Metrics collection
+  enable_metrics: true
+  metrics_port: 8001
+  
+  # Request logging
+  log_requests: true
+  log_responses: false  # Set to true for debugging
+  
+  # Performance monitoring
+  track_latency: true
+  track_throughput: true
+  track_memory_usage: true
+  
+  # Health checks
+  health_check_interval: 30
+  model_warmup: true
+
+# Rate limiting (optional)
+rate_limiting:
+  enabled: false
+  requests_per_minute: 60
+  burst_size: 10
+  
+# Authentication (optional)
+auth:
+  enabled: false
+  api_key_header: "Authorization"
+  api_key_prefix: "Bearer "
+  
+# Deployment configurations
+deployment:
+  # Docker settings
+  docker:
+    image_tag: "asthra-api:latest"
+    container_port: 8000
+    memory_limit: "16Gi"
+    cpu_limit: "8"
+    
+  # Kubernetes settings
+  kubernetes:
+    namespace: "asthra-ai"
+    replicas: 1
+    service_type: "ClusterIP"
+    ingress_enabled: true
+    ingress_host: "asthra-api.example.com"
+    
+  # Cloud settings
+  cloud:
+    provider: "local"  # or "aws", "gcp", "azure"
+    instance_type: "gpu.large"
+    auto_scaling: false
+
+# Model registry
+registry:
+  # Model paths
+  models_dir: "./outputs/"
+  cache_dir: "./cache/"
+  
+  # Model management
+  auto_discovery: true
+  model_formats: ["huggingface", "gguf", "onnx"]
+  
+  # Model metadata
+  track_versions: true
+  validate_checksums: true
+
+# Development settings
+development:
+  debug_mode: false
+  hot_reload: false
+  mock_responses: false
+  
+  # Testing
+  test_prompts:
+    - "Write a Hello World program in Asthra"
+    - "Create an Asthra function that calculates factorial"
+    - "Explain Asthra's memory management system"
+  
+# Production optimizations
+production:
+  # Performance
+  precompile_models: true
+  batch_processing: true
+  request_queuing: true
+  
+  # Reliability
+  graceful_shutdown: true
+  shutdown_timeout: 30
+  health_checks: true
+  
+  # Security
+  request_validation: true
+  input_sanitization: true
+  output_filtering: false 

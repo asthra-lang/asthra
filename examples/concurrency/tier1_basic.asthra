@@ -1,0 +1,641 @@
+// Asthra Tier 1 Concurrency Examples
+// Simple, AI-friendly, deterministic concurrency patterns
+
+// ============================================================================
+// Example 1: Basic Task Spawning
+// ============================================================================
+
+fn example_basic_spawn() {
+    println("Starting background tasks...");
+    
+    // Fire-and-forget tasks
+    spawn cleanup_temp_files();
+    spawn update_metrics();
+    spawn send_heartbeat();
+    
+    println("All background tasks started");
+}
+
+fn cleanup_temp_files() {
+    println("Cleaning up temporary files...");
+    // Simulate cleanup work
+    for i in 0..100 {
+        process_temp_file(i);
+    }
+    println("Cleanup completed");
+}
+
+fn update_metrics() {
+    println("Updating system metrics...");
+    // Simulate metrics update
+    for i in 0..50 {
+        collect_metric(i);
+    }
+    println("Metrics updated");
+}
+
+fn send_heartbeat() {
+    println("Sending heartbeat...");
+    // Simulate heartbeat
+    for i in 0..10 {
+        send_ping(i);
+    }
+    println("Heartbeat sent");
+}
+
+// ============================================================================
+// Example 2: Tasks with Result Collection
+// ============================================================================
+
+fn example_result_collection(none) -> Result<Vec<i32>, string> {
+    println("Computing results in parallel...");
+    
+    let handles: auto  // Array - manual review needed = [];
+    
+    // Start multiple computation tasks
+    for i in 0..10 {
+        let handle: auto  // Manual review needed = spawn_with_handle compute_square(i);
+        handles.push(handle);
+    }
+    
+    // Collect all results
+    let mut results = [];
+    for handle in handles {
+        let result_result: auto  // Manual review needed = await handle;
+        let result: auto  // Match unwrap - manual review needed = match result_result {;
+            Result.Ok(value) => value
+            Result.Err(e) => return Result.Err(e)
+        };
+        results.push(result);
+    }
+    
+    println("All computations completed");
+    Result.Ok(results)
+}
+
+fn compute_square(n: i32) -> Result<i32, string> {
+    if n < 0 {
+        Result.Err("Cannot compute square of negative number".to_string())
+    } else {
+        let result: auto  // Manual review needed = n * n;
+        println("Square of {} is {}", n, result);
+        Result.Ok(result)
+    }
+}
+
+// ============================================================================
+// Example 3: Parallel File Processing
+// ============================================================================
+
+struct FileInfo {
+    name: string,
+    size: usize,
+    checksum: string,
+}
+
+fn example_parallel_file_processing(none) -> Result<Vec<FileInfo>, string> {
+    let filenames: auto  // Manual review needed = vec![;
+        "document1.txt".to_string(),
+        "document2.txt".to_string(),
+        "document3.txt".to_string(),
+        "document4.txt".to_string(),
+        "document5.txt".to_string(),
+    ];
+    
+    println("Processing {} files in parallel...", filenames.len());
+    
+    let mut handles = [];
+    
+    // Start processing all files concurrently
+    for filename in filenames {
+        let handle: auto  // Manual review needed = spawn_with_handle process_file(filename);
+        handles.push(handle);
+    }
+    
+    // Collect all file information
+    let mut file_infos = [];
+    for (index, handle) in handles.enumerate() {
+        match await handle {
+            Result.Ok(info) => file_infos.push(info)
+            Result.Err(error) => {
+                println("Failed to process file {}: {}", index, error);
+                return Result.Err(format!("File processing failed: {}", error));
+            }
+        }
+    }
+    
+    println("All files processed successfully");
+    Result.Ok(file_infos)
+}
+
+fn process_file(filename: string) -> Result<FileInfo, string> {
+    println("Processing file: {}", filename);
+    
+    // Simulate file reading and processing
+    let content_result: auto  // Manual review needed = read_file_content(filename.clone());
+    let content: auto  // Match unwrap - manual review needed = match content_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    let size: auto  // Manual review needed = content.len();
+    let checksum_result: auto  // Manual review needed = calculate_checksum(content);
+    let checksum: auto  // Match unwrap - manual review needed = match checksum_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    
+    Result.Ok(FileInfo {
+        name: filename,
+        size: size,
+        checksum: checksum,
+    })
+}
+
+fn read_file_content(filename: string) -> Result<string, string> {
+    // Simulate file reading with potential errors
+    if filename.contains("invalid") {
+        Result.Err("Invalid file format".to_string())
+    } else {
+        // Simulate content based on filename
+        let content: auto  // Manual review needed = format!("Content of {}", filename);
+        Result.Ok(content)
+    }
+}
+
+fn calculate_checksum(content: string) -> Result<string, string> {
+    // Simulate checksum calculation
+    let hash: auto  // Manual review needed = content.len() * 31; // Simple hash;
+    Result.Ok(format!("hash_{}", hash))
+}
+
+// ============================================================================
+// Example 4: Sequential Dependencies with Error Handling
+// ============================================================================
+
+fn example_sequential_dependencies(none) -> Result<string, string> {
+    println("Starting sequential processing pipeline...");
+    
+    // Step 1: Data preparation
+    let prep_handle: auto  // Manual review needed = spawn_with_handle prepare_data();
+    let prepared_data_result: auto  // Manual review needed = await prep_handle;
+    let prepared_data: auto  // Match unwrap - manual review needed = match prepared_data_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println("Data preparation completed: {}", prepared_data);
+    
+    // Step 2: Data processing (depends on step 1)
+    let process_handle: auto  // Manual review needed = spawn_with_handle process_data(prepared_data);
+    let processed_data_result: auto  // Manual review needed = await process_handle;
+    let processed_data: auto  // Match unwrap - manual review needed = match processed_data_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println("Data processing completed: {}", processed_data);
+    
+    // Step 3: Data finalization (depends on step 2)
+    let finalize_handle: auto  // Manual review needed = spawn_with_handle finalize_data(processed_data);
+    let final_result_result: auto  // Manual review needed = await finalize_handle;
+    let final_result: auto  // Match unwrap - manual review needed = match final_result_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println("Data finalization completed: {}", final_result);
+    
+    Result.Ok(final_result)
+}
+
+fn prepare_data(none) -> Result<string, string> {
+    println("Preparing data...");
+    // Simulate data preparation work
+    for i in 0..100 {
+        process_raw_data_chunk(i);
+    }
+    Result.Ok("prepared_dataset_v1".to_string())
+}
+
+fn process_data(input: string) -> Result<string, string> {
+    if input.is_empty() {
+        return Result.Err("Cannot process empty input".to_string());
+    }
+    
+    println("Processing data: {}", input);
+    // Simulate data processing work
+    for i in 0..200 {
+        analyze_data_point(i);
+    }
+    Result.Ok(format!("processed_{}", input))
+}
+
+fn finalize_data(input: string) -> Result<string, string> {
+    if input.is_empty() {
+        return Result.Err("Cannot finalize empty input".to_string());
+    }
+    
+    println("Finalizing data: {}", input);
+    // Simulate data finalization work
+    for i in 0..50 {
+        create_final_output(i);
+    }
+    Result.Ok(format!("final_{}", input))
+}
+
+// ============================================================================
+// Example 5: CPU-Bound Parallel Computation
+// ============================================================================
+
+fn example_cpu_bound_computation(none) -> Result<Vec<i64>, string> {
+    let numbers: auto  // Manual review needed = vec![25, 30, 35, 40, 45, 50];
+    
+    println("Computing Fibonacci numbers in parallel...");
+    
+    let mut handles = [];
+    
+    // Start Fibonacci computation for each number
+    for number in numbers {
+        let handle: auto  // Manual review needed = spawn_with_handle compute_fibonacci(number);
+        handles.push(handle);
+    }
+    
+    // Collect all Fibonacci results
+    let mut fibonacci_results = [];
+    for (index, handle) in handles.enumerate() {
+        match await handle {
+            Result.Ok(result) => {
+                println("Fibonacci result {}: {}", index, result);
+                fibonacci_results.push(result);
+            },
+            Result.Err(error) => {
+                return Result.Err(format!("Fibonacci computation failed: {}", error));
+            }
+        }
+    }
+    
+    Result.Ok(fibonacci_results)
+}
+
+fn compute_fibonacci(n: i32) -> Result<i64, string> {
+    if n < 0 {
+        return Result.Err("Fibonacci not defined for negative numbers".to_string());
+    }
+    
+    if n <= 1 {
+        return Result.Ok(n as i64);
+    }
+    
+    // Iterative computation to avoid stack overflow
+    let mut a = 0i64;
+    let mut b = 1i64;
+    
+    for _ in 2..=n {
+        let temp: auto  // Manual review needed = a + b;
+        a = b;
+        b = temp;
+    }
+    
+    Result.Ok(b)
+}
+
+// ============================================================================
+// Example 6: Matrix Multiplication with Work Division
+// ============================================================================
+
+struct Matrix {
+    data: Vec<Vec<i32>>,
+    rows: usize,
+    cols: usize,
+}
+
+impl Matrix {
+    fn new(rows: usize, cols: usize) -> Matrix {
+        let mut data = Vec::with_capacity(rows);
+        for i in 0..rows {
+            let mut row = Vec::with_capacity(cols);
+            for j in 0..cols {
+                row.push((i * cols + j) as i32); // Sample data
+            }
+            data.push(row);
+        }
+        
+        Matrix {
+            data: data,
+            rows: rows,
+            cols: cols,
+        }
+    }
+    
+    fn get(&self, row: usize, col: usize) -> i32 {
+        self.data[row][col]
+    }
+    
+    fn set(&mut self, row: usize, col: usize, value: i32) {
+        self.data[row][col] = value;
+    }
+}
+
+fn example_parallel_matrix_multiply(none) -> Result<Matrix, string> {
+    let size: i32 = 100;
+    let matrix_a: auto  // Function call - manual review needed = Matrix::new(size, size);
+    let matrix_b: auto  // Function call - manual review needed = Matrix::new(size, size);
+    
+    println("Multiplying {}x{} matrices in parallel...", size, size);
+    
+    let cpu_count: auto  // Manual review needed = get_cpu_count();
+    let chunk_size: auto  // Manual review needed = max(1, size / cpu_count);
+    
+    let mut handles = [];
+    
+    // Divide work among available CPUs
+    for start_row in (0..size).step_by(chunk_size) {
+        let end_row: auto  // Manual review needed = min(start_row + chunk_size, size);
+        let a_clone: auto  // Manual review needed = matrix_a.clone();
+        let b_clone: auto  // Manual review needed = matrix_b.clone();
+        
+        let handle: auto  // Manual review needed = spawn_with_handle move || {;
+            multiply_matrix_chunk(a_clone, b_clone, start_row, end_row)
+        };
+        handles.push(handle);
+    }
+    
+    // Collect all chunk results
+    let mut result_chunks = [];
+    for handle in handles {
+        let chunk_result: auto  // Manual review needed = await handle;
+        let chunk: auto  // Match unwrap - manual review needed = match chunk_result {;
+            Result.Ok(value) => value
+            Result.Err(e) => return Result.Err(e)
+        };
+        result_chunks.push(chunk);
+    }
+    
+    // Combine chunks into final result
+    let result_result: auto  // Manual review needed = combine_matrix_chunks(result_chunks, size, size);
+    let result: auto  // Match unwrap - manual review needed = match result_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    
+    println("Matrix multiplication completed");
+    Result.Ok(result)
+}
+
+fn multiply_matrix_chunk(a: Matrix, b: Matrix, start_row: usize, end_row: usize) -> Result<MatrixChunk, string> {
+    let mut chunk_data = [];
+    
+    for i in start_row..end_row {
+        let mut row = [];
+        for j in 0..b.cols {
+            let mut sum = 0;
+            for k in 0..a.cols {
+                sum += a.get(i, k) * b.get(k, j);
+            }
+            row.push(sum);
+        }
+        chunk_data.push(row);
+    }
+    
+    Result.Ok(MatrixChunk {
+        data: chunk_data,
+        start_row: start_row,
+        end_row: end_row,
+    })
+}
+
+struct MatrixChunk {
+    data: Vec<Vec<i32>>,
+    start_row: usize,
+    end_row: usize,
+}
+
+fn combine_matrix_chunks(chunks: Vec<MatrixChunk>, rows: usize, cols: usize) -> Result<Matrix, string> {
+    let mut result = Matrix::new(rows, cols);
+    
+    for chunk in chunks {
+        for (local_row, row_data) in chunk.data.enumerate() {
+            let global_row: auto  // Manual review needed = chunk.start_row + local_row;
+            for (col, value) in row_data.enumerate() {
+                result.set(global_row, col, value);
+            }
+        }
+    }
+    
+    Result.Ok(result)
+}
+
+// ============================================================================
+// Example 7: Robust Error Handling Patterns
+// ============================================================================
+
+fn example_robust_error_handling(none) -> Result<ProcessingSummary, string> {
+    let work_items: auto  // Manual review needed = generate_work_items(20);
+    
+    println("Processing {} items with robust error handling...", work_items.len());
+    
+    let mut handles = [];
+    
+    // Start processing all items
+    for item in work_items {
+        let handle: auto  // Manual review needed = spawn_with_handle process_work_item(item);
+        handles.push(handle);
+    }
+    
+    // Collect results with comprehensive error tracking
+    let mut successful_results = [];
+    let mut failed_items = [];
+    let mut total_errors = 0;
+    
+    for (index, handle) in handles.enumerate() {
+        match await handle {
+            Result.Ok(result) => {
+                successful_results.push(result);
+            },
+            Result.Err(error) => {
+                failed_items.push(FailedItem {
+                    index: index,
+                    error: error.clone(),
+                });
+                total_errors += 1;
+                println("Item {} failed: {}", index, error);
+            }
+        }
+    }
+    
+    let summary: auto  // Manual review needed = ProcessingSummary {;
+        total_items: 20,
+        successful_items: successful_results.len(),
+        failed_items: failed_items.len(),
+        success_rate: (successful_results.len() as f64) / 20.0 * 100.0,
+        errors: failed_items,
+    };
+    
+    if total_errors > 5 {
+        Result.Err(format!("Too many failures: {} out of 20 items failed", total_errors))
+    } else {
+        println("Processing completed with {} successes and {} failures", 
+                summary.successful_items, summary.failed_items);
+        Result.Ok(summary)
+    }
+}
+
+struct WorkItem {
+    id: i32,
+    data: string,
+    difficulty: i32,
+}
+
+struct ProcessingSummary {
+    total_items: usize,
+    successful_items: usize,
+    failed_items: usize,
+    success_rate: f64,
+    errors: Vec<FailedItem>,
+}
+
+struct FailedItem {
+    index: usize,
+    error: string,
+}
+
+fn generate_work_items(count: i32) -> Vec<WorkItem> {
+    let mut items = [];
+    for i in 0..count {
+        items.push(WorkItem {
+            id: i,
+            data: format!("work_data_{}", i),
+            difficulty: i % 5 + 1, // Difficulty from 1 to 5
+        });
+    }
+    items
+}
+
+fn process_work_item(item: WorkItem) -> Result<string, string> {
+    // Simulate varying difficulty and potential failures
+    if item.difficulty > 4 {
+        return Result.Err(format!("Item {} too difficult (difficulty: {})", item.id, item.difficulty));
+    }
+    
+    if item.id % 7 == 0 {
+        return Result.Err(format!("Item {} encountered random error", item.id));
+    }
+    
+    // Simulate processing time based on difficulty
+    for _ in 0..(item.difficulty * 10) {
+        perform_work_unit();
+    }
+    
+    Result.Ok(format!("processed_item_{}", item.id))
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+fn process_temp_file(index: i32) {
+    // Simulate temp file processing
+}
+
+fn collect_metric(index: i32) {
+    // Simulate metric collection
+}
+
+fn send_ping(index: i32) {
+    // Simulate ping sending
+}
+
+fn process_raw_data_chunk(index: i32) {
+    // Simulate raw data processing
+}
+
+fn analyze_data_point(index: i32) {
+    // Simulate data analysis
+}
+
+fn create_final_output(index: i32) {
+    // Simulate final output creation
+}
+
+fn get_cpu_count(none) -> usize {
+    // Return the number of available CPU cores
+    8 // Default assumption for this example
+}
+
+fn max(a: usize, b: usize) -> usize {
+    if a > b { a } else { b }
+}
+
+fn min(a: usize, b: usize) -> usize {
+    if a < b { a } else { b }
+}
+
+fn perform_work_unit() {
+    // Simulate a unit of work
+}
+
+// ============================================================================
+// Main Examples Runner
+// ============================================================================
+
+fn main(none) -> Result<(), string> {
+    println("=== Asthra Tier 1 Concurrency Examples ===");
+    
+    // Example 1: Basic spawn
+    println("\n--- Example 1: Basic Task Spawning ---");
+    example_basic_spawn();
+    
+    // Example 2: Result collection
+    println("\n--- Example 2: Result Collection ---");
+    let results_result: auto  // Manual review needed = example_result_collection();
+    let results: auto  // Match unwrap - manual review needed = match results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println("Collected {} results", results.len());
+    
+    // Example 3: File processing
+    println("\n--- Example 3: Parallel File Processing ---");
+    let file_infos_result: auto  // Manual review needed = example_parallel_file_processing();
+    let file_infos: auto  // Match unwrap - manual review needed = match file_infos_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println("Processed {} files", file_infos.len());
+    
+    // Example 4: Sequential dependencies
+    println("\n--- Example 4: Sequential Dependencies ---");
+    let final_result_result: auto  // Manual review needed = example_sequential_dependencies();
+    let final_result: auto  // Match unwrap - manual review needed = match final_result_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println("Final result: {}", final_result);
+    
+    // Example 5: CPU-bound computation
+    println("\n--- Example 5: CPU-Bound Computation ---");
+    let fibonacci_results_result: auto  // Manual review needed = example_cpu_bound_computation();
+    let fibonacci_results: auto  // Match unwrap - manual review needed = match fibonacci_results_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println("Computed {} Fibonacci numbers", fibonacci_results.len());
+    
+    // Example 6: Matrix multiplication
+    println("\n--- Example 6: Parallel Matrix Multiplication ---");
+    let matrix_result_result: auto  // Manual review needed = example_parallel_matrix_multiply();
+    let matrix_result: auto  // Match unwrap - manual review needed = match matrix_result_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println("Matrix multiplication result: {}x{}", matrix_result.rows, matrix_result.cols);
+    
+    // Example 7: Robust error handling
+    println("\n--- Example 7: Robust Error Handling ---");
+    let summary_result: auto  // Manual review needed = example_robust_error_handling();
+    let summary: auto  // Match unwrap - manual review needed = match summary_result {;
+        Result.Ok(value) => value
+        Result.Err(e) => return Result.Err(e)
+    };
+    println("Processing summary: " + (:.1).to_string() + "% success rate", summary.success_rate);
+    
+    println("\nAll Tier 1 examples completed successfully!");
+    Result.Ok(())
+} 

@@ -1,0 +1,39 @@
+// Type Inference Demo - Phase 5 Implementation
+// This file demonstrates the Go-style simple type inference system
+// optimized for AI code generation
+
+package main;
+
+fn main(none) -> void {
+    // Basic literal type inference
+    let integer: auto  // Manual review needed = 42;        // Should infer i32;
+    let float: auto  // Manual review needed = 3.14;        // Should infer f64;
+    let text: auto  // Manual review needed = "hello";      // Should infer string;
+    let flag: auto  // Manual review needed = true;         // Should infer bool;
+    let character: auto  // Manual review needed = 'A';     // Should infer char;
+    
+    // Array type inference
+    let numbers: auto  // Manual review needed = [1, 2, 3];           // Should infer []i32;
+    let names: auto  // Manual review needed = ["Alice", "Bob"];      // Should infer []string;
+    let flags: auto  // Manual review needed = [true, false, true];   // Should infer []bool;
+    
+    // Mixed expressions with type inference
+    let sum: auto  // Manual review needed = integer + 10;            // Should infer i32;
+    let product: auto  // Manual review needed = float * 2.0;         // Should infer f64;
+    let comparison: auto  // Manual review needed = integer < 100;    // Should infer bool;
+    
+    // Explicit type annotations (for comparison)
+    let explicit_int: i32 = 42;
+    let explicit_float: f64 = 3.14;
+    let explicit_string: string = "hello";
+    
+    // Function return type inference would work here
+    // let result = some_function();   // Would infer from function signature
+}
+
+// Example function that would benefit from type inference
+fn calculate(x: i32, y: i32) -> i32 {
+    let temp: auto  // Manual review needed = x * 2;      // Should infer i32;
+    let result: auto  // Manual review needed = temp + y; // Should infer i32;
+    return result;
+} 

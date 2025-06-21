@@ -1,0 +1,191 @@
+// Asthra FFI Error Handling Example
+// Demonstrates the use of the FFI Error Mapping system
+
+package examples::ffi_error;
+
+import "stdlib/ffi/error" as error;
+import "stdlib/ffi/libc" as libc;
+import "stdlib/io" as io;
+
+// Example of opening a file with error handling
+fn try_open_file(filename: string) -> Result<i32, error::FFIError> {
+    let result: auto  // Function call - manual review needed = libc::safe_open(filename, libc::O_RDONLY, 0);
+    
+    match result {
+        Result.Ok(fd) => {
+            io::println("Successfully opened file with fd: " + fd);
+            return Result.Ok(fd);
+        },
+        Result.Err(err) => {
+            io::println("Failed to open file: " + err.to_string());
+            
+            // Classify the error
+            if err.is_not_found() {
+                io::println("Error type: File not found");
+            } else if err.is_permission_denied() {
+                io::println("Error type: Permission denied");
+            } else if err.is_temporary() {
+                io::println("Error type: Temporary error, could retry");
+            } else {
+                io::println("Error type: Other error");
+            }
+            
+            return Result.Err(err);
+        }
+    }
+}
+
+// Example of creating a directory with error handling
+fn try_create_directory(dirname: string) -> Result<i32, error::FFIError> {
+    io::println("Attempting to create directory: " + dirname);
+    
+    let result: auto  // Function call - manual review needed = libc::safe_mkdir(dirname, 0o755);  // rwxr-xr-x permissions;
+    
+    match result {
+        Result.Ok(_) => {
+            io::println("Successfully created directory");
+            return Result.Ok(0);
+        },
+        Result.Err(err) => {
+            io::println("Failed to create directory: " + err.to_string());
+            
+            if err.code == libc::EEXIST {
+                io::println("Directory already exists");
+            }
+            
+            return Result.Err(err);
+        }
+    }
+}
+
+// Example of using the retry mechanism for temporary errors
+fn retry_read_example(fd: i32) -> Result<string, error::FFIError> {
+    let buffer: auto  // Array - manual review needed = [0u8; 1024];
+    
+    // Define an operation that might fail with a temporary error
+    let read_operation: auto  // Function call - manual review needed = fn() -> Result<usize, error::FFIError> {;
+        let result: auto  // Function call - manual review needed = libc::safe_read(fd, buffer);
+        
+        // In a real application, EAGAIN or EWOULDBLOCK might occur
+        // For this example, we'll simulate a success
+        return result;
+    };
+    
+    // Retry the operation if it fails with a temporary error
+    let result: auto  // Function call - manual review needed = error::retry(read_operation, 3);
+    
+    match result {
+        Result.Ok(bytes_read) => {
+            if bytes_read == 0 {
+                return Result.Ok("");
+            }
+            
+            // Convert the read bytes to a string
+            // In a real application, you'd need to handle this properly
+            let data: auto  // Function call - manual review needed = string::from_bytes(buffer[0:bytes_read]);
+            return Result.Ok(data);
+        },
+        Result.Err(err) => {
+            io::println("Failed to read after retries: " + err.to_string());
+            return Result.Err(err);
+        }
+    }
+}
+
+// Main function demonstrating FFI error handling
+fn main(none) -> i32 {
+    io::println("FFI Error Handling Example");
+    io::println("=========================");
+    
+    // Example 1: Try to open a non-existent file
+    io::println("\nExample 1: Opening non-existent file");
+    let _: auto  // Manual review needed = try_open_file("non_existent_file.txt");
+    
+    // Example 2: Create a temporary file and read from it
+    io::println("\nExample 2: Creating and reading from a file");
+    let filename: string = "temp_test_file.txt";
+    
+    // Open file for writing
+    let fd_result: auto  // Function call - manual review needed = libc::safe_open(filename, libc::O_CREAT | libc::O_WRONLY | libc::O_TRUNC, 0o644);
+    
+    match fd_result {
+        Result.Ok(fd) => {
+            // Write some data
+            let data: string = "Hello, FFI error handling!";
+            let write_result: auto  // Function call - manual review needed = libc::safe_write(fd, data.bytes());
+            
+            match write_result {
+                Result.Ok(bytes_written) => {
+                    io::println("Wrote " + bytes_written + " bytes to file");
+                },
+                Result.Err(err) => {
+                    io::println("Failed to write to file: " + err.to_string());
+                }
+            }
+            
+            // Close the file
+            let _: auto  // Function call - manual review needed = libc::safe_close(fd);
+            
+            // Now open for reading
+            let read_fd_result: auto  // Manual review needed = try_open_file(filename);
+            
+            match read_fd_result {
+                Result.Ok(read_fd) => {
+                    // Read with retry
+                    let read_result: auto  // Manual review needed = retry_read_example(read_fd);
+                    
+                    match read_result {
+                        Result.Ok(content) => {
+                            io::println("Read from file: " + content);
+                        },
+                        Result.Err(err) => {
+                            io::println("Error reading file: " + err.to_string());
+                        }
+                    }
+                    
+                    // Close the file
+                    let _: auto  // Function call - manual review needed = libc::safe_close(read_fd);
+                },
+                Result.Err(_) => {
+                    // Already printed error
+                }
+            }
+            
+            // Clean up the temporary file
+            let unlink_result: auto  // Function call - manual review needed = libc::safe_unlink(filename);
+            match unlink_result {
+                Result.Ok(_) => {
+                    io::println("Deleted temporary file");
+                },
+                Result.Err(err) => {
+                    io::println("Failed to delete file: " + err.to_string());
+                }
+            }
+        },
+        Result.Err(err) => {
+            io::println("Failed to create file: " + err.to_string());
+        }
+    }
+    
+    // Example 3: Directory operations
+    io::println("\nExample 3: Directory operations");
+    let dirname: string = "temp_test_dir";
+    
+    // Try to create directory
+    let dir_result: auto  // Manual review needed = try_create_directory(dirname);
+    
+    // Regardless of whether creation succeeded, try to remove it
+    let rmdir_result: auto  // Function call - manual review needed = libc::safe_rmdir(dirname);
+    
+    match rmdir_result {
+        Result.Ok(_) => {
+            io::println("Successfully removed directory");
+        },
+        Result.Err(err) => {
+            io::println("Failed to remove directory: " + err.to_string());
+        }
+    }
+    
+    io::println("\nFFI Error Handling Example Complete");
+    return 0;
+} 

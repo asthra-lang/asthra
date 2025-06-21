@@ -1,0 +1,64 @@
+// FFI Example in Asthra
+// Demonstrates safe C interoperability with ownership annotations
+
+package ffi_demo;
+
+// External C function declarations
+extern "libc" fn malloc(size: usize) -> #[transfer_full] *mut void;
+extern "libc" fn free(#[borrowed] ptr: *mut void) -> void;
+extern "libc" fn printf(#[borrowed] format: *const u8, ...) -> i32;
+
+// Asthra-managed data structure
+#[ownership(gc)]
+struct AsthraData {
+    value: i32,
+    name: string
+}
+
+// C-managed data structure
+#[ownership(c)]
+struct CData {
+    buffer: *mut u8,
+    size: usize
+}
+
+fn demonstrate_ffi(none) -> Result<i32, string> {
+    // Safe FFI operations within unsafe block
+    unsafe {
+        // Allocate C memory
+        let c_buffer: *mut void = malloc(1024);
+        if c_buffer == null {
+            return Result.Err("Failed to allocate memory");
+        }
+        
+        // Use the buffer (simplified example)
+        printf("Allocated buffer at: %p\n", c_buffer);
+        
+        // Free C memory
+        free(c_buffer);
+    }
+    
+    // Create Asthra-managed data
+    let asthra_data: AsthraData = AsthraData {
+        value: 42,
+        name: "AI Generated"
+    };
+    
+    log("FFI demonstration completed successfully");
+    return Result.Ok(asthra_data.value);
+}
+
+fn main(none) -> i32 {
+    let result: Result<i32, string> = demonstrate_ffi();
+    
+    match result {
+        Result.Ok(value) => {
+            log("Success: " + value);
+            return 0;
+        },
+        Result.Err(error) => {
+            log("Error: " + error);
+            return 1;
+        }
+    }
+} 

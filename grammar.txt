@@ -1,0 +1,244 @@
+# Asthra Programming Language Grammar
+
+Program        <- PackageDecl ImportDecl* TopLevelDecl*  # Entry point: package + imports + declarations
+PackageDecl    <- 'package' SimpleIdent ';'                 # Package name (Go-style organization)
+ImportDecl     <- 'import' ImportPath ImportAlias? ';'     # Import external modules/packages with optional aliases
+ImportPath     <- STRING                                    # Validated by build system: stdlib/*, github.com/*, gitlab.com/*, ./relative
+ImportAlias    <- 'as' SimpleIdent                         # Import alias for conflict resolution: import "path" as Name
+TopLevelDecl   <- (HumanReviewTag / SecurityTag / SemanticTag)* (VisibilityDecl / ImplDecl)  # Annotated declarations
+VisibilityDecl <- VisibilityModifier (FunctionDecl / StructDecl / EnumDecl / ExternDecl / ConstDecl)  # Explicit public/private visibility required
+VisibilityModifier <- 'pub' / 'priv'                        # Explicit public/private visibility (no implicit defaults)
+
+# Immutable by Default: Explicit Mutability Everywhere
+# - All variables are immutable by default using 'let' keyword
+# - 'mut' keyword required for any mutable local variable anywhere in the code  
+# - Function parameters are always immutable (no 'mut' allowed)
+# - Struct fields follow the containing variable's mutability
+# - This provides maximum AI generation clarity with minimal complexity
+
+# Annotation system for AI generation, security, and FFI safety
+SemanticTag     <- '#[' IDENT '(' AnnotationParams ')' ']' / '#[' 'non_deterministic' ']'  # General annotations + non-deterministic marker
+AnnotationParams<- AnnotationParam (',' AnnotationParam)* / 'none'  # Key-value annotation parameters: explicit params or none marker
+AnnotationParam <- IDENT '=' AnnotationValue                # Parameter: name = value
+AnnotationValue <- STRING / IDENT / INT / BOOL              # Supported parameter value types
+HumanReviewTag <- '#[human_review(' ('low'|'medium'|'high') ')]'  # AI-human collaboration priority levels
+SecurityTag    <- '#[' ('constant_time' | 'volatile_memory') ']'   # Security-critical code annotations
+OwnershipTag   <- '#[ownership(' ('gc'|'c'|'pinned') ')]'   # Memory management strategy annotations
+FFITransferTag <- '#[' ('transfer_full' | 'transfer_none') ']'     # FFI ownership transfer semantics
+LifetimeTag    <- '#[borrowed]'                             # FFI borrowed reference annotation
+SafeFFIAnnotation <- FFITransferTag / LifetimeTag           # Safe FFI annotation (single, mutually exclusive)
+
+# Const declarations for compile-time constants
+ConstDecl      <- 'const' SimpleIdent ':' Type '=' ConstExpr ';'     # Compile-time constant declaration with required type annotation
+ConstExpr      <- Literal / SimpleIdent / BinaryConstExpr / UnaryConstExpr / SizeOf  # Compile-time evaluable expressions
+BinaryConstExpr<- ConstExpr BinaryOp ConstExpr                      # Binary operations on constants
+UnaryConstExpr <- UnaryOp ConstExpr                                 # Unary operations on constants
+
+# Mutability control for variables and parameters
+MutModifier    <- 'mut'                                             # Mutability keyword for local variables only
+
+# Function and external function declarations
+FunctionDecl   <- 'fn' SimpleIdent '(' ParamList ')' '->' SafeFFIAnnotation? Type Block  # Function with explicit parameter list required
+ExternDecl     <- 'extern' STRING? 'fn' SimpleIdent '(' ExternParamList ')' '->' SafeFFIAnnotation? Type ';'  # Foreign function interface with explicit parameters
+StructDecl     <- OwnershipTag? 'struct' SimpleIdent TypeParams? '{' StructContent '}'  # Struct with explicit content required
+StructContent  <- StructFieldList / 'none'                  # Explicit struct content: fields or none marker
+StructFieldList<- StructField (',' StructField)*             # Struct fields with consistent comma separators
+StructField    <- VisibilityModifier? SimpleIdent ':' Type  # Named field with optional visibility (no MutModifier allowed)
+
+# Enum declarations with generics and variants
+EnumDecl       <- OwnershipTag? 'enum' SimpleIdent TypeParams? '{' EnumContent '}'  # Enum with explicit content required
+EnumContent    <- EnumVariantList / 'none'                  # Explicit enum content: variants or none marker
+EnumVariantList<- EnumVariant (',' EnumVariant)*             # Enum variants with consistent comma separators
+EnumVariant    <- VisibilityModifier? SimpleIdent EnumVariantData?  # Variant with optional associated data
+EnumVariantData<- '(' Type ')' / '(' TypeList ')'           # Single type or tuple of types
+TypeParams     <- '<' TypeParam (',' TypeParam)* '>'        # Generic type parameters
+TypeParam      <- SimpleIdent                               # Type parameter name
+TypeList       <- Type (',' Type)*                          # Comma-separated type list
+
+# Implementation blocks for struct methods (object-oriented features)
+ImplDecl       <- 'impl' SimpleIdent '{' MethodDecl* '}'    # Method implementations for structs
+MethodDecl     <- VisibilityModifier 'fn' SimpleIdent '(' MethodParamList ')' '->' Type Block  # Instance methods with explicit parameters required
+MethodParamList<- SelfParam (',' Param)* / ParamList        # Methods with 'self' or regular functions
+SelfParam      <- 'self'                                    # Instance method self parameter (always immutable)
+
+# Function parameters with FFI annotations (always immutable - no MutModifier allowed)
+ParamList      <- Param (',' Param)* / 'none'              # Function parameters: explicit params or none marker
+Param          <- SafeFFIAnnotation? SimpleIdent ':' Type  # Parameter with optional single FFI annotation (no MutModifier allowed)
+ExternParamList<- ExternParam (',' ExternParam)* / 'none'  # External function parameters: explicit params or none marker
+ExternParam    <- SafeFFIAnnotation? SimpleIdent ':' Type  # External parameter with single FFI annotation (no MutModifier allowed)
+
+# Type system with built-in and composite types
+Type           <- BaseType / SliceType / FixedArrayType / StructType / EnumType / PtrType / ResultType / TupleType / NeverType  # All supported types
+TupleType      <- '(' Type ',' Type (',' Type)* ')'       # Tuple types: (T, U) or (T, U, V) - minimum 2 elements
+NeverType      <- 'Never'                                  # Never type for functions that don't return
+BaseType       <- 'int' / 'float' / 'bool' / 'string' / 'void' / 'usize' / 'isize' /  # Primitive types (void preserved as legitimate type)
+                  'u8' / 'i8' / 'u16' / 'i16' / 'u32' / 'i32' / 'u64' / 'i64' / 'f32' / 'f64'
+FixedArrayType <- '[' ConstExpr ']' Type                   # Fixed-size arrays: [size]Type
+SliceType      <- '[' ']' Type                             # Dynamic arrays: []Type
+StructType     <- SimpleIdent TypeArgs?                    # User-defined structs with optional generics
+EnumType       <- SimpleIdent TypeArgs?                    # User-defined enums with optional generics
+TypeArgs       <- '<' Type (',' Type)* '>'                 # Generic type arguments
+PtrType        <- '*mut' Type / '*const' Type              # Mutable and immutable pointers
+ResultType     <- 'Result' '<' Type ',' Type '>'           # Error handling: Result<Success, Error>
+
+# Code blocks and statements
+Block          <- '{' Statement* '}'                       # Code block with multiple statements
+UnsafeBlock    <- 'unsafe' Block                           # Unsafe operations block for FFI/raw pointers (orthogonal to mutability)
+Statement      <- VarDecl / AssignStmt / IfLetStmt / IfStmt / ForStmt / ReturnStmt / SpawnStmt / ExprStmt / UnsafeBlock / MatchStmt / BreakStmt / ContinueStmt  # All statement types
+VarDecl        <- 'let' MutModifier? SimpleIdent ':' Type OwnershipTag? '=' Expr ';'  # Variable declaration with optional mutability modifier
+AssignStmt     <- MutableLValue '=' Expr ';'                      # Assignment to variables, fields, or array elements (must be mutable)
+MutableLValue  <- SimpleIdent LValueSuffix*                       # Left-hand side of assignments (validated for mutability in semantic analysis)
+IfStmt         <- 'if' Expr Block ('else' (Block / IfStmt))?  # Conditional statements with optional else/else if
+IfLetStmt      <- 'if' 'let' Pattern '=' Expr Block ('else' Block)?  # Pattern matching in conditionals
+ForStmt        <- 'for' SimpleIdent 'in' Expr Block        # Iterator-based loops
+ReturnStmt     <- 'return' Expr ';'                        # Function return with required expression - eliminates AI ambiguity
+ExprStmt       <- Expr ';'                                 # Expression as statement
+SpawnStmt      <- ('spawn' / 'spawn_with_handle') PostfixExpr ';'  # Tier 1 concurrency: deterministic task spawning
+MatchStmt      <- 'match' Expr '{' MatchArm* '}'           # Pattern matching statement
+MatchArm       <- Pattern '=>' Block                        # Match arm with pattern and code block
+BreakStmt      <- 'break' ';'                              # Exit current loop
+ContinueStmt   <- 'continue' ';'                           # Skip to next iteration
+
+# Pattern matching system for destructuring
+Pattern        <- EnumPattern / StructPattern / TuplePattern / SimpleIdent  # Supported pattern types
+TuplePattern   <- '(' Pattern ',' Pattern (',' Pattern)* ')'  # Tuple patterns: (pattern1, pattern2) or (pattern1, pattern2, pattern3) - minimum 2 elements
+EnumPattern    <- SimpleIdent '.' SimpleIdent ('(' PatternArgs ')')?  # Enum variant matching with optional extraction
+PatternArgs    <- Pattern (',' Pattern)* / 'none'         # Nested patterns for complex destructuring: explicit patterns or none marker
+StructPattern  <- SimpleIdent TypeArgs? '{' FieldPattern (',' FieldPattern)* '}'      # Struct destructuring with optional generics
+FieldPattern   <- SimpleIdent ':' FieldBinding                # Always explicit field binding syntax
+FieldBinding   <- SimpleIdent / '_'                        # Binding name or ignore marker
+
+# Expression system with proper operator precedence (fixed shift operator precedence)
+Expr           <- LogicOr                                   # Entry point for expressions
+LogicOr        <- LogicAnd ('||' LogicAnd)*                # Logical OR (lowest precedence)
+LogicAnd       <- BitwiseOr ('&&' BitwiseOr)*              # Logical AND
+BitwiseOr      <- BitwiseXor ('|' BitwiseXor)*             # Bitwise OR
+BitwiseXor     <- BitwiseAnd ('^' BitwiseAnd)*             # Bitwise XOR
+BitwiseAnd     <- Equality ('&' Equality)*                 # Bitwise AND
+Equality       <- Relational (('==' / '!=') Relational)*   # Equality comparison (separated from relational)
+Relational     <- Shift (('<' / '<=' / '>' / '>=') Shift)* # Relational comparison (separated from equality)
+Shift          <- Add (('<<' / '>>') Add)*                 # Bitwise shift operations (fixed precedence)
+Add            <- Mult (('+' / '-') Mult)*                 # Addition and subtraction
+Mult           <- Unary (('*' / '/' / '%') Unary)*         # Multiplication, division, modulo
+Unary          <- ('await' PostfixExpr) / ('spawn_with_handle' PostfixExpr) / (UnaryPrefix PostfixExpr)  # Unary operations
+UnaryPrefix    <- LogicalPrefix? PointerPrefix?            # Restricted unary operators (prevents !!x, **ptr)
+LogicalPrefix  <- ('!' / '-' / '~')                        # Logical not, arithmetic negation, bitwise complement
+PointerPrefix  <- ('*' / '&')                              # Dereference and address-of operators
+PostfixExpr    <- Primary PostfixSuffix*                   # Postfix operations (highest precedence)
+PostfixSuffix  <- '(' ArgList ')' / '.' FieldOrIndex / '[' SliceOrIndexExpr ']' / '.' 'len'  # Function calls, field/tuple access, slice/index, length
+FieldOrIndex   <- SimpleIdent / TupleIndex                  # Field name or tuple element index
+TupleIndex     <- [0-9]+                                     # Numeric index for tuple element access: .0, .1, .2, etc.
+SliceOrIndexExpr <- SliceExpr / Expr                      # Go-style slicing or indexing
+SliceExpr      <- SliceBounds                             # Slice bounds specification
+SliceBounds    <- Expr ':' Expr /                         # start:end (slice from start to end)
+                  Expr ':' /                              # start: (slice from start to end)
+                  ':' Expr /                              # :end (slice from beginning to end)
+                  ':'                                     # : (full slice copy)
+Primary        <- Literal / EnumConstructor / SimpleIdent / '(' Expr ')' / SizeOf / AssociatedFuncCall  # Primary expressions
+AssociatedFuncCall <- (SimpleIdent / GenericType) '::' SimpleIdent '(' ArgList ')'  # Static method calls: Type::function() or Type<T>::function()
+GenericType      <- SimpleIdent TypeArgs                      # Generic type for associated function calls
+EnumConstructor<- SimpleIdent '.' SimpleIdent ('(' ArgList ')')?    # Enum variant construction: Enum.Variant(args)
+SizeOf         <- 'sizeof' '(' Type ')'                    # Compile-time size calculation
+
+
+# Function arguments and assignable expressions
+ArgList        <- Expr (',' Expr)* / 'none'               # Function call arguments: explicit args or none marker
+LValue         <- SimpleIdent LValueSuffix*                # Left-hand side of assignments
+LValueSuffix   <- '.' SimpleIdent / '[' Expr ']' / '*'     # Field access, array indexing, pointer dereference
+
+# Literal values and data structures
+Literal        <- INT / FLOAT / BOOL / STRING / CHAR / ArrayLiteral / StructLiteral / TupleLiteral  # All literal types
+TupleLiteral   <- '(' Expr ',' Expr (',' Expr)* ')'       # Tuple literals: (expr1, expr2) or (expr1, expr2, expr3) - minimum 2 elements
+ArrayLiteral   <- '[' ArrayContent ']'                    # Array literals: [1, 2, 3], [value; count], or [none]
+ArrayContent   <- RepeatedElements / ArrayElements / 'none'  # Array initialization patterns or none marker
+RepeatedElements <- ConstExpr ';' ConstExpr              # Rust-style repeated elements: [value; count]
+ArrayElements  <- Expr (',' Expr)*                       # Comma-separated elements: [elem1, elem2, ...]
+StructLiteral  <- SimpleIdent TypeArgs? '{' FieldInit (',' FieldInit)* '}'      # Struct construction with optional generics
+FieldInit      <- SimpleIdent ':' Expr                     # Struct field initialization: field: value
+
+# Lexical rules and identifiers
+IDENT          <- [a-zA-Z_][a-zA-Z0-9_]*                   # Base identifier pattern
+
+# Reserved keywords (prevents conflicts with user identifiers)
+ReservedKeyword <- 'as'                                     # Import aliasing
+                 / 'fn'                                     # Function declaration
+                 / 'let'                                    # Variable declaration
+                 / 'const'                                  # Constant declaration
+                 / 'mut'                                    # Mutability modifier (immutable by default)
+                 / 'if'                                     # Conditional statements
+                 / 'else'                                   # Conditional alternative
+                 / 'enum'                                   # Enum declaration
+                 / 'match'                                  # Pattern matching
+                 / 'return'                                 # Function return
+                 / 'true'                                   # Boolean literal
+                 / 'false'                                  # Boolean literal
+                 / 'struct'                                 # Struct declaration
+                 / 'extern'                                 # Foreign function interface
+                 / 'spawn'                                  # Task spawning (Tier 1 concurrency)
+                 / 'spawn_with_handle'                      # Task spawning with result handle (Tier 1 concurrency)
+                 / 'unsafe'                                 # Unsafe code blocks (orthogonal to mutability - for pointer safety only)
+                 / 'package'                                # Package declaration
+                 / 'import'                                 # Module importing
+                 / 'for'                                    # Loop statements
+                 / 'in'                                     # Iterator keyword
+                 / 'await'                                  # Async result waiting (Tier 1 concurrency)
+                 / 'break'                                  # Loop break statement
+                 / 'continue'                               # Loop continue statement
+                 / 'sizeof'                                 # Compile-time size operator
+                 / 'pub'                                    # Public visibility modifier
+                 / 'priv'                                   # Private visibility modifier (explicit visibility)
+                 / 'impl'                                   # Implementation blocks
+                 / 'self'                                   # Method self parameter
+                 / 'void'                                   # Type for functions returning nothing (preserved for legitimate usage)
+                 / 'none'                                   # Structural absence marker (semantic clarity)
+# Apart from these keywords, there are few predeclared identifiers (mostly functions - similar to Go):
+# - log("msg %s", "word") - print to stdout
+# - range(10, 2) -- Two overloaded versions:
+#    1. range(end: i32) -> []i32 - generates [0, 1, ..., end-1]
+#    2. range(start: i32, end: i32) -> []i32 - generates [start, start+1, ..., end-1]
+# - infinite() - for infinite loop
+# - panic("msg") - exit process
+# - args() - get command line arguments (like os.Args in Go)
+
+SimpleIdent    <- !ReservedKeyword IDENT                   # User identifiers (excludes reserved keywords)
+
+# Immutable-by-Default Semantic Rules:
+# - Variables are immutable by default: 'let x: i32 = 42;' (cannot be reassigned)
+# - Explicit mutability required: 'let mut x: i32 = 42;' (can be reassigned anywhere)
+# - Function parameters are always immutable: fn process(data: String) (no 'mut' allowed)
+# - Struct fields have no explicit mutability (follow containing variable's mutability)
+# - 'unsafe' blocks are orthogonal to mutability (for FFI pointer safety, not mutation control)
+# - This eliminates AI confusion about state tracking while maintaining C interoperability
+
+# Semantic Clarity: void vs none distinction
+# - 'void' is ONLY used as a type for functions returning nothing: fn main() -> void
+# - 'none' is ONLY used as a structural marker for absence of elements: fn main(none), struct Empty { none }
+# This eliminates parser ambiguity and improves AI generation reliability by creating clear semantic boundaries
+
+# Comment syntax (handled by lexer in practice)
+Comment        <- SingleLineComment / MultiLineComment     # Both comment styles supported
+SingleLineComment <- '//' (~'\n' .)* '\n'?                # C++-style comments
+MultiLineComment  <- '/*' (~'*/' .)* '*/'                 # C-style block comments
+
+# String literals with multi-line support
+STRING         <- MultiLineString / RegularString          # Support both single-line and multi-line strings
+RegularString  <- '"' StringContent* '"'                   # Regular single-line string literals
+MultiLineString<- RawString / ProcessedString               # Two multi-line variants
+RawString      <- 'r"""' RawContent* '"""'                 # Raw multi-line (no escape processing)
+ProcessedString<- '"""' StringContent* '"""'               # Processed multi-line (with escape sequences)
+RawContent     <- (!('"""') .)                             # Any character except closing delimiter
+StringContent  <- EscapeSequence / (!'"' .)               # String characters or escape sequences
+EscapeSequence <- '\\' ('n' / 't' / 'r' / '\\' / '"' / '\'' / '0')  # Standard escape sequences
+
+# Numeric and other literals
+INT            <- HexLiteral / BinaryLiteral / OctalLiteral / DecimalLiteral
+
+HexLiteral     <- ('0x' / '0X') [0-9a-fA-F]+              # Hexadecimal: 0xFF, 0x123ABC
+BinaryLiteral  <- ('0b' / '0B') [01]+                     # Binary: 0b1010, 0B11110000  
+OctalLiteral   <- '0o' [0-7]+                             # Octal: 0o777, 0o123 (explicit only)
+DecimalLiteral <- [0-9]+                                  # Decimal: 123, 42 (unchanged)
+
+FLOAT          <- [0-9]+ '.' [0-9]* / '.' [0-9]+           # Floating-point literals
+
+BOOL           <- 'true' / 'false'                         # Boolean literals
+CHAR           <- "'" (EscapeSequence / (!"'" .)) "'"      # Character literals with escape support

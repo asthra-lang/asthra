@@ -1,0 +1,421 @@
+package examples;
+
+// Multi-line String Literals Examples (v1.23)
+// Demonstrates the new syntax patterns for AI generation
+
+pub fn main(none) -> void {
+    
+    // =================================================================
+    // SINGLE-LINE STRINGS (unchanged - full backward compatibility)
+    // =================================================================
+    
+    let simple_message: string = "Hello, world!";
+    let path_with_escapes: string = "C:\\Program Files\\MyApp\\config.json";
+    let formatted_line: string = "User: john@example.com\nStatus: active\n";
+    
+    // =================================================================
+    // RAW MULTI-LINE STRINGS (r""" syntax)
+    // =================================================================
+    // No escape processing - perfect for templates and configuration
+    
+    // ✅ SQL query construction
+    let user_report_query: string = r"""
+        SELECT 
+            u.id,
+            u.username,
+            u.email,
+            p.first_name,
+            p.last_name,
+            COUNT(l.id) as login_count,
+            MAX(l.created_at) as last_login
+        FROM users u
+        LEFT JOIN profiles p ON u.id = p.user_id
+        LEFT JOIN login_logs l ON u.id = l.user_id
+        WHERE u.active = true
+        GROUP BY u.id, u.username, u.email, p.first_name, p.last_name
+        ORDER BY login_count DESC, last_login DESC
+    """;
+    
+    // ✅ nginx configuration template
+    let nginx_server_config: string = r"""
+        server {
+            listen 80;
+            listen [::]:80;
+            server_name example.com www.example.com;
+            
+            location / {
+                proxy_pass http://127.0.0.1:3000;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+            
+            location /static/ {
+                alias /var/www/static/;
+                expires 1y;
+                add_header Cache-Control "public, immutable";
+            }
+        }
+    """;
+    
+    // ✅ Shell script generation
+    let install_script: string = r"""
+        #!/bin/bash
+        set -euo pipefail
+        
+        echo "Starting application installation..."
+        
+        # Create application directory
+        mkdir -p /opt/myapp
+        cd /opt/myapp
+        
+        # Download and extract application
+        curl -L "https://github.com/user/repo/releases/latest/download/myapp.tar.gz" | tar -xz
+        
+        # Set permissions
+        chmod +x bin/myapp
+        
+        # Create systemd service
+        cp scripts/myapp.service /etc/systemd/system/
+        systemctl daemon-reload
+        systemctl enable myapp
+        
+        echo "Installation complete! Starting service..."
+        systemctl start myapp
+        systemctl status myapp
+    """;
+    
+    // ✅ Docker configuration
+    let dockerfile_content: string = r"""
+        FROM ubuntu:22.04
+        
+        # Install dependencies
+        RUN apt-get update && \
+            apt-get install -y \
+                build-essential \
+                curl \
+                git \
+                ca-certificates && \
+            apt-get clean && \
+            rm -rf /var/lib/apt/lists/*
+        
+        # Create application user
+        RUN useradd -m -s /bin/bash appuser
+        
+        # Set working directory
+        WORKDIR /app
+        
+        # Copy application files
+        COPY . .
+        
+        # Build application
+        RUN make build
+        
+        # Set ownership
+        RUN chown -R appuser:appuser /app
+        
+        # Switch to application user
+        USER appuser
+        
+        # Expose port
+        EXPOSE 8080
+        
+        # Start application
+        CMD ["./bin/myapp", "--port=8080"]
+    """;
+    
+    // =================================================================
+    // PROCESSED MULTI-LINE STRINGS (""" syntax)
+    // =================================================================
+    // With escape sequence processing - good for formatted text
+    
+    // ✅ Help text with escape sequences
+    let help_documentation: string = """
+        Usage: myapp [OPTIONS] <command>
+        
+        A powerful application for data processing and analysis.
+        
+        Commands:
+            start       Start the application server
+            stop        Stop the application server  
+            status      Show current application status
+            config      Manage configuration settings
+            migrate     Run database migrations
+            backup      Create data backup
+        
+        Options:
+            -h, --help          Show this help message
+            -v, --verbose       Enable verbose logging output
+            -c, --config FILE   Use custom configuration file
+            -p, --port PORT     Set server port (default: 8080)
+            --dry-run          Show what would be done without executing
+        
+        Examples:
+            myapp start --port 3000
+            myapp config set database.host "localhost"
+            myapp migrate --dry-run
+        
+        For more information, visit: https://github.com/user/myapp
+    """;
+    
+    // ✅ Systemd service template with escape sequences
+    let systemd_template: string = """
+        [Unit]
+        Description=MyApp Application Server
+        After=network.target
+        Wants=network-online.target
+        
+        [Service]
+        Type=simple
+        User=myapp
+        Group=myapp
+        WorkingDirectory=/opt/myapp
+        ExecStart=/opt/myapp/bin/myapp --config /etc/myapp/config.toml
+        ExecReload=/bin/kill -HUP $MAINPID
+        Restart=always
+        RestartSec=10
+        
+        # Security settings
+        NoNewPrivileges=yes
+        PrivateTmp=yes
+        ProtectSystem=strict
+        ProtectHome=yes
+        ReadWritePaths=/var/log/myapp /var/lib/myapp
+        
+        # Resource limits  
+        LimitNOFILE=65536
+        LimitNPROC=4096
+        
+        [Install]
+        WantedBy=multi-user.target
+    """;
+    
+    // ✅ Log message template
+    let error_report_template: string = """
+        ===============================================
+        ERROR REPORT - Application Failure
+        ===============================================
+        
+        Timestamp: {timestamp}
+        Error Code: {error_code}
+        Component: {component}
+        
+        Description:
+        {description}
+        
+        Stack Trace:
+        {stack_trace}
+        
+        System Information:
+        - OS: {os_info}
+        - Memory: {memory_usage}
+        - CPU: {cpu_usage}
+        
+        User Actions Leading to Error:
+        {user_actions}
+        
+        Recommended Solutions:
+        {solutions}
+        
+        ===============================================
+    """;
+    
+    // =================================================================
+    // MIXED USAGE PATTERNS
+    // =================================================================
+    // Combining different string types in practical scenarios
+    
+    // ✅ Configuration with both raw and processed strings
+    let database_config: string = r"""
+        [database]
+        host = "localhost"
+        port = 5432
+        database = "myapp_production"
+        username = "myapp_user"
+        
+        [database.pool]
+        max_connections = 100
+        min_connections = 10
+        connection_timeout = 30
+    """;
+    
+    let database_init_sql: string = r"""
+        -- Initialize application database
+        CREATE DATABASE IF NOT EXISTS myapp_production;
+        
+        USE myapp_production;
+        
+        CREATE TABLE IF NOT EXISTS users (
+            id BIGINT PRIMARY KEY AUTO_INCREMENT,
+            username VARCHAR(255) UNIQUE NOT NULL,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            password_hash VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        );
+        
+        CREATE INDEX idx_users_email ON users(email);
+        CREATE INDEX idx_users_username ON users(username);
+    """;
+    
+    // ✅ API documentation template
+    let api_docs_template: string = """
+        # User Management API
+        
+        Base URL: https://api.example.com/v1
+        
+        ## Authentication
+        All requests require Bearer token authentication:
+        ```
+        Authorization: Bearer {your_api_token}
+        ```
+        
+        ## Endpoints
+        
+        ### GET /users
+        Retrieve list of users with pagination.
+        
+        **Parameters:**
+        - page (integer): Page number (default: 1)
+        - limit (integer): Items per page (default: 20, max: 100)
+        - search (string): Search term for username or email
+        
+        **Response:**
+        ```json
+        {
+            "users": [...],
+            "pagination": {
+                "page": 1,
+                "limit": 20,
+                "total": 150,
+                "pages": 8
+            }
+        }
+        ```
+        
+        ### POST /users
+        Create a new user account.
+        
+        **Request Body:**
+        ```json
+        {
+            "username": "string",
+            "email": "string", 
+            "password": "string"
+        }
+        ```
+    """;
+    
+    // =================================================================
+    // AI GENERATION PATTERNS
+    // =================================================================
+    // Examples showing clear patterns for AI code generation
+    
+    // Pattern 1: Raw strings for configuration/templates
+    let template_pattern: string = r"""
+        Configuration content here
+        No escape sequences needed
+        Variables: {var1}, {var2}
+        Perfect for: configs, SQL, scripts
+    """;
+    
+    // Pattern 2: Processed strings for user-facing text
+    let documentation_pattern: string = """
+        User-facing content here
+        Escape sequences: \n, \t, \", \\
+        Formatted output with proper escaping
+        Perfect for: help text, errors, logs
+    """;
+    
+    // Pattern 3: Single-line for simple cases
+    let simple_pattern: string = "Short message or path";
+    
+    log("Multi-line string examples loaded successfully");
+    log("Raw strings: perfect for templates and configuration");
+    log("Processed strings: perfect for formatted text and documentation");
+    log("Single-line strings: unchanged for backward compatibility");
+}
+
+// =================================================================
+// FUNCTION EXAMPLES WITH MULTI-LINE STRINGS
+// =================================================================
+
+pub fn generate_nginx_config(server_name: string, backend_port: u16) -> string {
+    let config_template: string = r"""
+        server {
+            listen 80;
+            listen [::]:80;
+            server_name {server_name};
+            
+            location / {
+                proxy_pass http://127.0.0.1:{backend_port};
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+            
+            # Security headers
+            add_header X-Frame-Options DENY;
+            add_header X-Content-Type-Options nosniff;
+            add_header X-XSS-Protection "1; mode=block";
+        }
+    """;
+    
+    return string::format(config_template, [
+        FormatArg.String(server_name),
+        FormatArg.UInt(backend_port as u64)
+    ]);
+}
+
+pub fn create_database_migration(table_name: string) -> string {
+    return r"""
+        -- Migration: Create {table_name} table
+        -- Generated on: {timestamp}
+        
+        CREATE TABLE {table_name} (
+            id BIGINT PRIMARY KEY AUTO_INCREMENT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        );
+        
+        -- Add indexes
+        CREATE INDEX idx_{table_name}_created_at ON {table_name}(created_at);
+        CREATE INDEX idx_{table_name}_updated_at ON {table_name}(updated_at);
+    """;
+}
+
+pub fn generate_help_text(app_name: string, version: string) -> string {
+    let help_content: string = """
+        {app_name} v{version}
+        
+        A powerful systems programming application built with Asthra.
+        
+        Usage: {app_name} [OPTIONS] <command>
+        
+        Commands:
+            start       Start the application
+            stop        Stop the application
+            restart     Restart the application
+            status      Show application status
+            
+        Global Options:
+            -h, --help      Show this help message
+            -v, --version   Show version information
+            --config FILE   Use custom configuration file
+            --log-level LEVEL   Set logging level (debug, info, warn, error)
+        
+        Examples:
+            {app_name} start --config production.toml
+            {app_name} status --log-level debug
+        
+        For more information, visit the documentation at:
+        https://asthra-lang.org/docs/
+    """;
+    
+    return string::format(help_content, [
+        FormatArg.String(app_name),
+        FormatArg.String(version)
+    ]);
+} 

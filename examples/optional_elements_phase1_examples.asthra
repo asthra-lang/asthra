@@ -1,0 +1,92 @@
+// Phase 1 Optional Elements Simplification Examples
+// Demonstrates new explicit syntax requirements in v1.16
+
+package examples;
+
+// ✅ EXPLICIT VISIBILITY: All declarations require pub or priv
+pub struct Point {
+    x: i32,
+    y: i32
+}
+
+priv struct Internal {
+    data: string
+}
+
+// ✅ EXPLICIT PARAMETER LISTS: All functions require explicit parameters
+pub fn main(void) -> void {
+    let point: Point = Point { x: 10, y: 20 };
+    process_point(point);
+    
+    let result: i32 = calculate(5, 10);
+    print_result(result);
+}
+
+priv fn process_point(p: Point) -> void {
+    print_coordinates(p.x, p.y);
+}
+
+priv fn calculate(a: i32, b: i32) -> i32 {
+    return a + b;
+}
+
+priv fn print_coordinates(x: i32, y: i32) -> void {
+    // Implementation details...
+    return;
+}
+
+priv fn print_result(value: i32) -> void {
+    // Implementation details...
+    return;
+}
+
+// ✅ EXPLICIT STRUCT/ENUM CONTENT: All require explicit content or void
+priv struct Empty { none }
+
+pub enum Status { void }
+
+pub enum Result<T, E> {
+    Ok(T),
+    Err(E)
+}
+
+// ✅ EXPLICIT EXTERN FUNCTIONS: Require explicit parameters
+extern "C" fn malloc(size: usize) -> *mut void;
+extern "C" fn free(ptr: *mut void) -> void;
+extern "C" fn printf(format: *const string) -> i32;
+
+// ✅ EXPLICIT METHODS: All methods require explicit parameters
+impl Point {
+    pub fn new(x: i32, y: i32) -> Point {
+        return Point { x: x, y: y };
+    }
+    
+    pub fn distance_from_origin(self) -> f64 {
+        let x_squared: f64 = (self.x as f64) * (self.x as f64);
+        let y_squared: f64 = (self.y as f64) * (self.y as f64);
+        return sqrt(x_squared + y_squared);
+    }
+    
+    priv fn validate(self) -> bool {
+        return self.x >= 0 && self.y >= 0;
+    }
+}
+
+extern "C" fn sqrt(value: f64) -> f64;
+
+// Examples showing what would be INVALID in v1.16:
+
+// ❌ INVALID: Missing visibility modifier
+// struct InvalidPoint { x: i32, y: i32 }
+
+// ❌ INVALID: Empty parameter list without void
+// fn invalid_main(none) -> void { }
+
+// ❌ INVALID: Empty struct without void marker
+// struct InvalidEmpty { }
+
+// ❌ INVALID: Empty enum without void marker  
+// enum InvalidStatus { }
+
+// ❌ INVALID: External function without explicit parameters
+// extern "C" fn invalid_func(none) -> void; 

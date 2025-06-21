@@ -1,0 +1,174 @@
+# CodeLlama-7B-Instruct Configuration for Asthra LLM Fine-tuning
+# Version: 1.0
+# Created: January 2025
+# Model: codellama/CodeLlama-7b-Instruct-hf (7B parameters) - Fully open, no auth required
+
+# Model Configuration
+model:
+  name: "codellama/CodeLlama-7b-Instruct-hf"
+  tokenizer_name: "codellama/CodeLlama-7b-Instruct-hf" 
+  max_length: 16384  # 16K context window
+  trust_remote_code: false
+  
+  # No quantization for CPU/MPS training
+  quantization:
+    load_in_4bit: false  # Disable for CPU/MPS compatibility
+
+# Training Configuration
+training:
+  output_dir: "./outputs/models/codellama/"
+  overwrite_output_dir: true
+  
+  # Small batch sizes for local training
+  per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1
+  gradient_accumulation_steps: 4
+  dataloader_num_workers: 0  # Disable multiprocessing
+  
+  # Learning rate and optimization
+  learning_rate: 0.00002  # 2e-5 as decimal
+  lr_scheduler_type: "linear"
+  warmup_ratio: 0.05
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  
+  # Training duration (shorter for demo)
+  num_train_epochs: 1
+  max_steps: 100  # Limit to 100 steps for demo
+  
+  # Logging and evaluation
+  logging_dir: "./outputs/logs/codellama/"
+  logging_steps: 10
+  eval_strategy: "steps"
+  eval_steps: 50
+  save_strategy: "steps"
+  save_steps: 50
+  save_total_limit: 2
+  
+  # Mixed precision training (disabled for CPU/MPS)
+  fp16: false
+  bf16: false
+  
+  # Other training settings
+  remove_unused_columns: false
+  group_by_length: false  # Disable for simplicity
+  ddp_find_unused_parameters: false
+
+# LoRA Configuration (Parameter-Efficient Fine-tuning)
+lora:
+  rank: 16
+  alpha: 32
+  dropout: 0.1
+  bias: "none"
+  task_type: "CAUSAL_LM"
+  target_modules: 
+    - "q_proj"
+    - "k_proj" 
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+  modules_to_save: null
+
+# Data Configuration
+data:
+  dataset_path: "./data/processed/"
+  raw_data_path: "./data/raw/"
+  cache_dir: "./outputs/cache/codellama/"
+  
+  # Dataset splits
+  train_split: 0.9
+  validation_split: 0.1
+  test_split: 0.0
+  
+  # Data processing
+  max_samples: 1000  # Limit to 1000 samples for demo
+  max_seq_length: 1024  # Smaller for faster training
+  preprocessing_num_workers: 1
+  
+  # Data quality filters
+  min_code_length: 20
+  max_code_length: 1024
+  quality_threshold: 0.7
+
+# Evaluation Configuration
+evaluation:
+  # Compilation testing (disabled)
+  enable_compilation_testing: false
+  asthra_compiler_path: null
+  compilation_timeout: 30
+  
+  # Semantic analysis testing (disabled)
+  enable_semantic_testing: false
+  semantic_timeout: 15
+  
+  # Quality metrics
+  target_compilation_rate: 0.80
+  target_semantic_rate: 0.75
+  target_quality_score: 0.70
+
+# Single-stage Training
+stages:
+  stage1:
+    name: "asthra_code_training"
+    dataset: "instruction_tuning.jsonl"
+    epochs: 1
+    learning_rate: 0.00002
+    description: "Learn Asthra programming syntax and patterns"
+
+# Monitoring and Logging
+monitoring:
+  # Weights & Biases (disabled)
+  use_wandb: false
+  wandb_project: "asthra-codellama-demo"
+  wandb_entity: null
+  
+  # Tensorboard
+  use_tensorboard: true
+  tensorboard_log_dir: "./outputs/logs/codellama/tensorboard/"
+  
+  # Custom metrics
+  track_compilation_success: false
+  track_semantic_correctness: false
+  track_code_quality: true
+
+# Hardware and Performance
+hardware:
+  # Device settings for CPU/MPS
+  device_map: null  # Let it auto-select
+  max_memory: null
+  offload_folder: "./outputs/offload/codellama/"
+  
+  # Performance optimizations
+  gradient_checkpointing: false  # Disable for simplicity
+  dataloader_pin_memory: false   # Disable for CPU
+  use_cache: false
+  
+  # Memory management
+  max_memory_mb: 8000
+  cleanup_cache_every_n_steps: 25
+
+# Export and Deployment
+export:
+  # GGUF export settings
+  gguf_output_dir: "./outputs/exported/codellama/gguf/"
+  gguf_quantization: "Q4_K_M"
+  
+  # Ollama integration
+  ollama_model_name: "asthra-codellama"
+  ollama_model_file: "./outputs/exported/codellama/ollama/Modelfile"
+  
+  # Model registry
+  registry_url: null
+  model_version: "1.0-demo"
+
+# Advanced Settings
+advanced:
+  # Gradient accumulation optimization
+  gradient_accumulation_kwargs:
+    sync_each_batch: false
+  
+  # Memory optimization
+  max_memory_mapping: null
+  seed: 42 

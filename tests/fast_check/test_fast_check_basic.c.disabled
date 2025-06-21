@@ -1,0 +1,145 @@
+#include "fast_check_engine.h"
+#include "../framework/test_framework.h"
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
+// Test fast check engine creation and destruction
+AsthraTestResult test_fast_check_engine_lifecycle(AsthraTestContext *context) {
+    FastCheckEngine *engine = fast_check_engine_create();
+    ASTHRA_TEST_ASSERT(context, (engine) != NULL, "Engine creation should succeed");
+    
+    // Test engine has valid components
+    ASTHRA_TEST_ASSERT(context, (engine->dependency_graph) != NULL, "Engine should have dependency graph");
+    ASTHRA_TEST_ASSERT(context, (engine->semantic_cache) != NULL, "Engine should have semantic cache");
+    ASTHRA_TEST_ASSERT(context, (engine->analyzer) != NULL, "Engine should have incremental analyzer");
+    ASTHRA_TEST_ASSERT(context, (engine->config) != NULL, "Engine should have configuration");
+    
+    // Test initial statistics
+    FastCheckEngineStats stats = fast_check_engine_get_stats(engine);
+    asthra_test_assert_int_eq(context, stats.total_checks, 0, "Initial check count should be 0");
+    asthra_test_assert_int_eq(context, stats.cache_hits, 0, "Initial cache hits should be 0");
+    asthra_test_assert_int_eq(context, stats.cache_misses, 0, "Initial cache misses should be 0");
+    
+    fast_check_engine_destroy(engine);
+    
+    return ASTHRA_TEST_PASS;
+}
+
+// Test fast check configuration
+AsthraTestResult test_fast_check_config(AsthraTestContext *context) {
+    FastCheckConfig *config = fast_check_config_create_default();
+    ASTHRA_TEST_ASSERT(context, (config) != NULL, "Config creation should succeed");
+    
+    // Test default values
+    asthra_test_assert_int_eq(context, config->max_cache_memory_mb, 256, "Default cache memory should be 256MB");
+    asthra_test_assert_int_eq(context, config->cache_ttl_seconds, 300, "Default TTL should be 300 seconds");
+    ASTHRA_TEST_ASSERT(context, config->enable_dependency_tracking, "Dependency tracking should be enabled by default");
+    ASTHRA_TEST_ASSERT(context, config->enable_incremental_parsing, "Incremental parsing should be enabled by default");
+    
+    fast_check_config_destroy(config);
+    
+    return ASTHRA_TEST_PASS;
+}
+
+// Test dependency tracker basic functionality
+AsthraTestResult test_dependency_tracker_basic(AsthraTestContext *context) {
+    DependencyGraph *graph = dependency_graph_create();
+    ASTHRA_TEST_ASSERT(context, (graph) != NULL, "Dependency graph creation should succeed");
+    
+    // Test adding files
+    bool result = dependency_graph_add_file(graph, "test1.asthra");
+    ASTHRA_TEST_ASSERT(context, result, "Adding file should succeed");
+    
+    result = dependency_graph_add_file(graph, "test2.asthra");
+    ASTHRA_TEST_ASSERT(context, result, "Adding second file should succeed");
+    
+    // Test adding dependency
+    result = dependency_graph_add_dependency(graph, "test1.asthra", "test2.asthra");
+    ASTHRA_TEST_ASSERT(context, result, "Adding dependency should succeed");
+    
+    dependency_graph_destroy(graph);
+    
+    return ASTHRA_TEST_PASS;
+}
+
+// Test fast semantic cache basic functionality
+AsthraTestResult test_fast_semantic_cache_basic(AsthraTestContext *context) {
+    FastSemanticCacheManager *cache = fast_semantic_cache_create(64); // 64MB
+    ASTHRA_TEST_ASSERT(context, (cache) != NULL, "Cache creation should succeed");
+    
+    // Test cache statistics
+    FastCacheStatistics stats = fast_semantic_cache_get_statistics(cache);
+    asthra_test_assert_int_eq(context, stats.total_files_cached, 0, "Initial files cached should be 0");
+    asthra_test_assert_int_eq(context, stats.cache_hits, 0, "Initial cache hits should be 0");
+    
+    fast_semantic_cache_destroy(cache);
+    
+    return ASTHRA_TEST_PASS;
+}
+
+// Test error handling
+AsthraTestResult test_fast_check_error_handling(AsthraTestContext *context) {
+    FastCheckEngine *engine = fast_check_engine_create();
+    ASTHRA_TEST_ASSERT(context, (engine) != NULL, "Engine creation should succeed");
+    
+    // Test checking non-existent file
+    FastCheckResult *result = fast_check_file(engine, "non_existent_file.asthra");
+    ASTHRA_TEST_ASSERT(context, (result) != NULL, "Result should be returned even for non-existent file");
+    ASTHRA_TEST_ASSERT(context, !(result->success), "Check should fail for non-existent file");
+    ASTHRA_TEST_ASSERT(context, result->error_count > 0, "Should have at least one error");
+    
+    fast_check_result_destroy(result);
+    fast_check_engine_destroy(engine);
+    
+    return ASTHRA_TEST_PASS;
+}
+
+// Test code snippet checking
+AsthraTestResult test_fast_check_code_snippet(AsthraTestContext *context) {
+    FastCheckEngine *engine = fast_check_engine_create();
+    ASTHRA_TEST_ASSERT(context, (engine) != NULL, "Engine creation should succeed");
+    
+    // Test simple code snippet
+    const char *code = "let x: i32 = 42;";
+    FastCheckResult *result = fast_check_code_snippet(engine, code, NULL);
+    ASTHRA_TEST_ASSERT(context, (result) != NULL, "Result should be returned for code snippet");
+    
+    // Note: With our simplified implementation, this should succeed
+    ASTHRA_TEST_ASSERT(context, result->success, "Simple code snippet should succeed");
+    ASTHRA_TEST_ASSERT(context, result->check_time_ms > 0.0, "Check should take some time");
+    
+    fast_check_result_destroy(result);
+    fast_check_engine_destroy(engine);
+    
+    return ASTHRA_TEST_PASS;
+}
+
+// Test cache invalidation
+AsthraTestResult test_fast_check_cache_invalidation(AsthraTestContext *context) {
+    FastCheckEngine *engine = fast_check_engine_create();
+    ASTHRA_TEST_ASSERT(context, (engine) != NULL, "Engine creation should succeed");
+    
+    // Test invalidating non-existent file (should not crash)
+    bool result = fast_check_invalidate_cache(engine, "test_file.asthra");
+    ASTHRA_TEST_ASSERT(context, result, "Cache invalidation should succeed");
+    
+    fast_check_engine_destroy(engine);
+    
+    return ASTHRA_TEST_PASS;
+}
+
+// Main test function
+int main(void) {
+    AsthraTestSuite *suite = asthra_test_suite_create_lightweight("Fast Check Basic Tests");
+    
+    asthra_test_suite_add_test(suite, "engine_lifecycle", "Test fast check engine creation and destruction", test_fast_check_engine_lifecycle);
+    asthra_test_suite_add_test(suite, "config", "Test fast check configuration", test_fast_check_config);
+    asthra_test_suite_add_test(suite, "dependency_tracker", "Test dependency tracker basic functionality", test_dependency_tracker_basic);
+    asthra_test_suite_add_test(suite, "semantic_cache", "Test fast semantic cache basic functionality", test_fast_semantic_cache_basic);
+    asthra_test_suite_add_test(suite, "error_handling", "Test error handling", test_fast_check_error_handling);
+    asthra_test_suite_add_test(suite, "code_snippet", "Test code snippet checking", test_fast_check_code_snippet);
+    asthra_test_suite_add_test(suite, "cache_invalidation", "Test cache invalidation", test_fast_check_cache_invalidation);
+    
+    return asthra_test_suite_run_and_exit(suite);
+} 

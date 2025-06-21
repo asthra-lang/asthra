@@ -1,0 +1,164 @@
+// Asthra Standard Library - Hash Utility Functions
+package stdlib::hash;
+
+// =============================================================================
+// High-Level Convenience Functions
+// =============================================================================
+
+// Hash any data with best default settings (SipHash-2-4 with random key)
+pub fn hash(data: []u8) -> u64 {
+    let key: SipHashKey = generate_key(none);
+    return siphash_24(data, key);
+}
+
+// Hash string with best default settings
+pub fn hash_string(s: string) -> u64 {
+    return hash(string_to_bytes(s));
+}
+
+// Hash with configuration
+pub fn hash_with_config(data: []u8, config: HashConfig) -> HashResult {
+    match config.function {
+        HashFunction.SipHash_2_4 => {
+            return hash_string_config(bytes_to_string(data), config);
+        },
+        HashFunction.SipHash_1_3 => {
+            let key: SipHashKey = get_key_from_config(config);
+            let hash: u64 = siphash_13(data, key);
+            return HashResult.Ok(hash);
+        },
+        HashFunction.FNV_1a => {
+            return hash_fnv_config(data, config);
+        },
+        _ => {
+            return HashResult.InvalidInput("Unsupported hash function");
+        },
+    }
+}
+
+// =============================================================================
+// Batch Processing Functions
+// =============================================================================
+
+// Hash multiple byte arrays with same configuration
+pub fn hash_batch(data_list: [][]u8, config: HashConfig) -> Result<[]u64, string> {
+    let mut results: []u64 = vec_with_capacity(data_list.len);
+    
+    for i in 0..data_list.len {
+        match hash_with_config(data_list[i], config) {
+            HashResult.Ok(hash) => {
+                vec_push(results, hash);
+            },
+            HashResult.InvalidInput(msg) => {
+                return Result.Err("Invalid input at index " + string(i) + ": " + msg);
+            },
+            HashResult.InternalError(msg) => {
+                return Result.Err("Internal error at index " + string(i) + ": " + msg);
+            },
+        }
+    }
+    
+    return Result.Ok(results);
+}
+
+// Hash multiple strings with same configuration
+pub fn hash_string_batch(strings: []string, config: HashConfig) -> Result<[]u64, string> {
+    let mut data_list: [][]u8 = vec_with_capacity(strings.len);
+    
+    for i in 0..strings.len {
+        vec_push(data_list, string_to_bytes(strings[i]));
+    }
+    
+    return hash_batch(data_list, config);
+}
+
+// =============================================================================
+// Hash Comparison and Validation
+// =============================================================================
+
+// Compare two hashes in constant time (prevent timing attacks)
+pub fn compare_hashes(hash1: u64, hash2: u64) -> bool {
+    return constant_time_eq_u64(hash1, hash2);
+}
+
+// Validate hash against expected value
+pub fn validate_hash(data: []u8, expected: u64, config: HashConfig) -> bool {
+    match hash_with_config(data, config) {
+        HashResult.Ok(actual) => {
+            return compare_hashes(actual, expected);
+        },
+        _ => {
+            return false;
+        },
+    }
+}
+
+// =============================================================================
+// Performance Testing Utilities
+// =============================================================================
+
+// Benchmark hash function performance
+pub struct BenchmarkResult {
+    pub function: HashFunction,
+    pub data_size: usize,
+    pub iterations: u32,
+    pub total_time_ns: u64,
+    pub hashes_per_second: f64,
+    pub bytes_per_second: f64,
+}
+
+// Run performance benchmark
+pub fn benchmark_hash_function(
+    func: HashFunction, 
+    data_size: usize, 
+    iterations: u32
+) -> BenchmarkResult {
+    let test_data: []u8 = generate_test_data(data_size);
+    let config: HashConfig = config_with_function(func);
+    
+    let start_time: u64 = get_time_ns(none);
+    
+    for i in 0..iterations {
+        let _ = hash_with_config(test_data, config);
+    }
+    
+    let end_time: u64 = get_time_ns(none);
+    let total_time: u64 = end_time - start_time;
+    
+    let hashes_per_second: f64 = iterations as f64 / (total_time as f64 / 1_000_000_000.0);
+    let bytes_per_second: f64 = (data_size * iterations) as f64 / (total_time as f64 / 1_000_000_000.0);
+    
+    return BenchmarkResult {
+        function: func,
+        data_size: data_size,
+        iterations: iterations,
+        total_time_ns: total_time,
+        hashes_per_second: hashes_per_second,
+        bytes_per_second: bytes_per_second,
+    };
+}
+
+// =============================================================================
+// Private Helper Functions
+// =============================================================================
+
+priv fn get_key_from_config(config: HashConfig) -> SipHashKey {
+    // Implementation using functions from the same package
+    match config.seed {
+        Option.Some(seed) => {
+            return key_from_u64(seed, seed);
+        },
+        Option.None => {
+            return generate_key(none);
+        },
+    }
+}
+
+// External functions
+extern fn string_to_bytes(s: string) -> []u8;
+extern fn bytes_to_string(data: []u8) -> string;
+extern fn constant_time_eq_u64(a: u64, b: u64) -> bool;
+extern fn generate_test_data(size: usize) -> []u8;
+extern fn get_time_ns(none) -> u64;
+extern fn vec_with_capacity(capacity: usize) -> []u64;
+extern fn vec_push(vec: []u64, item: u64) -> void; 

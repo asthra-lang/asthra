@@ -1,0 +1,218 @@
+package main;
+
+// Generic data structures demonstrating type system consistency
+
+// Basic generic container (most common use case)
+pub struct Vec<T> {
+    data: *mut T,
+    len: usize,
+    capacity: usize
+}
+
+// Multiple type parameters for key-value structures
+pub struct Pair<A, B> {
+    first: A,
+    second: B
+}
+
+// Optional value container (similar to enum Option<T>)
+pub struct Option<T> {
+    value: T,
+    has_value: bool
+}
+
+// Complex nested generic example
+pub struct Container<T, M> {
+    data: T,
+    metadata: M,
+    id: i32,
+    timestamp: i64
+}
+
+// Generic implementations showing method support
+impl<T> Vec<T> {
+    pub fn new(void) -> Vec<T> {
+        return Vec {
+            data: null,
+            len: 0,
+            capacity: 0
+        };
+    }
+    
+    pub fn with_capacity(capacity: usize) -> Vec<T> {
+        let data: *mut T = alloc(capacity * sizeof(T));
+        return Vec {
+            data: data,
+            len: 0,
+            capacity: capacity
+        };
+    }
+    
+    pub fn push(self: *mut Vec<T>, value: T) -> void {
+        // Resize if needed (simplified)
+        if self.len >= self.capacity {
+            self.resize_internal(void);
+        }
+        
+        // Add element
+        unsafe {
+            self.data[self.len] = value;
+        }
+        self.len = self.len + 1;
+    }
+    
+    pub fn get(self: *Vec<T>, index: usize) -> Option<T> {
+        if index >= self.len {
+            return Option { value: T.default(void), has_value: false };
+        }
+        return Option { 
+            value: self.data[index], 
+            has_value: true 
+        };
+    }
+    
+    priv fn resize_internal(self: *mut Vec<T>) -> void {
+        let new_capacity: usize = if self.capacity == 0 { 4 } else { self.capacity * 2 };
+        let new_data: *mut T = realloc(self.data, new_capacity * sizeof(T));
+        self.data = new_data;
+        self.capacity = new_capacity;
+    }
+}
+
+impl<A, B> Pair<A, B> {
+    pub fn new(first: A, second: B) -> Pair<A, B> {
+        return Pair { first: first, second: second };
+    }
+    
+    fn swap(self: Pair<A, B>) -> Pair<B, A> {
+        return Pair { first: self.second, second: self.first };
+    }
+    
+    fn map_first<C>(self: Pair<A, B>, transformer: fn(A) -> C) -> Pair<C, B> {
+        return Pair { 
+            first: transformer(self.first), 
+            second: self.second 
+        };
+    }
+    
+    fn equal(self: Pair<A, B>, other: Pair<A, B>) -> bool {
+        return self.first == other.first && self.second == other.second;
+    }
+}
+
+impl<T, M> Container<T, M> {
+    fn new(data: T, metadata: M, id: i32) -> Container<T, M> {
+        return Container {
+            data: data,
+            metadata: metadata,
+            id: id,
+            timestamp: get_current_time(void)
+        };
+    }
+    
+    fn update_data(self: *mut Container<T, M>, new_data: T) -> void {
+        self.data = new_data;
+        self.timestamp = get_current_time(void);
+    }
+}
+
+// External functions for demonstration
+extern fn alloc(size: usize) -> *mut void;
+extern fn realloc(ptr: *mut void, new_size: usize) -> *mut void;
+extern fn get_current_time(void) -> i64;
+
+pub fn main(void) -> i32 {
+    // Integer vector - most common generic usage
+    let mut numbers: Vec<i32> = Vec.with_capacity(10);
+    numbers.push(1);
+    numbers.push(2);
+    numbers.push(3);
+    
+    // String vector demonstrating type flexibility
+    let mut names: Vec<string> = Vec.new(void);
+    names.push("Alice");
+    names.push("Bob");
+    names.push("Charlie");
+    
+    // Multiple type parameters - coordinates
+    let coordinate: Pair<f64, f64> = Pair.new(3.14159, 2.71828);
+    let name_age: Pair<string, i32> = Pair.new("David", 25);
+    
+    // Type swapping demonstration
+    let swapped: Pair<i32, string> = name_age.swap(void);
+    
+    // Complex nested generics
+    let user_cache: Container<Vec<string>, bool> = Container.new(
+        names, 
+        true,  // active flag
+        12345
+    );
+    
+    // Pattern matching with generic structs
+    match coordinate {
+        Pair<f64, f64> { first: x, second: y } => {
+            log("Mathematical constants: π≈" + x + ", e≈" + y);
+        }
+    }
+    
+    match swapped {
+        Pair<i32, string> { first: age, second: name } => {
+            log("Person: " + name + " is " + age + " years old");
+        }
+    }
+    
+    // Container pattern matching
+    match user_cache {
+        Container<Vec<string>, bool> { data: user_list, metadata: is_active, id: id, .. } => {
+            if is_active {
+                log("Active user cache (ID: " + id + ") contains " + (user_list.len).to_string() + " users");
+            } else {
+                log("Inactive user cache (ID: " + id + ")");
+            }
+        }
+    }
+    
+    // Optional value handling
+    let found: Option<i32> = numbers.get(1);
+    match found {
+        Option<i32> { value: num, has_value: true } => {
+            log("Found number at index 1: " + num);
+        },
+        Option<i32> { has_value: false, .. } => {
+            log("Index 1 is out of bounds");
+        }
+    }
+    
+    // Demonstration of type inference in generic contexts
+    let auto_pair: auto  // Manual review needed = Pair.new("inference", 42);  // Pair<string, i32> inferred;
+    let auto_container: auto  // Manual review needed = Container.new(auto_pair, "metadata", 999);  // Container<Pair<string, i32>, string>;
+    
+    // FFI compatibility example (if compiled with appropriate extern functions)
+    let point_2d: auto  // Manual review needed = Point2D { x: 10.0, y: 20.0 };
+    draw_point(point_2d);
+    
+    log("Generic structs example completed successfully!");
+    return 0;
+}
+
+// FFI-compatible generic struct example
+#[repr(C)]
+struct Point2D {
+    x: f32,
+    y: f32
+}
+
+extern "graphics" fn draw_point(point: Point2D) -> void;
+extern fn log(message: string) -> void;
+
+// Utility function demonstrating generic type constraints
+fn print_pair_info<T, U>(pair: Pair<T, U>) -> void {
+    // In a real implementation, this would use trait bounds
+    // For now, showing the generic function syntax
+    log("Processing a pair with two generic types");
+}
+
+// Helper function showing generic type parameter usage
+fn create_numbered_container<T>(data: T, number: i32) -> Container<T, i32> {
+    return Container.new(data, number, number);
+} 

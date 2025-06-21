@@ -1,0 +1,412 @@
+// Security Annotations Examples - Comprehensive demonstration of security-focused annotations
+// This file shows proper usage of security annotations for timing attack prevention and memory safety
+
+package examples;
+
+// =============================================================================
+// CONSTANT TIME ANNOTATIONS - Timing attack prevention
+// =============================================================================
+
+#[constant_time]
+#[human_review(high, context = "crypto")]
+fn secure_memory_compare(a: []u8, b: []u8) -> bool {
+    // Constant-time comparison prevents timing attacks
+    // Compiler ensures this function executes in constant time regardless of input values
+    if a.len != b.len {
+        return false;
+    }
+    
+    let diff: u8 = 0;
+    for i in range(0, a.len) {
+        diff = diff | (a[i] ^ b[i]);
+    }
+    
+    return diff == 0;
+}
+
+#[constant_time]
+#[human_review(high, context = "crypto")]
+fn compare_password_hashes(hash1: []u8, hash2: []u8) -> bool {
+    // Constant-time password hash comparison prevents timing-based attacks
+    if hash1.len != hash2.len {
+        return false;
+    }
+    
+    let result: u8 = 0;
+    for i in range(0, hash1.len) {
+        result = result | (hash1[i] ^ hash2[i]);
+    }
+    
+    return result == 0;
+}
+
+#[constant_time]
+#[human_review(high, context = "crypto")]
+fn constant_time_select(condition: bool, true_value: u8, false_value: u8) -> u8 {
+    // Constant-time conditional selection
+    // Prevents timing leaks based on condition evaluation
+    let mask: u8 = if condition { 0xFF } else { 0x00 };
+    return (true_value & mask) | (false_value & (!mask));
+}
+
+#[constant_time]
+#[human_review(medium, context = "crypto")]
+fn constant_time_array_lookup(array: []u8, index: usize) -> u8 {
+    // Constant-time array lookup to prevent cache timing attacks
+    let result: u8 = 0;
+    
+    for i in range(0, array.len) {
+        let mask: u8 = if i == index { 0xFF } else { 0x00 };
+        result = result | (array[i] & mask);
+    }
+    
+    return result;
+}
+
+#[constant_time]
+#[human_review(high, context = "crypto")]
+fn verify_hmac_constant_time(message: []u8, key: []u8, expected_hmac: []u8) -> bool {
+    // Constant-time HMAC verification prevents timing attacks on MAC verification
+    let computed_hmac: []u8 = allocate_slice(32); // SHA-256 HMAC
+    
+    let hmac_result: Result<void, string> = compute_hmac_sha256(message, key, computed_hmac);
+    match hmac_result {
+        Result.Err(_) => {
+            // Clear computed HMAC on error
+            secure_zero(computed_hmac);
+            return false;
+        },
+        Result.Ok(_) => {
+            // Constant-time comparison
+            let is_valid: bool = secure_memory_compare(computed_hmac, expected_hmac);
+            
+            // Clear computed HMAC after comparison
+            secure_zero(computed_hmac);
+            
+            return is_valid;
+        }
+    }
+}
+
+// =============================================================================
+// VOLATILE MEMORY ANNOTATIONS - Memory optimization control
+// =============================================================================
+
+#[volatile_memory]
+#[human_review(high, context = "security")]
+fn clear_sensitive_data(data: []u8) -> void {
+    // Volatile memory annotation prevents compiler from optimizing away the clear
+    // This ensures sensitive data is actually removed from memory
+    for i in range(0, data.len) {
+        data[i] = 0;
+    }
+    // Compiler cannot optimize this loop away due to volatile annotation
+}
+
+#[volatile_memory]
+#[human_review(medium, context = "crypto")]
+fn secure_key_processing(key: []u8) -> Result<[]u8, string> {
+    // Process cryptographic key with guaranteed memory clearing
+    let processed_key: []u8 = allocate_slice(key.len);
+    
+    // Perform key processing (example transformation)
+    for i in range(0, key.len) {
+        processed_key[i] = key[i] ^ 0xAA; // Example transformation
+    }
+    
+    // Clear original key from memory (guaranteed by volatile annotation)
+    for i in range(0, key.len) {
+        key[i] = 0;
+    }
+    
+    return Result.Ok(processed_key);
+}
+
+#[volatile_memory]
+#[human_review(high, context = "security")]
+fn secure_password_verification(password: string, stored_hash: []u8) -> Result<bool, string> {
+    // Secure password verification with guaranteed cleanup
+    let password_bytes: []u8 = password.as_bytes();
+    let computed_hash: []u8 = allocate_slice(32); // SHA-256 hash
+    
+    // Compute hash of provided password
+    let hash_result: Result<void, string> = compute_sha256(password_bytes, computed_hash);
+    
+    // Clear password bytes immediately (volatile ensures this happens)
+    for i in range(0, password_bytes.len) {
+        password_bytes[i] = 0;
+    }
+    
+    match hash_result {
+        Result.Err(error) => {
+            // Clear computed hash on error
+            for i in range(0, computed_hash.len) {
+                computed_hash[i] = 0;
+            }
+            return Result.Err("Hash computation failed: " + error);
+        },
+        Result.Ok(_) => {
+            // Compare hashes in constant time
+            let is_valid: bool = secure_memory_compare(computed_hash, stored_hash);
+            
+            // Clear computed hash (volatile ensures this happens)
+            for i in range(0, computed_hash.len) {
+                computed_hash[i] = 0;
+            }
+            
+            return Result.Ok(is_valid);
+        }
+    }
+}
+
+#[volatile_memory]
+#[human_review(medium, context = "security")]
+fn secure_random_buffer_generation(size: usize) -> Result<[]u8, string> {
+    // Generate secure random buffer with guaranteed cleanup on failure
+    let buffer: []u8 = allocate_slice(size);
+    
+    let random_result: Result<void, string> = fill_secure_random(buffer);
+    match random_result {
+        Result.Ok(_) => return Result.Ok(buffer)
+        Result.Err(error) => {
+            // Clear buffer on failure (volatile ensures this happens)
+            for i in range(0, buffer.len) {
+                buffer[i] = 0;
+            }
+            return Result.Err("Random generation failed: " + error);
+        }
+    }
+}
+
+// =============================================================================
+// COMBINED SECURITY ANNOTATIONS - Maximum protection
+// =============================================================================
+
+#[constant_time]
+#[volatile_memory]
+#[human_review(high, context = "crypto")]
+fn critical_crypto_operation(secret: []u8, data: []u8) -> Result<[]u8, string> {
+    // Triple protection: human review + timing safety + memory safety
+    // This function combines all security measures for maximum protection
+    let result: []u8 = allocate_slice(32); // 256-bit result
+    
+    // Perform cryptographic operation
+    let operation_result: Result<void, string> = perform_crypto_operation(secret, data, result);
+    
+    // Clear sensitive inputs (volatile ensures this isn't optimized away)
+    for i in range(0, secret.len) {
+        secret[i] = 0;
+    }
+    
+    match operation_result {
+        Result.Ok(_) => return Result.Ok(result)
+        Result.Err(error) => {
+            // Clear result on error (volatile ensures this happens)
+            for i in range(0, result.len) {
+                result[i] = 0;
+            }
+            return Result.Err(error);
+        }
+    }
+}
+
+#[constant_time]
+#[volatile_memory]
+#[human_review(high, context = "crypto")]
+fn secure_key_derivation(password: []u8, salt: []u8, iterations: u32) -> Result<[]u8, string> {
+    // Secure key derivation with constant-time execution and guaranteed cleanup
+    let derived_key: []u8 = allocate_slice(32); // 256-bit derived key
+    let working_buffer: []u8 = allocate_slice(64); // Working space for PBKDF2
+    
+    // Perform PBKDF2 key derivation
+    let derivation_result: Result<void, string> = pbkdf2_derive(
+        password,
+        salt,
+        iterations,
+        derived_key,
+        working_buffer
+    );
+    
+    // Clear working buffer (volatile ensures this happens)
+    for i in range(0, working_buffer.len) {
+        working_buffer[i] = 0;
+    }
+    
+    // Clear password (volatile ensures this happens)
+    for i in range(0, password.len) {
+        password[i] = 0;
+    }
+    
+    match derivation_result {
+        Result.Ok(_) => return Result.Ok(derived_key)
+        Result.Err(error) => {
+            // Clear derived key on error (volatile ensures this happens)
+            for i in range(0, derived_key.len) {
+                derived_key[i] = 0;
+            }
+            return Result.Err("Key derivation failed: " + error);
+        }
+    }
+}
+
+#[constant_time]
+#[volatile_memory]
+#[human_review(high, context = "crypto")]
+fn authenticate_with_timing_protection(username: string, password: string) -> Result<bool, string> {
+    // Authentication with comprehensive timing attack protection
+    let password_bytes: []u8 = password.as_bytes();
+    let dummy_hash: []u8 = allocate_slice(32);
+    let computed_hash: []u8 = allocate_slice(32);
+    
+    // Generate dummy hash for constant-time operation
+    let dummy_result: Result<void, string> = generate_dummy_hash(dummy_hash);
+    match dummy_result {
+        Result.Err(_) => {
+            // Clear all buffers on error
+            clear_buffer(password_bytes);
+            clear_buffer(dummy_hash);
+            clear_buffer(computed_hash);
+            return Result.Err("Dummy hash generation failed");
+        },
+        Result.Ok(_) => {}
+    }
+    
+    // Look up user (this may fail, but we continue for constant time)
+    let user_lookup: Result<User, string> = lookup_user(username);
+    
+    // Always compute a hash, regardless of whether user exists
+    let hash_input: []u8 = match user_lookup {
+        Result.Ok(user) => user.password_hash
+        Result.Err(_) => dummy_hash // Use dummy hash if user doesn't exist
+    };
+    
+    // Compute hash of provided password
+    let hash_result: Result<void, string> = compute_sha256(password_bytes, computed_hash);
+    
+    // Clear password immediately (volatile ensures this happens)
+    clear_buffer(password_bytes);
+    
+    match hash_result {
+        Result.Err(_) => {
+            clear_buffer(computed_hash);
+            clear_buffer(dummy_hash);
+            return Result.Err("Hash computation failed");
+        },
+        Result.Ok(_) => {
+            // Constant-time comparison (always performed)
+            let hashes_match: bool = secure_memory_compare(computed_hash, hash_input);
+            
+            // Clear all buffers (volatile ensures this happens)
+            clear_buffer(computed_hash);
+            clear_buffer(dummy_hash);
+            
+            // Only return success if user exists AND hashes match
+            match user_lookup {
+                Result.Ok(_) => return Result.Ok(hashes_match)
+                Result.Err(_) => return Result.Ok(false) // User doesn't exist
+            }
+        }
+    }
+}
+
+// =============================================================================
+// SECURITY ANNOTATION BEST PRACTICES
+// =============================================================================
+
+#[constant_time]
+#[human_review(medium, context = "crypto")]
+fn side_channel_resistant_lookup(table: []u8, index: u8) -> Result<u8, string> {
+    // Constant-time table lookup prevents cache timing attacks
+    // This pattern is useful for S-box lookups in cryptographic algorithms
+    if table.len > 256 {
+        return Result.Err("Table too large for constant-time lookup");
+    }
+    
+    let result: u8 = 0;
+    
+    for i in range(0, table.len) {
+        let mask: u8 = if i == (index as usize) { 0xFF } else { 0x00 };
+        result = result | (table[i] & mask);
+    }
+    
+    return Result.Ok(result);
+}
+
+#[volatile_memory]
+#[human_review(medium, context = "security")]
+fn secure_buffer_allocation(size: usize) -> Result<[]u8, string> {
+    // Allocate buffer with guaranteed cleanup on all exit paths
+    if size == 0 || size > 1048576 { // 1MB limit
+        return Result.Err("Invalid buffer size");
+    }
+    
+    let buffer: []u8 = allocate_slice(size);
+    
+    // Initialize buffer to zero (volatile ensures this happens)
+    for i in range(0, buffer.len) {
+        buffer[i] = 0;
+    }
+    
+    return Result.Ok(buffer);
+}
+
+#[constant_time]
+#[volatile_memory]
+#[human_review(high, context = "crypto")]
+fn secure_string_comparison(a: string, b: string) -> bool {
+    // Secure string comparison with timing attack protection and memory cleanup
+    let a_bytes: []u8 = a.as_bytes();
+    let b_bytes: []u8 = b.as_bytes();
+    
+    // Constant-time length comparison
+    let length_match: bool = a_bytes.len == b_bytes.len;
+    
+    // Determine comparison length (always use longer length for constant time)
+    let compare_len: usize = if a_bytes.len > b_bytes.len { a_bytes.len } else { b_bytes.len };
+    
+    let diff: u8 = 0;
+    for i in range(0, compare_len) {
+        let a_byte: u8 = if i < a_bytes.len { a_bytes[i] } else { 0 };
+        let b_byte: u8 = if i < b_bytes.len { b_bytes[i] } else { 0 };
+        diff = diff | (a_byte ^ b_byte);
+    }
+    
+    // Clear string bytes (volatile ensures this happens)
+    for i in range(0, a_bytes.len) {
+        a_bytes[i] = 0;
+    }
+    for i in range(0, b_bytes.len) {
+        b_bytes[i] = 0;
+    }
+    
+    return length_match && (diff == 0);
+}
+
+// =============================================================================
+// HELPER FUNCTIONS (for completeness of examples)
+// =============================================================================
+
+#[volatile_memory]
+fn clear_buffer(buffer: []u8) -> void {
+    // Helper function to clear buffer with volatile guarantee
+    for i in range(0, buffer.len) {
+        buffer[i] = 0;
+    }
+}
+
+struct User {
+    pub id: i32;
+    pub username: string;
+    pub password_hash: []u8;
+}
+
+// External function declarations for cryptographic operations
+extern "crypto_lib" fn compute_sha256(input: []u8, output: []u8) -> Result<void, string>;
+extern "crypto_lib" fn compute_hmac_sha256(message: []u8, key: []u8, output: []u8) -> Result<void, string>;
+extern "crypto_lib" fn pbkdf2_derive(password: []u8, salt: []u8, iterations: u32, output: []u8, working: []u8) -> Result<void, string>;
+extern "crypto_lib" fn fill_secure_random(buffer: []u8) -> Result<void, string>;
+extern "crypto_lib" fn generate_dummy_hash(output: []u8) -> Result<void, string>;
+extern "crypto_lib" fn perform_crypto_operation(secret: []u8, data: []u8, output: []u8) -> Result<void, string>;
+
+// Database function declarations
+extern "database" fn lookup_user(username: string) -> Result<User, string>; 

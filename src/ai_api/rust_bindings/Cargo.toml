@@ -1,0 +1,30 @@
+[package]
+name = "asthra-semantic-api"
+version = "0.1.0"
+edition = "2021"
+description = "Rust bindings for Asthra Semantic API - enables AI tools to query Asthra's semantic analysis"
+license = "MIT"
+repository = "https://github.com/asthra-lang/asthra"
+keywords = ["asthra", "semantic", "api", "ai", "compiler"]
+categories = ["development-tools", "api-bindings"]
+
+[lib]
+name = "asthra_semantic_api"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+libc = "0.2"
+
+[build-dependencies]
+cc = "1.0"
+
+[features]
+default = []
+# Enable debug logging
+debug = []
+# Enable performance profiling
+profiling = []
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"] 

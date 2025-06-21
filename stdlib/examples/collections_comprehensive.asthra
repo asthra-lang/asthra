@@ -1,0 +1,601 @@
+// Asthra Standard Library - Comprehensive Collections Example
+// Demonstrates all enhanced collections features with best practices
+
+package examples::collections_comprehensive;
+
+// Import enhanced collections module
+import "stdlib/asthra/collections";
+import "stdlib/asthra/core";
+import "stdlib/io";
+
+// ============================================================================
+// ENHANCED VECTOR DEMONSTRATIONS
+// ============================================================================
+
+fn demonstrate_enhanced_vectors(none) -> void {
+    io::print_line("=== Enhanced Vector Operations ===");
+    
+    // Create vector with custom configuration
+    let config: auto  // Manual review needed = collections::VecConfig {;
+        initial_capacity: 8,
+        growth_factor: 1.5,
+        shrink_threshold: 0.3,
+        enable_shrinking: true
+    };
+    
+    let mut custom_vec = collections::vec_with_config::<i32>(config);
+    
+    // Demonstrate enhanced push with error handling
+    let push_result: auto  // Function call - manual review needed = collections::vec_push(&mut custom_vec, 42);
+    match push_result {
+        Result.Ok(_) => io::print_line("✅ Successfully pushed 42")
+        Result.Err(error) => {
+            match error {
+                collections::CollectionError.MemoryAllocation(msg) => {
+                    io::print_line("❌ Memory allocation failed: " + msg);
+                },
+                _ => io::print_line("❌ Unexpected error during push")
+            }
+        }
+    }
+    
+    // Demonstrate vector creation from slice
+    let initial_data: []i32 = [1, 2, 3, 4, 5];
+    let vec_from_slice_result: auto  // Function call - manual review needed = collections::vec_from_slice(initial_data);
+    match vec_from_slice_result {
+        Result.Ok(mut vec) => {
+            io::print_line("✅ Created vector from slice with " + collections::vec_len(&vec) + " elements");
+            
+            // Demonstrate insert at specific index
+            let insert_result: auto  // Function call - manual review needed = collections::vec_insert(&mut vec, 2, 99);
+            match insert_result {
+                Result.Ok(_) => io::print_line("✅ Inserted 99 at index 2")
+                Result.Err(collections::CollectionError.OutOfBounds(index)) => {
+                    io::print_line("❌ Index out of bounds: " + index);
+                }
+                Result.Err(_) => io::print_line("❌ Insert failed")
+            }
+            
+            // Demonstrate remove at specific index
+            let remove_result: auto  // Function call - manual review needed = collections::vec_remove(&mut vec, 1);
+            match remove_result {
+                Result.Ok(removed_value) => {
+                    io::print_line("✅ Removed value: " + removed_value);
+                },
+                Result.Err(collections::CollectionError.OutOfBounds(index)) => {
+                    io::print_line("❌ Remove index out of bounds: " + index);
+                }
+                Result.Err(_) => io::print_line("❌ Remove failed")
+            }
+            
+            // Demonstrate swap remove (faster for unordered data)
+            let swap_remove_result: auto  // Function call - manual review needed = collections::vec_swap_remove(&mut vec, 0);
+            match swap_remove_result {
+                Result.Ok(removed_value) => {
+                    io::print_line("✅ Swap removed value: " + removed_value);
+                },
+                Result.Err(_) => io::print_line("❌ Swap remove failed")
+            }
+            
+            // Demonstrate find and contains
+            let search_value: i32 = 99;
+            if collections::vec_contains(&vec, &search_value) {
+                let find_result: auto  // Function call - manual review needed = collections::vec_find(&vec, &search_value);
+                match find_result {
+                    Result.Ok(index) => {
+                        io::print_line("✅ Found " + search_value + " at index " + index);
+                    },
+                    Result.Err(_) => io::print_line("❌ Find failed despite contains check")
+                }
+            } else {
+                io::print_line("ℹ️ Vector does not contain " + search_value);
+            }
+            
+            // Demonstrate extend operation
+            let extension_data: []i32 = [100, 200, 300];
+            let extend_vec_result: auto  // Function call - manual review needed = collections::vec_from_slice(extension_data);
+            match extend_vec_result {
+                Result.Ok(extend_vec) => {
+                    let extend_result: auto  // Function call - manual review needed = collections::vec_extend(&mut vec, &extend_vec);
+                    match extend_result {
+                        Result.Ok(_) => {
+                            io::print_line("✅ Extended vector, new length: " + collections::vec_len(&vec));
+                        },
+                        Result.Err(_) => io::print_line("❌ Extend failed")
+                    }
+                },
+                Result.Err(_) => io::print_line("❌ Failed to create extension vector")
+            }
+            
+            // Demonstrate shrink to fit
+            let shrink_result: auto  // Function call - manual review needed = collections::vec_shrink_to_fit(&mut vec);
+            match shrink_result {
+                Result.Ok(_) => {
+                    io::print_line("✅ Shrunk vector capacity to " + collections::vec_capacity(&vec));
+                },
+                Result.Err(_) => io::print_line("❌ Shrink failed")
+            }
+            
+            // Clean up
+            collections::vec_destroy(&mut vec);
+        },
+        Result.Err(error) => {
+            io::print_line("❌ Failed to create vector from slice");
+        }
+    }
+    
+    collections::vec_destroy(&mut custom_vec);
+}
+
+// ============================================================================
+// HASH SET DEMONSTRATIONS
+// ============================================================================
+
+fn demonstrate_hash_sets(none) -> void {
+    io::print_line("\n=== Hash Set Operations ===");
+    
+    // Create hash set with initial capacity
+    let mut set = collections::hashset_with_capacity::<string>(16);
+    
+    // Demonstrate insert operations
+    let items: []string = ["apple", "banana", "cherry", "date", "elderberry"];
+    let mut i: usize = 0;
+    while i < items.len {
+        let insert_result: auto  // Function call - manual review needed = collections::hashset_insert(&mut set, items[i]);
+        match insert_result {
+            Result.Ok(was_new) => {
+                if was_new {
+                    io::print_line("✅ Inserted new item: " + items[i]);
+                } else {
+                    io::print_line("ℹ️ Item already existed: " + items[i]);
+                }
+            },
+            Result.Err(error) => {
+                io::print_line("❌ Failed to insert " + items[i]);
+            }
+        }
+        i = i + 1;
+    }
+    
+    // Demonstrate duplicate insertion
+    let duplicate_result: auto  // Function call - manual review needed = collections::hashset_insert(&mut set, "apple");
+    match duplicate_result {
+        Result.Ok(was_new) => {
+            if !was_new {
+                io::print_line("ℹ️ Correctly handled duplicate insertion of 'apple'");
+            }
+        },
+        Result.Err(_) => io::print_line("❌ Duplicate insertion failed")
+    }
+    
+    io::print_line("Set size after insertions: " + collections::hashset_len(&set));
+    
+    // Demonstrate contains check
+    let search_items: []string = ["apple", "grape", "banana"];
+    i = 0;
+    while i < search_items.len {
+        if collections::hashset_contains(&set, &search_items[i]) {
+            io::print_line("✅ Set contains: " + search_items[i]);
+        } else {
+            io::print_line("❌ Set does not contain: " + search_items[i]);
+        }
+        i = i + 1;
+    }
+    
+    // Demonstrate remove operations
+    let remove_result: auto  // Function call - manual review needed = collections::hashset_remove(&mut set, &"banana");
+    match remove_result {
+        Result.Ok(was_present) => {
+            if was_present {
+                io::print_line("✅ Successfully removed 'banana'");
+            } else {
+                io::print_line("ℹ️ 'banana' was not in set");
+            }
+        },
+        Result.Err(_) => io::print_line("❌ Remove operation failed")
+    }
+    
+    io::print_line("Set size after removal: " + collections::hashset_len(&set));
+    
+    // Demonstrate set creation from slice
+    let fruit_array: []string = ["mango", "papaya", "kiwi"];
+    let set_from_slice_result: auto  // Function call - manual review needed = collections::hashset_from_slice(fruit_array);
+    match set_from_slice_result {
+        Result.Ok(mut fruit_set) => {
+            io::print_line("✅ Created set from slice with " + collections::hashset_len(&fruit_set) + " items");
+            
+            // Demonstrate set operations (simplified implementations)
+            let union_result: auto  // Function call - manual review needed = collections::hashset_union(&mut set, &fruit_set);
+            match union_result {
+                Result.Ok(_) => io::print_line("✅ Union operation completed")
+                Result.Err(_) => io::print_line("❌ Union operation failed")
+            }
+            
+            collections::hashset_destroy(&mut fruit_set);
+        },
+        Result.Err(_) => io::print_line("❌ Failed to create set from slice")
+    }
+    
+    // Clear the set
+    collections::hashset_clear(&mut set);
+    io::print_line("Set size after clear: " + collections::hashset_len(&set));
+    
+    collections::hashset_destroy(&mut set);
+}
+
+// ============================================================================
+// ENHANCED HASH MAP DEMONSTRATIONS
+// ============================================================================
+
+fn demonstrate_enhanced_hashmaps(none) -> void {
+    io::print_line("\n=== Enhanced Hash Map Operations ===");
+    
+    // Create hash map with initial capacity
+    let mut map = collections::hashmap_with_capacity::<string, i32>(32);
+    
+    // Demonstrate enhanced insert with return value
+    let insert_pairs: []struct { key: string, value: i32 } = [
+        { key: "score", value: 100 },
+        { key: "level", value: 5 },
+        { key: "lives", value: 3 },
+        { key: "coins", value: 250 }
+    ];
+    
+    let mut i: usize = 0;
+    while i < insert_pairs.len {
+        let pair: auto  // Manual review needed = insert_pairs[i];
+        let insert_result: auto  // Function call - manual review needed = collections::hashmap_insert(&mut map, pair.key, pair.value);
+        match insert_result {
+            Result.Ok(old_value_opt) => {
+                match old_value_opt {
+                    Option.Some(old_value) => {
+                        io::print_line("✅ Updated " + pair.key + ": " + old_value + " → " + pair.value);
+                    },
+                    Option.None => {
+                        io::print_line("✅ Inserted " + pair.key + ": " + pair.value);
+                    }
+                }
+            },
+            Result.Err(error) => {
+                io::print_line("❌ Failed to insert " + pair.key);
+            }
+        }
+        i = i + 1;
+    }
+    
+    io::print_line("Map size: " + collections::hashmap_len(&map));
+    
+    // Demonstrate get operations
+    let get_result: auto  // Function call - manual review needed = collections::hashmap_get(&map, &"score");
+    match get_result {
+        Result.Ok(value_ptr) => {
+            unsafe {
+                io::print_line("✅ Retrieved score: " + *value_ptr);
+            }
+        },
+        Result.Err(_) => io::print_line("❌ Failed to get score")
+    }
+    
+    // Demonstrate get_or_insert
+    let default_health: i32 = 100;
+    let get_or_insert_result: auto  // Function call - manual review needed = collections::hashmap_get_or_insert(&mut map, "health", default_health);
+    match get_or_insert_result {
+        Result.Ok(value_ptr) => {
+            unsafe {
+                io::print_line("✅ Health value (get_or_insert): " + *value_ptr);
+            }
+        },
+        Result.Err(_) => io::print_line("❌ get_or_insert failed")
+    }
+    
+    // Demonstrate update existing value
+    let update_result: auto  // Function call - manual review needed = collections::hashmap_insert(&mut map, "score", 150);
+    match update_result {
+        Result.Ok(old_value_opt) => {
+            match old_value_opt {
+                Option.Some(old_value) => {
+                    io::print_line("✅ Updated score from " + old_value + " to 150");
+                },
+                Option.None => io::print_line("ℹ️ Score was not previously set")
+            }
+        },
+        Result.Err(_) => io::print_line("❌ Failed to update score")
+    }
+    
+    // Demonstrate contains_key
+    if collections::hashmap_contains_key(&map, &"level") {
+        io::print_line("✅ Map contains 'level' key");
+    } else {
+        io::print_line("❌ Map does not contain 'level' key");
+    }
+    
+    // Demonstrate remove
+    let remove_result: auto  // Function call - manual review needed = collections::hashmap_remove(&mut map, &"lives");
+    match remove_result {
+        Result.Ok(removed_value) => {
+            io::print_line("✅ Removed 'lives': " + removed_value);
+        },
+        Result.Err(_) => io::print_line("❌ Failed to remove 'lives' (key not found)")
+    }
+    
+    io::print_line("Map size after removal: " + collections::hashmap_len(&map));
+    
+    // Clear the map
+    collections::hashmap_clear(&map);
+    io::print_line("Map size after clear: " + collections::hashmap_len(&map));
+    
+    collections::hashmap_destroy(&mut map);
+}
+
+// ============================================================================
+// ENHANCED LINKED LIST DEMONSTRATIONS
+// ============================================================================
+
+fn demonstrate_enhanced_linked_lists(none) -> void {
+    io::print_line("\n=== Enhanced Linked List Operations ===");
+    
+    // Create linked list from slice
+    let initial_data: []string = ["first", "second", "third", "fourth"];
+    let list_result: auto  // Function call - manual review needed = collections::list_from_slice(initial_data);
+    match list_result {
+        Result.Ok(mut list) => {
+            io::print_line("✅ Created list from slice with " + collections::list_len(&list) + " elements");
+            
+            // Demonstrate insert at specific position
+            let insert_result: auto  // Function call - manual review needed = collections::list_insert(&mut list, 2, "inserted");
+            match insert_result {
+                Result.Ok(_) => {
+                    io::print_line("✅ Inserted 'inserted' at position 2");
+                    io::print_line("List length: " + collections::list_len(&list));
+                },
+                Result.Err(collections::CollectionError.OutOfBounds(index)) => {
+                    io::print_line("❌ Insert index out of bounds: " + index);
+                },
+                Result.Err(_) => io::print_line("❌ Insert failed")
+            }
+            
+            // Demonstrate remove at specific position
+            let remove_result: auto  // Function call - manual review needed = collections::list_remove_at(&mut list, 1);
+            match remove_result {
+                Result.Ok(removed_value) => {
+                    io::print_line("✅ Removed value at position 1: " + removed_value);
+                },
+                Result.Err(collections::CollectionError.OutOfBounds(index)) => {
+                    io::print_line("❌ Remove index out of bounds: " + index);
+                },
+                Result.Err(_) => io::print_line("❌ Remove failed")
+            }
+            
+            // Demonstrate find operation
+            let search_value: string = "third";
+            let find_result: auto  // Function call - manual review needed = collections::list_find(&list, &search_value);
+            match find_result {
+                Result.Ok(index) => {
+                    io::print_line("✅ Found '" + search_value + "' at position " + index);
+                },
+                Result.Err(collections::CollectionError.KeyNotFound(_)) => {
+                    io::print_line("ℹ️ '" + search_value + "' not found in list");
+                },
+                Result.Err(_) => io::print_line("❌ Find operation failed")
+            }
+            
+            // Demonstrate contains check
+            if collections::list_contains(&list, &"fourth") {
+                io::print_line("✅ List contains 'fourth'");
+            } else {
+                io::print_line("❌ List does not contain 'fourth'");
+            }
+            
+            // Demonstrate push operations
+            let push_front_result: auto  // Function call - manual review needed = collections::list_push_front(&mut list, "new_first");
+            match push_front_result {
+                Result.Ok(_) => io::print_line("✅ Pushed 'new_first' to front")
+                Result.Err(_) => io::print_line("❌ Push front failed")
+            }
+            
+            let push_back_result: auto  // Function call - manual review needed = collections::list_push_back(&mut list, "new_last");
+            match push_back_result {
+                Result.Ok(_) => io::print_line("✅ Pushed 'new_last' to back")
+                Result.Err(_) => io::print_line("❌ Push back failed")
+            }
+            
+            io::print_line("Final list length: " + collections::list_len(&list));
+            
+            // Demonstrate pop operations
+            let pop_front_result: auto  // Function call - manual review needed = collections::list_pop_front(&mut list);
+            match pop_front_result {
+                Result.Ok(value) => io::print_line("✅ Popped from front: " + value)
+                Result.Err(_) => io::print_line("❌ Pop front failed")
+            }
+            
+            let pop_back_result: auto  // Function call - manual review needed = collections::list_pop_back(&mut list);
+            match pop_back_result {
+                Result.Ok(value) => io::print_line("✅ Popped from back: " + value)
+                Result.Err(_) => io::print_line("❌ Pop back failed")
+            }
+            
+            collections::list_destroy(&mut list);
+        },
+        Result.Err(_) => io::print_line("❌ Failed to create list from slice")
+    }
+}
+
+// ============================================================================
+// COLLECTION CONVERSION DEMONSTRATIONS
+// ============================================================================
+
+fn demonstrate_collection_conversions(none) -> void {
+    io::print_line("\n=== Collection Conversion Operations ===");
+    
+    // Create a vector and convert to linked list
+    let vector_data: []i32 = [10, 20, 30, 40, 50];
+    let vec_result: auto  // Function call - manual review needed = collections::vec_from_slice(vector_data);
+    match vec_result {
+        Result.Ok(vec) => {
+            io::print_line("✅ Created vector with " + collections::vec_len(&vec) + " elements");
+            
+            // Convert vector to linked list
+            let list_result: auto  // Function call - manual review needed = collections::vec_to_list(&vec);
+            match list_result {
+                Result.Ok(mut list) => {
+                    io::print_line("✅ Converted vector to list with " + collections::list_len(&list) + " elements");
+                    
+                    // Convert linked list back to vector
+                    let vec2_result: auto  // Function call - manual review needed = collections::list_to_vec(&list);
+                    match vec2_result {
+                        Result.Ok(mut vec2) => {
+                            io::print_line("✅ Converted list back to vector with " + collections::vec_len(&vec2) + " elements");
+                            
+                            // Demonstrate slice conversion
+                            let slice: auto  // Function call - manual review needed = collections::vec_as_slice(&vec2);
+                            io::print_line("✅ Created slice with length " + slice.len);
+                            
+                            collections::vec_destroy(&mut vec2);
+                        },
+                        Result.Err(_) => io::print_line("❌ Failed to convert list to vector")
+                    }
+                    
+                    collections::list_destroy(&mut list);
+                },
+                Result.Err(_) => io::print_line("❌ Failed to convert vector to list")
+            }
+            
+            // Note: vec is const, so we don't destroy it here
+        },
+        Result.Err(_) => io::print_line("❌ Failed to create initial vector")
+    }
+}
+
+// ============================================================================
+// PERFORMANCE AND MEMORY MANAGEMENT DEMONSTRATIONS
+// ============================================================================
+
+fn demonstrate_performance_features(none) -> void {
+    io::print_line("\n=== Performance and Memory Management ===");
+    
+    // Demonstrate vector with custom growth factor
+    let performance_config: auto  // Manual review needed = collections::VecConfig {;
+        initial_capacity: 2,
+        growth_factor: 1.5,  // More memory-efficient than default 2.0
+        shrink_threshold: 0.4,
+        enable_shrinking: true
+    };
+    
+    let mut perf_vec = collections::vec_with_config::<i32>(performance_config);
+    
+    // Add many elements to trigger multiple resizes
+    let mut i: usize = 0;
+    while i < 20 {
+        let push_result: auto  // Function call - manual review needed = collections::vec_push(&mut perf_vec, i as i32);
+        match push_result {
+            Result.Ok(_) => {
+                if i % 5 == 0 {
+                    io::print_line("Capacity at " + i + " elements: " + collections::vec_capacity(&perf_vec));
+                }
+            },
+            Result.Err(_) => io::print_line("❌ Push failed at element " + i)
+        }
+        i = i + 1;
+    }
+    
+    // Remove many elements to trigger shrinking
+    i = 0;
+    while i < 15 {
+        let pop_result: auto  // Function call - manual review needed = collections::vec_pop(&mut perf_vec);
+        match pop_result {
+            Result.Ok(_) => {
+                if i % 3 == 0 {
+                    io::print_line("Capacity after " + (i + 1) + " pops: " + collections::vec_capacity(&perf_vec));
+                }
+            },
+            Result.Err(_) => io::print_line("❌ Pop failed")
+        }
+        i = i + 1;
+    }
+    
+    // Demonstrate manual shrink to fit
+    let shrink_result: auto  // Function call - manual review needed = collections::vec_shrink_to_fit(&mut perf_vec);
+    match shrink_result {
+        Result.Ok(_) => {
+            io::print_line("✅ After shrink_to_fit - Length: " + collections::vec_len(&perf_vec) + 
+                          ", Capacity: " + collections::vec_capacity(&perf_vec));
+        },
+        Result.Err(_) => io::print_line("❌ Shrink to fit failed")
+    }
+    
+    // Demonstrate reserve operation
+    let reserve_result: auto  // Function call - manual review needed = collections::vec_reserve(&mut perf_vec, 50);
+    match reserve_result {
+        Result.Ok(_) => {
+            io::print_line("✅ After reserve(50) - Capacity: " + collections::vec_capacity(&perf_vec));
+        },
+        Result.Err(_) => io::print_line("❌ Reserve failed")
+    }
+    
+    collections::vec_destroy(&mut perf_vec);
+}
+
+// ============================================================================
+// ERROR HANDLING BEST PRACTICES
+// ============================================================================
+
+fn demonstrate_error_handling(none) -> void {
+    io::print_line("\n=== Error Handling Best Practices ===");
+    
+    // Demonstrate comprehensive error handling
+    let mut test_vec = collections::vec_new::<string>();
+    
+    // Try to access empty vector
+    let get_result: auto  // Function call - manual review needed = collections::vec_get(&test_vec, 0);
+    match get_result {
+        Result.Ok(_) => io::print_line("❌ Unexpected success on empty vector")
+        Result.Err(collections::CollectionError.OutOfBounds(index)) => {
+            io::print_line("✅ Correctly caught out of bounds error for index " + index);
+        },
+        Result.Err(error) => {
+            match error {
+                collections::CollectionError.EmptyCollection(msg) => {
+                    io::print_line("✅ Empty collection error: " + msg);
+                },
+                collections::CollectionError.MemoryAllocation(msg) => {
+                    io::print_line("❌ Unexpected memory error: " + msg);
+                },
+                _ => io::print_line("❌ Unexpected error type")
+            }
+        }
+    }
+    
+    // Try to pop from empty vector
+    let pop_result: auto  // Function call - manual review needed = collections::vec_pop(&mut test_vec);
+    match pop_result {
+        Result.Ok(_) => io::print_line("❌ Unexpected success popping from empty vector")
+        Result.Err(collections::CollectionError.EmptyCollection(msg)) => {
+            io::print_line("✅ Correctly caught empty collection error: " + msg);
+        },
+        Result.Err(_) => io::print_line("❌ Wrong error type for empty pop")
+    }
+    
+    // Demonstrate proper cleanup even after errors
+    collections::vec_destroy(&mut test_vec);
+    io::print_line("✅ Proper cleanup completed");
+}
+
+// ============================================================================
+// MAIN DEMONSTRATION FUNCTION
+// ============================================================================
+
+fn main(none) -> i32 {
+    io::print_line("Asthra Enhanced Collections Comprehensive Demo");
+    io::print_line("=============================================");
+    
+    demonstrate_enhanced_vectors();
+    demonstrate_hash_sets();
+    demonstrate_enhanced_hashmaps();
+    demonstrate_enhanced_linked_lists();
+    demonstrate_collection_conversions();
+    demonstrate_performance_features();
+    demonstrate_error_handling();
+    
+    io::print_line("\n✅ All demonstrations completed successfully!");
+    return 0;
+} 

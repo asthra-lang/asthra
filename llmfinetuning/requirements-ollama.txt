@@ -1,0 +1,23 @@
+# Requirements for Ollama GGUF Export
+# Install with: pip install -r requirements-ollama.txt
+
+# Core dependencies (should already be installed)
+torch>=2.0.0
+transformers>=4.34.0
+peft>=0.5.0
+
+# GGUF conversion dependencies
+# Option 1: llama-cpp-python (easiest)
+llama-cpp-python>=0.2.0
+
+# Option 2: gguf package (lightweight)
+gguf>=0.5.0
+
+# Optional: for advanced conversions
+safetensors>=0.3.0
+sentencepiece>=0.1.99
+protobuf>=3.20.0
+
+# Utility packages
+tqdm>=4.64.0
+numpy>=1.21.0 

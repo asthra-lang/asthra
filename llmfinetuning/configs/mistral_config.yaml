@@ -1,0 +1,177 @@
+# Mistral-7B-Instruct Configuration for Asthra LLM Fine-tuning
+# Version: 1.0
+# Created: January 2025
+# Model: mistralai/Mistral-7B-Instruct-v0.3 (7B parameters) - Public alternative to Devstral
+
+# Model Configuration
+model:
+  name: "mistralai/Mistral-7B-Instruct-v0.3"
+  tokenizer_name: "mistralai/Mistral-7B-Instruct-v0.3" 
+  max_length: 32768  # 32K context window
+  trust_remote_code: false
+  
+  # Quantization for efficient training
+  quantization:
+    load_in_4bit: true
+    bnb_4bit_compute_dtype: "bfloat16"
+    bnb_4bit_quant_type: "nf4"
+    bnb_4bit_use_double_quant: true
+
+# Training Configuration
+training:
+  output_dir: "./outputs/models/mistral/"
+  overwrite_output_dir: true
+  
+  # Batch size and accumulation
+  per_device_train_batch_size: 1
+  per_device_eval_batch_size: 1
+  gradient_accumulation_steps: 8
+  dataloader_num_workers: 2
+  
+  # Learning rate and optimization
+  learning_rate: 0.00002  # 2e-5 as decimal to avoid YAML parsing issues
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.05
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  
+  # Training duration
+  num_train_epochs: 2
+  max_steps: -1  # Use epochs instead
+  
+  # Logging and evaluation
+  logging_dir: "./outputs/logs/mistral/"
+  logging_steps: 25
+  eval_strategy: "steps"
+  eval_steps: 250
+  save_strategy: "steps"
+  save_steps: 500
+  save_total_limit: 3
+  
+  # Mixed precision training
+  fp16: false
+  bf16: true
+  
+  # Other training settings
+  remove_unused_columns: false
+  group_by_length: true
+  ddp_find_unused_parameters: false
+
+# LoRA Configuration (Parameter-Efficient Fine-tuning)
+lora:
+  rank: 32
+  alpha: 16
+  dropout: 0.1
+  bias: "none"
+  task_type: "CAUSAL_LM"
+  target_modules: 
+    - "q_proj"
+    - "k_proj" 
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+  modules_to_save: null
+
+# Data Configuration
+data:
+  dataset_path: "./data/processed/"
+  raw_data_path: "./data/raw/"
+  cache_dir: "./outputs/cache/mistral/"
+  
+  # Dataset splits
+  train_split: 0.9
+  validation_split: 0.1
+  test_split: 0.0
+  
+  # Data processing
+  max_samples: null  # Use all available data
+  max_seq_length: 2048  # Reasonable for most Asthra code
+  preprocessing_num_workers: 4
+  
+  # Data quality filters
+  min_code_length: 30    # Minimum characters in code examples
+  max_code_length: 2048  # Maximum characters in code examples
+  quality_threshold: 0.8 # Minimum quality score (0-1)
+
+# Evaluation Configuration
+evaluation:
+  # Compilation testing (disabled without Asthra compiler)
+  enable_compilation_testing: false
+  asthra_compiler_path: null
+  compilation_timeout: 30
+  
+  # Semantic analysis testing (disabled for demo)
+  enable_semantic_testing: false
+  semantic_timeout: 15
+  
+  # Quality metrics
+  target_compilation_rate: 0.85   # 85% compilation success
+  target_semantic_rate: 0.80      # 80% semantic correctness
+  target_quality_score: 0.75      # 75% idiomatic quality
+
+# Single-stage Training for simplicity
+stages:
+  stage1:
+    name: "asthra_instruction_tuning"
+    dataset: "instruction_tuning.jsonl"
+    epochs: 2
+    learning_rate: 0.00002  # 2e-5 as decimal
+    description: "Learn Asthra syntax and programming patterns"
+
+# Monitoring and Logging
+monitoring:
+  # Weights & Biases (disabled for demo)
+  use_wandb: false
+  wandb_project: "asthra-mistral-finetuning"
+  wandb_entity: null
+  
+  # Tensorboard
+  use_tensorboard: true
+  tensorboard_log_dir: "./outputs/logs/mistral/tensorboard/"
+  
+  # Custom metrics
+  track_compilation_success: false
+  track_semantic_correctness: false
+  track_code_quality: true
+
+# Hardware and Performance
+hardware:
+  # GPU settings
+  device_map: "auto"
+  max_memory: null  # Auto-detect
+  offload_folder: "./outputs/offload/mistral/"
+  
+  # Performance optimizations
+  gradient_checkpointing: true
+  dataloader_pin_memory: true
+  use_cache: false  # Disable during training
+  
+  # Memory management
+  max_memory_mb: 16000  # Adjust based on your system
+  cleanup_cache_every_n_steps: 50
+
+# Export and Deployment
+export:
+  # GGUF export settings
+  gguf_output_dir: "./outputs/exported/mistral/gguf/"
+  gguf_quantization: "Q4_K_M"  # Good balance of size/quality
+  
+  # Ollama integration
+  ollama_model_name: "asthra-mistral"
+  ollama_model_file: "./outputs/exported/mistral/ollama/Modelfile"
+  
+  # Model registry
+  registry_url: null
+  model_version: "1.0"
+
+# Advanced Settings
+advanced:
+  # Gradient accumulation optimization
+  gradient_accumulation_kwargs:
+    sync_each_batch: false
+  
+  # Memory optimization
+  max_memory_mapping: null
+  seed: 42 

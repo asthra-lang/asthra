@@ -1,0 +1,780 @@
+// Asthra Standard Library - String Processing Package
+// Provides advanced string manipulation and UTF-8 support
+
+package stdlib::string;
+
+// Import core functionality (only dependency)
+import "stdlib/asthra/core";
+
+// Import internal UTF-8 validation (stdlib can use internal packages)
+import "internal/unicode/utf8_validator";
+
+// ============================================================================
+// Error Types
+// ============================================================================
+
+enum StringError {
+    InvalidUtf8(string),
+    InvalidFormat(string),
+    OutOfBounds(string)
+}
+
+// ============================================================================
+// String Creation and Conversion
+// ============================================================================
+
+// Create string from UTF-8 bytes
+fn from_utf8(bytes: []u8) -> Result<string, StringError> {
+    // Validate UTF-8 encoding
+    let validation_result: Result<void, string> = validate_utf8(bytes);
+    match validation_result {
+        Result.Ok(_) => {
+            return Result.Ok(bytes_to_string(bytes));
+        },
+        Result.Err(error) => {
+            return Result.Err(StringError.InvalidUtf8(error));
+        }
+    }
+}
+
+// Create string from UTF-8 bytes with replacement characters for invalid sequences
+fn from_utf8_lossy(bytes: []u8) -> string {
+    let mut result: string = "";
+    let mut i: usize = 0;
+    
+    while i < bytes.len() {
+        let char_result: Result<(char, usize), string> = decode_utf8_char(bytes, i);
+        match char_result {
+            Result.Ok((ch, consumed)) => {
+                result = result + ch;
+                i = i + consumed;
+            },
+            Result.Err(_) => {
+                result = result + '�';  // Replacement character
+                i = i + 1;
+            }
+        }
+    }
+    
+    return result;
+}
+
+// Convert string to UTF-8 bytes
+fn to_utf8(s: string) -> []u8 {
+    extern "asthra_runtime" fn asthra_string_to_utf8(s: string) -> []u8;
+    unsafe {
+        return asthra_string_to_utf8(s);
+    }
+}
+
+// Create string from C string
+fn from_cstr(ptr: *const u8) -> Result<string, StringError> {
+    extern "libc" fn strlen(s: *const u8) -> usize;
+    
+    unsafe {
+        if ptr == null {
+            return Result.Err(StringError.InvalidFormat("Null pointer"));
+        }
+        
+        let len: usize = strlen(ptr);
+        let mut bytes: []u8 = [];
+        let mut i: usize = 0;
+        
+        while i < len {
+            bytes.push(*(ptr + i));
+            i = i + 1;
+        }
+        
+        return from_utf8(bytes);
+    }
+}
+
+// Convert string to C string (null-terminated)
+fn to_cstr(s: string) -> *const u8 {
+    extern "asthra_runtime" fn asthra_string_to_cstr(s: string) -> *const u8;
+    unsafe {
+        return asthra_string_to_cstr(s);
+    }
+}
+
+// ============================================================================
+// String Analysis
+// ============================================================================
+
+// Get byte length of string
+fn len(s: string) -> usize {
+    extern "asthra_runtime" fn asthra_string_len(s: string) -> usize;
+    unsafe {
+        return asthra_string_len(s);
+    }
+}
+
+// Get character count (Unicode code points)
+fn char_count(s: string) -> usize {
+    let bytes: []u8 = to_utf8(s);
+    let mut count: usize = 0;
+    let mut i: usize = 0;
+    
+    while i < bytes.len() {
+        let char_result: Result<(char, usize), string> = decode_utf8_char(bytes, i);
+        match char_result {
+            Result.Ok((_, consumed)) => {
+                count = count + 1;
+                i = i + consumed;
+            },
+            Result.Err(_) => {
+                i = i + 1;  // Skip invalid byte
+            }
+        }
+    }
+    
+    return count;
+}
+
+// Check if string is empty
+fn is_empty(s: string) -> bool {
+    return len(s) == 0;
+}
+
+// Check if string contains only ASCII characters
+fn is_ascii(s: string) -> bool {
+    let bytes: []u8 = to_utf8(s);
+    let mut i: usize = 0;
+    
+    while i < bytes.len() {
+        if bytes[i] > 127 {
+            return false;
+        }
+        i = i + 1;
+    }
+    
+    return true;
+}
+
+// ============================================================================
+// String Searching
+// ============================================================================
+
+// Check if string contains substring
+fn contains(haystack: string, needle: string) -> bool {
+    let find_result: Result<usize, string> = find(haystack, needle);
+    match find_result {
+        Result.Ok(_) => return true
+        Result.Err(_) => return false
+    }
+}
+
+// Check if string starts with prefix
+fn starts_with(s: string, prefix: string) -> bool {
+    if len(prefix) > len(s) {
+        return false;
+    }
+    
+    let s_bytes: []u8 = to_utf8(s);
+    let prefix_bytes: []u8 = to_utf8(prefix);
+    let mut i: usize = 0;
+    
+    while i < prefix_bytes.len() {
+        if s_bytes[i] != prefix_bytes[i] {
+            return false;
+        }
+        i = i + 1;
+    }
+    
+    return true;
+}
+
+// Check if string ends with suffix
+fn ends_with(s: string, suffix: string) -> bool {
+    let s_len: usize = len(s);
+    let suffix_len: usize = len(suffix);
+    
+    if suffix_len > s_len {
+        return false;
+    }
+    
+    let s_bytes: []u8 = to_utf8(s);
+    let suffix_bytes: []u8 = to_utf8(suffix);
+    let start_pos: usize = s_len - suffix_len;
+    let mut i: usize = 0;
+    
+    while i < suffix_bytes.len() {
+        if s_bytes[start_pos + i] != suffix_bytes[i] {
+            return false;
+        }
+        i = i + 1;
+    }
+    
+    return true;
+}
+
+// Find first occurrence of substring
+fn find(haystack: string, needle: string) -> Result<usize, string> {
+    let haystack_bytes: []u8 = to_utf8(haystack);
+    let needle_bytes: []u8 = to_utf8(needle);
+    
+    if needle_bytes.len() == 0 {
+        return Result.Ok(0);
+    }
+    
+    if needle_bytes.len() > haystack_bytes.len() {
+        return Result.Err("Needle longer than haystack");
+    }
+    
+    let mut i: usize = 0;
+    while i <= haystack_bytes.len() - needle_bytes.len() {
+        let mut j: usize = 0;
+        let mut found: bool = true;
+        
+        while j < needle_bytes.len() {
+            if haystack_bytes[i + j] != needle_bytes[j] {
+                found = false;
+                break;
+            }
+            j = j + 1;
+        }
+        
+        if found {
+            return Result.Ok(i);
+        }
+        
+        i = i + 1;
+    }
+    
+    return Result.Err("Substring not found");
+}
+
+// Find last occurrence of substring
+fn rfind(haystack: string, needle: string) -> Result<usize, string> {
+    let haystack_bytes: []u8 = to_utf8(haystack);
+    let needle_bytes: []u8 = to_utf8(needle);
+    
+    if needle_bytes.len() == 0 {
+        return Result.Ok(haystack_bytes.len());
+    }
+    
+    if needle_bytes.len() > haystack_bytes.len() {
+        return Result.Err("Needle longer than haystack");
+    }
+    
+    let mut i: usize = haystack_bytes.len() - needle_bytes.len();
+    
+    loop {
+        let mut j: usize = 0;
+        let mut found: bool = true;
+        
+        while j < needle_bytes.len() {
+            if haystack_bytes[i + j] != needle_bytes[j] {
+                found = false;
+                break;
+            }
+            j = j + 1;
+        }
+        
+        if found {
+            return Result.Ok(i);
+        }
+        
+        if i == 0 {
+            break;
+        }
+        i = i - 1;
+    }
+    
+    return Result.Err("Substring not found");
+}
+
+// ============================================================================
+// String Modification
+// ============================================================================
+
+// Remove whitespace from both ends
+fn trim(s: string) -> string {
+    return trim_end(trim_start(s));
+}
+
+// Remove whitespace from start
+fn trim_start(s: string) -> string {
+    let bytes: []u8 = to_utf8(s);
+    let mut start: usize = 0;
+    
+    while start < bytes.len() && is_whitespace_byte(bytes[start]) {
+        start = start + 1;
+    }
+    
+    if start == bytes.len() {
+        return "";
+    }
+    
+    let mut trimmed_bytes: []u8 = [];
+    let mut i: usize = start;
+    while i < bytes.len() {
+        trimmed_bytes.push(bytes[i]);
+        i = i + 1;
+    }
+    
+    return bytes_to_string(trimmed_bytes);
+}
+
+// Remove whitespace from end
+fn trim_end(s: string) -> string {
+    let bytes: []u8 = to_utf8(s);
+    let mut end: usize = bytes.len();
+    
+    while end > 0 && is_whitespace_byte(bytes[end - 1]) {
+        end = end - 1;
+    }
+    
+    if end == 0 {
+        return "";
+    }
+    
+    let mut trimmed_bytes: []u8 = [];
+    let mut i: usize = 0;
+    while i < end {
+        trimmed_bytes.push(bytes[i]);
+        i = i + 1;
+    }
+    
+    return bytes_to_string(trimmed_bytes);
+}
+
+// Convert to lowercase
+fn to_lowercase(s: string) -> string {
+    let mut result: string = "";
+    let bytes: []u8 = to_utf8(s);
+    let mut i: usize = 0;
+    
+    while i < bytes.len() {
+        let char_result: Result<(char, usize), string> = decode_utf8_char(bytes, i);
+        match char_result {
+            Result.Ok((ch, consumed)) => {
+                result = result + char_to_lowercase(ch);
+                i = i + consumed;
+            },
+            Result.Err(_) => {
+                result = result + (bytes[i] as char);
+                i = i + 1;
+            }
+        }
+    }
+    
+    return result;
+}
+
+// Convert to uppercase
+fn to_uppercase(s: string) -> string {
+    let mut result: string = "";
+    let bytes: []u8 = to_utf8(s);
+    let mut i: usize = 0;
+    
+    while i < bytes.len() {
+        let char_result: Result<(char, usize), string> = decode_utf8_char(bytes, i);
+        match char_result {
+            Result.Ok((ch, consumed)) => {
+                result = result + char_to_uppercase(ch);
+                i = i + consumed;
+            },
+            Result.Err(_) => {
+                result = result + (bytes[i] as char);
+                i = i + 1;
+            }
+        }
+    }
+    
+    return result;
+}
+
+// Replace first occurrence of substring
+fn replace(s: string, from: string, to: string) -> string {
+    let find_result: Result<usize, string> = find(s, from);
+    match find_result {
+        Result.Ok(pos) => {
+            let before: string = substring(s, 0, pos);
+            let after: string = substring(s, pos + len(from), len(s));
+            return before + to + after;
+        },
+        Result.Err(_) => {
+            return s;
+        }
+    }
+}
+
+// Replace all occurrences of substring
+fn replace_all(s: string, from: string, to: string) -> string {
+    let mut result: string = s;
+    
+    loop {
+        let find_result: Result<usize, string> = find(result, from);
+        match find_result {
+            Result.Ok(pos) => {
+                let before: string = substring(result, 0, pos);
+                let after: string = substring(result, pos + len(from), len(result));
+                result = before + to + after;
+            },
+            Result.Err(_) => {
+                break;
+            }
+        }
+    }
+    
+    return result;
+}
+
+// ============================================================================
+// String Splitting and Joining
+// ============================================================================
+
+// Split string by delimiter
+fn split(s: string, delimiter: string) -> []string {
+    let mut parts: []string = [];
+    let mut current: string = "";
+    let mut i: usize = 0;
+    let s_bytes: []u8 = to_utf8(s);
+    let delim_bytes: []u8 = to_utf8(delimiter);
+    
+    while i < s_bytes.len() {
+        if matches_at_position(s_bytes, delim_bytes, i) {
+            parts.push(current);
+            current = "";
+            i = i + delim_bytes.len();
+        } else {
+            current = current + (s_bytes[i] as char);
+            i = i + 1;
+        }
+    }
+    
+    parts.push(current);
+    return parts;
+}
+
+// Split string by whitespace
+fn split_whitespace(s: string) -> []string {
+    let mut parts: []string = [];
+    let mut current: string = "";
+    let bytes: []u8 = to_utf8(s);
+    let mut i: usize = 0;
+    
+    while i < bytes.len() {
+        if is_whitespace_byte(bytes[i]) {
+            if len(current) > 0 {
+                parts.push(current);
+                current = "";
+            }
+        } else {
+            current = current + (bytes[i] as char);
+        }
+        i = i + 1;
+    }
+    
+    if len(current) > 0 {
+        parts.push(current);
+    }
+    
+    return parts;
+}
+
+// Split string into lines
+fn lines(s: string) -> []string {
+    let mut lines: []string = [];
+    let mut current_line: string = "";
+    let bytes: []u8 = to_utf8(s);
+    let mut i: usize = 0;
+    
+    while i < bytes.len() {
+        let byte: u8 = bytes[i];
+        if byte == 10 {  // '\n'
+            lines.push(current_line);
+            current_line = "";
+        } else if byte == 13 {  // '\r'
+            lines.push(current_line);
+            current_line = "";
+            // Skip '\n' if it follows '\r'
+            if i + 1 < bytes.len() && bytes[i + 1] == 10 {
+                i = i + 1;
+            }
+        } else {
+            current_line = current_line + (byte as char);
+        }
+        i = i + 1;
+    }
+    
+    lines.push(current_line);
+    return lines;
+}
+
+// Join string array with separator
+fn join(parts: []string, separator: string) -> string {
+    if parts.len() == 0 {
+        return "";
+    }
+    
+    let mut result: string = parts[0];
+    let mut i: usize = 1;
+    
+    while i < parts.len() {
+        result = result + separator + parts[i];
+        i = i + 1;
+    }
+    
+    return result;
+}
+
+// ============================================================================
+// String Formatting
+// ============================================================================
+
+// Format string with arguments
+fn format(template: string, args: []FormatArg) -> string {
+    let mut result: string = "";
+    let mut arg_index: usize = 0;
+    let bytes: []u8 = to_utf8(template);
+    let mut i: usize = 0;
+    
+    while i < bytes.len() {
+        if bytes[i] == 123 {  // '{'
+            if i + 1 < bytes.len() && bytes[i + 1] == 125 {  // '}'
+                if arg_index < args.len() {
+                    result = result + format_arg_to_string(args[arg_index]);
+                    arg_index = arg_index + 1;
+                }
+                i = i + 2;
+            } else {
+                result = result + (bytes[i] as char);
+                i = i + 1;
+            }
+        } else {
+            result = result + (bytes[i] as char);
+            i = i + 1;
+        }
+    }
+    
+    return result;
+}
+
+// Format argument types
+enum FormatArg {
+    String(string),
+    Int(i64),
+    UInt(u64),
+    Float(f64),
+    Bool(bool)
+}
+
+// ============================================================================
+// String Utilities
+// ============================================================================
+
+// Get substring
+fn substring(s: string, start: usize, end: usize) -> string {
+    let bytes: []u8 = to_utf8(s);
+    
+    if start >= bytes.len() || end > bytes.len() || start >= end {
+        return "";
+    }
+    
+    let mut sub_bytes: []u8 = [];
+    let mut i: usize = start;
+    
+    while i < end {
+        sub_bytes.push(bytes[i]);
+        i = i + 1;
+    }
+    
+    return bytes_to_string(sub_bytes);
+}
+
+// Repeat string n times
+fn repeat(s: string, count: usize) -> string {
+    let mut result: string = "";
+    let mut i: usize = 0;
+    
+    while i < count {
+        result = result + s;
+        i = i + 1;
+    }
+    
+    return result;
+}
+
+// Pad string to specified width with character
+fn pad_left(s: string, width: usize, pad_char: char) -> string {
+    let current_len: usize = char_count(s);
+    if current_len >= width {
+        return s;
+    }
+    
+    let padding_needed: usize = width - current_len;
+    let padding: string = repeat(pad_char as string, padding_needed);
+    return padding + s;
+}
+
+fn pad_right(s: string, width: usize, pad_char: char) -> string {
+    let current_len: usize = char_count(s);
+    if current_len >= width {
+        return s;
+    }
+    
+    let padding_needed: usize = width - current_len;
+    let padding: string = repeat(pad_char as string, padding_needed);
+    return s + padding;
+}
+
+// ============================================================================
+// Internal Helper Functions
+// ============================================================================
+
+// Validate UTF-8 byte sequence
+fn validate_utf8(bytes: []u8) -> Result<void, string> {
+    let mut i: usize = 0;
+    
+    while i < bytes.len() {
+        let char_result: Result<(char, usize), string> = decode_utf8_char(bytes, i);
+        match char_result {
+            Result.Ok((_, consumed)) => {
+                i = i + consumed;
+            },
+            Result.Err(error) => {
+                return Result.Err(error);
+            }
+        }
+    }
+    
+    return Result.Ok(());
+}
+
+// Decode UTF-8 character at position
+fn decode_utf8_char(bytes: []u8, pos: usize) -> Result<(char, usize), string> {
+    if pos >= bytes.len() {
+        return Result.Err("Position out of bounds");
+    }
+    
+    let first_byte: u8 = bytes[pos];
+    
+    // ASCII character (0xxxxxxx)
+    if first_byte < 128 {
+        return Result.Ok((first_byte as char, 1));
+    }
+    
+    // Multi-byte character
+    let mut char_code: u32 = 0;
+    let mut consumed: usize = 0;
+    
+    if (first_byte & 0xE0) == 0xC0 {
+        // 2-byte character (110xxxxx 10xxxxxx)
+        if pos + 1 >= bytes.len() {
+            return Result.Err("Incomplete UTF-8 sequence");
+        }
+        char_code = ((first_byte & 0x1F) as u32) << 6;
+        char_code = char_code | ((bytes[pos + 1] & 0x3F) as u32);
+        consumed = 2;
+    } else if (first_byte & 0xF0) == 0xE0 {
+        // 3-byte character (1110xxxx 10xxxxxx 10xxxxxx)
+        if pos + 2 >= bytes.len() {
+            return Result.Err("Incomplete UTF-8 sequence");
+        }
+        char_code = ((first_byte & 0x0F) as u32) << 12;
+        char_code = char_code | (((bytes[pos + 1] & 0x3F) as u32) << 6);
+        char_code = char_code | ((bytes[pos + 2] & 0x3F) as u32);
+        consumed = 3;
+    } else if (first_byte & 0xF8) == 0xF0 {
+        // 4-byte character (11110xxx 10xxxxxx 10xxxxxx 10xxxxxx)
+        if pos + 3 >= bytes.len() {
+            return Result.Err("Incomplete UTF-8 sequence");
+        }
+        char_code = ((first_byte & 0x07) as u32) << 18;
+        char_code = char_code | (((bytes[pos + 1] & 0x3F) as u32) << 12);
+        char_code = char_code | (((bytes[pos + 2] & 0x3F) as u32) << 6);
+        char_code = char_code | ((bytes[pos + 3] & 0x3F) as u32);
+        consumed = 4;
+    } else {
+        return Result.Err("Invalid UTF-8 start byte");
+    }
+    
+    return Result.Ok((char_code as char, consumed));
+}
+
+// Convert bytes to string
+fn bytes_to_string(bytes: []u8) -> string {
+    extern "asthra_runtime" fn asthra_bytes_to_string(bytes: []u8) -> string;
+    unsafe {
+        return asthra_bytes_to_string(bytes);
+    }
+}
+
+// Check if byte is whitespace
+fn is_whitespace_byte(byte: u8) -> bool {
+    return byte == 32 ||   // space
+           byte == 9 ||    // tab
+           byte == 10 ||   // newline
+           byte == 13 ||   // carriage return
+           byte == 12 ||   // form feed
+           byte == 11;     // vertical tab
+}
+
+// Character case conversion
+fn char_to_lowercase(ch: char) -> char {
+    let code: u32 = ch as u32;
+    if code >= 65 && code <= 90 {  // A-Z
+        return (code + 32) as char;
+    }
+    return ch;
+}
+
+fn char_to_uppercase(ch: char) -> char {
+    let code: u32 = ch as u32;
+    if code >= 97 && code <= 122 {  // a-z
+        return (code - 32) as char;
+    }
+    return ch;
+}
+
+// Check if pattern matches at position
+fn matches_at_position(haystack: []u8, needle: []u8, pos: usize) -> bool {
+    if pos + needle.len() > haystack.len() {
+        return false;
+    }
+    
+    let mut i: usize = 0;
+    while i < needle.len() {
+        if haystack[pos + i] != needle[i] {
+            return false;
+        }
+        i = i + 1;
+    }
+    
+    return true;
+}
+
+// Format argument to string
+fn format_arg_to_string(arg: FormatArg) -> string {
+    match arg {
+        FormatArg.String(s) => return s
+        FormatArg.Int(i) => return int_to_string(i)
+        FormatArg.UInt(u) => return uint_to_string(u)
+        FormatArg.Float(f) => return float_to_string(f)
+        FormatArg.Bool(b) => return if b { "true" } else { "false" }
+    }
+}
+
+// Number to string conversions
+fn int_to_string(value: i64) -> string {
+    extern "asthra_runtime" fn asthra_int_to_string(value: i64) -> string;
+    unsafe {
+        return asthra_int_to_string(value);
+    }
+}
+
+fn uint_to_string(value: u64) -> string {
+    extern "asthra_runtime" fn asthra_uint_to_string(value: u64) -> string;
+    unsafe {
+        return asthra_uint_to_string(value);
+    }
+}
+
+fn float_to_string(value: f64) -> string {
+    extern "asthra_runtime" fn asthra_float_to_string(value: f64) -> string;
+    unsafe {
+        return asthra_float_to_string(value);
+    }
+} 

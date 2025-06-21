@@ -1,0 +1,457 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  release:
+    types: [published]
+
+env:
+  CFLAGS: -std=c17 -Wall -Wextra -Wpedantic
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      release_id: ${{ steps.create_release.outputs.id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          release_name: Asthra ${{ steps.get_version.outputs.VERSION }}
+          body: |
+            ## Asthra Programming Language ${{ steps.get_version.outputs.VERSION }}
+            
+            ### Features
+            - Modern C17-based systems programming language
+            - Advanced memory management with garbage collection
+            - Built-in concurrency support
+            - Seamless C FFI for existing library integration
+            - Zero-cost abstractions and optimized runtime
+            
+            ### Downloads
+            - **Linux x86_64**: `asthra-${{ steps.get_version.outputs.VERSION }}-linux-x86_64.tar.gz`
+            - **macOS x86_64**: `asthra-${{ steps.get_version.outputs.VERSION }}-macos-x86_64.tar.gz`
+            - **macOS ARM64**: `asthra-${{ steps.get_version.outputs.VERSION }}-macos-arm64.tar.gz`
+            - **Windows x86_64**: `asthra-${{ steps.get_version.outputs.VERSION }}-windows-x86_64.zip`
+            
+            ### Installation
+            
+            #### Unix/Linux/macOS
+            ```bash
+            # Extract the archive
+            tar -xzf asthra-${{ steps.get_version.outputs.VERSION }}-<platform>.tar.gz
+            
+            # Add to PATH
+            export PATH=$PWD/asthra-${{ steps.get_version.outputs.VERSION }}/bin:$PATH
+            
+            # Verify installation
+            asthra --version
+            ```
+            
+            #### Windows
+            ```cmd
+            REM Extract the ZIP archive to your desired location
+            REM Run the installation script (optional)
+            asthra-${{ steps.get_version.outputs.VERSION }}\install.bat "C:\Program Files\Asthra"
+            
+            REM Or manually add to PATH
+            set PATH=%PATH%;C:\path\to\asthra-${{ steps.get_version.outputs.VERSION }}\bin
+            
+            REM Verify installation
+            asthra.exe --version
+            ```
+            
+            ### Documentation
+            - [Language Manual](https://github.com/asthra-lang/asthra/blob/main/docs/manual.md)
+            - [API Documentation](https://github.com/asthra-lang/asthra/tree/main/docs/api)
+            - [Examples](https://github.com/asthra-lang/asthra/tree/main/examples)
+          draft: false
+          prerelease: false
+
+  build-release:
+    name: Build Release
+    needs: create-release
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x86_64
+            cc: gcc
+          - os: macos-latest
+            target: macos-x86_64
+            cc: clang
+          - os: macos-latest
+            target: macos-arm64
+            cc: clang
+          # Windows MSVC builds
+          - os: windows-2022
+            target: windows-x86_64
+            cc: cl
+            compiler: msvc
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: get_version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      # =============================================================================
+      # PLATFORM-SPECIFIC SETUP
+      # =============================================================================
+
+      - name: Setup MSVC (Windows)
+        if: matrix.compiler == 'msvc'
+        uses: microsoft/setup-msbuild@v2
+        
+      - name: Setup Visual Studio environment (Windows)
+        if: matrix.compiler == 'msvc'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang libc6-dev gperf
+
+      - name: Install dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install gperf
+
+      - name: Install dependencies (Windows)
+        if: matrix.compiler == 'msvc'
+        shell: cmd
+        run: |
+          echo Windows dependencies are included with Visual Studio
+
+      # =============================================================================
+      # COMPILER AND ARCHITECTURE SETUP
+      # =============================================================================
+
+      - name: Set compiler and architecture (Unix)
+        if: matrix.compiler != 'msvc'
+        run: |
+          echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
+          if [ "${{ matrix.target }}" = "macos-arm64" ]; then
+            echo "CFLAGS=$CFLAGS -target arm64-apple-macos11" >> $GITHUB_ENV
+            echo "LDFLAGS=-target arm64-apple-macos11" >> $GITHUB_ENV
+          fi
+
+      - name: Set compiler and architecture (Windows)
+        if: matrix.compiler == 'msvc'
+        shell: cmd
+        run: |
+          echo CC=cl>> %GITHUB_ENV%
+          echo CXX=cl>> %GITHUB_ENV%
+
+      # =============================================================================
+      # BUILD PROCESS
+      # =============================================================================
+
+      - name: Build optimized release (Unix)
+        if: matrix.compiler != 'msvc'
+        run: |
+          make clean
+          make release
+
+      - name: Build optimized release (Windows)
+        if: matrix.compiler == 'msvc'
+        shell: cmd
+        run: |
+          nmake /f Makefile clean
+          nmake /f Makefile release-windows
+
+      # =============================================================================
+      # TESTING
+      # =============================================================================
+
+      - name: Run tests to verify build (Unix)
+        if: matrix.compiler != 'msvc'
+        run: |
+          make test-runtime
+          make test-parser
+
+      - name: Run tests to verify build (Windows)
+        if: matrix.compiler == 'msvc'
+        shell: cmd
+        run: |
+          nmake /f Makefile test-windows
+
+      # =============================================================================
+      # PACKAGE CREATION
+      # =============================================================================
+
+      - name: Create release package (Unix)
+        if: matrix.compiler != 'msvc'
+        run: |
+          mkdir -p asthra-${{ steps.get_version.outputs.VERSION }}
+          mkdir -p asthra-${{ steps.get_version.outputs.VERSION }}/bin
+          mkdir -p asthra-${{ steps.get_version.outputs.VERSION }}/lib
+          mkdir -p asthra-${{ steps.get_version.outputs.VERSION }}/include
+          mkdir -p asthra-${{ steps.get_version.outputs.VERSION }}/docs
+          mkdir -p asthra-${{ steps.get_version.outputs.VERSION }}/examples
+          
+          # Copy binaries
+          cp bin/asthra asthra-${{ steps.get_version.outputs.VERSION }}/bin/
+          
+          # Copy libraries
+          cp build/*.a asthra-${{ steps.get_version.outputs.VERSION }}/lib/ || true
+          
+          # Copy headers
+          cp runtime/*.h asthra-${{ steps.get_version.outputs.VERSION }}/include/ || true
+          
+          # Copy documentation
+          cp README.md asthra-${{ steps.get_version.outputs.VERSION }}/
+          cp LICENSE asthra-${{ steps.get_version.outputs.VERSION }}/
+          cp -r docs/* asthra-${{ steps.get_version.outputs.VERSION }}/docs/ || true
+          
+          # Copy examples
+          cp -r examples/* asthra-${{ steps.get_version.outputs.VERSION }}/examples/ || true
+          
+          # Create installation script
+          cat > asthra-${{ steps.get_version.outputs.VERSION }}/install.sh << 'EOF'
+          #!/bin/bash
+          set -e
+          
+          INSTALL_DIR="${1:-/usr/local}"
+          
+          echo "Installing Asthra to $INSTALL_DIR"
+          
+          # Create directories
+          mkdir -p "$INSTALL_DIR/bin"
+          mkdir -p "$INSTALL_DIR/lib"
+          mkdir -p "$INSTALL_DIR/include/asthra"
+          
+          # Copy files
+          cp bin/asthra "$INSTALL_DIR/bin/"
+          cp lib/*.a "$INSTALL_DIR/lib/" 2>/dev/null || true
+          cp include/*.h "$INSTALL_DIR/include/asthra/" 2>/dev/null || true
+          
+          # Make executable
+          chmod +x "$INSTALL_DIR/bin/asthra"
+          
+          echo "Asthra installed successfully!"
+          echo "Add $INSTALL_DIR/bin to your PATH if not already present."
+          EOF
+          
+          chmod +x asthra-${{ steps.get_version.outputs.VERSION }}/install.sh
+          
+          # Create archive
+          tar -czf asthra-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}.tar.gz asthra-${{ steps.get_version.outputs.VERSION }}
+
+      - name: Create release package (Windows)
+        if: matrix.compiler == 'msvc'
+        shell: cmd
+        run: |
+          mkdir asthra-${{ steps.get_version.outputs.VERSION }}
+          mkdir asthra-${{ steps.get_version.outputs.VERSION }}\bin
+          mkdir asthra-${{ steps.get_version.outputs.VERSION }}\lib
+          mkdir asthra-${{ steps.get_version.outputs.VERSION }}\include
+          mkdir asthra-${{ steps.get_version.outputs.VERSION }}\docs
+          mkdir asthra-${{ steps.get_version.outputs.VERSION }}\examples
+          
+          REM Copy binaries
+          copy bin\asthra.exe asthra-${{ steps.get_version.outputs.VERSION }}\bin\ 2>nul || echo "Binary copy failed"
+          
+          REM Copy libraries
+          copy build\*.lib asthra-${{ steps.get_version.outputs.VERSION }}\lib\ 2>nul || echo "Library copy failed"
+          
+          REM Copy headers
+          copy runtime\*.h asthra-${{ steps.get_version.outputs.VERSION }}\include\ 2>nul || echo "Header copy failed"
+          
+          REM Copy documentation
+          copy README.md asthra-${{ steps.get_version.outputs.VERSION }}\ 2>nul || echo "README copy failed"
+          copy LICENSE asthra-${{ steps.get_version.outputs.VERSION }}\ 2>nul || echo "LICENSE copy failed"
+          xcopy docs asthra-${{ steps.get_version.outputs.VERSION }}\docs\ /E /I /Q 2>nul || echo "Docs copy failed"
+          
+          REM Copy examples
+          xcopy examples asthra-${{ steps.get_version.outputs.VERSION }}\examples\ /E /I /Q 2>nul || echo "Examples copy failed"
+          
+          REM Create installation batch script
+          echo @echo off > asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
+          echo setlocal >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
+          echo. >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
+          echo set INSTALL_DIR=%%1 >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
+          echo if "%%INSTALL_DIR%%"=="" set INSTALL_DIR=C:\Program Files\Asthra >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
+          echo. >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
+          echo echo Installing Asthra to %%INSTALL_DIR%% >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
+          echo. >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
+          echo mkdir "%%INSTALL_DIR%%\bin" 2^>nul >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
+          echo mkdir "%%INSTALL_DIR%%\lib" 2^>nul >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
+          echo mkdir "%%INSTALL_DIR%%\include" 2^>nul >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
+          echo. >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
+          echo copy bin\asthra.exe "%%INSTALL_DIR%%\bin\" >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
+          echo copy lib\*.lib "%%INSTALL_DIR%%\lib\" 2^>nul ^|^| echo Library copy failed >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
+          echo copy include\*.h "%%INSTALL_DIR%%\include\" 2^>nul ^|^| echo Header copy failed >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
+          echo. >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
+          echo echo Asthra installed successfully! >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
+          echo echo Add %%INSTALL_DIR%%\bin to your PATH environment variable. >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
+          echo endlocal >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
+
+      - name: Create Windows archive
+        if: matrix.compiler == 'msvc'
+        shell: powershell
+        run: |
+          Compress-Archive -Path "asthra-${{ steps.get_version.outputs.VERSION }}" -DestinationPath "asthra-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}.zip"
+
+      # =============================================================================
+      # UPLOAD ARTIFACTS
+      # =============================================================================
+
+      - name: Upload Release Asset (Unix)
+        if: matrix.compiler != 'msvc'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./asthra-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}.tar.gz
+          asset_name: asthra-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload Release Asset (Windows)
+        if: matrix.compiler == 'msvc'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./asthra-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}.zip
+          asset_name: asthra-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}.zip
+          asset_content_type: application/zip
+
+  build-documentation:
+    name: Build and Upload Documentation
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz build-essential clang libc6-dev gperf
+
+      - name: Generate documentation
+        run: |
+          doxygen Doxyfile
+
+      - name: Create documentation archive
+        run: |
+          tar -czf asthra-${{ steps.get_version.outputs.VERSION }}-docs.tar.gz docs/
+
+      - name: Upload Documentation Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./asthra-${{ steps.get_version.outputs.VERSION }}-docs.tar.gz
+          asset_name: asthra-${{ steps.get_version.outputs.VERSION }}-docs.tar.gz
+          asset_content_type: application/gzip
+
+  performance-benchmarks:
+    name: Performance Benchmarks
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang libc6-dev gperf
+
+      - name: Build optimized release
+        run: |
+          make clean
+          make release
+
+      - name: Run performance benchmarks
+        run: |
+          make test-benchmark
+          make test-performance
+          make benchmark
+
+      - name: Create benchmark report
+        run: |
+          echo "# Asthra ${{ steps.get_version.outputs.VERSION }} Performance Benchmarks" > benchmark-report.md
+          echo "" >> benchmark-report.md
+          echo "Generated on: $(date)" >> benchmark-report.md
+          echo "" >> benchmark-report.md
+          echo "## System Information" >> benchmark-report.md
+          echo "- OS: $(uname -a)" >> benchmark-report.md
+          echo "- CPU: $(lscpu | grep 'Model name' | cut -d: -f2 | xargs)" >> benchmark-report.md
+          echo "- Memory: $(free -h | grep Mem | awk '{print $2}')" >> benchmark-report.md
+          echo "" >> benchmark-report.md
+          echo "## Benchmark Results" >> benchmark-report.md
+          echo "" >> benchmark-report.md
+          if [ -f benchmark_results.log ]; then
+            echo '```' >> benchmark-report.md
+            cat benchmark_results.log >> benchmark-report.md
+            echo '```' >> benchmark-report.md
+          fi
+
+      - name: Upload Benchmark Report
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./benchmark-report.md
+          asset_name: asthra-${{ steps.get_version.outputs.VERSION }}-benchmarks.md
+          asset_content_type: text/markdown
+
+  notify-release:
+    name: Notify Release
+    needs: [create-release, build-release, build-documentation, performance-benchmarks]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Notify success
+        if: needs.build-release.result == 'success' && needs.build-documentation.result == 'success'
+        run: |
+          echo "✅ Asthra ${{ steps.get_version.outputs.VERSION }} released successfully!"
+          echo "Release URL: https://github.com/${{ github.repository }}/releases/tag/${{ steps.get_version.outputs.VERSION }}"
+
+      - name: Notify failure
+        if: needs.build-release.result == 'failure' || needs.build-documentation.result == 'failure'
+        run: |
+          echo "❌ Asthra ${{ steps.get_version.outputs.VERSION }} release failed!"
+          exit 1 
