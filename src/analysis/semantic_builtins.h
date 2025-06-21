@@ -46,6 +46,11 @@ bool semantic_is_builtin_type(const TypeDescriptor *type);
 void semantic_init_predeclared_identifiers(SemanticAnalyzer *analyzer);
 
 /**
+ * Initialize builtin generic types (Option, Result, etc.)
+ */
+void semantic_init_builtin_generic_types(SemanticAnalyzer *analyzer);
+
+/**
  * Create a function type descriptor from a name and signature string
  */
 TypeDescriptor *create_predeclared_function_type(const char *name, const char *signature);

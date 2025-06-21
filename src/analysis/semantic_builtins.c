@@ -10,6 +10,7 @@
 
 #include "semantic_builtins.h"
 #include "semantic_symbols.h"
+#include "semantic_symbols_entries.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -471,4 +472,117 @@ void semantic_init_predeclared_identifiers(SemanticAnalyzer *analyzer) {
             symbol_table_insert_safe(analyzer->global_scope, pred->name, entry);
         }
     }
+}
+
+// =============================================================================
+// BUILTIN GENERIC TYPES
+// =============================================================================
+
+void semantic_init_builtin_generic_types(SemanticAnalyzer *analyzer) {
+    if (!analyzer) return;
+    
+    // Register Option<T> as a builtin generic enum type
+    // Create the Option enum type descriptor
+    TypeDescriptor *option_type = malloc(sizeof(TypeDescriptor));
+    if (!option_type) return;
+    
+    // Initialize Option type descriptor
+    option_type->category = TYPE_ENUM;
+    option_type->flags = (TypeFlags){0};
+    option_type->flags.is_ffi_compatible = true;
+    option_type->size = sizeof(int);  // Enum size
+    option_type->alignment = _Alignof(int);
+    option_type->name = strdup("Option");
+    atomic_init(&option_type->ref_count, 1);
+    
+    // Create variant symbol table
+    option_type->data.enum_type.variants = symbol_table_create(4);
+    option_type->data.enum_type.variant_count = 2;
+    
+    // Create Option symbol entry as generic
+    SymbolEntry *option_symbol = symbol_entry_create(
+        "Option",
+        SYMBOL_TYPE,
+        option_type,
+        NULL  // No AST declaration for builtin
+    );
+    
+    if (option_symbol) {
+        // Mark as generic with 1 type parameter
+        option_symbol->is_generic = true;
+        option_symbol->type_param_count = 1;
+        option_symbol->flags.is_predeclared = true;
+        
+        // Add to global scope
+        symbol_table_insert_safe(analyzer->global_scope, "Option", option_symbol);
+        
+        // Add Some and None variants
+        // Some variant
+        TypeDescriptor *some_type = malloc(sizeof(TypeDescriptor));
+        if (some_type) {
+            some_type->category = TYPE_PRIMITIVE;
+            some_type->flags = (TypeFlags){0};
+            some_type->flags.is_constant = true;
+            some_type->flags.is_ffi_compatible = true;
+            some_type->size = sizeof(int);
+            some_type->alignment = _Alignof(int);
+            some_type->name = strdup("Option.Some");
+            some_type->data.primitive.primitive_kind = PRIMITIVE_I32;
+            atomic_init(&some_type->ref_count, 1);
+            
+            SymbolEntry *some_symbol = symbol_entry_create(
+                "Some",
+                SYMBOL_ENUM_VARIANT,
+                some_type,
+                NULL
+            );
+            
+            if (some_symbol) {
+                symbol_table_insert_safe(option_type->data.enum_type.variants, "Some", some_symbol);
+                
+                // Also add qualified name to global scope
+                SymbolEntry *qualified_some = symbol_entry_copy(some_symbol);
+                if (qualified_some) {
+                    free(qualified_some->name);
+                    qualified_some->name = strdup("Option.Some");
+                    symbol_table_insert_safe(analyzer->global_scope, "Option.Some", qualified_some);
+                }
+            }
+        }
+        
+        // None variant
+        TypeDescriptor *none_type = malloc(sizeof(TypeDescriptor));
+        if (none_type) {
+            none_type->category = TYPE_PRIMITIVE;
+            none_type->flags = (TypeFlags){0};
+            none_type->flags.is_constant = true;
+            none_type->flags.is_ffi_compatible = true;
+            none_type->size = sizeof(int);
+            none_type->alignment = _Alignof(int);
+            none_type->name = strdup("Option.None");
+            none_type->data.primitive.primitive_kind = PRIMITIVE_I32;
+            atomic_init(&none_type->ref_count, 1);
+            
+            SymbolEntry *none_symbol = symbol_entry_create(
+                "None",
+                SYMBOL_ENUM_VARIANT,
+                none_type,
+                NULL
+            );
+            
+            if (none_symbol) {
+                symbol_table_insert_safe(option_type->data.enum_type.variants, "None", none_symbol);
+                
+                // Also add qualified name to global scope
+                SymbolEntry *qualified_none = symbol_entry_copy(none_symbol);
+                if (qualified_none) {
+                    free(qualified_none->name);
+                    qualified_none->name = strdup("Option.None");
+                    symbol_table_insert_safe(analyzer->global_scope, "Option.None", qualified_none);
+                }
+            }
+        }
+    }
+    
+    // TODO: Register Result<T, E> as well in the future
 } 

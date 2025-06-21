@@ -68,7 +68,7 @@ ExternParamList<- ExternParam (',' ExternParam)* / 'none'  # External function p
 ExternParam    <- SafeFFIAnnotation? SimpleIdent ':' Type  # External parameter with single FFI annotation (no MutModifier allowed)
 
 # Type system with built-in and composite types
-Type           <- BaseType / SliceType / FixedArrayType / StructType / EnumType / PtrType / ResultType / TupleType / NeverType  # All supported types
+Type           <- BaseType / SliceType / FixedArrayType / StructType / EnumType / PtrType / ResultType / OptionType / TupleType / NeverType  # All supported types
 TupleType      <- '(' Type ',' Type (',' Type)* ')'       # Tuple types: (T, U) or (T, U, V) - minimum 2 elements
 NeverType      <- 'Never'                                  # Never type for functions that don't return
 BaseType       <- 'int' / 'float' / 'bool' / 'string' / 'void' / 'usize' / 'isize' /  # Primitive types (void preserved as legitimate type)
@@ -80,6 +80,7 @@ EnumType       <- SimpleIdent TypeArgs?                    # User-defined enums 
 TypeArgs       <- '<' Type (',' Type)* '>'                 # Generic type arguments
 PtrType        <- '*mut' Type / '*const' Type              # Mutable and immutable pointers
 ResultType     <- 'Result' '<' Type ',' Type '>'           # Error handling: Result<Success, Error>
+OptionType     <- 'Option' '<' Type '>'                    # Optional values: Option<T>
 
 # Code blocks and statements
 Block          <- '{' Statement* '}'                       # Code block with multiple statements
@@ -191,6 +192,8 @@ ReservedKeyword <- 'as'                                     # Import aliasing
                  / 'self'                                   # Method self parameter
                  / 'void'                                   # Type for functions returning nothing (preserved for legitimate usage)
                  / 'none'                                   # Structural absence marker (semantic clarity)
+                 / 'Result'                                 # Built-in Result<T,E> type
+                 / 'Option'                                 # Built-in Option<T> type
 # Apart from these keywords, there are few predeclared identifiers (mostly functions - similar to Go):
 # - log("msg %s", "word") - print to stdout
 # - range(10, 2) -- Two overloaded versions:

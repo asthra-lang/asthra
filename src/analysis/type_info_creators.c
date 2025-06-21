@@ -121,6 +121,31 @@ TypeInfo *type_info_create_result(TypeInfo *ok_type, TypeInfo *err_type) {
     return type_info;
 }
 
+TypeInfo *type_info_create_option(TypeInfo *value_type) {
+    if (!value_type) return NULL;
+    
+    char name_buffer[256];
+    snprintf(name_buffer, (size_t)sizeof(name_buffer), "Option<%s>", value_type->name);
+    
+    TypeInfo *type_info = type_info_create(name_buffer, 0);
+    if (!type_info) return NULL;
+    
+    type_info->category = (int)TYPE_INFO_OPTION;
+    // Option size is variant tag (bool) + value size (aligned)
+    type_info->size = sizeof(bool) + value_type->size;
+    type_info->alignment = value_type->alignment > sizeof(bool) ? value_type->alignment : sizeof(bool);
+    type_info->flags.is_copyable = value_type->flags.is_copyable;
+    type_info->flags.is_movable = true;
+    
+    // Update statistics after category is set
+    type_info_update_stats(type_info);
+    
+    type_info->data.option.value_type = value_type;
+    type_info_retain(value_type);
+    
+    return type_info;
+}
+
 TypeInfo *type_info_create_pointer(TypeInfo *pointee_type, bool is_mutable) {
     if (!pointee_type) return NULL;
     

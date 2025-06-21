@@ -420,6 +420,21 @@ TypeDescriptor *arg_type = analyze_type_node(analyzer, type_arg);
             return result_type;
         }
         
+        case AST_OPTION_TYPE: {
+            // Handle Option<T> types
+            ASTNode *value_type_node = type_node->data.option_type.value_type;
+            
+            if (!value_type_node) return NULL;
+            
+            TypeDescriptor *value_type = analyze_type_node(analyzer, value_type_node);
+            if (!value_type) return NULL;
+            
+            TypeDescriptor *option_type = type_descriptor_create_option(value_type);
+            type_descriptor_release(value_type);   // create_option retains it
+            
+            return option_type;
+        }
+        
         case AST_TUPLE_TYPE: {
             // Handle tuple types: (T1, T2, ...)
             ASTNodeList *element_types = type_node->data.tuple_type.element_types;

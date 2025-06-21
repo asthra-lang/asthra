@@ -52,6 +52,7 @@ typedef enum {
     TYPE_SLICE,
     TYPE_ARRAY,      // Fixed-size array type [N]T
     TYPE_RESULT,
+    TYPE_OPTION,     // Option<T> type
     TYPE_FUNCTION,
     TYPE_BUILTIN,    // For builtin types like string
     TYPE_INTEGER,    // Integer types (i8, i16, i32, i64, u8, u16, u32, u64)
@@ -65,7 +66,7 @@ typedef enum {
 } TypeCategory;
 
 // C17 static assertion for type category enum
-_Static_assert(TYPE_COUNT <= 16, "Type categories must fit in 4 bits for compact storage");
+_Static_assert(TYPE_COUNT <= 32, "Type categories must fit in 5 bits for compact storage");
 
 // Type flags using C17 bitfields
 typedef struct {
@@ -119,6 +120,10 @@ struct TypeDescriptor {
             TypeDescriptor *ok_type;
             TypeDescriptor *err_type;
         } result;
+        
+        struct {
+            TypeDescriptor *value_type;
+        } option;
         
         struct {
             TypeDescriptor **param_types;

@@ -140,6 +140,9 @@ bool analyze_enum_variant(SemanticAnalyzer *analyzer, ASTNode *expr) {
             }
         }
         
+        // Set the type of the enum variant expression to the enum type
+        semantic_set_expression_type(analyzer, expr, enum_symbol->type);
+        
         return true;
     }
     

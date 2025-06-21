@@ -355,6 +355,10 @@ struct ASTNode {
         } result_type;
         
         struct {
+            ASTNode *value_type;
+        } option_type;
+        
+        struct {
             ASTNodeList *element_types;  // List of types in the tuple
         } tuple_type;
         

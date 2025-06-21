@@ -29,6 +29,11 @@ static bool is_result_type(const TypeInfo *type_info) {
     return type_info && type_info->category == TYPE_INFO_RESULT;
 }
 
+static bool is_option_type(const TypeInfo *type_info) {
+    // Option type has its own category TYPE_INFO_OPTION
+    return type_info && type_info->category == TYPE_INFO_OPTION;
+}
+
 static bool is_integer_type(const TypeInfo *type_info, int bits, bool is_signed) {
     if (!type_info || type_info->category != TYPE_INFO_PRIMITIVE) return false;
     
@@ -91,6 +96,8 @@ FFIMarshalingType ffi_determine_marshaling_type(FFIAssemblyGenerator *generator,
         return FFI_MARSHAL_SLICE;
     } else if (is_result_type(arg->type_info)) {
         return FFI_MARSHAL_RESULT;
+    } else if (is_option_type(arg->type_info)) {
+        return FFI_MARSHAL_OPTION;
     } else {
         // All other types (primitives, pointers, unknown) use direct marshaling
         return FFI_MARSHAL_DIRECT;
@@ -112,6 +119,8 @@ FFIMarshalingType ffi_determine_return_marshaling_type(FFIAssemblyGenerator *gen
         return FFI_MARSHAL_SLICE;
     } else if (is_result_type(call->type_info)) {
         return FFI_MARSHAL_RESULT;
+    } else if (is_option_type(call->type_info)) {
+        return FFI_MARSHAL_OPTION;
     } else {
         return FFI_MARSHAL_DIRECT;
     }

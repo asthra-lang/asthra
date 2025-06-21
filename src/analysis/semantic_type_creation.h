@@ -12,6 +12,7 @@ TypeDescriptor *type_descriptor_create_pointer(TypeDescriptor *pointee_type);
 TypeDescriptor *type_descriptor_create_slice(TypeDescriptor *element_type);
 TypeDescriptor *type_descriptor_create_array(TypeDescriptor *element_type, size_t size);
 TypeDescriptor *type_descriptor_create_result(TypeDescriptor *ok_type, TypeDescriptor *err_type);
+TypeDescriptor *type_descriptor_create_option(TypeDescriptor *value_type);
 TypeDescriptor *type_descriptor_create_function(void);
 TypeDescriptor *type_descriptor_create_function_with_params(TypeDescriptor *return_type, size_t param_count);
 TypeDescriptor *type_descriptor_create_generic_instance(TypeDescriptor *base_type, 

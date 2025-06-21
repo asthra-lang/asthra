@@ -75,6 +75,9 @@ SemanticAnalyzer *semantic_analyzer_create(void) {
     // Initialize predeclared identifiers
     semantic_init_predeclared_identifiers(analyzer);
     
+    // Initialize builtin generic types (Option, Result, etc.)
+    semantic_init_builtin_generic_types(analyzer);
+    
     return analyzer;
 }
 

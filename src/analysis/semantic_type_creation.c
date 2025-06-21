@@ -172,6 +172,35 @@ TypeDescriptor *type_descriptor_create_result(TypeDescriptor *ok_type, TypeDescr
     return result_type;
 }
 
+TypeDescriptor *type_descriptor_create_option(TypeDescriptor *value_type) {
+    if (!value_type) return NULL;
+    
+    TypeDescriptor *option_type = malloc(sizeof(TypeDescriptor));
+    if (!option_type) return NULL;
+    
+    option_type->category = TYPE_OPTION;
+    option_type->flags.is_mutable = false;
+    option_type->flags.is_owned = false;
+    option_type->flags.is_borrowed = false;
+    option_type->flags.is_constant = false;
+    option_type->flags.is_volatile = false;
+    option_type->flags.is_atomic = false;
+    option_type->flags.is_ffi_compatible = false; // Option types are not FFI compatible
+    option_type->flags.reserved = 0;
+    
+    // Option size is a tagged union - size of value plus tag
+    option_type->size = value_type->size + sizeof(int);
+    option_type->alignment = _Alignof(void*);
+    option_type->name = NULL;
+    
+    option_type->data.option.value_type = value_type;
+    type_descriptor_retain(value_type); // Retain the value type
+    
+    atomic_init(&option_type->ref_count, 1);
+    
+    return option_type;
+}
+
 TypeDescriptor *type_descriptor_create_function(void) {
     TypeDescriptor *func_type = calloc(1, sizeof(TypeDescriptor));
     if (!func_type) {

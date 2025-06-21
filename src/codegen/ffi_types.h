@@ -41,6 +41,7 @@ typedef enum {
     FFI_MARSHAL_SLICE,       // Slice to pointer+length
     FFI_MARSHAL_STRING,      // String to C string
     FFI_MARSHAL_RESULT,      // Result type marshaling
+    FFI_MARSHAL_OPTION,      // Option type marshaling
     FFI_MARSHAL_VARIADIC,    // Variadic argument
     FFI_MARSHAL_COUNT
 } FFIMarshalingType;

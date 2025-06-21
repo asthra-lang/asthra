@@ -37,6 +37,7 @@ typedef struct TypeInfo {
         TYPE_INFO_SLICE,                 // Slice types []T
         TYPE_INFO_POINTER,               // Pointer types *T, *mut T
         TYPE_INFO_RESULT,                // Result<T, E> types
+        TYPE_INFO_OPTION,                // Option<T> types
         TYPE_INFO_FUNCTION,              // Function types
         TYPE_INFO_ENUM,                  // Enum types (future)
         TYPE_INFO_TUPLE,                 // Tuple types (T1, T2, ...)
@@ -116,6 +117,11 @@ typedef struct TypeInfo {
             struct TypeInfo *ok_type;           // Success type
             struct TypeInfo *err_type;          // Error type
         } result;
+        
+        // Option types
+        struct {
+            struct TypeInfo *value_type;        // Inner value type
+        } option;
         
         // Function types
         struct {
@@ -221,6 +227,11 @@ TypeInfo *type_info_create_pointer(TypeInfo *pointee_type, bool is_mutable);
  * Create Result type info
  */
 TypeInfo *type_info_create_result(TypeInfo *ok_type, TypeInfo *err_type);
+
+/**
+ * Create Option type info
+ */
+TypeInfo *type_info_create_option(TypeInfo *value_type);
 
 /**
  * Create function type info

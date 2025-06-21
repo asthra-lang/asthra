@@ -95,6 +95,87 @@ ASTNode *parse_result_keyword(Parser *parser, SourceLocation start_loc) {
 }
 
 /**
+ * Parse Option keyword as enum name or type
+ */
+ASTNode *parse_option_keyword(Parser *parser, SourceLocation start_loc) {
+    if (!parser || !match_token(parser, TOKEN_OPTION)) return NULL;
+    
+    char *name = strdup("Option");
+    advance_token(parser);
+    
+    // Check for enum constructor (Option followed by '.')
+    if (match_token(parser, TOKEN_DOT)) {
+        advance_token(parser); // consume '.'
+        
+        if (!match_token(parser, TOKEN_IDENTIFIER)) {
+            report_error(parser, "Expected variant name after '.' in enum constructor");
+            free(name);
+            return NULL;
+        }
+        
+        char *variant_name = strdup(parser->current_token.data.identifier.name);
+        advance_token(parser);
+        
+        // Check for optional arguments: ('(' ArgList ')')?  
+        ASTNode *value = NULL;
+        if (match_token(parser, TOKEN_LEFT_PAREN)) {
+            advance_token(parser); // consume '('
+            
+            // Parse single argument if present (enum constructors take single values)
+            if (!match_token(parser, TOKEN_RIGHT_PAREN)) {
+                value = parse_expr(parser);
+                if (!value) {
+                    free(name);
+                    free(variant_name);
+                    return NULL;
+                }
+                
+                // Check for additional arguments (not supported by current AST)
+                if (match_token(parser, TOKEN_COMMA)) {
+                    report_error(parser, "Enum constructors currently support only single values. Use a tuple for multiple values.");
+                    ast_free_node(value);
+                    free(name);
+                    free(variant_name);
+                    return NULL;
+                }
+            }
+            
+            if (!expect_token(parser, TOKEN_RIGHT_PAREN)) {
+                if (value) ast_free_node(value);
+                free(name);
+                free(variant_name);
+                return NULL;
+            }
+        }
+        
+        // Create enum variant node with single value
+        ASTNode *node = ast_create_node(AST_ENUM_VARIANT, start_loc);
+        if (!node) {
+            if (value) ast_free_node(value);
+            free(name);
+            free(variant_name);
+            return NULL;
+        }
+        
+        node->data.enum_variant.enum_name = name;
+        node->data.enum_variant.variant_name = variant_name;
+        node->data.enum_variant.value = value; // Store the single value
+        
+        return node;
+    } else {
+        // Just "Option" by itself - create a type node
+        ASTNode *node = ast_create_node(AST_BASE_TYPE, start_loc);
+        if (!node) {
+            free(name);
+            return NULL;
+        }
+        
+        node->data.base_type.name = name;
+        return node;
+    }
+}
+
+/**
  * Parse enum constructor with given enum name
  */
 static ASTNode *parse_enum_constructor(Parser *parser, char *enum_name, SourceLocation start_loc) {

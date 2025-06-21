@@ -87,45 +87,97 @@ typedef struct PlatformInterface {
 
 ### Platform Detection
 
-Compile-time platform detection enables conditional compilation:
+The Asthra compiler uses platform detection macros defined in `src/platform.h` to enable conditional compilation and platform-specific behavior:
 
 ```c
-// Platform detection macros
+// Platform detection macros (from platform.h)
+#if defined(_WIN32) || defined(_WIN64)
+    #define ASTHRA_PLATFORM_WINDOWS 1
+    #define ASTHRA_PLATFORM_UNIX 0
+    #define ASTHRA_PLATFORM_MACOS 0
+    #define ASTHRA_PLATFORM_LINUX 0
+    #define ASTHRA_PLATFORM_NAME "Windows"
+#elif defined(__APPLE__) && defined(__MACH__)
+    #define ASTHRA_PLATFORM_WINDOWS 0
+    #define ASTHRA_PLATFORM_UNIX 1
+    #define ASTHRA_PLATFORM_MACOS 1
+    #define ASTHRA_PLATFORM_LINUX 0
+    #define ASTHRA_PLATFORM_NAME "macOS"
+#elif defined(__linux__)
+    #define ASTHRA_PLATFORM_WINDOWS 0
+    #define ASTHRA_PLATFORM_UNIX 1
+    #define ASTHRA_PLATFORM_MACOS 0
+    #define ASTHRA_PLATFORM_LINUX 1
+    #define ASTHRA_PLATFORM_NAME "Linux"
+#endif
+
+// Compiler detection
+#if defined(_MSC_VER)
+    #define ASTHRA_COMPILER_MSVC 1
+    #define ASTHRA_COMPILER_GCC 0
+    #define ASTHRA_COMPILER_CLANG 0
+#elif defined(__clang__)
+    #define ASTHRA_COMPILER_MSVC 0
+    #define ASTHRA_COMPILER_GCC 0
+    #define ASTHRA_COMPILER_CLANG 1
+#elif defined(__GNUC__)
+    #define ASTHRA_COMPILER_MSVC 0
+    #define ASTHRA_COMPILER_GCC 1
+    #define ASTHRA_COMPILER_CLANG 0
+#endif
+
+// Architecture detection
 #if defined(__x86_64__) || defined(_M_X64)
-    #define ASTHRA_ARCH_X86_64 1
-    #define ASTHRA_ARCH_NAME "x86_64"
-    #define ASTHRA_POINTER_SIZE 8
-    #define ASTHRA_CACHE_LINE_SIZE 64
+    #define ASTHRA_ARCH_X64 1
+    #define ASTHRA_ARCH_NAME "x64"
+#elif defined(__i386__) || defined(_M_IX86)
+    #define ASTHRA_ARCH_X86 1
+    #define ASTHRA_ARCH_NAME "x86"
 #elif defined(__aarch64__) || defined(_M_ARM64)
     #define ASTHRA_ARCH_ARM64 1
     #define ASTHRA_ARCH_NAME "arm64"
-    #define ASTHRA_POINTER_SIZE 8
-    #define ASTHRA_CACHE_LINE_SIZE 64
-#elif defined(__wasm32__)
-    #define ASTHRA_ARCH_WASM32 1
-    #define ASTHRA_ARCH_NAME "wasm32"
-    #define ASTHRA_POINTER_SIZE 4
-    #define ASTHRA_CACHE_LINE_SIZE 32
-#else
-    #error "Unsupported target architecture"
+#elif defined(__arm__) || defined(_M_ARM)
+    #define ASTHRA_ARCH_ARM 1
+    #define ASTHRA_ARCH_NAME "arm"
+#endif
+```
+
+### Platform-Specific Code Patterns
+
+When writing platform-specific code, always use the platform detection macros:
+
+```c
+// Example: Platform-specific header includes
+#include "platform.h"
+
+#if ASTHRA_PLATFORM_UNIX
+#include <sys/wait.h>
+#include <unistd.h>
 #endif
 
-// Operating system detection
-#if defined(__linux__)
-    #define ASTHRA_OS_LINUX 1
-    #define ASTHRA_OS_NAME "linux"
-#elif defined(__APPLE__)
-    #define ASTHRA_OS_MACOS 1
-    #define ASTHRA_OS_NAME "macos"
-#elif defined(_WIN32)
-    #define ASTHRA_OS_WINDOWS 1
-    #define ASTHRA_OS_NAME "windows"
-#elif defined(__EMSCRIPTEN__)
-    #define ASTHRA_OS_WASM 1
-    #define ASTHRA_OS_NAME "wasm"
-#else
-    #error "Unsupported operating system"
+#if ASTHRA_PLATFORM_WINDOWS
+#include <windows.h>
 #endif
+
+// Example: Handling system() return values portably
+int execute_command(const char* cmd) {
+    int result = system(cmd);
+    
+    if (result == -1) {
+        return -1; // Failed to execute
+    }
+    
+#if ASTHRA_PLATFORM_UNIX
+    // On Unix, use WIFEXITED/WEXITSTATUS macros
+    if (WIFEXITED(result) && WEXITSTATUS(result) == 0) {
+        return 0; // Success
+    }
+    return WEXITSTATUS(result);
+#else
+    // On Windows, system() returns the exit code directly
+    return result;
+#endif
+}
 ```
 
 ## Target Architecture Support
@@ -190,6 +242,64 @@ Step-by-step guide for adding support for new target architectures including cod
 
 Guidelines for implementing platform abstraction layer for new operating systems.
 
+## Common Platform Compatibility Issues
+
+### POSIX vs Windows Differences
+
+When writing code that uses system APIs, be aware of these common differences:
+
+1. **Process execution and return values**
+   - POSIX: `system()` returns a value that must be decoded with `WIFEXITED()` and `WEXITSTATUS()`
+   - Windows: `system()` returns the exit code directly
+   - Always use platform guards when handling system call returns
+
+2. **Header files**
+   - POSIX-specific headers like `<sys/wait.h>`, `<unistd.h>` must be guarded
+   - Windows-specific headers like `<windows.h>` must be guarded
+   - Always include `platform.h` before platform-specific headers
+
+3. **File I/O return value checking**
+   - Functions like `fread()` must have their return values checked
+   - Use proper error handling for all I/O operations
+
+### Required Compiler Flags
+
+Different compilers require different warning flags:
+
+- **GCC**: `-Wall -Werror -Wunused-result`
+- **Clang**: `-Wall -Werror`
+- **MSVC**: `/W4 /WX`
+
+### Best Practices for Cross-Platform Code
+
+1. **Always check return values**
+   ```c
+   size_t bytes_read = fread(buffer, 1, size, file);
+   if (bytes_read != size) {
+       // Handle error
+   }
+   ```
+
+2. **Use platform macros consistently**
+   ```c
+   #if ASTHRA_PLATFORM_UNIX
+       // Unix-specific code
+   #elif ASTHRA_PLATFORM_WINDOWS
+       // Windows-specific code
+   #else
+       #error "Unsupported platform"
+   #endif
+   ```
+
+3. **Provide fallbacks for platform-specific features**
+   ```c
+   #if ASTHRA_PLATFORM_UNIX
+       // Use Unix-specific feature
+   #else
+       // Provide alternative implementation
+   #endif
+   ```
+
 ## Testing and Validation
 
 ### Platform Test Suite
@@ -198,7 +308,11 @@ Comprehensive testing across all supported platforms with feature detection and 
 
 ### Continuous Integration
 
-Platform testing in CI/CD with cross-compilation and performance benchmarking.
+Platform testing in CI/CD with cross-compilation and performance benchmarking. The CI system tests:
+- Linux with GCC (strict warnings enabled)
+- Linux with Clang
+- macOS with Clang
+- Windows with MSVC (when available)
 
 ## Conclusion
 

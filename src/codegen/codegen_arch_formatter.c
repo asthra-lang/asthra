@@ -99,6 +99,24 @@ static int format_aarch64_instruction(const AssemblyInstruction *inst,
             }
             break;
             
+        case INST_ADD:
+            if (inst->operand_count == 2) {
+                return snprintf(buffer, buffer_size, "    add %s, %s, %s\n",
+                               format_aarch64_operand(&inst->operands[0]),
+                               format_aarch64_operand(&inst->operands[0]),
+                               format_aarch64_operand(&inst->operands[1]));
+            }
+            break;
+            
+        case INST_SUB:
+            if (inst->operand_count == 2) {
+                return snprintf(buffer, buffer_size, "    sub %s, %s, %s\n",
+                               format_aarch64_operand(&inst->operands[0]),
+                               format_aarch64_operand(&inst->operands[0]),
+                               format_aarch64_operand(&inst->operands[1]));
+            }
+            break;
+            
         case INST_PUSH:
             // ARM64 doesn't have push instruction, use str with pre-decrement
             if (inst->operand_count == 1) {

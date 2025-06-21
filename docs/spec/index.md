@@ -6,22 +6,11 @@ permalink: /docs/spec/
 
 # Asthra Language Specification
 
-**Version:** 2.0 - PRODUCTION READY  
-**Last Updated:** January 10, 2025  
-**Status:** ✅ ALL FEATURES IMPLEMENTED AND TESTED
-
 Welcome to the complete Asthra language specification. This section provides formal documentation of the language design, grammar, type system, and all technical details needed for implementation and advanced usage.
 
 ## 🎉 Production Ready Status
 
 Asthra has achieved **PRODUCTION-READY status** with 100% test success rate across ALL 31 test categories, representing the world's first programming language designed from the ground up for AI code generation excellence.
-
-### Current Achievement Status
-- ✅ **All 31 Test Categories**: 100% success rate
-- ✅ **130 Total Tests**: All passing with comprehensive coverage
-- ✅ **Complete Language Implementation**: All core features working
-- ✅ **Advanced AI Integration**: World's first AI-friendly programming language
-- ✅ **Production Quality**: Comprehensive testing and validation
 
 ---
 
@@ -105,23 +94,6 @@ Complete Ampu build system and project management documentation.
 2. Focus on **[Grammar](/docs/spec/grammar/)** for predictable patterns
 3. Understand **[Type System](/docs/spec/types/)** for inference rules
 4. Study **[Advanced Features](/docs/spec/advanced-features/)** for AI integration
-
----
-
-## 🔄 Version History
-
-### v2.0 - PRODUCTION READY (Current)
-- ✅ **ALL 31 TEST CATEGORIES PASSING** (100% success rate)
-- ✅ **Complete Language Implementation** - All core features working
-- ✅ **Advanced AI Integration** - Annotations, linting, API systems
-- ✅ **Production Performance** - C-level performance with smart optimization
-
-### Previous Versions
-- **v1.25** - Immutable-by-Default Implementation
-- **v1.24** - Const Declarations Implementation
-- **v1.23** - Multi-line String Literals
-- **v1.22** - Import Aliases
-- **v1.21** - String Interpolation Removal
 
 ---
 

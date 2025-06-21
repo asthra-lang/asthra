@@ -5,6 +5,7 @@ set(SIMPLE_CODEGEN_TESTS
     test_codegen_basic.c
     test_statement_generation_simple.c
     test_tuple_codegen.c
+    test_option_type_codegen.c
     ../test_never_type_codegen.c
 )
 

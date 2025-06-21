@@ -78,6 +78,7 @@ set(STANDALONE_TESTS
     test_array_slice_initialization_semantic.c
     test_extern_simple.c
     test_never_simple.c
+    test_option_types.c
 )
 
 # Create executables for standalone tests

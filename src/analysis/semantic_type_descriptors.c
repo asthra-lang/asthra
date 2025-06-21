@@ -103,6 +103,11 @@ void type_descriptor_release(TypeDescriptor *type) {
                     type_descriptor_release(type->data.result.err_type);
                 }
                 break;
+            case TYPE_OPTION:
+                if (type->data.option.value_type) {
+                    type_descriptor_release(type->data.option.value_type);
+                }
+                break;
             case TYPE_GENERIC_INSTANCE:
                 // Release base type
                 if (type->data.generic_instance.base_type) {

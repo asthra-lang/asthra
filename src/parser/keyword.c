@@ -64,6 +64,7 @@ static const KeywordEntry keywords[] = {
     {"f32", TOKEN_F32},
     {"f64", TOKEN_F64},
     {"Result", TOKEN_RESULT},
+    {"Option", TOKEN_OPTION},
     {"Never", TOKEN_NEVER},
     
     // Tier 1 Concurrency Features (Core & Simple)

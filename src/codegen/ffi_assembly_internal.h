@@ -119,6 +119,11 @@ bool ffi_marshal_string_parameter(FFIAssemblyGenerator *generator, ASTNode *para
 bool ffi_marshal_result_parameter(FFIAssemblyGenerator *generator, ASTNode *param, Register target_reg);
 
 /**
+ * Marshals an Option parameter for FFI
+ */
+bool ffi_marshal_option_parameter(FFIAssemblyGenerator *generator, ASTNode *param, Register target_reg);
+
+/**
  * Handles return value unmarshaling
  */
 bool ffi_generate_return_unmarshaling(FFIAssemblyGenerator *generator,

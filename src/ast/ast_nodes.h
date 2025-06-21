@@ -53,6 +53,7 @@ typedef enum {
     AST_PTR_TYPE,
     AST_POINTER_TYPE,
     AST_RESULT_TYPE,
+    AST_OPTION_TYPE,
     // Note: Tier 3 types moved to stdlib:
     // AST_CHANNEL_TYPE, AST_TASK_HANDLE_TYPE, AST_WORKER_POOL_TYPE
     

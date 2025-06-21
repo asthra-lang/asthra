@@ -35,7 +35,7 @@ This section provides detailed guides for understanding and working with differe
 
 ### Specialized Guides
 - **[Security Guide](security-guide.md)** - Security considerations and best practices
-- **[Cross-Platform Guide](cross-platform-guide.md)** - Multi-platform development
+- **[Cross-Platform Development Guide](cross-platform-development.md)** - Multi-platform development
 - **[Documentation Guide](documentation-guide.md)** - Writing and maintaining documentation
 - **[Community Guide](community-guide.md)** - Contributing to the community
 

@@ -128,4 +128,74 @@ bool ffi_marshal_result_parameter(FFIAssemblyGenerator *generator, ASTNode *para
     
     register_free(generator->base_generator->register_allocator, result_reg);
     return true;
+}
+
+bool ffi_marshal_option_parameter(FFIAssemblyGenerator *generator, ASTNode *param, Register target_reg) {
+    if (!generator || !param) return false;
+    
+    emit_comment(generator, "Marshal Option<T> parameter");
+    
+    // Allocate register for option
+    Register option_reg = register_allocate(generator->base_generator->register_allocator, true);
+    if (option_reg == REG_NONE) return false;
+    
+    // Generate code to load the option
+    if (!code_generate_expression(generator->base_generator, param, option_reg)) {
+        register_free(generator->base_generator->register_allocator, option_reg);
+        return false;
+    }
+    
+    // Option types are passed as tagged unions (similar to Result)
+    // For FFI, we represent Option<T> as:
+    // - NULL pointer for None
+    // - Valid pointer to T for Some(value)
+    // This matches common C idioms for optional values
+    
+    // Check if this is None (tag == 1) or Some (tag == 0)
+    Register tag_reg = register_allocate(generator->base_generator->register_allocator, true);
+    if (tag_reg == REG_NONE) {
+        register_free(generator->base_generator->register_allocator, option_reg);
+        return false;
+    }
+    
+    // Load tag from option struct (offset 0)
+    emit_instruction(generator, INST_MOV, 2,
+                    create_register_operand(tag_reg),
+                    create_memory_operand(option_reg, REG_NONE, 1, 0));
+    
+    // Create labels for branching
+    char *none_label = generate_unique_label(generator, "option_none");
+    char *end_label = generate_unique_label(generator, "option_end");
+    
+    // Compare tag with 1 (None)
+    emit_instruction(generator, INST_CMP, 2,
+                    create_register_operand(tag_reg),
+                    create_immediate_operand(1));
+    
+    // Jump if equal (is None)
+    emit_instruction(generator, INST_JE, 1,
+                    create_label_operand(none_label));
+    
+    // Some case: Load pointer to value
+    emit_instruction(generator, INST_LEA, 2,
+                    create_register_operand(target_reg),
+                    create_memory_operand(option_reg, REG_NONE, 1, 8)); // Value at offset 8
+    emit_instruction(generator, INST_JMP, 1,
+                    create_label_operand(end_label));
+    
+    // None case: Set to NULL
+    emit_label(generator, none_label);
+    emit_instruction(generator, INST_XOR, 2,
+                    create_register_operand(target_reg),
+                    create_register_operand(target_reg));
+    
+    emit_label(generator, end_label);
+    
+    // Cleanup
+    register_free(generator->base_generator->register_allocator, option_reg);
+    register_free(generator->base_generator->register_allocator, tag_reg);
+    free(none_label);
+    free(end_label);
+    
+    return true;
 } 

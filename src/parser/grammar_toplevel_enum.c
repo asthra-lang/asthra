@@ -24,13 +24,16 @@ ASTNode *parse_enum_decl(Parser *parser) {
         return NULL;
     }
     
-    // Allow Result as enum name even though it's a keyword
+    // Allow Result and Option as enum names even though they're keywords
     char *enum_name = NULL;
     if (match_token(parser, TOKEN_IDENTIFIER)) {
         enum_name = strdup(parser->current_token.data.identifier.name);
         advance_token(parser);
     } else if (match_token(parser, TOKEN_RESULT)) {
         enum_name = strdup("Result");
+        advance_token(parser);
+    } else if (match_token(parser, TOKEN_OPTION)) {
+        enum_name = strdup("Option");
         advance_token(parser);
     } else {
         char error_msg[256];

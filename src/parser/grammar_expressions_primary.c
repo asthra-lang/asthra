@@ -53,6 +53,11 @@ ASTNode *parse_primary(Parser *parser) {
         return node;
     }
     
+    // Try Option keyword
+    if ((node = parse_option_keyword(parser, start_loc)) != NULL) {
+        return node;
+    }
+    
     // Try identifier with potential generic arguments or special cases
     if (match_token(parser, TOKEN_IDENTIFIER)) {
         char *name = strdup(parser->current_token.data.identifier.name);

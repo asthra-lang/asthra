@@ -17,6 +17,7 @@
 extern bool ffi_marshal_slice_parameter(FFIAssemblyGenerator *generator, ASTNode *param, Register target_reg);
 extern bool ffi_marshal_string_parameter(FFIAssemblyGenerator *generator, ASTNode *param, Register target_reg);
 extern bool ffi_marshal_result_parameter(FFIAssemblyGenerator *generator, ASTNode *param, Register target_reg);
+extern bool ffi_marshal_option_parameter(FFIAssemblyGenerator *generator, ASTNode *param, Register target_reg);
 
 // =============================================================================
 // FFI PARAMETER MARSHALING COORDINATION
@@ -49,6 +50,9 @@ bool ffi_generate_parameter_marshaling(FFIAssemblyGenerator *generator,
             
         case FFI_MARSHAL_RESULT:
             return ffi_marshal_result_parameter(generator, param, target_reg);
+            
+        case FFI_MARSHAL_OPTION:
+            return ffi_marshal_option_parameter(generator, param, target_reg);
             
         case FFI_MARSHAL_VARIADIC:
             {

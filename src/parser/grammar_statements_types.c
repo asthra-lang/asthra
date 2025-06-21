@@ -145,6 +145,33 @@ ASTNode *parse_type(Parser *parser) {
         return node;
     }
     
+    // Handle Option type: Option<Type>
+    if (match_token(parser, TOKEN_OPTION)) {
+        advance_token(parser);
+        
+        if (!expect_token(parser, TOKEN_LESS_THAN)) {
+            return NULL;
+        }
+        
+        ASTNode *value_type = parse_type(parser);
+        if (!value_type) return NULL;
+        
+        if (!expect_token(parser, TOKEN_GREATER_THAN)) {
+            ast_free_node(value_type);
+            return NULL;
+        }
+        
+        ASTNode *node = ast_create_node(AST_OPTION_TYPE, start_loc);
+        if (!node) {
+            ast_free_node(value_type);
+            return NULL;
+        }
+        
+        node->data.option_type.value_type = value_type;
+        
+        return node;
+    }
+    
     // Handle tuple types: (Type1, Type2, ...)
     if (match_token(parser, TOKEN_LEFT_PAREN)) {
         advance_token(parser);  // consume '('

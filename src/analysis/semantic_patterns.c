@@ -105,8 +105,8 @@ bool semantic_validate_pattern_types(SemanticAnalyzer *analyzer, ASTNode *patter
                 return false;
             }
             
-            // Check that expected type is an enum
-            if (expected->category != TYPE_ENUM) {
+            // Check that expected type is an enum or Option
+            if (expected->category != TYPE_ENUM && expected->category != TYPE_OPTION) {
                 semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH,
                                      pattern->location,
                                      "Cannot match enum pattern against non-enum type");
@@ -122,8 +122,17 @@ bool semantic_validate_pattern_types(SemanticAnalyzer *analyzer, ASTNode *patter
                 return false;
             }
             
-            // Validate that variant exists in the enum
-            if (expected->data.enum_type.variants) {
+            // Validate that variant exists
+            if (expected->category == TYPE_OPTION) {
+                // For Option types, only Some and None are valid variants
+                if (strcmp(variant_name, "Some") != 0 && strcmp(variant_name, "None") != 0) {
+                    semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL,
+                                         pattern->location,
+                                         "Option has no variant '%s' (only Some and None are valid)", variant_name);
+                    return false;
+                }
+            } else if (expected->data.enum_type.variants) {
+                // For regular enums, look up in the variant table
                 SymbolEntry *variant = symbol_table_lookup_safe(
                     expected->data.enum_type.variants, variant_name);
                 if (!variant) {
@@ -138,9 +147,32 @@ bool semantic_validate_pattern_types(SemanticAnalyzer *analyzer, ASTNode *patter
             if (pattern->data.enum_pattern.binding) {
                 const char *binding_name = pattern->data.enum_pattern.binding;
                 
-                // For now, assume the binding is of type int for IntOption.Some(int)
-                // In a full implementation, we'd look up the variant's associated type
-                TypeDescriptor *binding_type = semantic_get_builtin_type(analyzer, "int");
+                // Determine the binding type based on the enum type
+                TypeDescriptor *binding_type = NULL;
+                
+                // Special handling for Option<T>
+                if (strcmp(enum_name, "Option") == 0 && strcmp(variant_name, "Some") == 0) {
+                    // For Option<T>, the binding type is T
+                    if (expected->category == TYPE_OPTION) {
+                        binding_type = expected->data.option.value_type;
+                        if (binding_type) {
+                            type_descriptor_retain(binding_type);
+                        }
+                    } else {
+                        // This shouldn't happen if we validated the enum type correctly
+                        semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL,
+                                             pattern->location,
+                                             "Option pattern on non-Option type");
+                        return false;
+                    }
+                }
+                // TODO: Add similar handling for Result<T,E> and other generic enums
+                else {
+                    // For now, assume the binding is of type int for other enums
+                    // In a full implementation, we'd look up the variant's associated type
+                    binding_type = semantic_get_builtin_type(analyzer, "int");
+                }
+                
                 if (!binding_type) {
                     semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_INFERENCE_FAILED,
                                          pattern->location,
@@ -151,6 +183,9 @@ bool semantic_validate_pattern_types(SemanticAnalyzer *analyzer, ASTNode *patter
                 // Create symbol entry for the binding
                 SymbolEntry *binding_symbol = symbol_entry_create(binding_name, SYMBOL_VARIABLE, binding_type, pattern);
                 if (!binding_symbol) {
+                    if (strcmp(enum_name, "Option") == 0 && binding_type) {
+                        type_descriptor_release(binding_type);
+                    }
                     semantic_report_error(analyzer, SEMANTIC_ERROR_MEMORY_ALLOCATION,
                                          pattern->location,
                                          "Failed to create symbol entry for binding '%s'", binding_name);
@@ -164,10 +199,18 @@ bool semantic_validate_pattern_types(SemanticAnalyzer *analyzer, ASTNode *patter
                 // Add to current scope
                 if (!symbol_table_insert_safe(analyzer->current_scope, binding_name, binding_symbol)) {
                     symbol_entry_destroy(binding_symbol);
+                    if (strcmp(enum_name, "Option") == 0 && binding_type) {
+                        type_descriptor_release(binding_type);
+                    }
                     semantic_report_error(analyzer, SEMANTIC_ERROR_DUPLICATE_SYMBOL,
                                          pattern->location,
                                          "Variable '%s' already defined in this scope", binding_name);
                     return false;
+                }
+                
+                // Release the retained type for Option
+                if (strcmp(enum_name, "Option") == 0 && binding_type) {
+                    type_descriptor_release(binding_type);
                 }
             }
             

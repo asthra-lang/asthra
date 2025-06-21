@@ -1,5 +1,6 @@
 #include "type_info.h"
 #include "semantic_analyzer.h"
+#include "semantic_type_creation.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -87,6 +88,15 @@ TypeInfo *type_info_from_type_descriptor(const TypeDescriptor *descriptor) {
             } else {
                 if (ok_type_info) type_info_release(ok_type_info);
                 if (err_type_info) type_info_release(err_type_info);
+            }
+            break;
+        }
+        
+        case TYPE_OPTION: {
+            TypeInfo *value_type_info = type_info_from_type_descriptor(descriptor->data.option.value_type);
+            if (value_type_info) {
+                type_info = type_info_create_option(value_type_info);
+                type_info_release(value_type_info);  // create_option retains it
             }
             break;
         }
@@ -244,6 +254,16 @@ TypeDescriptor *type_descriptor_from_type_info(const TypeInfo *type_info) {
                 } else {
                     if (ok_descriptor) type_descriptor_release(ok_descriptor);
                     if (err_descriptor) type_descriptor_release(err_descriptor);
+                }
+            }
+            break;
+            
+        case TYPE_INFO_OPTION:
+            if (type_info->data.option.value_type) {
+                TypeDescriptor *value_descriptor = type_descriptor_from_type_info(type_info->data.option.value_type);
+                if (value_descriptor) {
+                    descriptor = type_descriptor_create_option(value_descriptor);
+                    type_descriptor_release(value_descriptor);  // create_option retains it
                 }
             }
             break;

@@ -158,6 +158,69 @@ static AsthraTestResult test_parse_result_types(AsthraTestContext* context) {
 }
 
 /**
+ * Test: Parse Option Types
+ * Verifies that Option types are parsed correctly
+ */
+static AsthraTestResult test_parse_option_types(AsthraTestContext* context) {
+    // Test Option<T> with various inner types
+    const char* option_tests[] = {
+        "package test_pkg;\npub extern fn test(none) -> Option<i32>;",
+        "package test_pkg;\npub extern fn test(none) -> Option<string>;",
+        "package test_pkg;\npub extern fn test(none) -> Option<bool>;",
+        "package test_pkg;\npub extern fn test(none) -> Option<[]i32>;",  // Option<slice>
+        "package test_pkg;\npub extern fn test(none) -> Option<*i32>;",   // Option<pointer>
+        "package test_pkg;\npub extern fn test(none) -> Option<Option<i32>>;"  // Nested Option
+    };
+    
+    size_t test_count = sizeof(option_tests) / sizeof(option_tests[0]);
+    
+    for (size_t i = 0; i < test_count; i++) {
+        Parser* parser = create_test_parser(option_tests[i]);
+        
+        if (!asthra_test_assert_not_null(context, parser, "Failed to create test parser")) {
+            return ASTHRA_TEST_FAIL;
+        }
+        
+        ASTNode* result = parser_parse_program(parser);
+        
+        if (!asthra_test_assert_not_null(context, result, "Failed to parse Option type")) {
+            destroy_test_parser(parser);
+            return ASTHRA_TEST_FAIL;
+        }
+        
+        if (!asthra_test_assert_bool_eq(context, parser_had_error(parser), false, 
+                                       "Should parse Option type without errors")) {
+            ast_free_node(result);
+            destroy_test_parser(parser);
+            return ASTHRA_TEST_FAIL;
+        }
+        
+        ast_free_node(result);
+        destroy_test_parser(parser);
+    }
+    
+    // Test Option in variable declarations
+    const char* var_test = "let opt: Option<i32>;";
+    Parser* parser = create_test_parser(var_test);
+    
+    if (!asthra_test_assert_not_null(context, parser, "Failed to create test parser")) {
+        return ASTHRA_TEST_FAIL;
+    }
+    
+    ASTNode* result = parser_parse_statement(parser);
+    
+    if (!asthra_test_assert_not_null(context, result, "Failed to parse Option in variable declaration")) {
+        destroy_test_parser(parser);
+        return ASTHRA_TEST_FAIL;
+    }
+    
+    ast_free_node(result);
+    destroy_test_parser(parser);
+    
+    return ASTHRA_TEST_PASS;
+}
+
+/**
  * Test: Parse Struct Types
  * Verifies that struct types are parsed correctly
  */
@@ -268,6 +331,10 @@ AsthraTestSuite* create_grammar_types_test_suite(void) {
     asthra_test_suite_add_test(suite, "test_parse_result_types", 
                               "Parse Result types", 
                               test_parse_result_types);
+    
+    asthra_test_suite_add_test(suite, "test_parse_option_types", 
+                              "Parse Option types", 
+                              test_parse_option_types);
     
     asthra_test_suite_add_test(suite, "test_parse_struct_types", 
                               "Parse struct types", 
