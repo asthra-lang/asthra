@@ -44,7 +44,8 @@ bool analyze_call_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
         SymbolEntry *func_symbol = semantic_resolve_identifier(analyzer, func_name);
         
         if (!func_symbol) {
-            semantic_report_undefined_with_similar(analyzer, function->location, func_name, analyzer->current_scope);
+            semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL,
+                                 function->location, "Undefined function: %s", func_name);
             return false;
         }
         
