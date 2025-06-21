@@ -409,7 +409,11 @@ int main(int argc, char **argv) {
     // Immediate output to test if main is reached
     fprintf(stderr, "TEST: main() started\n");
     fflush(stderr);
-    (void)write(2, "TEST: write() called\n", 21);
+    ssize_t write_result = write(2, "TEST: write() called\n", 21);
+    if (write_result == -1) {
+        // write() failed, but we're in early diagnostic code so continue
+        perror("write");
+    }
     
     // Check for benchmark mode
     bool benchmark_mode = (argc > 1 && strcmp(argv[1], "--benchmark") == 0);
