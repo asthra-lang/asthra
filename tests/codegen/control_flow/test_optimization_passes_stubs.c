@@ -328,7 +328,3 @@ void loop_analysis_destroy(LoopAnalysis* analysis) {
 
 // Note: loop_analysis_detect_loops and loop_analysis_get_max_nesting_depth
 // are provided by codegen_test_stubs.c to avoid duplicate definitions
-
-// External declarations for loop analysis functions
-extern bool loop_analysis_detect_loops(LoopAnalysis* la, ControlFlowGraph* cfg);
-extern int loop_analysis_get_max_nesting_depth(LoopAnalysis* la);
