@@ -41,14 +41,25 @@ bool analyze_return_statement(SemanticAnalyzer *analyzer, ASTNode *stmt) {
         return false;
     }
     
+    // Set expected type context for return expression analysis
+    TypeDescriptor *old_expected_type = analyzer->expected_type;
+    SymbolEntry *current_function = semantic_get_current_function(analyzer);
+    if (current_function && current_function->type && current_function->type->category == TYPE_FUNCTION) {
+        analyzer->expected_type = current_function->type->data.function.return_type;
+    }
+    
     // Analyze the return expression
-    if (!semantic_analyze_expression(analyzer, expression)) {
+    bool analyze_success = semantic_analyze_expression(analyzer, expression);
+    
+    // Restore previous expected type context
+    analyzer->expected_type = old_expected_type;
+    
+    if (!analyze_success) {
         return false;
     }
     
     // Validate return type matches function signature
-    // Get the expected return type from the current function context
-    SymbolEntry *current_function = semantic_get_current_function(analyzer);
+    // Use the current function we already retrieved above
     if (current_function && current_function->type && current_function->type->category == TYPE_FUNCTION) {
         TypeDescriptor *expected_return_type = current_function->type->data.function.return_type;
         TypeDescriptor *actual_return_type = semantic_get_expression_type(analyzer, expression);

@@ -12,7 +12,6 @@ static void test_enum_variant_end_to_end(void) {
     
     const char* source = 
         "package test;\n\n"
-        "pub enum Result<T, E> { Ok(T), Err(E) }\n"
         "pub fn test(none) -> Result<i32, string> {\n"
         "    return Result.Ok(42);\n"
         "}\n";

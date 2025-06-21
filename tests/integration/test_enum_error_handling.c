@@ -11,7 +11,6 @@ static void test_enum_variant_error_handling(void) {
     
     const char* source = 
         "package test;\n\n"
-        "pub enum Result<T, E> { Ok(T), Err(E) }\n"
         "pub fn divide(a: i32, b: i32) -> Result<i32, string> {\n"
         "    return Result.Ok(a);\n"
         "}\n";

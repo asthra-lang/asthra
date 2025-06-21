@@ -140,24 +140,52 @@ bool analyze_enum_variant(SemanticAnalyzer *analyzer, ASTNode *expr) {
             }
         }
         
-        // Handle generic type inference for generic enums like Option<T>
+        // Handle generic type inference for generic enums like Option<T> and Result<T, E>
         TypeDescriptor *enum_type_to_use = enum_symbol->type;
         
-        if (enum_symbol->is_generic && expr->data.enum_variant.value) {
-            // For generic enums like Option.Some(value), infer T from the value type
-            TypeDescriptor *value_type = semantic_get_expression_type(analyzer, expr->data.enum_variant.value);
+        if (enum_symbol->is_generic) {
+            // Try context-based type inference first (e.g., from variable declaration)
+            TypeDescriptor *expected_type = analyzer->expected_type;
+            bool used_context = false;
             
-            if (value_type) {
-                // Create generic instance: Option<T> where T is the value type
-                TypeDescriptor *type_args[] = {value_type};
+            
+            if (expected_type && expected_type->category == TYPE_GENERIC_INSTANCE &&
+                type_descriptor_equals(expected_type->data.generic_instance.base_type, enum_symbol->type)) {
+                // Use the expected type directly (e.g., Result<i32, string>)
+                enum_type_to_use = expected_type;
+                used_context = true;
+            } else if (expected_type && expected_type->category == TYPE_RESULT &&
+                       enum_symbol->type && enum_symbol->type->name &&
+                       strcmp(enum_symbol->type->name, "Result") == 0) {
+                // Handle case where expected type is TYPE_RESULT but enum is the Result enum
+                TypeDescriptor *type_args[] = {
+                    expected_type->data.result.ok_type,
+                    expected_type->data.result.err_type
+                };
                 TypeDescriptor *generic_instance = type_descriptor_create_generic_instance(
-                    enum_symbol->type, type_args, 1);
-                
+                    enum_symbol->type, type_args, 2);
                 if (generic_instance) {
                     enum_type_to_use = generic_instance;
+                    used_context = true;
                 }
+            }
+            
+            // Fallback: infer from argument value if no context was used
+            if (!used_context && expr->data.enum_variant.value) {
+                TypeDescriptor *value_type = semantic_get_expression_type(analyzer, expr->data.enum_variant.value);
                 
-                type_descriptor_release(value_type);
+                if (value_type) {
+                    // Create generic instance: Option<T> where T is the value type
+                    TypeDescriptor *type_args[] = {value_type};
+                    TypeDescriptor *generic_instance = type_descriptor_create_generic_instance(
+                        enum_symbol->type, type_args, 1);
+                    
+                    if (generic_instance) {
+                        enum_type_to_use = generic_instance;
+                    }
+                    
+                    type_descriptor_release(value_type);
+                }
             }
         }
         

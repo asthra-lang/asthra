@@ -11,7 +11,6 @@ static void test_enum_variants_with_pattern_matching(void) {
     
     const char* source = 
         "package test;\n\n"
-        "pub enum Result<T, E> { Ok(T), Err(E) }\n"
         "pub fn handle_result(result: Result<i32, string>) -> i32 {\n"
         "    return 42;\n"
         "}\n"

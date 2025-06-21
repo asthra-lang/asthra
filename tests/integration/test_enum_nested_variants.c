@@ -11,8 +11,6 @@ static void test_nested_enum_variants(void) {
     
     const char* source = 
         "package test;\n\n"
-        "pub enum Result<T, E> { Ok(T), Err(E) }\n"
-        "pub enum Option<T> { Some(T), None }\n"
         "pub fn complex_operation(none) -> Result<Option<i32>, string> {\n"
         "    let maybe_value: Option<i32> = Option.Some(42);\n"
         "    return Result.Ok(maybe_value);\n"
