@@ -132,20 +132,7 @@ void dev_server_request_destroy(DevServerRequest *request) {
     free(request);
 }
 
-DevServerResponse *dev_server_response_create(const char *request_id, bool success) {
-    DevServerResponse *response = malloc(sizeof(DevServerResponse));
-    if (!response) return NULL;
-    
-    memset(response, 0, sizeof(DevServerResponse));
-    
-    response->request_id = request_id ? strdup(request_id) : NULL;
-    response->success = success;
-    response->processing_time_ms = 0.0;
-    response->timestamp = time(NULL);
-    response->response_size = 0;
-    
-    return response;
-}
+// Note: dev_server_response_create is implemented in request_processing.c
 
 void dev_server_response_destroy(DevServerResponse *response) {
     if (!response) return;

@@ -6,7 +6,7 @@
 // Request/Response handling
 DevServerRequest* dev_server_request_create(const char *json);
 void dev_server_request_destroy(DevServerRequest *request);
-DevServerResponse* dev_server_response_create(const char *request_id, bool success);
+// Note: dev_server_response_create is declared in development_server.h
 void dev_server_response_destroy(DevServerResponse *response);
 char* dev_server_response_to_json(const DevServerResponse *response);
 
