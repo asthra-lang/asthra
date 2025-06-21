@@ -7,26 +7,21 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-// Forward declarations to avoid header conflicts
-typedef struct SemanticAnalyzer SemanticAnalyzer;
-
-// External functions from semantic analyzer
-extern void* semantic_analyzer_create(void);
-extern void semantic_analyzer_destroy(void* analyzer);
+// Include the actual header for proper type definitions
+#include "../analysis/semantic_analyzer_core.h"
 
 // =============================================================================
 // SEMANTIC ANALYZER BRIDGE FUNCTIONS
 // =============================================================================
 
 SemanticAnalyzer *semantic_analyzer_create_internal(void) {
-    // Call the actual function via void* return to avoid type conflicts
-    void* analyzer = semantic_analyzer_create();
-    return (SemanticAnalyzer*)analyzer;
+    // Call the actual function directly with proper types
+    return semantic_analyzer_create();
 }
 
 void semantic_analyzer_destroy_internal(SemanticAnalyzer *analyzer) {
-    // Call the actual function
-    semantic_analyzer_destroy((void*)analyzer);
+    // Call the actual function directly with proper types
+    semantic_analyzer_destroy(analyzer);
 }
 
 void semantic_analyzer_reset_internal(SemanticAnalyzer *analyzer) {

@@ -9,8 +9,10 @@
 #include <string.h>
 #include <time.h>
 
-// Forward declarations
-typedef struct SemanticAnalyzer SemanticAnalyzer;
+// Include the actual header for proper type definitions
+#include "../analysis/semantic_analyzer_core.h"
+
+// External functions from semantic analyzer bridge
 extern void semantic_analyzer_reset_internal(SemanticAnalyzer *analyzer);
 extern bool semantic_analyze_program_internal(SemanticAnalyzer *analyzer, ASTNode *program);
 extern size_t semantic_get_error_count_internal(SemanticAnalyzer *analyzer);
