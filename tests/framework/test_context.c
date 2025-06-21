@@ -20,7 +20,7 @@ AsthraTestContext* asthra_test_context_create(const AsthraTestMetadata *metadata
                                              AsthraTestStatistics *global_stats) {
     if (!metadata) return NULL;
 
-    AsthraTestContext *context = malloc(sizeof(AsthraTestContext));
+    AsthraTestContext *context = calloc(1, sizeof(AsthraTestContext));
     if (!context) return NULL;
 
     // C17 designated initializer for context
@@ -33,7 +33,8 @@ AsthraTestContext* asthra_test_context_create(const AsthraTestMetadata *metadata
         .error_message = NULL,
         .error_message_allocated = false,
         .assertions_in_test = 0,
-        .global_stats = global_stats
+        .global_stats = global_stats,
+        .user_data = NULL
     };
 
     return context;

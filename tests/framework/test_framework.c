@@ -36,7 +36,7 @@ AsthraTestResult asthra_test_fail(AsthraTestContext *context, const char *messag
 }
 
 AsthraTestContext* asthra_test_create_context(AsthraTestMetadata* metadata) {
-    AsthraTestContext* context = malloc(sizeof(AsthraTestContext));
+    AsthraTestContext* context = calloc(1, sizeof(AsthraTestContext));
     if (!context) return NULL;
     
     if (metadata) {

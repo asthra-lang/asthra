@@ -6,13 +6,13 @@ All Asthra standard library functions that can fail return `Result<T, E>` types.
 
 ## Result Type Basics
 
-### Result Enum
+### Built-in Result Type
+
+`Result<T, E>` is a built-in generic type in Asthra that doesn't require any declaration or import. It has two variants:
 
 ```asthra
-enum Result<T, E> {
-    Ok(T),      // Success case with value
-    Err(E)      // Error case with error information
-}
+Result.Ok(T)      // Success case with value
+Result.Err(E)     // Error case with error information
 ```
 
 ### Common Error Types

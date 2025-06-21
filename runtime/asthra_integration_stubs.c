@@ -48,7 +48,7 @@ AsthraFFIResult Asthra_result_err(int error_code, const char* error_message,
         strncpy(result.data.err.error_message, error_message, 255);
         result.data.err.error_message[255] = '\0';
     } else {
-        strcpy(result.data.err.error_message, "Unknown error");
+        snprintf(result.data.err.error_message, sizeof(result.data.err.error_message), "Unknown error");
     }
     
     result.data.err.error_source = error_source;

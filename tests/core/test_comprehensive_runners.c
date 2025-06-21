@@ -23,14 +23,14 @@ AsthraTestResult run_v1_2_comprehensive_test_suite(void) {
     printf("=== Asthra v1.2 Comprehensive Test Suite ===\n");
 
     // Initialize global statistics if not already done
-    AsthraTestStatistics *g_global_stats = asthra_v12_get_global_stats();
-    if (!g_global_stats) {
-        g_global_stats = asthra_test_statistics_create();
-        if (!g_global_stats) {
+    AsthraTestStatistics *stats = asthra_v12_get_global_stats();
+    if (!stats) {
+        stats = asthra_test_statistics_create();
+        if (!stats) {
             printf("Failed to initialize test statistics\n");
             return ASTHRA_TEST_ERROR;
         }
-        asthra_v12_set_global_stats(g_global_stats);
+        asthra_v12_set_global_stats(stats);
     }
 
     AsthraTestResult overall_result = ASTHRA_TEST_PASS;
@@ -77,9 +77,10 @@ AsthraTestResult run_v1_2_comprehensive_test_suite(void) {
     }
 
     // Print summary
-    uint64_t total_tests = asthra_test_get_stat(&g_global_stats->tests_run);
-    uint64_t passed_tests = asthra_test_get_stat(&g_global_stats->tests_passed);
-    uint64_t failed_tests = asthra_test_get_stat(&g_global_stats->tests_failed);
+    stats = asthra_v12_get_global_stats();
+    uint64_t total_tests = asthra_test_get_stat(&stats->tests_run);
+    uint64_t passed_tests = asthra_test_get_stat(&stats->tests_passed);
+    uint64_t failed_tests = asthra_test_get_stat(&stats->tests_failed);
 
     printf("Total Tests: %llu\n", (unsigned long long)total_tests);
     printf("Passed: %llu\n", (unsigned long long)passed_tests);

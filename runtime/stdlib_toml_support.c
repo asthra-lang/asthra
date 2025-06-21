@@ -22,7 +22,7 @@ static char* asthra_strdup(const char* str) {
     size_t len = strlen(str);
     char* copy = malloc(len + 1);
     if (copy) {
-        strcpy(copy, str);
+        memcpy(copy, str, len + 1);  // More efficient than snprintf for simple copy
     }
     return copy;
 }

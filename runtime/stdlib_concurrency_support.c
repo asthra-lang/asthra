@@ -156,7 +156,7 @@ asthra_stdlib_select_result_t Asthra_stdlib_select_execute(
     asthra_stdlib_select_result_t result = {0};
     (void)operations; (void)op_count; (void)timeout_ms; (void)has_default;
     result.type = ASTHRA_STDLIB_SELECT_ERROR;
-    strcpy(result.error_message, "Not implemented");
+    snprintf(result.error_message, sizeof(result.error_message), "Not implemented");
     return result;
 }
 

@@ -1,0 +1,9 @@
+pick 04d99f0 fix(test): resolve test failures for Result<T,E> and Option<T> implementation
+squash 4c887fb fix(test): replace strcpy with memcpy in sanitizer test generation
+squash 2f03316 fix(test): skip sanitizer tests when build tools are not available
+squash 71ac802 fix(test): add missing main function and fix paths in sanitizer tests
+squash 6b415f9 fix(tests): exclude sanitizer integration tests from CI runs
+squash e5cee73 fix(tests): exclude all integration tests that require build environment
+squash 8653a2b fix(test): disable loop analysis functions that are not yet implemented
+pick e10cf22 feat(types): complete Result<T, E> built-in type implementation
+pick 693852a fix(codegen): remove duplicate loop analysis function definitions

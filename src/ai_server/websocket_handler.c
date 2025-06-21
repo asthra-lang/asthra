@@ -52,7 +52,7 @@ char *base64_encode(const unsigned char *input, int length) {
     if (!buf) return NULL;
     
     for (int i = 0; i < length; i++) {
-        sprintf(buf + i * 2, "%02x", input[i]);
+        snprintf(buf + i * 2, 3, "%02x", input[i]);
     }
     buf[length * 2] = '\0';
     return buf;
@@ -66,8 +66,7 @@ char *generate_websocket_accept_key(const char *websocket_key) {
     size_t guid_len = strlen(guid);
     char *combined = malloc(key_len + guid_len + 1);
     if (!combined) return NULL;
-    strcpy(combined, websocket_key);
-    strcat(combined, guid);
+    snprintf(combined, key_len + guid_len + 1, "%s%s", websocket_key, guid);
 
     unsigned char sha1_result[20]; // SHA1 produces 20 bytes
     sha1_hash(combined, sha1_result);
