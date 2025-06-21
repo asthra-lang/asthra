@@ -50,19 +50,6 @@ bool analyze_call_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
         
         // Check if symbol is actually a function
         if (func_symbol->kind != SYMBOL_FUNCTION) {
-            const char *kind_name = "unknown";
-            switch (func_symbol->kind) {
-                case SYMBOL_VARIABLE: kind_name = "variable"; break;
-                case SYMBOL_TYPE: kind_name = "type"; break;
-                case SYMBOL_CONST: kind_name = "constant"; break;
-                case SYMBOL_PARAMETER: kind_name = "parameter"; break;
-                case SYMBOL_FIELD: kind_name = "field"; break;
-                case SYMBOL_METHOD: kind_name = "method"; break;
-                case SYMBOL_ENUM_VARIANT: kind_name = "enum variant"; break;
-                case SYMBOL_TYPE_PARAMETER: kind_name = "type parameter"; break;
-                default: break;
-            }
-            
             semantic_report_error_enhanced(analyzer, SEMANTIC_ERROR_NOT_CALLABLE,
                                  function->location,
                                  "cannot call non-function value",
