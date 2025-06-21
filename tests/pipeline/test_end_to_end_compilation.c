@@ -16,6 +16,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 
 #include "pipeline_orchestrator.h"
 #include "compiler.h"
@@ -82,8 +83,14 @@ static bool setup_end_to_end_tests(void) {
     test_orchestrator->config.generate_debug_info = true;
     
     // Create test output directory
-    system("mkdir -p build/test_output");
-    system("mkdir -p tests/pipeline/test_sources");
+    int mkdir_result = system("mkdir -p build/test_output");
+    if (mkdir_result == -1) {
+        printf("Warning: Failed to create build/test_output directory\n");
+    }
+    mkdir_result = system("mkdir -p tests/pipeline/test_sources");
+    if (mkdir_result == -1) {
+        printf("Warning: Failed to create tests/pipeline/test_sources directory\n");
+    }
     
     return true;
 }
@@ -117,7 +124,10 @@ static void teardown_end_to_end_tests(void) {
     fflush(stdout);
     
     // Clean up test files
-    system("rm -rf build/test_output");
+    int rm_result = system("rm -rf build/test_output");
+    if (rm_result == -1) {
+        printf("Warning: Failed to clean up build/test_output directory\n");
+    }
     
     printf("DEBUG: teardown - complete\n");
     fflush(stdout);
@@ -157,7 +167,12 @@ static bool is_executable(const char *filepath) {
 static int execute_program(const char *executable_path) {
     char command[512];
     snprintf(command, sizeof(command), "%s 2>/dev/null", executable_path);
-    return system(command);
+    int result = system(command);
+    if (result == -1) {
+        return -1; // System call failed
+    }
+    // Return the exit status
+    return WIFEXITED(result) ? WEXITSTATUS(result) : -1;
 }
 
 // =============================================================================

@@ -71,5 +71,9 @@ int run_command_with_timeout(const char *command, double timeout_seconds) {
     // For simplicity, using system() directly
     // In a production environment, you might want proper timeout handling
     (void)timeout_seconds; // Suppress unused parameter warning
-    return system(command);
+    int result = system(command);
+    if (result == -1) {
+        return -1; // System call failed
+    }
+    return WIFEXITED(result) ? WEXITSTATUS(result) : -1;
 } 

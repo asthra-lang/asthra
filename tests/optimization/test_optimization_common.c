@@ -30,7 +30,8 @@ CommandResult execute_command(const char *command, int timeout_seconds) {
     
 #ifdef __APPLE__
     // macOS doesn't have timeout command by default, use gtimeout if available or skip timeout
-    if (system("which gtimeout > /dev/null 2>&1") == 0) {
+    int which_result = system("which gtimeout > /dev/null 2>&1");
+    if (which_result != -1 && WIFEXITED(which_result) && WEXITSTATUS(which_result) == 0) {
         snprintf(full_command, sizeof(full_command), 
                  "gtimeout %d %s > %s 2> %s", 
                  timeout_seconds, command, temp_stdout, temp_stderr);
@@ -48,7 +49,12 @@ CommandResult execute_command(const char *command, int timeout_seconds) {
 #endif
     
     clock_t start = clock();
-    result.exit_code = system(full_command);
+    int sys_result = system(full_command);
+    if (sys_result == -1) {
+        result.exit_code = -1;
+    } else {
+        result.exit_code = WIFEXITED(sys_result) ? WEXITSTATUS(sys_result) : -1;
+    }
     clock_t end = clock();
     
     result.execution_time_ms = ((double)(end - start) / CLOCKS_PER_SEC) * 1000.0;

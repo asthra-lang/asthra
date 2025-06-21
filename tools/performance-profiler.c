@@ -435,7 +435,14 @@ static ToolResult profile_compilation_phases(const char *input_file, ProfilingCo
         return result;
     }
     
-    fread(source, 1, (size_t)file_size, file);
+    size_t bytes_read = fread(source, 1, (size_t)file_size, file);
+    if (bytes_read != (size_t)file_size) {
+        free(source);
+        fclose(file);
+        result.success = false;
+        result.error_message = "Failed to read entire file";
+        return result;
+    }
     source[file_size] = '\0';
     fclose(file);
     

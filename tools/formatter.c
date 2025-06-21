@@ -200,6 +200,11 @@ static char *read_file(const char *filename, FormatterStatistics *stats) {
 
     // Read file
     size_t read_size = fread(content, 1, size, file);
+    if (read_size != (size_t)size && !feof(file)) {
+        free(content);
+        fclose(file);
+        return NULL;
+    }
     content[read_size] = '\0';
 
     // Update statistics atomically

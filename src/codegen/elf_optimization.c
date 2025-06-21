@@ -10,10 +10,15 @@
 
 #include "elf_writer.h"
 #include "elf_writer_core.h"
+#include "../platform.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+#if ASTHRA_PLATFORM_UNIX
+#include <sys/wait.h>
+#endif
 
 // No external declarations needed - functions are in elf_writer.h
 
@@ -78,11 +83,26 @@ bool elf_test_c_linkage(const char *elf_filename, const char *test_c_file) {
              "gcc -o test_linkage test_linkage.c %s 2>/dev/null", elf_filename);
     
     int result = system(command);
+    if (result == -1) {
+        printf("C linkage test failed: unable to execute command\n");
+        unlink("test_linkage.c");
+        return false;
+    }
     
     // Clean up
     unlink("test_linkage.c");
     unlink("test_linkage");
     
+#if ASTHRA_PLATFORM_UNIX
+    if (WIFEXITED(result) && WEXITSTATUS(result) == 0) {
+        printf("C linkage test passed\n");
+        return true;
+    } else {
+        printf("C linkage test failed\n");
+        return false;
+    }
+#else
+    // On Windows, system() returns the exit code directly
     if (result == 0) {
         printf("C linkage test passed\n");
         return true;
@@ -90,4 +110,5 @@ bool elf_test_c_linkage(const char *elf_filename, const char *test_c_file) {
         printf("C linkage test failed\n");
         return false;
     }
+#endif
 }

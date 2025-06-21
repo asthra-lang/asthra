@@ -59,6 +59,15 @@ FastCheckResult* fast_check_file(FastCheckEngine *engine, const char *filepath) 
     }
     
     size_t bytes_read = fread(code, 1, file_size, file);
+    if (bytes_read != (size_t)file_size && !feof(file)) {
+        free(code);
+        fclose(file);
+        result->success = false;
+        result->check_time_ms = 0.1;
+        result->error_count = 1;
+        result->warning_count = 0;
+        return result;
+    }
     fclose(file);
     code[bytes_read] = '\0';
     

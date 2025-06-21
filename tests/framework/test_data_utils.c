@@ -45,6 +45,12 @@ char* load_test_file(const char* filename) {
     }
 
     size_t read_size = fread(content, 1, size, file);
+    if (read_size != (size_t)size && !feof(file)) {
+        free(content);
+        fclose(file);
+        track_memory_deallocation(size + 1);
+        return NULL;
+    }
     content[read_size] = '\0';
 
     fclose(file);

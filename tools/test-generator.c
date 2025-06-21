@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <stdatomic.h>
 #include <time.h>
+#include <sys/wait.h>
 
 #include "common/cli_framework.h"
 #include "common/error_framework.h"
@@ -255,7 +256,14 @@ int main(int argc, char **argv) {
     // Create output directory if it doesn't exist
     char mkdir_cmd[512];
     snprintf(mkdir_cmd, sizeof(mkdir_cmd), "mkdir -p %s", opts.output_dir);
-    system(mkdir_cmd);
+    int mkdir_result = system(mkdir_cmd);
+    if (mkdir_result == -1) {
+        fprintf(stderr, "Error: Failed to execute mkdir command\n");
+        cli_destroy_config(config);
+        return 1;
+    } else if (WIFEXITED(mkdir_result) && WEXITSTATUS(mkdir_result) != 0) {
+        fprintf(stderr, "Warning: Failed to create output directory (exit code: %d)\n", WEXITSTATUS(mkdir_result));
+    }
     
     // Run test generation
     printf("Generating test cases...\n");

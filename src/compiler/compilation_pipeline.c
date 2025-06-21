@@ -10,7 +10,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../platform.h"
 #include "../compiler.h"
+
+// Platform-specific includes for system() return value handling
+#if ASTHRA_PLATFORM_UNIX
+#include <sys/wait.h>
+#endif
 #include "../parser/lexer.h"
 #include "../parser/parser.h"
 #include "../analysis/semantic_analyzer.h"
@@ -175,10 +181,23 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
     lexer_destroy(lexer);
     free(source_code);
     
-    if (result != 0) {
+    if (result == -1) {
+        printf("Error: Failed to execute compile command\n");
+        return -1;
+    }
+    
+#if ASTHRA_PLATFORM_UNIX
+    if (!WIFEXITED(result) || WEXITSTATUS(result) != 0) {
         printf("Error: Failed to compile generated C code\n");
         return -1;
     }
+#else
+    // On Windows, system() returns the exit code directly
+    if (result != 0) {
+        printf("Error: Failed to compile generated C code (exit code: %d)\n", result);
+        return -1;
+    }
+#endif
 
     printf("Compilation completed successfully\n");
     return 0;
@@ -256,10 +275,23 @@ int asthra_compile_files(AsthraCompilerContext *ctx, const char **input_files, s
     }
     free(temp_c_files);
     
-    if (result != 0) {
+    if (result == -1) {
+        printf("Error: Failed to execute linking command\n");
+        return -1;
+    }
+    
+#if ASTHRA_PLATFORM_UNIX
+    if (!WIFEXITED(result) || WEXITSTATUS(result) != 0) {
         printf("Error: Linking failed\n");
         return -1;
     }
+#else
+    // On Windows, system() returns the exit code directly
+    if (result != 0) {
+        printf("Error: Linking failed (exit code: %d)\n", result);
+        return -1;
+    }
+#endif
     
     printf("Multi-file compilation completed successfully\n");
     return 0;

@@ -18,6 +18,11 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
+#include "../platform.h"
+
+#if ASTHRA_PLATFORM_UNIX
+#include <sys/wait.h>
+#endif
 #include <string.h>
 #include <sys/stat.h>
 
@@ -441,7 +446,25 @@ bool pipeline_execute_linking_phase(PipelineOrchestrator *orchestrator,
     
     // Execute linker command (now works with Mach-O object files)
     int link_result = system(linker_command);
+    if (link_result == -1) {
+        result->data.linking_data.executable_path = NULL;
+        finalize_phase_result(result, false, "Failed to execute linker command");
+        return false;
+    }
     
+#if ASTHRA_PLATFORM_UNIX
+    if (WIFEXITED(link_result) && WEXITSTATUS(link_result) == 0) {
+        // Get executable size
+        struct stat st;
+        if (stat(output_executable, &st) == 0) {
+            result->data.linking_data.executable_size = (size_t)st.st_size;
+        }
+        result->data.linking_data.executable_path = strdup(output_executable);
+    }
+    
+    bool success = (WIFEXITED(link_result) && WEXITSTATUS(link_result) == 0);
+#else
+    // On Windows, system() returns the exit code directly
     if (link_result == 0) {
         // Get executable size
         struct stat st;
@@ -452,6 +475,7 @@ bool pipeline_execute_linking_phase(PipelineOrchestrator *orchestrator,
     }
     
     bool success = (link_result == 0);
+#endif
     const char *error_msg = success ? NULL : "Linking failed";
     finalize_phase_result(result, success, error_msg);
     

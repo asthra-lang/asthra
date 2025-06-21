@@ -16,6 +16,7 @@
 #include <string.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <stdarg.h>
 
 // =============================================================================
@@ -372,12 +373,18 @@ bool asthra_linker_generate_executable(Asthra_Linker *linker,
     
     printf("DEBUG: Running compile command: %s\n", compile_command);
     int result = system(compile_command);
+    if (result == -1) {
+        printf("DEBUG: Failed to execute compile command\n");
+        remove(temp_c_file);
+        linker_set_error(linker, "Failed to execute compile command");
+        return false;
+    }
     printf("DEBUG: Compile command returned: %d\n", result);
     
     // Clean up temporary file
     remove(temp_c_file);
     
-    if (result != 0) {
+    if (!WIFEXITED(result) || WEXITSTATUS(result) != 0) {
         linker_set_error(linker, "Failed to compile generated C code");
         return false;
     }

@@ -249,6 +249,11 @@ void test_variable_declaration_generation(void) {
     rewind(output);
     char buffer[1024];
     size_t bytes_read = fread(buffer, 1, sizeof(buffer) - 1, output);
+    if (bytes_read == 0 && ferror(output)) {
+        fprintf(stderr, "Error reading from output\n");
+        fclose(output);
+        return;
+    }
     buffer[bytes_read] = '\0';
     
     // Should contain "const int32_t data" for immutable variable
@@ -294,6 +299,11 @@ void test_c_type_generation(void) {
     rewind(output);
     char buffer[1024];
     size_t bytes_read = fread(buffer, 1, sizeof(buffer) - 1, output);
+    if (bytes_read == 0 && ferror(output)) {
+        fprintf(stderr, "Error reading from output\n");
+        fclose(output);
+        return;
+    }
     buffer[bytes_read] = '\0';
     
     // Should contain const for immutable and no const for mutable
@@ -371,6 +381,11 @@ void test_end_to_end_optimization(void) {
     rewind(output);
     char buffer[2048];
     size_t bytes_read = fread(buffer, 1, sizeof(buffer) - 1, output);
+    if (bytes_read == 0 && ferror(output)) {
+        fprintf(stderr, "Error reading from output\n");
+        fclose(output);
+        return;
+    }
     buffer[bytes_read] = '\0';
     
     // Should contain mutable GameState declaration

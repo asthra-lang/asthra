@@ -16,8 +16,13 @@
 #include <time.h>
 #include <signal.h>
 #include <setjmp.h>
-#include <sys/wait.h>
 #include <fcntl.h>
+
+#include "../src/platform.h"
+
+#if ASTHRA_PLATFORM_UNIX
+#include <sys/wait.h>
+#endif
 
 #include "common/cli_framework.h"
 #include "common/error_framework.h"
@@ -259,10 +264,21 @@ int main(int argc, char **argv) {
     char mkdir_cmd[512];
     snprintf(mkdir_cmd, sizeof(mkdir_cmd), "mkdir -p %s %s", opts.output_dir, opts.crash_dir);
     int mkdir_result = system(mkdir_cmd);
-    if (mkdir_result != 0) {
-        fprintf(stderr, "Warning: Failed to create directories (exit code: %d)\n", mkdir_result);
+    if (mkdir_result == -1) {
+        fprintf(stderr, "Error: Failed to execute mkdir command\n");
+        cli_destroy_config(config);
+        return 1;
+#if ASTHRA_PLATFORM_UNIX
+    } else if (WIFEXITED(mkdir_result) && WEXITSTATUS(mkdir_result) != 0) {
+        fprintf(stderr, "Warning: mkdir command failed with exit code: %d\n", WEXITSTATUS(mkdir_result));
         // Continue anyway, as directories might already exist
     }
+#else
+    } else if (mkdir_result != 0) {
+        fprintf(stderr, "Warning: mkdir command failed with exit code: %d\n", mkdir_result);
+        // Continue anyway, as directories might already exist
+    }
+#endif
     
     // Setup crash detection and signal handling
     ToolResult crash_setup = setup_crash_detection();

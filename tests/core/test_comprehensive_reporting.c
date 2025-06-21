@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sys/wait.h>
 
 // =============================================================================
 // AI FEEDBACK UTILITIES
@@ -218,7 +219,10 @@ bool asthra_v12_verify_c17_compliance(const char *source_file) {
              source_file);
 
     int result = system(command);
-    return result == 0;
+    if (result == -1) {
+        return false; // System call failed
+    }
+    return WIFEXITED(result) && WEXITSTATUS(result) == 0;
 }
 
 bool asthra_v12_run_static_analysis(const char *source_file) {
@@ -233,7 +237,10 @@ bool asthra_v12_run_static_analysis(const char *source_file) {
              source_file);
 
     int result = system(command);
-    return result == 0;
+    if (result == -1) {
+        return false; // System call failed
+    }
+    return WIFEXITED(result) && WEXITSTATUS(result) == 0;
 }
 
 void asthra_v12_print_comprehensive_summary(void) {

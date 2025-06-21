@@ -13,10 +13,14 @@
 #include <stdatomic.h>
 #include <getopt.h>
 #include <unistd.h>
-#include <sys/wait.h>
 #include <time.h>
 
 #include "../runtime/asthra_runtime.h"
+#include "../src/platform.h"
+
+#if ASTHRA_PLATFORM_UNIX
+#include <sys/wait.h>
+#endif
 #include "../src/compiler.h"
 
 // C17 feature detection and static assertions
@@ -208,13 +212,29 @@ static TestResult run_test_file(const char *file_path) {
     snprintf(compile_cmd, sizeof(compile_cmd), "./bin/asthra %s -o /tmp/test_output", file_path);
     
     int compile_result = system(compile_cmd);
+    if (compile_result == -1) {
+        return TEST_ERROR;
+    }
+#if ASTHRA_PLATFORM_UNIX
+    if (WIFEXITED(compile_result) && WEXITSTATUS(compile_result) != 0) {
+        return TEST_FAIL;
+    }
+#else
     if (compile_result != 0) {
         return TEST_FAIL;
     }
+#endif
     
     // Run the compiled test
     int run_result = system("/tmp/test_output");
+    if (run_result == -1) {
+        return TEST_ERROR;
+    }
+#if ASTHRA_PLATFORM_UNIX
+    return (WIFEXITED(run_result) && WEXITSTATUS(run_result) == 0) ? TEST_PASS : TEST_FAIL;
+#else
     return (run_result == 0) ? TEST_PASS : TEST_FAIL;
+#endif
 }
 
 static TestResult run_test_case(TestCase *test_case) {

@@ -45,6 +45,11 @@ static char *read_file(const char *filename, StatsFramework *stats) {
 
     // Read content
     size_t bytes_read = fread(content, 1, size, file);
+    if (bytes_read != (size_t)size && !feof(file)) {
+        free(content);
+        fclose(file);
+        return NULL;
+    }
     content[bytes_read] = '\0';
     fclose(file);
 
