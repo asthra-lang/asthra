@@ -36,12 +36,14 @@ ASTNode *parse_pattern(Parser *parser) {
         start_loc = parser->current_token.location;
     }
     
-    // Handle enum patterns like Result.Ok(value) and struct patterns like Point { x, y }
-    // Also handle Result keyword for enum patterns
-    if (match_token(parser, TOKEN_IDENTIFIER) || match_token(parser, TOKEN_RESULT)) {
+    // Handle enum patterns like Result.Ok(value) and Option.Some(value) and struct patterns like Point { x, y }
+    // Also handle Result and Option keywords for enum patterns
+    if (match_token(parser, TOKEN_IDENTIFIER) || match_token(parser, TOKEN_RESULT) || match_token(parser, TOKEN_OPTION)) {
         char *name;
         if (parser->current_token.type == TOKEN_RESULT) {
             name = strdup("Result");
+        } else if (parser->current_token.type == TOKEN_OPTION) {
+            name = strdup("Option");
         } else {
             name = strdup(parser->current_token.data.identifier.name);
         }

@@ -151,6 +151,8 @@ const char *token_type_name(TokenType type) {
         case TOKEN_F32: return "F32";
         case TOKEN_F64: return "F64";
         case TOKEN_RESULT: return "RESULT";
+        case TOKEN_OPTION: return "OPTION";
+        case TOKEN_NEVER: return "NEVER";
         
         // Operators
         case TOKEN_PLUS: return "PLUS";

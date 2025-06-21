@@ -47,7 +47,7 @@ int main(void) {
     }
     printf("✅ Found LET token\n\n");
     
-    printf("Step 3: Check third token (should be IDENTIFIER for 'Option')\n");
+    printf("Step 3: Check third token (should be OPTION for 'Option')\n");
     Token token3 = lexer_next_token(lexer);
     printf("Token 3: %s", token_type_name(token3.type));
     if (token3.type == TOKEN_IDENTIFIER) {
@@ -55,22 +55,22 @@ int main(void) {
     }
     printf("\n");
     
-    if (token3.type != TOKEN_IDENTIFIER) {
-        printf("❌ Expected IDENTIFIER token, got %s\n", token_type_name(token3.type));
+    if (token3.type != TOKEN_OPTION) {
+        printf("❌ Expected OPTION token, got %s\n", token_type_name(token3.type));
         lexer_destroy(lexer);
         return 1;
     }
-    printf("✅ Found IDENTIFIER token\n\n");
+    printf("✅ Found OPTION token\n\n");
     
     printf("✅ If-let token sequence is correct!\n");
-    printf("The lexer properly tokenizes: IF LET IDENTIFIER ...\n");
+    printf("The lexer properly tokenizes: IF LET OPTION ...\n");
     printf("This confirms that the basic token sequence for if-let statements works.\n\n");
     
     printf("Our fix to parse_if_stmt should now work because:\n");
     printf("1. expect_token(parser, TOKEN_IF) will consume the IF token\n");
     printf("2. match_token(parser, TOKEN_LET) will detect the LET token\n");
     printf("3. advance_token(parser) will move past the LET token\n");
-    printf("4. The pattern parsing can then begin with the IDENTIFIER\n");
+    printf("4. The pattern parsing can then begin with the OPTION token\n");
     
     // Cleanup
     lexer_destroy(lexer);

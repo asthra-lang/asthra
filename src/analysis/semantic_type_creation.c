@@ -160,7 +160,20 @@ TypeDescriptor *type_descriptor_create_result(TypeDescriptor *ok_type, TypeDescr
     size_t err_size = err_type->size;
     result_type->size = (ok_size > err_size ? ok_size : err_size) + sizeof(int);
     result_type->alignment = _Alignof(void*);
-    result_type->name = NULL;
+    
+    // Generate name like "Result<i32, string>"
+    size_t name_size = 8; // "Result<" + ">" + null
+    const char *ok_name = ok_type->name ? ok_type->name : "unknown";
+    const char *err_name = err_type->name ? err_type->name : "unknown";
+    name_size += strlen(ok_name) + strlen(err_name) + 2; // ", "
+    
+    char *result_name = malloc(name_size);
+    if (result_name) {
+        snprintf(result_name, name_size, "Result<%s, %s>", ok_name, err_name);
+        result_type->name = result_name;
+    } else {
+        result_type->name = NULL;
+    }
     
     result_type->data.result.ok_type = ok_type;
     result_type->data.result.err_type = err_type;

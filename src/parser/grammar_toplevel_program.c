@@ -354,8 +354,12 @@ ASTNode *parse_top_level_decl(Parser *parser) {
         if (decl) {
             decl->data.const_decl.visibility = visibility;  // Set visibility
         }
+    } else if (match_token(parser, TOKEN_IMPL)) {
+        decl = parse_impl_block(parser);
+        // Note: impl_block doesn't have visibility field in AST, but we can store it in a comment or extend the AST
+        // For now, we'll just parse it successfully - visibility will be handled by methods inside
     } else {
-        report_error(parser, "Expected function, struct, enum, extern, or const declaration");
+        report_error(parser, "Expected function, struct, enum, extern, const, or impl declaration");
         
         // Free annotations on error
         if (annotations) {

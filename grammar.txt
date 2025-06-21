@@ -5,8 +5,8 @@ PackageDecl    <- 'package' SimpleIdent ';'                 # Package name (Go-s
 ImportDecl     <- 'import' ImportPath ImportAlias? ';'     # Import external modules/packages with optional aliases
 ImportPath     <- STRING                                    # Validated by build system: stdlib/*, github.com/*, gitlab.com/*, ./relative
 ImportAlias    <- 'as' SimpleIdent                         # Import alias for conflict resolution: import "path" as Name
-TopLevelDecl   <- (HumanReviewTag / SecurityTag / SemanticTag)* (VisibilityDecl / ImplDecl)  # Annotated declarations
-VisibilityDecl <- VisibilityModifier (FunctionDecl / StructDecl / EnumDecl / ExternDecl / ConstDecl)  # Explicit public/private visibility required
+TopLevelDecl   <- (HumanReviewTag / SecurityTag / SemanticTag)* VisibilityDecl  # Annotated declarations
+VisibilityDecl <- VisibilityModifier (FunctionDecl / StructDecl / EnumDecl / ExternDecl / ConstDecl / ImplDecl)  # Explicit public/private visibility required
 VisibilityModifier <- 'pub' / 'priv'                        # Explicit public/private visibility (no implicit defaults)
 
 # Immutable by Default: Explicit Mutability Everywhere
@@ -56,7 +56,7 @@ TypeParam      <- SimpleIdent                               # Type parameter nam
 TypeList       <- Type (',' Type)*                          # Comma-separated type list
 
 # Implementation blocks for struct methods (object-oriented features)
-ImplDecl       <- 'impl' SimpleIdent '{' MethodDecl* '}'    # Method implementations for structs
+ImplDecl       <- 'impl' SimpleIdent '{' MethodDecl* '}'    # Method implementations for structs (requires visibility modifier)
 MethodDecl     <- VisibilityModifier 'fn' SimpleIdent '(' MethodParamList ')' '->' Type Block  # Instance methods with explicit parameters required
 MethodParamList<- SelfParam (',' Param)* / ParamList        # Methods with 'self' or regular functions
 SelfParam      <- 'self'                                    # Instance method self parameter (always immutable)

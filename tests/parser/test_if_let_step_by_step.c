@@ -70,12 +70,12 @@ int main(void) {
     advance_token(parser);
     printf("Current token: %s\n", token_type_name(parser->current_token.type));
     
-    if (parser->current_token.type != TOKEN_IDENTIFIER) {
-        printf("❌ Expected IDENTIFIER token, got %s\n", token_type_name(parser->current_token.type));
+    if (parser->current_token.type != TOKEN_OPTION) {
+        printf("❌ Expected OPTION token, got %s\n", token_type_name(parser->current_token.type));
         parser_destroy(parser);
         return 1;
     }
-    printf("✅ Found IDENTIFIER token (start of pattern)\n\n");
+    printf("✅ Found OPTION token (start of pattern)\n\n");
     
     printf("✅ All steps completed successfully!\n");
     printf("The if-let token sequence is being parsed correctly.\n");

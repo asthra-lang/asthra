@@ -7,52 +7,27 @@
 #include <assert.h>
 #include <stdbool.h>
 
-// Forward declarations for basic types
+// Use forward declarations that match the real types
 typedef struct ASTNode ASTNode;
 typedef struct Parser Parser;
 typedef struct SemanticAnalyzer SemanticAnalyzer;
 typedef struct CodeGenerator CodeGenerator;
 
-// Basic AST node structure for testing
-struct ASTNode {
-    int type;
-    void *data;
-    ASTNode *next_sibling;
-    ASTNode *first_child;
-};
-
-// Basic parser structure
-struct Parser {
-    const char *source;
-    size_t position;
-    bool has_error;
-    char error_message[512];
-};
-
-// Basic semantic analyzer structure
-struct SemanticAnalyzer {
-    bool has_error;
-    char error_message[512];
-};
-
-// Basic code generator structure
-struct CodeGenerator {
-    FILE *output;
-    bool has_error;
-    char error_message[512];
-};
-
-// Stub function declarations
+// Function declarations - some are stubs, some use real compiler functions
 Parser *parser_create(void);
 void parser_destroy(Parser *parser);
 ASTNode *parser_parse_string(Parser *parser, const char *source);
+void ast_destroy(ASTNode *ast);
+
+// These functions will be provided by the real compiler library
 SemanticAnalyzer *semantic_analyzer_create(void);
 void semantic_analyzer_destroy(SemanticAnalyzer *analyzer);
 bool semantic_analyze_program(SemanticAnalyzer *analyzer, ASTNode *ast);
+
+// Code generator functions - will be adapted to real compiler interface
 CodeGenerator *code_generator_create(void);
 void code_generator_destroy(CodeGenerator *generator);
 bool code_generator_generate_program(CodeGenerator *generator, ASTNode *ast, FILE *output);
-void ast_destroy(ASTNode *ast);
 
 // =============================================================================
 // SHARED DATA STRUCTURES

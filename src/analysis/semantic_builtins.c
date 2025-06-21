@@ -584,5 +584,106 @@ void semantic_init_builtin_generic_types(SemanticAnalyzer *analyzer) {
         }
     }
     
-    // TODO: Register Result<T, E> as well in the future
+    // Register Result<T, E> as a builtin generic enum type
+    // Create the Result enum type descriptor
+    TypeDescriptor *result_type = malloc(sizeof(TypeDescriptor));
+    if (!result_type) return;
+    
+    // Initialize Result type descriptor
+    result_type->category = TYPE_ENUM;
+    result_type->flags = (TypeFlags){0};
+    result_type->flags.is_ffi_compatible = true;
+    result_type->size = sizeof(int);  // Enum size
+    result_type->alignment = _Alignof(int);
+    result_type->name = strdup("Result");
+    atomic_init(&result_type->ref_count, 1);
+    
+    // Create variant symbol table
+    result_type->data.enum_type.variants = symbol_table_create(4);
+    result_type->data.enum_type.variant_count = 2;
+    
+    // Create Result symbol entry as generic
+    SymbolEntry *result_symbol = symbol_entry_create(
+        "Result",
+        SYMBOL_TYPE,
+        result_type,
+        NULL  // No AST declaration for builtin
+    );
+    
+    if (result_symbol) {
+        // Mark as generic with 2 type parameters (T and E)
+        result_symbol->is_generic = true;
+        result_symbol->type_param_count = 2;
+        result_symbol->flags.is_predeclared = true;
+        
+        // Add to global scope
+        symbol_table_insert_safe(analyzer->global_scope, "Result", result_symbol);
+        
+        // Add Ok and Err variants
+        // Ok variant
+        TypeDescriptor *ok_type = malloc(sizeof(TypeDescriptor));
+        if (ok_type) {
+            ok_type->category = TYPE_PRIMITIVE;
+            ok_type->flags = (TypeFlags){0};
+            ok_type->flags.is_constant = true;
+            ok_type->flags.is_ffi_compatible = true;
+            ok_type->size = sizeof(int);
+            ok_type->alignment = _Alignof(int);
+            ok_type->name = strdup("Result.Ok");
+            ok_type->data.primitive.primitive_kind = PRIMITIVE_I32;
+            atomic_init(&ok_type->ref_count, 1);
+            
+            SymbolEntry *ok_symbol = symbol_entry_create(
+                "Ok",
+                SYMBOL_ENUM_VARIANT,
+                ok_type,
+                NULL
+            );
+            
+            if (ok_symbol) {
+                symbol_table_insert_safe(result_type->data.enum_type.variants, "Ok", ok_symbol);
+                
+                // Also add qualified name to global scope
+                SymbolEntry *qualified_ok = symbol_entry_copy(ok_symbol);
+                if (qualified_ok) {
+                    free(qualified_ok->name);
+                    qualified_ok->name = strdup("Result.Ok");
+                    symbol_table_insert_safe(analyzer->global_scope, "Result.Ok", qualified_ok);
+                }
+            }
+        }
+        
+        // Err variant
+        TypeDescriptor *err_type = malloc(sizeof(TypeDescriptor));
+        if (err_type) {
+            err_type->category = TYPE_PRIMITIVE;
+            err_type->flags = (TypeFlags){0};
+            err_type->flags.is_constant = true;
+            err_type->flags.is_ffi_compatible = true;
+            err_type->size = sizeof(int);
+            err_type->alignment = _Alignof(int);
+            err_type->name = strdup("Result.Err");
+            err_type->data.primitive.primitive_kind = PRIMITIVE_I32;
+            atomic_init(&err_type->ref_count, 1);
+            
+            SymbolEntry *err_symbol = symbol_entry_create(
+                "Err",
+                SYMBOL_ENUM_VARIANT,
+                err_type,
+                NULL
+            );
+            
+            if (err_symbol) {
+                symbol_table_insert_safe(result_type->data.enum_type.variants, "Err", err_symbol);
+                
+                // Also add qualified name to global scope
+                SymbolEntry *qualified_err = symbol_entry_copy(err_symbol);
+                if (qualified_err) {
+                    free(qualified_err->name);
+                    qualified_err->name = strdup("Result.Err");
+                    symbol_table_insert_safe(analyzer->global_scope, "Result.Err", qualified_err);
+                }
+            }
+        }
+    }
 } 

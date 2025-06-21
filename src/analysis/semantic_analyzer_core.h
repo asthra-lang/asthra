@@ -56,6 +56,7 @@ typedef struct SemanticAnalyzer {
     SymbolEntry *current_function;  // Track the function currently being analyzed
     size_t loop_depth;  // Track nesting depth of loops for break/continue validation
     bool in_unreachable_code;  // Track if we're analyzing unreachable code
+    TypeDescriptor *expected_type;  // Track expected type for context-based type inference
     
     // Configuration
     struct {

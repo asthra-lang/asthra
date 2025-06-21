@@ -230,6 +230,20 @@ bool type_descriptor_equals(const TypeDescriptor *type1, const TypeDescriptor *t
             return type1->data.array.size == type2->data.array.size &&
                    type_descriptor_equals(type1->data.array.element_type,
                                         type2->data.array.element_type);
+        case TYPE_ENUM:
+            // Enums are equal if they have the same name
+            // This handles the case where builtin types like Result may be different instances
+            if (type1->name && type2->name) {
+                return strcmp(type1->name, type2->name) == 0;
+            }
+            return type1 == type2; // Same object reference
+        case TYPE_STRUCT:
+            // Structs are equal if they have the same name
+            // This handles the case where struct types may be different instances
+            if (type1->name && type2->name) {
+                return strcmp(type1->name, type2->name) == 0;
+            }
+            return type1 == type2; // Same object reference
         default:
             return false;
     }

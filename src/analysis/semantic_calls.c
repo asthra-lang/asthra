@@ -132,24 +132,47 @@ bool analyze_call_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
         // For generic enums, try to infer type parameters from arguments
         TypeDescriptor *enum_type_to_use = enum_symbol->type;
         
-        // Check if this is a generic enum (like Option<T>) and try to infer type parameters
-        if (enum_symbol->is_generic && arg_count > 0) {
-            // For Option.Some(value), infer T from the value type
-            ASTNode *variant_value = ast_node_list_get(args, 0);
-            TypeDescriptor *arg_type = semantic_get_expression_type(analyzer, variant_value);
+        // Check if this is a generic enum and try to infer type parameters
+        if (enum_symbol->is_generic) {
+            // Try to get expected type from context (e.g., variable declaration)
+            TypeDescriptor *expected_type = analyzer->expected_type;
             
-            if (arg_type) {
-                // Create generic instance: Option<T> where T is the argument type
-                TypeDescriptor *type_args[] = {arg_type};
+            if (expected_type && expected_type->category == TYPE_GENERIC_INSTANCE &&
+                type_descriptor_equals(expected_type->data.generic_instance.base_type, enum_symbol->type)) {
+                // Use the expected type directly (e.g., Result<i32, string>)
+                enum_type_to_use = expected_type;
+            } else if (expected_type && expected_type->category == TYPE_RESULT &&
+                       enum_symbol->type && enum_symbol->type->name &&
+                       strcmp(enum_symbol->type->name, "Result") == 0) {
+                // Handle case where expected type is TYPE_RESULT but enum is the Result enum
+                // Create a generic instance equivalent to the TYPE_RESULT
+                TypeDescriptor *type_args[] = {
+                    expected_type->data.result.ok_type,
+                    expected_type->data.result.err_type
+                };
                 TypeDescriptor *generic_instance = type_descriptor_create_generic_instance(
-                    enum_symbol->type, type_args, 1);
-                
+                    enum_symbol->type, type_args, 2);
                 if (generic_instance) {
                     enum_type_to_use = generic_instance;
-                    // Note: We don't release generic_instance here as enum_type_to_use now owns it
                 }
+            } else if (arg_count > 0) {
+                // Fallback: infer what we can from the argument
+                ASTNode *variant_value = ast_node_list_get(args, 0);
+                TypeDescriptor *arg_type = semantic_get_expression_type(analyzer, variant_value);
                 
-                type_descriptor_release(arg_type);
+                if (arg_type) {
+                    // For now, create a single-parameter generic instance from the argument
+                    // This works for Option<T> and provides partial inference for Result<T, E>
+                    TypeDescriptor *type_args[] = {arg_type};
+                    TypeDescriptor *generic_instance = type_descriptor_create_generic_instance(
+                        enum_symbol->type, type_args, 1);
+                    
+                    if (generic_instance) {
+                        enum_type_to_use = generic_instance;
+                    }
+                    
+                    type_descriptor_release(arg_type);
+                }
             }
         }
         
@@ -256,24 +279,47 @@ bool analyze_call_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
             // For generic enums, try to infer type parameters from arguments
             TypeDescriptor *enum_type_to_use = enum_symbol->type;
             
-            // Check if this is a generic enum (like Option<T>) and try to infer type parameters
-            if (enum_symbol->is_generic && arg_count > 0) {
-                // For Option.Some(value), infer T from the value type
-                ASTNode *variant_value = ast_node_list_get(args, 0);
-                TypeDescriptor *arg_type = semantic_get_expression_type(analyzer, variant_value);
+            // Check if this is a generic enum and try to infer type parameters
+            if (enum_symbol->is_generic) {
+                // Try to get expected type from context (e.g., variable declaration)
+                TypeDescriptor *expected_type = analyzer->expected_type;
                 
-                if (arg_type) {
-                    // Create generic instance: Option<T> where T is the argument type
-                    TypeDescriptor *type_args[] = {arg_type};
+                if (expected_type && expected_type->category == TYPE_GENERIC_INSTANCE &&
+                    type_descriptor_equals(expected_type->data.generic_instance.base_type, enum_symbol->type)) {
+                    // Use the expected type directly (e.g., Result<i32, string>)
+                    enum_type_to_use = expected_type;
+                } else if (expected_type && expected_type->category == TYPE_RESULT &&
+                           enum_symbol->type && enum_symbol->type->name &&
+                           strcmp(enum_symbol->type->name, "Result") == 0) {
+                    // Handle case where expected type is TYPE_RESULT but enum is the Result enum
+                    // Create a generic instance equivalent to the TYPE_RESULT
+                    TypeDescriptor *type_args[] = {
+                        expected_type->data.result.ok_type,
+                        expected_type->data.result.err_type
+                    };
                     TypeDescriptor *generic_instance = type_descriptor_create_generic_instance(
-                        enum_symbol->type, type_args, 1);
-                    
+                        enum_symbol->type, type_args, 2);
                     if (generic_instance) {
                         enum_type_to_use = generic_instance;
-                        // Note: We don't release generic_instance here as enum_type_to_use now owns it
                     }
+                } else if (arg_count > 0) {
+                    // Fallback: infer what we can from the argument
+                    ASTNode *variant_value = ast_node_list_get(args, 0);
+                    TypeDescriptor *arg_type = semantic_get_expression_type(analyzer, variant_value);
                     
-                    type_descriptor_release(arg_type);
+                    if (arg_type) {
+                        // For now, create a single-parameter generic instance from the argument
+                        // This works for Option<T> and provides partial inference for Result<T, E>
+                        TypeDescriptor *type_args[] = {arg_type};
+                        TypeDescriptor *generic_instance = type_descriptor_create_generic_instance(
+                            enum_symbol->type, type_args, 1);
+                        
+                        if (generic_instance) {
+                            enum_type_to_use = generic_instance;
+                        }
+                        
+                        type_descriptor_release(arg_type);
+                    }
                 }
             }
             

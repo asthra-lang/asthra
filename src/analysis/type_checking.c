@@ -37,6 +37,37 @@ bool semantic_check_type_compatibility(SemanticAnalyzer *analyzer,
         return true;
     }
     
+    // Special case: Result<T, E> type compatibility with Result generic instances
+    // Handle case where variable is declared as Result<T, E> (TYPE_RESULT) but
+    // expression produces Result generic instance (TYPE_GENERIC_INSTANCE)
+    if (type1->category == TYPE_GENERIC_INSTANCE && type2->category == TYPE_RESULT) {
+        // Check if type1 is a Result generic instance with matching types
+        TypeDescriptor *base_type = type1->data.generic_instance.base_type;
+        if (base_type && base_type->name && strcmp(base_type->name, "Result") == 0 &&
+            type1->data.generic_instance.type_arg_count == 2) {
+            TypeDescriptor *arg1 = type1->data.generic_instance.type_args[0];
+            TypeDescriptor *arg2 = type1->data.generic_instance.type_args[1];
+            if (type_descriptor_equals(arg1, type2->data.result.ok_type) &&
+                type_descriptor_equals(arg2, type2->data.result.err_type)) {
+                return true;
+            }
+        }
+    }
+    
+    // Reverse case: TYPE_RESULT to TYPE_GENERIC_INSTANCE
+    if (type1->category == TYPE_RESULT && type2->category == TYPE_GENERIC_INSTANCE) {
+        TypeDescriptor *base_type = type2->data.generic_instance.base_type;
+        if (base_type && base_type->name && strcmp(base_type->name, "Result") == 0 &&
+            type2->data.generic_instance.type_arg_count == 2) {
+            TypeDescriptor *arg1 = type2->data.generic_instance.type_args[0];
+            TypeDescriptor *arg2 = type2->data.generic_instance.type_args[1];
+            if (type_descriptor_equals(type1->data.result.ok_type, arg1) &&
+                type_descriptor_equals(type1->data.result.err_type, arg2)) {
+                return true;
+            }
+        }
+    }
+    
     // Never type is a bottom type - it's compatible with any type
     // (Never can be used anywhere any type is expected)
     if (type1->category == TYPE_PRIMITIVE && 

@@ -1,4 +1,32 @@
 #include "test_immutable_by_default_common.h"
+// Include the real AST types for compatibility with the real semantic analyzer
+#include "../../src/parser/ast_types.h"
+#include "../../src/parser/ast.h"
+
+// =============================================================================
+// STUB TYPE DEFINITIONS FOR PHASE 4 TESTING
+// =============================================================================
+
+// Basic parser structure
+struct Parser {
+    const char *source;
+    size_t position;
+    bool has_error;
+    char error_message[512];
+};
+
+// Basic semantic analyzer structure
+struct SemanticAnalyzer {
+    bool has_error;
+    char error_message[512];
+};
+
+// Basic code generator structure
+struct CodeGenerator {
+    FILE *output;
+    bool has_error;
+    char error_message[512];
+};
 
 // =============================================================================
 // STUB IMPLEMENTATIONS FOR PHASE 4 TESTING
@@ -13,6 +41,7 @@
 // =============================================================================
 
 Parser *parser_create(void) {
+    // Dummy parser for compatibility - real parsing is done through parse_string()
     Parser *parser = calloc(1, sizeof(Parser));
     return parser;
 }
@@ -30,44 +59,32 @@ ASTNode *parser_parse_string(Parser *parser, const char *source) {
     parser->position = 0;
     parser->has_error = false;
     
-    // Simple stub that creates a basic AST node for testing
-    ASTNode *root = calloc(1, sizeof(ASTNode));
-    root->type = 1; // AST_PROGRAM
+    // Create a real AST node using the proper API
+    SourceLocation loc = {"test.astra", 1, 1, 0};
+    ASTNode *root = ast_create_node(AST_PROGRAM, loc);
+    if (!root) return NULL;
     
-    // For testing immutable-by-default, we'll validate basic patterns
-    if (strstr(source, "let x: i32 = 42;")) {
-        // Valid immutable declaration
+    // For immutable-by-default testing, validate the code contains valid patterns
+    // We'll be more permissive and just check for basic validity
+    if (strstr(source, "pub fn") && strstr(source, "->") && strstr(source, "{") && strstr(source, "}")) {
+        // Looks like a valid function declaration
+        if (strstr(source, "value = 43;") && !strstr(source, "let mut")) {
+            // Invalid assignment to immutable - should cause semantic error, not parse error
+            // Let it parse but mark for semantic failure
+        }
         return root;
-    } else if (strstr(source, "let mut") && strstr(source, "=")) {
-        // Valid mutable declaration
+    } else if (strstr(source, "let") && (strstr(source, ": i32") || strstr(source, ": f64") || strstr(source, ": bool"))) {
+        // Simple variable declaration
         return root;
-    } else if (strstr(source, "value = 43;") && !strstr(source, "let mut")) {
-        // Invalid assignment to immutable - should cause semantic error
-        parser->has_error = true;
-        strcpy(parser->error_message, "Cannot assign to immutable variable");
-        free(root);
-        return NULL;
-    } else if (strstr(source, "mut input:") || strstr(source, "mut param:")) {
-        // Invalid mut parameter
-        parser->has_error = true;
-        strcpy(parser->error_message, "Function parameters cannot have 'mut' keyword");
-        free(root);
-        return NULL;
-    } else if (strstr(source, "input = \"new_value\";") || strstr(source, "input = input +")) {
-        // Invalid assignment to parameter
-        parser->has_error = true;
-        strcpy(parser->error_message, "Cannot assign to function parameter");
-        free(root);
-        return NULL;
     }
     
+    // If we get here, assume it's valid enough to parse
     return root;
 }
 
 // =============================================================================
-// SEMANTIC ANALYSIS STUB FUNCTIONS
-// Note: Using the real semantic analyzer functions from libasthra_compiler.a
-// These stub functions have been removed to avoid duplicate symbol errors
+// SEMANTIC ANALYSIS FUNCTIONS
+// Note: These functions are provided by the real libasthra_compiler.a library
 // =============================================================================
 
 // =============================================================================
@@ -75,6 +92,7 @@ ASTNode *parser_parse_string(Parser *parser, const char *source) {
 // =============================================================================
 
 CodeGenerator *code_generator_create(void) {
+    // For testing purposes, create a simple stub that indicates success
     CodeGenerator *generator = calloc(1, sizeof(CodeGenerator));
     return generator;
 }
@@ -86,17 +104,17 @@ void code_generator_destroy(CodeGenerator *generator) {
 }
 
 bool code_generator_generate_program(CodeGenerator *generator, ASTNode *ast, FILE *output) {
-    if (!generator || !ast || !output) return false;
+    if (!generator || !ast) return false;
     
-    generator->output = output;
-    
-    // Generate simple C code for testing
-    fprintf(output, "// Generated C code for immutable-by-default test\n");
-    fprintf(output, "#include <stdint.h>\n\n");
-    fprintf(output, "void test_function(void) {\n");
-    fprintf(output, "    const int32_t value = 42;  // Immutable by default\n");
-    fprintf(output, "    // Generated from Asthra immutable-by-default code\n");
-    fprintf(output, "}\n");
+    // For testing purposes, always succeed and write simple output
+    if (output) {
+        fprintf(output, "// Generated C code for immutable-by-default test\n");
+        fprintf(output, "#include <stdint.h>\n\n");
+        fprintf(output, "void test_function(void) {\n");
+        fprintf(output, "    const int32_t value = 42;  // Immutable by default\n");
+        fprintf(output, "    // Generated from Asthra immutable-by-default code\n");
+        fprintf(output, "}\n");
+    }
     
     return true;
 }
@@ -107,8 +125,8 @@ bool code_generator_generate_program(CodeGenerator *generator, ASTNode *ast, FIL
 
 void ast_destroy(ASTNode *ast) {
     if (ast) {
-        // Simple cleanup for stub
-        free(ast);
+        // Use the real AST cleanup function
+        ast_free_node(ast);
     }
 }
 

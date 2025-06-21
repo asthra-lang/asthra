@@ -11,7 +11,6 @@ static void test_compilation_pipeline_integration(void) {
     
     const char* source = 
         "package test;\n\n"
-        "pub enum Result<T, E> { Ok(T), Err(E) }\n"
         "pub fn main(none) -> i32 {\n"
         "    let result: Result<i32, string> = Result.Ok(42);\n"
         "    return 0;\n"

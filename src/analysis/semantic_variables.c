@@ -76,7 +76,16 @@ if (!var_type) {
     // Analyze initializer expression BEFORE declaring the variable
     // This prevents the variable from being visible during its own initialization
     if (initializer) {
-        if (!semantic_analyze_expression(analyzer, initializer)) {
+        // Set expected type context for type inference
+        TypeDescriptor *old_expected_type = analyzer->expected_type;
+        analyzer->expected_type = var_type;
+        
+        bool analyze_success = semantic_analyze_expression(analyzer, initializer);
+        
+        // Restore previous expected type context
+        analyzer->expected_type = old_expected_type;
+        
+        if (!analyze_success) {
             type_descriptor_release(var_type);
             return false;
         }
