@@ -31,6 +31,8 @@ file(GLOB_RECURSE AI_SERVER_SOURCES
 list(FILTER AI_SERVER_SOURCES EXCLUDE REGEX "ai_server/server_main\\.c$")
 # Exclude development_server_stubs.c (contains duplicate implementations)
 list(FILTER AI_SERVER_SOURCES EXCLUDE REGEX "ai_server/development_server_stubs\\.c$")
+# Exclude simple_dev_server.c (standalone server with its own main())
+list(FILTER AI_SERVER_SOURCES EXCLUDE REGEX "ai_server/simple_dev_server\\.c$")
 
 # Create AI server library
 add_library(asthra_ai_server STATIC ${AI_SERVER_SOURCES})
