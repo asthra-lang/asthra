@@ -258,7 +258,11 @@ int main(int argc, char **argv) {
     // Create output directories
     char mkdir_cmd[512];
     snprintf(mkdir_cmd, sizeof(mkdir_cmd), "mkdir -p %s %s", opts.output_dir, opts.crash_dir);
-    system(mkdir_cmd);
+    int mkdir_result = system(mkdir_cmd);
+    if (mkdir_result != 0) {
+        fprintf(stderr, "Warning: Failed to create directories (exit code: %d)\n", mkdir_result);
+        // Continue anyway, as directories might already exist
+    }
     
     // Setup crash detection and signal handling
     ToolResult crash_setup = setup_crash_detection();
