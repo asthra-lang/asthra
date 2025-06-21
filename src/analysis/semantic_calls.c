@@ -13,6 +13,7 @@
 #include "semantic_utilities.h"
 #include "semantic_types.h"
 #include "semantic_type_helpers.h"
+#include "semantic_type_creation.h"
 #include "semantic_diagnostics.h"
 #include "semantic_builtins.h"
 #include "semantic_expression_utils.h"
@@ -76,6 +77,88 @@ bool analyze_call_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
         
         // Validate function arguments against parameter types
         if (!validate_function_arguments(analyzer, expr, func_symbol)) {
+            return false;
+        }
+        
+        return true;
+    }
+    // For enum variant calls (Option.Some(value)), the function is an enum variant
+    else if (function->type == AST_ENUM_VARIANT) {
+        const char *enum_name = function->data.enum_variant.enum_name;
+        const char *variant_name = function->data.enum_variant.variant_name;
+        
+        if (!enum_name || !variant_name) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION,
+                                 function->location, "Invalid enum variant call");
+            return false;
+        }
+        
+        // Find the enum symbol
+        SymbolEntry *enum_symbol = semantic_resolve_identifier(analyzer, enum_name);
+        if (!enum_symbol || enum_symbol->kind != SYMBOL_TYPE || 
+            !enum_symbol->type || enum_symbol->type->category != TYPE_ENUM) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL,
+                                 function->location, "Undefined enum type: %s", enum_name);
+            return false;
+        }
+        
+        // Check if variant exists
+        SymbolEntry *variant_symbol = symbol_table_lookup_safe(
+            enum_symbol->type->data.enum_type.variants, variant_name);
+        if (!variant_symbol || variant_symbol->kind != SYMBOL_ENUM_VARIANT) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL,
+                                 function->location, "Enum '%s' has no variant '%s'", enum_name, variant_name);
+            return false;
+        }
+        
+        ASTNodeList *args = expr->data.call_expr.args;
+        size_t arg_count = args ? ast_node_list_size(args) : 0;
+        
+        if (arg_count > 1) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_ARGUMENTS,
+                                 expr->location,
+                                 "Enum constructors support only single values. Use a tuple for multiple values.");
+            return false;
+        }
+        
+        // Analyze the argument if present
+        if (arg_count == 1) {
+            ASTNode *variant_value = ast_node_list_get(args, 0);
+            if (!semantic_analyze_expression(analyzer, variant_value)) {
+                return false;
+            }
+        }
+        
+        // For generic enums, try to infer type parameters from arguments
+        TypeDescriptor *enum_type_to_use = enum_symbol->type;
+        
+        // Check if this is a generic enum (like Option<T>) and try to infer type parameters
+        if (enum_symbol->is_generic && arg_count > 0) {
+            // For Option.Some(value), infer T from the value type
+            ASTNode *variant_value = ast_node_list_get(args, 0);
+            TypeDescriptor *arg_type = semantic_get_expression_type(analyzer, variant_value);
+            
+            if (arg_type) {
+                // Create generic instance: Option<T> where T is the argument type
+                TypeDescriptor *type_args[] = {arg_type};
+                TypeDescriptor *generic_instance = type_descriptor_create_generic_instance(
+                    enum_symbol->type, type_args, 1);
+                
+                if (generic_instance) {
+                    enum_type_to_use = generic_instance;
+                    // Note: We don't release generic_instance here as enum_type_to_use now owns it
+                }
+                
+                type_descriptor_release(arg_type);
+            }
+        }
+        
+        // Set the expression type to the (possibly specialized) enum type
+        expr->type_info = type_info_from_descriptor(enum_type_to_use);
+        if (!expr->type_info) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL,
+                                 expr->location,
+                                 "Failed to create type info for enum variant call");
             return false;
         }
         
@@ -170,11 +253,29 @@ bool analyze_call_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
                 }
             }
             
-            // For generic enums, try to infer type parameters from context
+            // For generic enums, try to infer type parameters from arguments
             TypeDescriptor *enum_type_to_use = enum_symbol->type;
             
-            // For now, use the base enum type directly
-            // Type compatibility checking will handle generic instance vs base enum matching
+            // Check if this is a generic enum (like Option<T>) and try to infer type parameters
+            if (enum_symbol->is_generic && arg_count > 0) {
+                // For Option.Some(value), infer T from the value type
+                ASTNode *variant_value = ast_node_list_get(args, 0);
+                TypeDescriptor *arg_type = semantic_get_expression_type(analyzer, variant_value);
+                
+                if (arg_type) {
+                    // Create generic instance: Option<T> where T is the argument type
+                    TypeDescriptor *type_args[] = {arg_type};
+                    TypeDescriptor *generic_instance = type_descriptor_create_generic_instance(
+                        enum_symbol->type, type_args, 1);
+                    
+                    if (generic_instance) {
+                        enum_type_to_use = generic_instance;
+                        // Note: We don't release generic_instance here as enum_type_to_use now owns it
+                    }
+                    
+                    type_descriptor_release(arg_type);
+                }
+            }
             
             // Set the expression type to the (possibly specialized) enum type
             expr->type_info = type_info_from_descriptor(enum_type_to_use);

@@ -127,8 +127,16 @@ bool analyze_field_access(SemanticAnalyzer *analyzer, ASTNode *node) {
         node->data.enum_variant.variant_name = strdup(field_name);
         node->data.enum_variant.value = NULL;
         
-        // Set the type info to the enum type
-        node->type_info = type_info_from_descriptor(object_type);
+        // For generic enums, defer type setting to allow for type inference in call expressions
+        // For non-generic enums, set the type immediately
+        SymbolEntry *enum_symbol = semantic_resolve_identifier(analyzer, object_type->name);
+        if (enum_symbol && enum_symbol->is_generic) {
+            // Leave type_info as NULL for generic enum variants - will be set during call analysis
+            node->type_info = NULL;
+        } else {
+            // Set the type info to the enum type for non-generic enums
+            node->type_info = type_info_from_descriptor(object_type);
+        }
         
         type_descriptor_release(object_type);
         return true;
