@@ -158,147 +158,146 @@ ASTNode* parse_statement_fragment(const char* fragment, const char* test_name) {
     
     // Wrap the fragment in a minimal valid Asthra program
     // Create the wrapper program piece by piece
-    strcpy(buffer, "package test;\n\n");
+    size_t pos = 0;
+    pos += snprintf(buffer + pos, buffer_size - pos, "package test;\n\n");
     
     // Add common function declarations
-    strcat(buffer, "// Common test functions\n");
-    strcat(buffer, "pub fn action1(none) -> void { return (); }\n");
-    strcat(buffer, "pub fn action2(none) -> void { return (); }\n");
-    strcat(buffer, "pub fn action3(none) -> void { return (); }\n");
-    strcat(buffer, "pub fn body(none) -> void { return (); }\n");
-    strcat(buffer, "pub fn process(n: int) -> void { return (); }\n");
-    strcat(buffer, "pub fn update(none) -> void { return (); }\n");
-    strcat(buffer, "pub fn action(none) -> void { return (); }\n");
-    strcat(buffer, "pub fn func(none) -> void { return (); }\n");
-    strcat(buffer, "pub fn nested_func(a: int, b: int) -> int { return a + b; }\n");
-    strcat(buffer, "pub fn get_value(none) -> int { return 42; }\n");
-    strcat(buffer, "pub fn initialize(none) -> void { return (); }\n");
-    strcat(buffer, "pub fn cleanup_resources(none) -> void { return (); }\n");
-    strcat(buffer, "pub fn print_debug_info(level: int) -> void { return (); }\n");
-    strcat(buffer, "pub fn update_display(none) -> void { return (); }\n");
-    strcat(buffer, "pub fn save_state(none) -> void { return (); }\n");
-    strcat(buffer, "pub fn print(s: string, value: int) -> void { return (); }\n");
-    strcat(buffer, "pub fn printf(s: string) -> void { return (); }\n");
-    strcat(buffer, "pub fn calculate(x: int, y: int, z: int) -> int { return x + y + z; }\n");
-    strcat(buffer, "pub fn compute_index(none) -> int { return 0; }\n");
-    strcat(buffer, "pub fn timestamp(none) -> int { return 0; }\n");
-    strcat(buffer, "pub fn transform(m: int, s: int) -> void { return (); }\n");
-    strcat(buffer, "pub fn log(level: int, msg: string) -> void { return (); }\n");
-    strcat(buffer, "pub fn validate(input: string, pattern: string) -> bool { return true; }\n");
-    strcat(buffer, "pub fn getObject(none) -> TestObject { return TestObject { member: 0 }; }\n");
-    strcat(buffer, "pub fn handle_error(none) -> bool { return false; }\n");
-    strcat(buffer, "\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "// Common test functions\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn action1(none) -> void { return (); }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn action2(none) -> void { return (); }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn action3(none) -> void { return (); }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn body(none) -> void { return (); }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn process(n: int) -> void { return (); }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn update(none) -> void { return (); }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn action(none) -> void { return (); }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn func(none) -> void { return (); }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn nested_func(a: int, b: int) -> int { return a + b; }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn get_value(none) -> int { return 42; }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn initialize(none) -> void { return (); }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn cleanup_resources(none) -> void { return (); }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn print_debug_info(level: int) -> void { return (); }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn update_display(none) -> void { return (); }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn save_state(none) -> void { return (); }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn print(s: string, value: int) -> void { return (); }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn printf(s: string) -> void { return (); }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn calculate(x: int, y: int, z: int) -> int { return x + y + z; }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn compute_index(none) -> int { return 0; }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn timestamp(none) -> int { return 0; }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn transform(m: int, s: int) -> void { return (); }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn log(level: int, msg: string) -> void { return (); }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn validate(input: string, pattern: string) -> bool { return true; }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn getObject(none) -> TestObject { return TestObject { member: 0 }; }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn handle_error(none) -> bool { return false; }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "\n");
     
     // Add struct declarations
-    strcat(buffer, "// Test structures\n");
-    strcat(buffer, "pub struct TestObject {\n");
-    strcat(buffer, "    pub member: int,\n");
-    strcat(buffer, "    pub property: TestProperty\n");
-    strcat(buffer, "}\n\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "// Test structures\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub struct TestObject {\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    pub member: int,\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    pub property: TestProperty\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "}\n\n");
     
-    strcat(buffer, "pub struct TestProperty {\n");
-    strcat(buffer, "    pub value: int\n");
-    strcat(buffer, "}\n\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub struct TestProperty {\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    pub value: int\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "}\n\n");
     
     // Remove impl blocks - not supported in Asthra
     // Instead, use regular functions that take the struct as first parameter
-    strcat(buffer, "pub fn TestObject_method(obj: TestObject, p: int) -> void { return (); }\n");
-    strcat(buffer, "pub fn TestObject_method1(obj: TestObject) -> TestObject { return obj; }\n");
-    strcat(buffer, "pub fn TestObject_method2(obj: TestObject) -> TestObject { return obj; }\n");
-    strcat(buffer, "pub fn TestObject_method3(obj: TestObject) -> void { return (); }\n\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn TestObject_method(obj: TestObject, p: int) -> void { return (); }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn TestObject_method1(obj: TestObject) -> TestObject { return obj; }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn TestObject_method2(obj: TestObject) -> TestObject { return obj; }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn TestObject_method3(obj: TestObject) -> void { return (); }\n\n");
     
-    strcat(buffer, "pub struct Module { pub field: int }\n");
-    strcat(buffer, "pub fn Module_function(m: Module, p: int) -> void { return (); }\n\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub struct Module { pub field: int }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn Module_function(m: Module, p: int) -> void { return (); }\n\n");
     
-    strcat(buffer, "pub struct Class { pub field: int }\n");
-    strcat(buffer, "pub fn Class_staticMethod(c: Class, p: int) -> void { return (); }\n\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub struct Class { pub field: int }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn Class_staticMethod(c: Class, p: int) -> void { return (); }\n\n");
     
     // Add helper functions
-    strcat(buffer, "pub fn func1(a: int) -> int { return a * 2; }\n");
-    strcat(buffer, "pub fn func2(b: int) -> int { return b + 10; }\n\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn func1(a: int) -> int { return a * 2; }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn func2(b: int) -> int { return b + 10; }\n\n");
     
-    strcat(buffer, "pub struct Transformation { pub data: int }\n");
-    strcat(buffer, "pub fn Transformation_scale(t: Transformation) -> int { return 2; }\n\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub struct Transformation { pub data: int }\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn Transformation_scale(t: Transformation) -> int { return 2; }\n\n");
     
     // Create test function with proper return type
-    char func_header[256];
-    sprintf(func_header, "pub fn test_function(none) -> %s {\n", return_type);
-    strcat(buffer, func_header);
+    pos += snprintf(buffer + pos, buffer_size - pos, "pub fn test_function(none) -> %s {\n", return_type);
     
     // Add variable declarations
-    strcat(buffer, "    // Test variables\n");
-    strcat(buffer, "    let mut x: int = 0;\n");
-    strcat(buffer, "    let mut y: int = 0;\n");
-    strcat(buffer, "    let mut z: int = 0;\n");
-    strcat(buffer, "    let mut i: int = 0;\n");
-    strcat(buffer, "    let mut j: int = 0;\n");
-    strcat(buffer, "    let mut a: int = 1;\n");
-    strcat(buffer, "    let mut b: int = 2;\n");
-    strcat(buffer, "    let mut c: int = 3;\n");
-    strcat(buffer, "    let mut d: int = 4;\n");
-    strcat(buffer, "    let mut e: int = 5;\n");
-    strcat(buffer, "    let mut f: int = 6;\n");
-    strcat(buffer, "    let mut m: int = 7;\n");
-    strcat(buffer, "    let mut n: int = 10;\n");
-    strcat(buffer, "    let mut p: int = 11;\n");
-    strcat(buffer, "    let mut q: int = 12;\n");
-    strcat(buffer, "    let mut r: int = 13;\n");
-    strcat(buffer, "    let mut s: int = 14;\n");
-    strcat(buffer, "    let mut t: int = 15;\n");
-    strcat(buffer, "    let mut u: int = 16;\n");
-    strcat(buffer, "    let mut rows: int = 5;\n");
-    strcat(buffer, "    let mut cols: int = 5;\n");
-    strcat(buffer, "    let mut start: int = 0;\n");
-    strcat(buffer, "    let mut end: int = 10;\n");
-    strcat(buffer, "    let mut valid: bool = true;\n");
-    strcat(buffer, "    let mut arr: []int = [1, 2, 3, 4, 5];\n");
-    strcat(buffer, "    let condition: bool = true;\n");
-    strcat(buffer, "    let condition1: bool = true;\n");
-    strcat(buffer, "    let condition2: bool = false;\n");
-    strcat(buffer, "    let outer_condition: bool = true;\n");
-    strcat(buffer, "    let inner_condition: bool = true;\n");
-    strcat(buffer, "    let outer_loop: bool = true;\n");
-    strcat(buffer, "    let value: int = 42;\n");
-    strcat(buffer, "    let args: int = 0;\n");
-    strcat(buffer, "    let index: int = 0;\n");
-    strcat(buffer, "    let array: []int = [1, 2, 3];\n");
-    strcat(buffer, "    let row: int = 0;\n");
-    strcat(buffer, "    let col: int = 0;\n");
-    strcat(buffer, "    let offset: int = 5;\n");
-    strcat(buffer, "    let base: int = 100;\n");
-    strcat(buffer, "    let divisor: int = 10;\n");
-    strcat(buffer, "    let counter: int = 0;\n");
-    strcat(buffer, "    let flag: bool = true;\n");
-    strcat(buffer, "    let true_val: int = 1;\n");
-    strcat(buffer, "    let false_val: int = 0;\n");
-    strcat(buffer, "    let output: string = \"output\";\n");
-    strcat(buffer, "    let matrix: []int = [1, 2, 3, 4];\n");
-    strcat(buffer, "    let transformation: Transformation = Transformation { data: 1 };\n");
-    strcat(buffer, "    let variable: int = 0;\n");
-    strcat(buffer, "    let mut object: TestObject = TestObject { member: 0, property: TestProperty { value: 42 } };\n");
-    strcat(buffer, "    let mut obj: TestObject = TestObject { member: 0, property: TestProperty { value: 42 } };\n");
-    strcat(buffer, "    let module: Module = Module { field: 0 };\n");
-    strcat(buffer, "    let param: int = 42;\n");
-    strcat(buffer, "    let debug_level: int = 1;\n");
-    strcat(buffer, "    let format_string: string = \"format\";\n");
-    strcat(buffer, "    let value1: int = 1;\n");
-    strcat(buffer, "    let value2: int = 2;\n");
-    strcat(buffer, "    let other: int = 0;\n");
-    strcat(buffer, "    let scale_factor: int = 1;\n");
-    strcat(buffer, "    let level: int = 1;\n");
-    strcat(buffer, "    let message: string = \"msg\";\n");
-    strcat(buffer, "    let user: TestObject = TestObject { member: 0, property: TestProperty { value: 42 } };\n");
-    strcat(buffer, "    let input: string = \"input\";\n");
-    strcat(buffer, "    let regex_pattern: string = \"pattern\";\n");
-    strcat(buffer, "    let instance: TestObject = TestObject { member: 0, property: TestProperty { value: 42 } };\n");
-    strcat(buffer, "    let struct_ptr: *TestObject = &object;\n");
-    strcat(buffer, "    let pointer: *int = &variable;\n");
-    strcat(buffer, "    let cast_type: int = 0;\n");
-    strcat(buffer, "    \n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    // Test variables\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut x: int = 0;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut y: int = 0;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut z: int = 0;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut i: int = 0;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut j: int = 0;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut a: int = 1;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut b: int = 2;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut c: int = 3;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut d: int = 4;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut e: int = 5;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut f: int = 6;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut m: int = 7;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut n: int = 10;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut p: int = 11;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut q: int = 12;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut r: int = 13;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut s: int = 14;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut t: int = 15;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut u: int = 16;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut rows: int = 5;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut cols: int = 5;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut start: int = 0;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut end: int = 10;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut valid: bool = true;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut arr: []int = [1, 2, 3, 4, 5];\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let condition: bool = true;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let condition1: bool = true;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let condition2: bool = false;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let outer_condition: bool = true;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let inner_condition: bool = true;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let outer_loop: bool = true;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let value: int = 42;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let args: int = 0;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let index: int = 0;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let array: []int = [1, 2, 3];\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let row: int = 0;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let col: int = 0;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let offset: int = 5;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let base: int = 100;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let divisor: int = 10;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let counter: int = 0;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let flag: bool = true;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let true_val: int = 1;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let false_val: int = 0;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let output: string = \"output\";\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let matrix: []int = [1, 2, 3, 4];\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let transformation: Transformation = Transformation { data: 1 };\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let variable: int = 0;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut object: TestObject = TestObject { member: 0, property: TestProperty { value: 42 } };\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let mut obj: TestObject = TestObject { member: 0, property: TestProperty { value: 42 } };\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let module: Module = Module { field: 0 };\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let param: int = 42;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let debug_level: int = 1;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let format_string: string = \"format\";\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let value1: int = 1;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let value2: int = 2;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let other: int = 0;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let scale_factor: int = 1;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let level: int = 1;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let message: string = \"msg\";\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let user: TestObject = TestObject { member: 0, property: TestProperty { value: 42 } };\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let input: string = \"input\";\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let regex_pattern: string = \"pattern\";\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let instance: TestObject = TestObject { member: 0, property: TestProperty { value: 42 } };\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let struct_ptr: *TestObject = &object;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let pointer: *int = &variable;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    let cast_type: int = 0;\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    \n");
     
     // Add the test fragment with expression-oriented transformations
-    strcat(buffer, "    // Test fragment\n");
-    strcat(buffer, "    ");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    // Test fragment\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "    ");
     
     // Apply expression-oriented transformations
     char transformed_fragment[4096];
@@ -306,7 +305,7 @@ ASTNode* parse_statement_fragment(const char* fragment, const char* test_name) {
     
     // Transformation successful
     
-    strcat(buffer, transformed_fragment);
+    pos += snprintf(buffer + pos, buffer_size - pos, "%s", transformed_fragment);
     
     // Ensure fragment is treated as a statement
     size_t frag_len = strlen(transformed_fragment);
@@ -314,17 +313,17 @@ ASTNode* parse_statement_fragment(const char* fragment, const char* test_name) {
         // Check if it's an if-else expression (ends with })
         if (strstr(transformed_fragment, "if") && strstr(transformed_fragment, "else") && 
             transformed_fragment[frag_len - 1] == '}') {
-            strcat(buffer, ";");
+            pos += snprintf(buffer + pos, buffer_size - pos, ";");
         } else if (transformed_fragment[frag_len - 1] != '}') {
             // Other expressions need semicolons too
-            strcat(buffer, ";");
+            pos += snprintf(buffer + pos, buffer_size - pos, ";");
         }
     }
-    strcat(buffer, "\n    \n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "\n    \n");
     
     // Add default return if needed
-    strcat(buffer, default_return);
-    strcat(buffer, "}\n");
+    pos += snprintf(buffer + pos, buffer_size - pos, "%s", default_return);
+    pos += snprintf(buffer + pos, buffer_size - pos, "}\n");
     
     // Debug: write to file to check line numbers
     FILE* debug_file = fopen("/tmp/test_debug.asthra", "w");

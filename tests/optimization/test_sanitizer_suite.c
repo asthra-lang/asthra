@@ -16,6 +16,19 @@ static AsthraTestResult test_sanitizer_binaries_created(AsthraTestContext *conte
 static AsthraTestResult test_sanitizer_bug_detection(AsthraTestContext *context);
 
 static AsthraTestResult test_sanitizer_makefile_targets(AsthraTestContext *context) {
+    // Skip this test in CI environments or when make is not available
+    CommandResult make_check = execute_command("which make", 5);
+    if (make_check.exit_code != 0) {
+        printf("Skipping sanitizer makefile tests - make not available\n");
+        return ASTHRA_TEST_SKIP;
+    }
+    
+    // Also skip if we're in a test-only environment (no source tree)
+    if (!file_exists("Makefile")) {
+        printf("Skipping sanitizer makefile tests - not in source tree\n");
+        return ASTHRA_TEST_SKIP;
+    }
+    
     const char *sanitizer_targets[] = {
         "sanitizer-asan",
         "sanitizer-ubsan",
@@ -23,7 +36,9 @@ static AsthraTestResult test_sanitizer_makefile_targets(AsthraTestContext *conte
     };
     
     for (size_t i = 0; i < sizeof(sanitizer_targets) / sizeof(sanitizer_targets[0]); i++) {
-        CommandResult result = execute_command(sanitizer_targets[i], TEST_TIMEOUT_SECONDS);
+        char make_command[256];
+        snprintf(make_command, sizeof(make_command), "make %s", sanitizer_targets[i]);
+        CommandResult result = execute_command(make_command, TEST_TIMEOUT_SECONDS);
         
         if (!ASTHRA_TEST_ASSERT_EQ(context, result.exit_code, 0, 
                                    "Sanitizer target should succeed: %s - %s", 
@@ -43,6 +58,12 @@ static AsthraTestResult test_sanitizer_makefile_targets(AsthraTestContext *conte
 }
 
 static AsthraTestResult test_sanitizer_binaries_created(AsthraTestContext *context) {
+    // Skip if we're not in a build environment
+    if (!file_exists("bin/asthra")) {
+        printf("Skipping sanitizer binary tests - not in build environment\n");
+        return ASTHRA_TEST_SKIP;
+    }
+    
     const char *expected_binaries[] = {
         "bin/asthra-asan",
         "bin/asthra-ubsan",
@@ -66,10 +87,17 @@ static AsthraTestResult test_sanitizer_binaries_created(AsthraTestContext *conte
 }
 
 static AsthraTestResult test_sanitizer_bug_detection(AsthraTestContext *context) {
+    // Skip if clang is not available
+    CommandResult clang_check = execute_command("which clang", 5);
+    if (clang_check.exit_code != 0) {
+        printf("Skipping sanitizer bug detection tests - clang not available\n");
+        return ASTHRA_TEST_SKIP;
+    }
+    
     // Create test files with intentional bugs for sanitizer detection
     
     // 1. Memory leak test for AddressSanitizer
-    const char *memory_leak_test = "tests/optimization/test_memory_leak.c";
+    const char *memory_leak_test = "test_memory_leak.c";
     FILE *leak_file = fopen(memory_leak_test, "w");
     if (leak_file) {
         fprintf(leak_file, "#include <stdlib.h>\n");
@@ -82,20 +110,21 @@ static AsthraTestResult test_sanitizer_bug_detection(AsthraTestContext *context)
     }
     
     // 2. Buffer overflow test for AddressSanitizer
-    const char *buffer_overflow_test = "tests/optimization/test_buffer_overflow.c";
+    const char *buffer_overflow_test = "test_buffer_overflow.c";
     FILE *overflow_file = fopen(buffer_overflow_test, "w");
     if (overflow_file) {
         fprintf(overflow_file, "#include <string.h>\n");
         fprintf(overflow_file, "int main(void) {\n");
         fprintf(overflow_file, "    char buffer[10];\n");
-        fprintf(overflow_file, "    strcpy(buffer, \"This string is too long for the buffer\");\n");
+        fprintf(overflow_file, "    // Intentional buffer overflow for sanitizer testing\n");
+        fprintf(overflow_file, "    memcpy(buffer, \"This string is too long for the buffer\", 40);\n");
         fprintf(overflow_file, "    return 0;\n");
         fprintf(overflow_file, "}\n");
         fclose(overflow_file);
     }
     
     // 3. Undefined behavior test for UBSan
-    const char *undefined_behavior_test = "tests/optimization/test_undefined_behavior.c";
+    const char *undefined_behavior_test = "test_undefined_behavior.c";
     FILE *ub_file = fopen(undefined_behavior_test, "w");
     if (ub_file) {
         fprintf(ub_file, "#include <limits.h>\n");
@@ -156,4 +185,17 @@ AsthraTestMetadata sanitizer_test_metadata[] = {
     {"Sanitizer Bug Detection", __FILE__, __LINE__, "test_sanitizer_bug_detection", ASTHRA_TEST_SEVERITY_CRITICAL, 0, false, NULL}
 };
 
-const size_t sanitizer_test_count = sizeof(sanitizer_test_functions) / sizeof(sanitizer_test_functions[0]); 
+const size_t sanitizer_test_count = sizeof(sanitizer_test_functions) / sizeof(sanitizer_test_functions[0]);
+
+int main(void) {
+    AsthraTestSuite *suite = asthra_test_suite_create_lightweight("Sanitizer Tests");
+    
+    for (size_t i = 0; i < sanitizer_test_count; i++) {
+        asthra_test_suite_add_test(suite, 
+            sanitizer_test_metadata[i].name,
+            sanitizer_test_metadata[i].name,
+            sanitizer_test_functions[i]);
+    }
+    
+    return asthra_test_suite_run_and_exit(suite);
+} 

@@ -16,11 +16,11 @@ AsthraTestResult test_basic_enum_pattern_matching(AsthraTestContext* context) {
     // Valid exhaustive match
     ASTHRA_TEST_ASSERT(context, test_pattern_success(
         "package test;\n"
-        "pub enum Option<T> {\n"
+        "pub enum TestOption<T> {\n"
         "    Some(T),\n"
         "    None\n"
         "}\n"
-        "pub fn test_match(opt: Option<i32>) -> i32 {\n"
+        "pub fn test_match(opt: TestOption<i32>) -> i32 {\n"
         "    match opt {\n"
         "        Some(value) => value + 1,\n"
         "        None => 0\n"
@@ -32,11 +32,11 @@ AsthraTestResult test_basic_enum_pattern_matching(AsthraTestContext* context) {
     // Non-exhaustive match
     ASTHRA_TEST_ASSERT(context, test_pattern_error(
         "package test;\n"
-        "pub enum Option<T> {\n"
+        "pub enum TestOption<T> {\n"
         "    Some(T),\n"
         "    None\n"
         "}\n"
-        "pub fn test_match(opt: Option<i32>) -> i32 {\n"
+        "pub fn test_match(opt: TestOption<i32>) -> i32 {\n"
         "    match opt {\n"
         "        Some(value) => value + 1\n"
         "        // Missing None case\n"
@@ -49,11 +49,11 @@ AsthraTestResult test_basic_enum_pattern_matching(AsthraTestContext* context) {
     // Unknown variant
     ASTHRA_TEST_ASSERT(context, test_pattern_error(
         "package test;\n"
-        "pub enum Option<T> {\n"
+        "pub enum TestOption<T> {\n"
         "    Some(T),\n"
         "    None\n"
         "}\n"
-        "pub fn test_match(opt: Option<i32>) -> i32 {\n"
+        "pub fn test_match(opt: TestOption<i32>) -> i32 {\n"
         "    match opt {\n"
         "        Some(value) => value,\n"
         "        Nothing => 0  // Wrong variant name\n"

@@ -305,11 +305,11 @@ static bool test_pattern_matching_codegen(void) {
     
     const char* source = 
         "package test;\n"
-        "pub enum Option<T> {\n"
+        "pub enum TestOption<T> {\n"
         "    Some(T),\n"
         "    None(none)\n"
         "}\n"
-        "pub fn process_option(opt: Option<i32>) -> i32 {\n"
+        "pub fn process_option(opt: TestOption<i32>) -> i32 {\n"
         "    match opt {\n"
         "        Option.Some(value) => value,\n"
         "        Option.None(none) => 0,\n"

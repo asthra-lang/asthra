@@ -15,7 +15,7 @@
 // =============================================================================
 
 SymbolTestContext* create_symbol_test_context(void) {
-    SymbolTestContext *ctx = malloc(sizeof(SymbolTestContext));
+    SymbolTestContext *ctx = calloc(1, sizeof(SymbolTestContext));
     if (!ctx) return NULL;
     
     ctx->analyzer = semantic_analyzer_create();

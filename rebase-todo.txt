@@ -1,0 +1,42 @@
+# Rebase plan for cleaning up feat/builtin-result-type branch
+# 
+# Group 1: Core feature implementation (keep separate)
+pick e10cf22 feat(types): complete Result<T, E> built-in type implementation
+
+# Group 2: Initial test fixes for the feature (squash together)
+pick c80c3c0 fix(test): resolve Linux build failures for Result type integration tests
+squash 15e0096 fix(test): correct parameter syntax to use (none) as per grammar
+squash ebc866c fix(test): simplify Result type tests to avoid unsupported match expressions
+squash d0ee9cd fix(test): correct assertion for nested Result type test
+squash fcff265 fix(test): remove duplicate includes in Result type test
+squash 99a9632 fix(test): rename test Option enums to TestOption to avoid conflicts with built-in
+
+# Group 3: Security and deprecated function fixes (squash together)
+pick a7dbde8 fix(security): replace deprecated string functions across codebase
+squash cb14fc1 fix(tests): replace all sprintf and unsafe string functions in test files
+squash f526b32 fix(runtime): use correct variable name buffer_size instead of capacity
+squash 6f7ffd1 fix(runtime): replace deprecated sprintf with snprintf on macOS
+
+# Group 4: Build and CI improvements (squash together)
+pick 712fd8b feat(scripts): add macOS support to run-github-actions-locally.sh
+squash ae6b0da fix(build): fix sanitizer test linking on macOS
+squash 0a06fae feat(ci): enable sanitizer tests on macOS
+squash 5cd15eb fix(sanitizers): improve GCC compatibility and fix architecture detection
+squash f039842 fix(ci): ensure test failures properly fail CI jobs
+
+# Group 5: Test framework and memory fixes (squash together)
+pick 91c52c4 fix(test): add proper test statistics tracking for all v1.2 test categories
+squash 12a8cc1 fix(test): resolve uninitialized memory causing CI test failures
+squash eb06b6d fix(test): resolve memory corruption in data flow tests and simplify option type test
+squash 014eb45 fix(test): resolve core_test_core_main failures in CI by fixing variable shadowing
+
+# Group 6: Miscellaneous fixes (squash together)
+pick 693852a fix(codegen): remove duplicate loop analysis function definitions
+squash 479c863 fix(codegen): enable and fix loop detection tests
+squash f456b59 fix: correct include paths in test files for Linux/GCC compatibility
+squash 0471062 fix(test): use correct include paths for Linux compatibility
+squash f71b07a fix(test): correct header paths and function names for Linux build
+
+# Skip these:
+drop 7b8446f chore: trigger CI re-run
+drop d51a9bf Merge pull request #14 from asthra-lang/feature/test-branch
