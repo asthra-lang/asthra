@@ -10,7 +10,6 @@
 typedef struct FastSemanticCacheManager FastSemanticCacheManager;
 typedef struct SemanticAnalysisCache SemanticAnalysisCache;
 typedef struct EnhancedDiagnostic EnhancedDiagnostic;
-typedef struct CacheConfig CacheConfig;
 
 // Include the actual type definitions to avoid conflicts
 #ifndef SEMANTIC_TYPES_DEFS_H
@@ -20,6 +19,9 @@ typedef struct CacheConfig CacheConfig;
 #ifndef SEMANTIC_SYMBOLS_DEFS_H  
 #include "../analysis/semantic_symbols_defs.h"
 #endif
+
+// Include semantic_cache.h for CacheConfig definition
+#include "../ai_api/semantic_cache.h"
 
 // Diagnostic level enum
 typedef enum {
@@ -90,13 +92,9 @@ struct FastSemanticCacheManager {
     pthread_rwlock_t fast_cache_lock;
 };
 
-// Stub cache config structure
-struct CacheConfig {
-    size_t max_memory_mb;
-};
-
 // Note: SymbolTable and TypeDescriptor are forward declared above
 // and defined in semantic_symbols_defs.h and semantic_types_defs.h respectively
+// CacheConfig is defined in semantic_cache.h
 
 // Function declarations
 FastSemanticCacheManager* fast_semantic_cache_create(size_t max_memory_mb);
@@ -114,8 +112,5 @@ void semantic_analysis_cache_destroy(SemanticAnalysisCache *cache);
 
 // Cache utility functions
 size_t fast_semantic_cache_calculate_file_hash(const char *file_path);
-CacheConfig semantic_cache_default_config(void);
-void* semantic_cache_create(CacheConfig *config);
-void semantic_cache_destroy(void *cache);
 
 #endif // FAST_SEMANTIC_CACHE_H 
