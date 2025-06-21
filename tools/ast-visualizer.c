@@ -168,7 +168,14 @@ int main(int argc, char **argv) {
         return 1;
     }
     
-    fread(source, 1, (size_t)file_size, file);
+    size_t bytes_read = fread(source, 1, (size_t)file_size, file);
+    if (bytes_read != (size_t)file_size) {
+        fprintf(stderr, "Failed to read entire file (read %zu of %ld bytes)\n", bytes_read, file_size);
+        free(source);
+        fclose(file);
+        cli_destroy_config(config);
+        return 1;
+    }
     source[file_size] = '\0';
     fclose(file);
     

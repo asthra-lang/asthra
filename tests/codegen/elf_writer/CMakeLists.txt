@@ -3,6 +3,12 @@
 # NOTE: Some tests have missing type definitions and functions
 # that would require extensive stub implementations.
 
+# ELF is only supported on Unix/Linux platforms, not macOS (which uses Mach-O)
+if(APPLE)
+    message(STATUS "Skipping ELF writer tests on macOS (platform uses Mach-O format)")
+    return()
+endif()
+
 set(ELF_WRITER_TESTS
     # Basic ELF writer tests
     test_elf_writer_fileio.c
