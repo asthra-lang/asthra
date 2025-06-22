@@ -134,6 +134,31 @@ cargo test --test language_tests   # Language feature tests
 - **Code generation** - Must handle expressions appearing in statement contexts
 - **Documentation**: See `docs/architecture/expression-oriented-design.md` for comprehensive details
 
+### Source File Gitignore Compliance (MANDATORY)
+- **CRITICAL: Never create source files (*.c, *.h, tests, docs) that match .gitignore patterns**
+- **Why this matters**: Files matching .gitignore patterns will NOT be committed to Git and WILL BE LOST when running `git clean -fdx`
+- **Common problematic patterns for source files**:
+  - Debug source files: `debug_*.c`, `debug_*.h`, `*_debug.c`, `*_debug.h` - These will be ignored!
+  - Test executables: `*_test` (without .c/.h extension) - Never name source files this way!
+  - Analysis docs: `*_error_analysis.md`, `*_migration_summary.md` - These are temporary and will be lost!
+  - Local notes: `TODO.local.md`, `local-notes.txt` - These are explicitly ignored!
+- **Before creating ANY source file or documentation**, verify the filename won't be ignored by Git
+- **Safe patterns**: 
+  - Test source files: `test_*.c`, `test_*.h` (with test_ prefix)
+  - Test files with _test_ in name: `*_test_*.c`, `*_test_*.h` (explicitly allowed in .gitignore)
+- **If you create a file that matches .gitignore patterns**, it will be lost and cause confusion
+
+### Temporary Debug Files (ENCOURAGED)
+- **DO create temporary debug files using .gitignore patterns** for debugging and analysis
+- **Purpose**: These files are meant to be temporary and should not clutter the repository
+- **Recommended patterns for temporary files**:
+  - Debug files: Use `debug_*.c`, `debug_*.h`, `*_debug.c`, `*_debug.h` for temporary debugging code
+  - Analysis docs: Use `*_error_analysis.md`, `*_migration_summary.md` for temporary analysis
+  - Test outputs: Use `*_test_output.txt`, `*_test_output.log` for test results
+  - Local notes: Use `TODO.local.md`, `local-notes.txt` for personal notes
+- **Benefits**: These files won't be accidentally committed and can be cleaned up with `git clean -fdx`
+- **Use case**: When debugging or analyzing issues, use these patterns to ensure your temporary work doesn't pollute the repository
+
 ### C17 Standards
 - **Must use** modern C17 features appropriately: `_Static_assert`, `_Generic`, `<stdatomic.h>`, `_Thread_local`
 - **Always provide** fallback implementations for older compilers
