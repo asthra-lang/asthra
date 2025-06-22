@@ -38,6 +38,14 @@ jobs:
       run_sanitizer_tests: ${{ github.event.inputs.run_sanitizer_tests != 'false' }}
 
   # =============================================================================
+  # BDD TESTS - Run behavior-driven development tests
+  # =============================================================================
+  bdd-tests:
+    name: BDD Tests
+    needs: build-and-test
+    uses: ./.github/workflows/bdd.yml
+
+  # =============================================================================
   # COMPREHENSIVE TEST SUITE - Only on main branch pushes or scheduled runs
   # =============================================================================
   comprehensive-tests:
@@ -69,10 +77,11 @@ jobs:
   # =============================================================================
   notify-results:
     name: Notify Results
-    needs: [build-and-test, cross-platform-check, comprehensive-tests]
+    needs: [build-and-test, bdd-tests, cross-platform-check, comprehensive-tests]
     if: always()
     uses: ./.github/workflows/notify-results.yml
     with:
       build_test_result: ${{ needs.build-and-test.result }}
+      bdd_test_result: ${{ needs.bdd-tests.result }}
       compatibility_result: ${{ needs.cross-platform-check.result }}
       comprehensive_test_result: ${{ needs.comprehensive-tests.result || 'skipped' }} 
