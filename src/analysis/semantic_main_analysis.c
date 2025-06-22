@@ -95,7 +95,8 @@ bool semantic_analyze_program(SemanticAnalyzer *analyzer, ASTNode *program) {
         }
     }
     
-    return true;
+    // Return false if any errors were found during analysis
+    return analyzer->error_count == 0;
 }
 
 bool semantic_analyze_declaration(SemanticAnalyzer *analyzer, ASTNode *decl) {

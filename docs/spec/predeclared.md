@@ -58,6 +58,14 @@ range(end: i32) -> []i32                  // Generate [0, 1, 2, ..., end-1]
 range(start: i32, end: i32) -> []i32      // Generate [start, start+1, ..., end-1]
 ```
 
+### Iterator Functions
+
+```asthra
+infinite() -> InfiniteIterator            // Generate an infinite iterator
+```
+
+**Note:** Functions using `infinite()` must be annotated with `#[non_deterministic]` as they contain unbounded iteration.
+
 ## Automatic Availability
 
 Predeclared functions work immediately without imports:
@@ -86,6 +94,17 @@ fn main() -> i32 {
     }
     
     return 0;
+}
+
+// Example using infinite iterator (requires non-deterministic annotation)
+#[non_deterministic]
+fn server_loop() -> void {
+    for _ in infinite() {
+        accept_connection();
+        if should_shutdown() {
+            break;
+        }
+    }
 }
 ```
 

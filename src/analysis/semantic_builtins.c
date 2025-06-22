@@ -216,6 +216,15 @@ static PredeclaredIdentifier g_predeclared_identifiers[] = {
         .kind = SYMBOL_FUNCTION,
         .type = NULL,  // Will be created dynamically
         .is_predeclared = true
+    },
+    
+    // Infinite iterator function
+    {
+        .name = "infinite",
+        .signature = "fn() -> InfiniteIterator",
+        .kind = SYMBOL_FUNCTION,
+        .type = NULL,  // Will be created dynamically
+        .is_predeclared = true
     }
 };
 
@@ -456,6 +465,24 @@ TypeDescriptor *create_predeclared_function_type(const char *name, const char *s
         slice_type->data.slice.element_type = &g_builtin_types[PRIMITIVE_STRING];
         
         func_type->data.function.return_type = slice_type;
+    } else if (strcmp(name, "infinite") == 0) {
+        // infinite() -> InfiniteIterator
+        func_type->data.function.param_count = 0;
+        func_type->data.function.param_types = NULL;
+        
+        // Create InfiniteIterator type - a special slice type that represents an infinite iterator
+        TypeDescriptor *iterator_type = malloc(sizeof(TypeDescriptor));
+        iterator_type->category = TYPE_SLICE;  // Use slice type as base for iterators
+        iterator_type->flags = (TypeFlags){0};
+        iterator_type->size = sizeof(void*) + sizeof(size_t);  // ptr + len (though len is meaningless for infinite)
+        iterator_type->alignment = _Alignof(void*);
+        iterator_type->name = strdup("InfiniteIterator");
+        atomic_init(&iterator_type->ref_count, 1);
+        
+        // The element type is void for now - the actual type will be determined in usage context
+        iterator_type->data.slice.element_type = &g_builtin_types[PRIMITIVE_VOID];
+        
+        func_type->data.function.return_type = iterator_type;
     } else {
         // Default case - should not happen
         fprintf(stderr, "WARNING: Unknown predeclared function signature: %s\n", signature);

@@ -24,6 +24,7 @@
 #include <pthread.h>
 #include <assert.h>
 #include <inttypes.h>
+#include <stdint.h>
 
 // C17 modernization includes
 #include <stdatomic.h>
@@ -484,4 +485,24 @@ AsthraSliceHeader asthra_runtime_get_args(void) {
     }
     
     return g_runtime.args_slice_initialized ? g_runtime.args_slice : (AsthraSliceHeader){0};
+}
+
+// =============================================================================
+// INFINITE ITERATOR SUPPORT
+// =============================================================================
+
+AsthraSliceHeader asthra_infinite_iterator(void) {
+    // Create a special slice that represents an infinite iterator
+    // The slice has a NULL data pointer and SIZE_MAX length to indicate infinity
+    AsthraSliceHeader infinite_slice = {
+        .ptr = NULL,
+        .len = SIZE_MAX,  // Use maximum size_t value to represent infinity
+        .cap = SIZE_MAX,  // Infinite capacity
+        .element_size = sizeof(size_t),  // Each element is a counter value
+        .ownership = ASTHRA_OWNERSHIP_GC,  // GC managed (though no actual memory)
+        .is_mutable = false,
+        .type_id = ASTHRA_TYPE_SLICE
+    };
+    
+    return infinite_slice;
 }
