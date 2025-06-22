@@ -148,12 +148,47 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
     // Write C program header
     fprintf(temp_c, "#include <stdio.h>\n");
     fprintf(temp_c, "#include <stdlib.h>\n");
-    fprintf(temp_c, "#include <string.h>\n\n");
+    fprintf(temp_c, "#include <string.h>\n");
+    fprintf(temp_c, "#include <stddef.h>\n");
+    fprintf(temp_c, "#include <stdbool.h>\n");
+    fprintf(temp_c, "#include <stdint.h>\n");
+    fprintf(temp_c, "\n");
     
-    // Forward declarations for runtime functions
-    // TODO: Properly include runtime headers once path resolution is implemented
-    fprintf(temp_c, "// Runtime function declarations\n");
-    fprintf(temp_c, "typedef struct { void* data; size_t length; size_t element_size; } AsthraSliceHeader;\n");
+    // Runtime type and function declarations
+    fprintf(temp_c, "// Asthra runtime types and functions for slice support\n");
+    fprintf(temp_c, "typedef enum {\n");
+    fprintf(temp_c, "    ASTHRA_OWNERSHIP_GC,\n");
+    fprintf(temp_c, "    ASTHRA_OWNERSHIP_C,\n");
+    fprintf(temp_c, "    ASTHRA_OWNERSHIP_PINNED\n");
+    fprintf(temp_c, "} AsthraOwnershipHint;\n");
+    fprintf(temp_c, "\n");
+    fprintf(temp_c, "typedef struct {\n");
+    fprintf(temp_c, "    void * restrict ptr;\n");
+    fprintf(temp_c, "    size_t len;\n");
+    fprintf(temp_c, "    size_t cap;\n");
+    fprintf(temp_c, "    size_t element_size;\n");
+    fprintf(temp_c, "    AsthraOwnershipHint ownership;\n");
+    fprintf(temp_c, "    bool is_mutable;\n");
+    fprintf(temp_c, "    uint32_t type_id;\n");
+    fprintf(temp_c, "} AsthraSliceHeader;\n");
+    fprintf(temp_c, "\n");
+    fprintf(temp_c, "// Slice operation functions\n");
+    fprintf(temp_c, "static inline size_t asthra_slice_get_len(AsthraSliceHeader slice) { return slice.len; }\n");
+    fprintf(temp_c, "static inline void* asthra_slice_get_element(AsthraSliceHeader slice, size_t index) {\n");
+    fprintf(temp_c, "    if (index >= slice.len) return NULL;\n");
+    fprintf(temp_c, "    return (char*)slice.ptr + index * slice.element_size;\n");
+    fprintf(temp_c, "}\n");
+    fprintf(temp_c, "static inline AsthraSliceHeader asthra_slice_subslice(AsthraSliceHeader slice, size_t start, size_t end) {\n");
+    fprintf(temp_c, "    if (start > slice.len) start = slice.len;\n");
+    fprintf(temp_c, "    if (end > slice.len) end = slice.len;\n");
+    fprintf(temp_c, "    if (start > end) end = start;\n");
+    fprintf(temp_c, "    return (AsthraSliceHeader){.ptr = (char*)slice.ptr + start * slice.element_size,\n");
+    fprintf(temp_c, "                               .len = end - start, .cap = end - start,\n");
+    fprintf(temp_c, "                               .element_size = slice.element_size,\n");
+    fprintf(temp_c, "                               .ownership = slice.ownership,\n");
+    fprintf(temp_c, "                               .is_mutable = slice.is_mutable,\n");
+    fprintf(temp_c, "                               .type_id = slice.type_id};\n");
+    fprintf(temp_c, "}\n");
     fprintf(temp_c, "extern AsthraSliceHeader asthra_runtime_get_args(void);\n\n");
     
     // Generate code from AST
@@ -408,7 +443,45 @@ static int asthra_compile_file_to_c(AsthraCompilerContext *ctx, const char *inpu
     if (!headers_written) {
         fprintf(output_file, "#include <stdio.h>\n");
         fprintf(output_file, "#include <stdlib.h>\n");
-        fprintf(output_file, "#include <string.h>\n\n");
+        fprintf(output_file, "#include <string.h>\n");
+        fprintf(output_file, "#include <stddef.h>\n");
+        fprintf(output_file, "#include <stdbool.h>\n");
+        fprintf(output_file, "#include <stdint.h>\n");
+        fprintf(output_file, "\n");
+        fprintf(output_file, "// Asthra runtime types and functions for slice support\n");
+        fprintf(output_file, "typedef enum {\n");
+        fprintf(output_file, "    ASTHRA_OWNERSHIP_GC,\n");
+        fprintf(output_file, "    ASTHRA_OWNERSHIP_C,\n");
+        fprintf(output_file, "    ASTHRA_OWNERSHIP_PINNED\n");
+        fprintf(output_file, "} AsthraOwnershipHint;\n");
+        fprintf(output_file, "\n");
+        fprintf(output_file, "typedef struct {\n");
+        fprintf(output_file, "    void * restrict ptr;\n");
+        fprintf(output_file, "    size_t len;\n");
+        fprintf(output_file, "    size_t cap;\n");
+        fprintf(output_file, "    size_t element_size;\n");
+        fprintf(output_file, "    AsthraOwnershipHint ownership;\n");
+        fprintf(output_file, "    bool is_mutable;\n");
+        fprintf(output_file, "    uint32_t type_id;\n");
+        fprintf(output_file, "} AsthraSliceHeader;\n");
+        fprintf(output_file, "\n");
+        fprintf(output_file, "// Slice operation functions\n");
+        fprintf(output_file, "static inline size_t asthra_slice_get_len(AsthraSliceHeader slice) { return slice.len; }\n");
+        fprintf(output_file, "static inline void* asthra_slice_get_element(AsthraSliceHeader slice, size_t index) {\n");
+        fprintf(output_file, "    if (index >= slice.len) return NULL;\n");
+        fprintf(output_file, "    return (char*)slice.ptr + index * slice.element_size;\n");
+        fprintf(output_file, "}\n");
+        fprintf(output_file, "static inline AsthraSliceHeader asthra_slice_subslice(AsthraSliceHeader slice, size_t start, size_t end) {\n");
+        fprintf(output_file, "    if (start > slice.len) start = slice.len;\n");
+        fprintf(output_file, "    if (end > slice.len) end = slice.len;\n");
+        fprintf(output_file, "    if (start > end) end = start;\n");
+        fprintf(output_file, "    return (AsthraSliceHeader){.ptr = (char*)slice.ptr + start * slice.element_size,\n");
+        fprintf(output_file, "                               .len = end - start, .cap = end - start,\n");
+        fprintf(output_file, "                               .element_size = slice.element_size,\n");
+        fprintf(output_file, "                               .ownership = slice.ownership,\n");
+        fprintf(output_file, "                               .is_mutable = slice.is_mutable,\n");
+        fprintf(output_file, "                               .type_id = slice.type_id};\n");
+        fprintf(output_file, "}\n\n");
         headers_written = true;
     }
     

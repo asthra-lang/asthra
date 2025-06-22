@@ -13,6 +13,9 @@
 #include "../parser/ast.h"
 #include "code_generation.h"
 
+// Forward declaration for type generation
+static const char* get_c_type_string(ASTNode *type_node);
+
 // =============================================================================
 // CODE GENERATION
 // =============================================================================
@@ -113,7 +116,7 @@ int generate_c_code(FILE *output, ASTNode *node) {
                 
                 // Handle args() - generate inline stub for testing
                 // TODO: Use asthra_runtime_get_args() once runtime linking is implemented
-                fprintf(output, "((AsthraSliceHeader){.data = NULL, .length = 0, .element_size = sizeof(char*)})");
+                fprintf(output, "((AsthraSliceHeader){.ptr = NULL, .len = 0, .cap = 0, .element_size = sizeof(char*), .ownership = ASTHRA_OWNERSHIP_GC, .is_mutable = 0, .type_id = 0})");
             } else {
                 // Other function calls
                 if (node->data.call_expr.function) {
@@ -197,23 +200,8 @@ int generate_c_code(FILE *output, ASTNode *node) {
         case AST_LET_STMT:
             // Handle variable declarations with immutable-by-default semantics
             if (node->data.let_stmt.name) {
-                // Determine C type based on Asthra type or initializer
-                const char *c_type = "char *"; // default to string
-                if (node->data.let_stmt.type && node->data.let_stmt.type->type == AST_BASE_TYPE) {
-                    const char *type_name = node->data.let_stmt.type->data.base_type.name;
-                    if (type_name) {
-                        if (strcmp(type_name, "bool") == 0 || strcmp(type_name, "BOOL") == 0) {
-                            c_type = "int";
-                        } else if (strcmp(type_name, "int") == 0 || strcmp(type_name, "i32") == 0 || strcmp(type_name, "INT") == 0 || strcmp(type_name, "I32") == 0) {
-                            c_type = "int";
-                        } else if (strcmp(type_name, "float") == 0 || strcmp(type_name, "f32") == 0 || strcmp(type_name, "f64") == 0 || strcmp(type_name, "FLOAT_TYPE") == 0 || strcmp(type_name, "F64") == 0) {
-                            c_type = "double";
-                        } else if (strcmp(type_name, "string") == 0 || strcmp(type_name, "STRING_TYPE") == 0) {
-                            c_type = "char *";
-                        }
-                        // Add more type mappings as needed
-                    }
-                }
+                // Use our type helper function to get the correct C type
+                const char *c_type = get_c_type_string(node->data.let_stmt.type);
                 
                 // PHASE 3 ENHANCEMENT: Generate appropriate C const/mutable semantics
                 if (node->data.let_stmt.is_mutable) {
@@ -251,37 +239,35 @@ int generate_c_code(FILE *output, ASTNode *node) {
             break;
             
         case AST_FOR_STMT:
-            // Handle for loops (for-in-range style)
+            // Handle for loops (for-in style)
             if (node->data.for_stmt.variable && node->data.for_stmt.iterable) {
-                // Check if it's a range-based for loop (conceptual)
-                // For actual range-based loops, the iterable would be a range literal or function call
-                // For now, we'll simplify and assume a basic iteration over an array/slice.
-                
-                // Determine the type of the iterable to get the element type
-                // (This information would typically come from semantic analysis)
-                // For code generation, we'll assume a basic integer or pointer type for iteration.
                 const char *iterator_var_name = node->data.for_stmt.variable;
                 
-                // Simple C-style for loop for array/slice iteration (placeholder)
-                // Assuming iterable is an array/slice for now
-                fprintf(output, "    // Generated from Asthra for loop (simplified)\n");
-                fprintf(output, "    size_t temp_idx = 0;\n");
-                fprintf(output, "    size_t temp_len = 0;\n");
-
-                // Simulate getting length of iterable (from semantic analysis or type info)
-                // This part needs to be improved with actual type information from semantic analysis
-                fprintf(output, "    // temp_len = get_length(iterable);\n");
-                fprintf(output, "    temp_len = 3; // Simulated length for test\n");
-
-                fprintf(output, "    for (temp_idx = 0; temp_idx < temp_len; temp_idx++) {\n");
-                fprintf(output, "        // %s represents an element from the iterable\n", iterator_var_name);
-                fprintf(output, "        // let %s = iterable[temp_idx];\n", iterator_var_name);
+                // Generate proper slice iteration
+                fprintf(output, "    // Generated from Asthra for-in loop\n");
+                fprintf(output, "    {\n");
+                
+                // Get the slice to iterate over
+                fprintf(output, "        AsthraSliceHeader _slice = ");
+                generate_c_code(output, node->data.for_stmt.iterable);
+                fprintf(output, ";\n");
+                
+                // Determine element type from the iterable's type info
+                const char *element_type = "int"; // Default
+                // TODO: Once TypeInfo is properly exposed in code generation,
+                // we can check if the iterable is a slice and get its element type
+                
+                // Generate the for loop
+                fprintf(output, "        for (size_t _idx = 0; _idx < _slice.len; _idx++) {\n");
+                fprintf(output, "            %s %s = *((%s*)((char*)_slice.ptr + _idx * _slice.element_size));\n",
+                        element_type, iterator_var_name, element_type);
                 
                 // Generate loop body
                 if (node->data.for_stmt.body) {
                     generate_c_code(output, node->data.for_stmt.body);
                 }
                 
+                fprintf(output, "        }\n");
                 fprintf(output, "    }\n");
 
             } else {
@@ -344,10 +330,139 @@ int generate_c_code(FILE *output, ASTNode *node) {
             }
             break;
             
+        case AST_ARRAY_LITERAL:
+            // Generate array literal as slice initialization
+            if (node->data.array_literal.elements) {
+                ASTNodeList *elements = node->data.array_literal.elements;
+                
+                // For now, we'll generate a static array and create a slice from it
+                // This is a simplified approach - a real implementation would use heap allocation
+                fprintf(output, "({\n");
+                
+                // Determine element type from first element or type info
+                const char *element_type = "int"; // Default to int
+                // TODO: Once TypeInfo is properly exposed in code generation,
+                // we can check the actual slice element type
+                if (elements->count > 0 && elements->nodes[0]) {
+                    // Infer from first element
+                    ASTNode *first = elements->nodes[0];
+                    if (first->type == AST_STRING_LITERAL) {
+                        element_type = "char*";
+                    } else if (first->type == AST_FLOAT_LITERAL) {
+                        element_type = "double";
+                    } else if (first->type == AST_BOOL_LITERAL) {
+                        element_type = "int";
+                    }
+                }
+                
+                // Generate static array
+                fprintf(output, "        static %s _arr[] = {", element_type);
+                for (size_t i = 0; i < elements->count; i++) {
+                    if (i > 0) fprintf(output, ", ");
+                    generate_c_code(output, elements->nodes[i]);
+                }
+                fprintf(output, "};\n");
+                
+                // Create slice header - note the expression must evaluate to the struct, not void
+                fprintf(output, "        AsthraSliceHeader _slice = {.ptr = _arr, .len = %zu, .cap = %zu, .element_size = sizeof(%s), .ownership = ASTHRA_OWNERSHIP_GC, .is_mutable = 0, .type_id = 0};\n",
+                        elements->count, elements->count, element_type);
+                fprintf(output, "        _slice;\n");  // Return the slice
+                fprintf(output, "    })");
+            }
+            break;
+            
+        case AST_SLICE_EXPR:
+            // Generate slice expression array[start:end]
+            if (node->data.slice_expr.array) {
+                fprintf(output, "asthra_slice_subslice(");
+                generate_c_code(output, node->data.slice_expr.array);
+                fprintf(output, ", ");
+                
+                // Start index (default to 0 if NULL)
+                if (node->data.slice_expr.start) {
+                    generate_c_code(output, node->data.slice_expr.start);
+                } else {
+                    fprintf(output, "0");
+                }
+                fprintf(output, ", ");
+                
+                // End index (default to length if NULL)
+                if (node->data.slice_expr.end) {
+                    generate_c_code(output, node->data.slice_expr.end);
+                } else {
+                    // Need to get the length of the array
+                    fprintf(output, "asthra_slice_get_len(");
+                    generate_c_code(output, node->data.slice_expr.array);
+                    fprintf(output, ")");
+                }
+                fprintf(output, ")");
+            }
+            break;
+            
+        case AST_INDEX_ACCESS:
+            // Generate array index access array[index]
+            if (node->data.index_access.array && node->data.index_access.index) {
+                // We need to dereference the element pointer and cast to the correct type
+                const char *element_type = "int"; // Default to int
+                // For now, we'll use a simple heuristic based on the expected result type
+                // A proper implementation would use type inference from semantic analysis
+                
+                fprintf(output, "(*(%s*)asthra_slice_get_element(", element_type);
+                generate_c_code(output, node->data.index_access.array);
+                fprintf(output, ", ");
+                generate_c_code(output, node->data.index_access.index);
+                fprintf(output, "))");
+            }
+            break;
+            
+        case AST_SLICE_LENGTH_ACCESS:
+            // Generate slice.len access
+            if (node->data.slice_length_access.slice) {
+                fprintf(output, "asthra_slice_get_len(");
+                generate_c_code(output, node->data.slice_length_access.slice);
+                fprintf(output, ")");
+            }
+            break;
+            
+        case AST_SLICE_TYPE:
+            // This shouldn't appear in expression context, but handle it for completeness
+            fprintf(output, "/* slice type */");
+            break;
+            
         default:
             // For unhandled node types, just continue
             break;
     }
     
     return 0;
+}
+
+// Helper function to convert AST type nodes to C type strings
+static const char* get_c_type_string(ASTNode *type_node) {
+    if (!type_node) return "void";
+    
+    switch (type_node->type) {
+        case AST_BASE_TYPE:
+            if (type_node->data.base_type.name) {
+                const char *name = type_node->data.base_type.name;
+                if (strcmp(name, "bool") == 0) return "int";
+                if (strcmp(name, "i32") == 0 || strcmp(name, "int") == 0) return "int";
+                if (strcmp(name, "i64") == 0) return "long long";
+                if (strcmp(name, "f32") == 0 || strcmp(name, "float") == 0) return "float";
+                if (strcmp(name, "f64") == 0) return "double";
+                if (strcmp(name, "string") == 0) return "char*";
+                if (strcmp(name, "void") == 0) return "void";
+                if (strcmp(name, "usize") == 0) return "size_t";
+            }
+            break;
+        case AST_SLICE_TYPE:
+            return "AsthraSliceHeader";
+        case AST_PTR_TYPE:
+            // Simplified pointer type handling
+            return "void*";
+        default:
+            break;
+    }
+    
+    return "void";
 } 
