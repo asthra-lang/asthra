@@ -39,9 +39,21 @@ ctest --test-dir build -L <component> -j8      # Component tests in parallel
 
 # Test reporting
 ctest --test-dir build --output-on-failure     # View test failures with output
+
+# BDD (Behavior-Driven Development) Testing
+cmake -B build -DBUILD_BDD_TESTS=ON            # Enable BDD tests in build configuration
+cmake --build build --target bdd_tests         # Build all BDD test executables
+cmake --build build --target run_bdd_tests     # Run full BDD test suite
+cmake --build build --target bdd_unit          # Run C BDD unit tests only
+cmake --build build --target bdd_integration   # Run BDD integration tests only
+cmake --build build --target bdd_cucumber      # Run Cucumber features (or C-based equivalents)
+cmake --build build --target bdd-report        # Generate BDD test report (JUnit format)
+ctest --test-dir build -L bdd                  # Run BDD tests using CTest
 ```
 
 **⚠️ Test Build Strategy**: See `docs/contributor/guides/test-build-strategy.md` for critical information about test building and common build failures.
+
+**📚 BDD Testing Guide**: See `docs/contributor/guides/bdd-testing-guide.md` for comprehensive BDD testing documentation.
 
 ### Coverage and Analysis
 ```bash
