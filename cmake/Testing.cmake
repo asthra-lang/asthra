@@ -29,6 +29,7 @@ set(ASTHRA_TEST_CATEGORIES
     ai_api
     ai_linter
     basic
+    bdd
     character
     codegen
     concurrency
@@ -212,6 +213,16 @@ add_custom_target(test-curated
             --label-regex "basic|core|parser|semantic|codegen"
             --parallel ${ASTHRA_TEST_PARALLEL}
     COMMENT "Running curated test suite"
+    USES_TERMINAL
+)
+
+# BDD test suite (Behavior-Driven Development tests)
+add_custom_target(test-bdd-all
+    COMMAND ${CMAKE_CTEST_COMMAND}
+            --output-on-failure
+            --label-regex "bdd"
+            --parallel ${ASTHRA_TEST_PARALLEL}
+    COMMENT "Running all BDD tests"
     USES_TERMINAL
 )
 
