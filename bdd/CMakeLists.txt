@@ -3,6 +3,10 @@
 
 message(STATUS "Configuring BDD testing infrastructure")
 
+# Check for BDD testing frameworks
+find_program(CUCUMBER cucumber)
+find_library(CGREEN_LIB cgreen)
+
 # BDD test output directory
 set(BDD_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/bin)
 file(MAKE_DIRECTORY ${BDD_OUTPUT_DIR})
@@ -55,6 +59,13 @@ function(add_bdd_test name category)
         test_framework
     )
     
+    # Platform-specific configurations
+    if(APPLE)
+        target_link_libraries(${test_target} "-framework Foundation")
+    elseif(UNIX AND NOT APPLE)
+        target_link_libraries(${test_target} pthread m)
+    endif()
+    
     # Set output directory
     set_target_properties(${test_target} PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${BDD_OUTPUT_DIR}
@@ -66,15 +77,24 @@ function(add_bdd_test name category)
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
     
-    # Set test properties
+    # Set test properties with appropriate labels
+    if(category STREQUAL "acceptance" OR category STREQUAL "scenario" OR category STREQUAL "feature")
+        set(test_labels "bdd;${category};bdd_cucumber")
+    elseif(category STREQUAL "integration")
+        set(test_labels "bdd;${category};bdd_integration")
+    else()
+        set(test_labels "bdd;${category};bdd_unit")
+    endif()
+    
     set_tests_properties(${test_target} PROPERTIES
-        LABELS "bdd;${category}"
+        LABELS "${test_labels}"
         TIMEOUT 60
         ENVIRONMENT "BDD_FEATURES_DIR=${CMAKE_CURRENT_SOURCE_DIR}/features"
     )
     
-    # Add to build-tests target
+    # Add to build targets
     add_dependencies(build-tests ${test_target})
+    add_dependencies(bdd_tests ${test_target})
 endfunction()
 
 # Create BDD test targets
@@ -83,6 +103,63 @@ add_custom_target(bdd-tests
             --output-on-failure
             --label-regex "^bdd$"
     COMMENT "Running all BDD tests"
+    USES_TERMINAL
+)
+
+# Target: bdd_tests - Build all BDD test executables
+add_custom_target(bdd_tests
+    COMMENT "Building all BDD test executables"
+)
+
+# Target: run_bdd_tests - Execute full BDD test suite
+add_custom_target(run_bdd_tests
+    COMMAND ${CMAKE_CTEST_COMMAND}
+            --output-on-failure
+            --label-regex "^bdd$"
+            --parallel ${CMAKE_BUILD_PARALLEL_LEVEL}
+    COMMENT "Executing full BDD test suite"
+    USES_TERMINAL
+    DEPENDS bdd_tests
+)
+
+# Target: bdd_cucumber - Run Cucumber features
+if(CUCUMBER)
+    add_custom_target(bdd_cucumber
+        COMMAND ${CMAKE_COMMAND} -E echo "Running Cucumber BDD features..."
+        COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_SOURCE_DIR}
+                ${CUCUMBER} features/ --format progress --tags "not @wip"
+        COMMENT "Running Cucumber BDD features"
+        USES_TERMINAL
+    )
+else()
+    add_custom_target(bdd_cucumber
+        COMMAND ${CMAKE_COMMAND} -E echo "Cucumber not found. Running C-based BDD tests with Cucumber labels..."
+        COMMAND ${CMAKE_CTEST_COMMAND}
+                --output-on-failure
+                --label-regex "bdd_cucumber"
+                --parallel ${CMAKE_BUILD_PARALLEL_LEVEL}
+        COMMENT "Running C-based BDD tests (Cucumber not available)"
+        USES_TERMINAL
+    )
+endif()
+
+# Target: bdd_unit - Run C BDD unit tests
+add_custom_target(bdd_unit
+    COMMAND ${CMAKE_CTEST_COMMAND}
+            --output-on-failure
+            --label-regex "bdd.*unit"
+            --parallel ${CMAKE_BUILD_PARALLEL_LEVEL}
+    COMMENT "Running C BDD unit tests"
+    USES_TERMINAL
+)
+
+# Target: bdd_integration - Run integration tests
+add_custom_target(bdd_integration
+    COMMAND ${CMAKE_CTEST_COMMAND}
+            --output-on-failure
+            --label-regex "bdd.*integration"
+            --parallel ${CMAKE_BUILD_PARALLEL_LEVEL}
+    COMMENT "Running BDD integration tests"
     USES_TERMINAL
 )
 
@@ -129,4 +206,22 @@ add_custom_target(bdd-clean
 # add_bdd_test(user_login acceptance)
 # add_bdd_test(compiler_workflow integration)
 
+# Register sample BDD tests (uncomment when ready to use)
+# add_bdd_test(compiler_basic unit)
+# add_bdd_test(ffi_integration integration)
+
+# Configuration summary
 message(STATUS "BDD testing infrastructure configured")
+message(STATUS "  BDD output directory: ${BDD_OUTPUT_DIR}")
+message(STATUS "  Cucumber found: ${CUCUMBER}")
+message(STATUS "  Cgreen library: ${CGREEN_LIB}")
+message(STATUS "  Test categories: ${BDD_TEST_CATEGORIES}")
+message(STATUS "")
+message(STATUS "BDD test targets available:")
+message(STATUS "  bdd_tests         - Build all BDD test executables")
+message(STATUS "  run_bdd_tests     - Execute full BDD test suite")
+message(STATUS "  bdd_cucumber      - Run Cucumber features (or C-based equivalents)")
+message(STATUS "  bdd_unit          - Run C BDD unit tests")
+message(STATUS "  bdd_integration   - Run BDD integration tests")
+message(STATUS "  bdd-report        - Generate BDD test report")
+message(STATUS "  bdd-clean         - Clean BDD test outputs")
