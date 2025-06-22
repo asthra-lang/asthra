@@ -78,7 +78,7 @@ static ProcessingResult c_process_variant_data(VariantData input) {
                 return create_error_result("Memory allocation failed");
             }
             
-            sprintf(processed_string, "Processed: %s", input.data.string_value);
+            snprintf(processed_string, len + 20, "Processed: %s", input.data.string_value);
             
             VariantData string_result;
             string_result.type = DATA_TYPE_STRING;

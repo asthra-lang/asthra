@@ -159,7 +159,7 @@ void* c_function_for_asthra(void *arg) {
     char *result = malloc(strlen(input) + 20);
     if (!result) return NULL;
     
-    sprintf(result, "Processed: %s", input);
+    snprintf(result, strlen(input) + 20, "Processed: %s", input);
     
     // Simulate C library work
     usleep(5000); // 5ms

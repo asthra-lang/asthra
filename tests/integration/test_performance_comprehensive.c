@@ -43,7 +43,7 @@ AsthraTestResult test_integration_performance_comprehensive(AsthraV12TestContext
         for (int i = 0; i < iterations / concurrent_tasks; i++) {
             // String operation
             char buffer[100];
-            sprintf(buffer, "Task %d iteration %d", task->task_id, i);
+            snprintf(buffer, sizeof(buffer), "Task %d iteration %d", task->task_id, i);
             
             // Mock pattern matching
             int pattern_result = 0;

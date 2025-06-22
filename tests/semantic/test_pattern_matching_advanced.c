@@ -16,11 +16,11 @@ AsthraTestResult test_guard_conditions(AsthraTestContext* context) {
     // Valid guard conditions
     ASTHRA_TEST_ASSERT(context, test_pattern_success(
         "package test;\n"
-        "pub enum Option<T> {\n"
+        "pub enum TestOption<T> {\n"
         "    Some(T),\n"
         "    None\n"
         "}\n"
-        "pub fn test_guards(opt: Option<i32>) -> string {\n"
+        "pub fn test_guards(opt: TestOption<i32>) -> string {\n"
         "    match opt {\n"
         "        Some(x) if x > 0 => \"positive\",\n"
         "        Some(x) if x < 0 => \"negative\",\n"
@@ -34,11 +34,11 @@ AsthraTestResult test_guard_conditions(AsthraTestContext* context) {
     // Guard with non-bool type
     ASTHRA_TEST_ASSERT(context, test_pattern_error(
         "package test;\n"
-        "pub enum Option<T> {\n"
+        "pub enum TestOption<T> {\n"
         "    Some(T),\n"
         "    None\n"
         "}\n"
-        "pub fn test_bad_guard(opt: Option<i32>) -> i32 {\n"
+        "pub fn test_bad_guard(opt: TestOption<i32>) -> i32 {\n"
         "    match opt {\n"
         "        Some(x) if \"not bool\" => x,  // Guard must be bool\n"
         "        _ => 0\n"
@@ -59,11 +59,11 @@ AsthraTestResult test_if_let_statements(AsthraTestContext* context) {
     // Valid if-let
     ASTHRA_TEST_ASSERT(context, test_pattern_success(
         "package test;\n"
-        "pub enum Option<T> {\n"
+        "pub enum TestOption<T> {\n"
         "    Some(T),\n"
         "    None\n"
         "}\n"
-        "pub fn test_if_let(opt: Option<i32>) -> i32 {\n"
+        "pub fn test_if_let(opt: TestOption<i32>) -> i32 {\n"
         "    if let Some(value) = opt {\n"
         "        return value + 1;\n"
         "    }\n"
@@ -75,7 +75,7 @@ AsthraTestResult test_if_let_statements(AsthraTestContext* context) {
     // Type mismatch in if-let
     ASTHRA_TEST_ASSERT(context, test_pattern_error(
         "package test;\n"
-        "pub enum Option<T> {\n"
+        "pub enum TestOption<T> {\n"
         "    Some(T),\n"
         "    None\n"
         "}\n"
@@ -92,7 +92,7 @@ AsthraTestResult test_if_let_statements(AsthraTestContext* context) {
     // Nested if-let
     ASTHRA_TEST_ASSERT(context, test_pattern_success(
         "package test;\n"
-        "pub enum Option<T> {\n"
+        "pub enum TestOption<T> {\n"
         "    Some(T),\n"
         "    None\n"
         "}\n"
@@ -100,7 +100,7 @@ AsthraTestResult test_if_let_statements(AsthraTestContext* context) {
         "    Ok(T),\n"
         "    Err(E)\n"
         "}\n"
-        "pub fn test_nested_if_let(r: Result<Option<i32>, string>) -> i32 {\n"
+        "pub fn test_nested_if_let(r: Result<TestOption<i32>, string>) -> i32 {\n"
         "    if let Ok(Some(value)) = r {\n"
         "        return value;\n"
         "    }\n"
@@ -120,11 +120,11 @@ AsthraTestResult test_pattern_variable_binding(AsthraTestContext* context) {
     // Valid variable binding
     ASTHRA_TEST_ASSERT(context, test_pattern_success(
         "package test;\n"
-        "pub enum Option<T> {\n"
+        "pub enum TestOption<T> {\n"
         "    Some(T),\n"
         "    None\n"
         "}\n"
-        "pub fn test_binding(opt: Option<i32>) -> i32 {\n"
+        "pub fn test_binding(opt: TestOption<i32>) -> i32 {\n"
         "    match opt {\n"
         "        Some(x) => {\n"
         "            let y = x;  // x is bound in this scope\n"
@@ -139,11 +139,11 @@ AsthraTestResult test_pattern_variable_binding(AsthraTestContext* context) {
     // Variable not bound in arm
     ASTHRA_TEST_ASSERT(context, test_pattern_error(
         "package test;\n"
-        "pub enum Option<T> {\n"
+        "pub enum TestOption<T> {\n"
         "    Some(T),\n"
         "    None\n"
         "}\n"
-        "pub fn test_unbound_var(opt: Option<i32>) -> i32 {\n"
+        "pub fn test_unbound_var(opt: TestOption<i32>) -> i32 {\n"
         "    match opt {\n"
         "        Some(x) => x,\n"
         "        None => {\n"
@@ -215,11 +215,11 @@ AsthraTestResult test_type_compatibility_in_patterns(AsthraTestContext* context)
     // All arms must have compatible types
     ASTHRA_TEST_ASSERT(context, test_pattern_error(
         "package test;\n"
-        "pub enum Option<T> {\n"
+        "pub enum TestOption<T> {\n"
         "    Some(T),\n"
         "    None\n"
         "}\n"
-        "pub fn test_incompatible_arms(opt: Option<i32>) -> void {\n"
+        "pub fn test_incompatible_arms(opt: TestOption<i32>) -> void {\n"
         "    match opt {\n"
         "        Some(x) => x,        // Returns i32\n"
         "        None => \"default\"    // Returns string - ERROR\n"
@@ -232,11 +232,11 @@ AsthraTestResult test_type_compatibility_in_patterns(AsthraTestContext* context)
     // Fixed version with compatible types
     ASTHRA_TEST_ASSERT(context, test_pattern_success(
         "package test;\n"
-        "pub enum Option<T> {\n"
+        "pub enum TestOption<T> {\n"
         "    Some(T),\n"
         "    None\n"
         "}\n"
-        "pub fn test_compatible_arms(opt: Option<i32>) -> string {\n"
+        "pub fn test_compatible_arms(opt: TestOption<i32>) -> string {\n"
         "    match opt {\n"
         "        Some(x) => x.to_string(),\n"
         "        None => \"default\".to_string()\n"
@@ -248,11 +248,11 @@ AsthraTestResult test_type_compatibility_in_patterns(AsthraTestContext* context)
     // Type inference across match arms
     ASTHRA_TEST_ASSERT(context, test_pattern_success(
         "package test;\n"
-        "pub enum Option<T> {\n"
+        "pub enum TestOption<T> {\n"
         "    Some(T),\n"
         "    None\n"
         "}\n"
-        "pub fn test_type_inference(opt: Option<i32>) -> i32 {\n"
+        "pub fn test_type_inference(opt: TestOption<i32>) -> i32 {\n"
         "    let result = match opt {\n"
         "        Some(x) => x * 2,\n"
         "        None => 0\n"
@@ -273,11 +273,11 @@ AsthraTestResult test_match_expression_vs_statement(AsthraTestContext* context) 
     // Match as expression
     ASTHRA_TEST_ASSERT(context, test_pattern_success(
         "package test;\n"
-        "pub enum Option<T> {\n"
+        "pub enum TestOption<T> {\n"
         "    Some(T),\n"
         "    None\n"
         "}\n"
-        "pub fn test_match_expression(opt: Option<i32>) -> i32 {\n"
+        "pub fn test_match_expression(opt: TestOption<i32>) -> i32 {\n"
         "    let value = match opt {\n"
         "        Some(x) => x + 1,\n"
         "        None => 0\n"
@@ -290,11 +290,11 @@ AsthraTestResult test_match_expression_vs_statement(AsthraTestContext* context) 
     // Match as statement (no semicolon)
     ASTHRA_TEST_ASSERT(context, test_pattern_success(
         "package test;\n"
-        "pub enum Option<T> {\n"
+        "pub enum TestOption<T> {\n"
         "    Some(T),\n"
         "    None\n"
         "}\n"
-        "pub fn test_match_statement(opt: Option<i32>) {\n"
+        "pub fn test_match_statement(opt: TestOption<i32>) {\n"
         "    match opt {\n"
         "        Some(x) => { print(x); },\n"
         "        None => { print(\"none\"); }\n"

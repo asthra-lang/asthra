@@ -92,7 +92,7 @@ AsthraTestResult test_nested_pattern_matching(AsthraTestContext* context) {
     // Complex nested patterns with Option
     ASTHRA_TEST_ASSERT(context, test_pattern_success(
         "package test;\n"
-        "pub enum Option<T> {\n"
+        "pub enum TestOption<T> {\n"
         "    Some(T),\n"
         "    None\n"
         "}\n"
@@ -100,7 +100,7 @@ AsthraTestResult test_nested_pattern_matching(AsthraTestContext* context) {
         "    Ok(T),\n"
         "    Err(E)\n"
         "}\n"
-        "pub fn test_complex_nested(r: Result<Option<i32>, string>) -> i32 {\n"
+        "pub fn test_complex_nested(r: Result<TestOption<i32>, string>) -> i32 {\n"
         "    match r {\n"
         "        Ok(Some(value)) => value,\n"
         "        Ok(None) => 0,\n"

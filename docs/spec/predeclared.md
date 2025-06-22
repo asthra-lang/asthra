@@ -1,9 +1,46 @@
 # Predeclared Identifiers
 
-**Version:** 1.3  
-**Last Updated:** 2024-12-28
+**Version:** 1.4  
+**Last Updated:** 2025-01-21
 
-Following Go's design, Asthra provides **predeclared identifiers** - functions that are automatically available in all packages without requiring explicit import statements. These identifiers can be shadowed by user declarations when needed, providing both convenience and flexibility.
+Following Go's design, Asthra provides **predeclared identifiers** - types and functions that are automatically available in all packages without requiring explicit import statements. These identifiers can be shadowed by user declarations when needed, providing both convenience and flexibility.
+
+## Predeclared Types
+
+### Built-in Generic Types
+
+```asthra
+Result<T, E>  // Built-in type for error handling with Ok(T) and Err(E) variants
+Option<T>     // Built-in type for nullable values with Some(T) and None variants
+```
+
+These types are available without any declaration and support full pattern matching:
+
+```asthra
+package main;
+
+pub fn divide(a: i32, b: i32) -> Result<i32, string> {
+    if b == 0 {
+        return Result.Err("Division by zero");
+    }
+    return Result.Ok(a / b);
+}
+
+pub fn find_value(key: string) -> Option<i32> {
+    if key == "answer" {
+        return Option.Some(42);
+    }
+    return Option.None;
+}
+
+pub fn main(none) -> void {
+    match divide(10, 2) {
+        Result.Ok(value) => log("Result: " + value),
+        Result.Err(error) => log("Error: " + error)
+    }
+    return ();
+}
+```
 
 ## Available Predeclared Functions
 
@@ -81,11 +118,87 @@ fn main() -> i32 {
 
 Predeclared identifiers provide significant advantages for AI-assisted development:
 
-1. **Immediate Availability:** Common functions like `log()` and `range()` work without setup
-2. **Reduced Cognitive Load:** No need to remember import statements for basic utilities  
-3. **Consistent Patterns:** Same functions available in every Asthra program
+1. **Immediate Availability:** Common types and functions like `Result<T,E>`, `Option<T>`, `log()`, and `range()` work without setup
+2. **Reduced Cognitive Load:** No need to remember import statements for basic utilities or error handling types  
+3. **Consistent Patterns:** Same types and functions available in every Asthra program
 4. **Flexible Override:** Power users can customize behavior when needed
 5. **Go-like Familiarity:** Developers familiar with Go will recognize the pattern
+6. **Type-Safe Error Handling:** Built-in `Result<T,E>` ensures consistent error handling patterns across all code
+
+## Type Details
+
+### Result<T, E> Type
+
+```asthra
+Result<T, E>  // Generic enum with Ok(T) and Err(E) variants
+```
+
+**Purpose:** Provides type-safe error handling without exceptions, ensuring all errors are explicitly handled.
+
+**Variants:**
+- `Result.Ok(value: T)` - Success case containing the result value
+- `Result.Err(error: E)` - Error case containing error information
+
+**Usage Examples:**
+```asthra
+// Function returning Result
+pub fn parse_number(s: string) -> Result<i32, string> {
+    // Implementation that returns Ok or Err
+}
+
+// Pattern matching on Result
+match parse_number("42") {
+    Result.Ok(num) => log("Parsed: " + num),
+    Result.Err(err) => log("Error: " + err)
+}
+
+// Chaining operations
+pub fn calculate(input: string) -> Result<i32, string> {
+    match parse_number(input) {
+        Result.Ok(n) => {
+            if n < 0 {
+                return Result.Err("Negative numbers not allowed");
+            }
+            return Result.Ok(n * 2);
+        },
+        Result.Err(e) => return Result.Err(e)
+    }
+}
+```
+
+### Option<T> Type
+
+```asthra
+Option<T>  // Generic enum with Some(T) and None variants
+```
+
+**Purpose:** Represents nullable values without null pointers, preventing null reference errors.
+
+**Variants:**
+- `Option.Some(value: T)` - Contains a value
+- `Option.None` - Represents absence of value
+
+**Usage Examples:**
+```asthra
+// Function returning Option
+pub fn find_user(id: i32) -> Option<User> {
+    // Implementation that returns Some or None
+}
+
+// Pattern matching on Option
+match find_user(123) {
+    Option.Some(user) => log("Found: " + user.name),
+    Option.None => log("User not found")
+}
+
+// Default values
+pub fn get_config_value(key: string) -> i32 {
+    match lookup_config(key) {
+        Option.Some(value) => return value,
+        Option.None => return 0  // Default value
+    }
+}
+```
 
 ## Function Details
 
@@ -175,9 +288,10 @@ for index in range(0, array.len) {
 ### Symbol Resolution
 
 - **Global Scope:** Predeclared identifiers are resolved at the global scope level
-- **Shadowing:** Local declarations naturally shadow predeclared functions
-- **Type Checking:** Predeclared functions have well-defined type signatures
+- **Shadowing:** Local declarations naturally shadow predeclared types and functions
+- **Type Checking:** Predeclared types and functions have well-defined signatures
 - **No Parser Changes:** Predeclared identifiers are regular identifiers
+- **Built-in Types:** Result<T,E> and Option<T> are registered as built-in generic enum types during semantic analysis
 
 ### Runtime Implementation
 
@@ -297,6 +411,10 @@ fn main() -> i32 {
 ```
 
 ## Future Extensions
+
+### Planned Predeclared Types
+
+No additional built-in types are planned. Result<T,E> and Option<T> provide the essential type-safe patterns for error handling and nullable values.
 
 ### Planned Predeclared Functions
 

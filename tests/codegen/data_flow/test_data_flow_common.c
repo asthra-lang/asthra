@@ -6,8 +6,11 @@
 #include "test_data_flow_common.h"
 
 // Stub implementations for data flow analysis functions
+// Allocate reasonable sizes for opaque structs to avoid memory corruption
+#define STUB_STRUCT_SIZE 256
+
 DataFlowAnalysis* data_flow_analysis_create(void) {
-    return (DataFlowAnalysis*)calloc(1, sizeof(void*));
+    return (DataFlowAnalysis*)calloc(1, STUB_STRUCT_SIZE);
 }
 
 void data_flow_analysis_destroy(DataFlowAnalysis* analysis) {
@@ -15,7 +18,7 @@ void data_flow_analysis_destroy(DataFlowAnalysis* analysis) {
 }
 
 InstructionBuffer* instruction_buffer_create(size_t capacity) {
-    return (InstructionBuffer*)calloc(1, sizeof(void*));
+    return (InstructionBuffer*)calloc(1, STUB_STRUCT_SIZE);
 }
 
 void instruction_buffer_destroy(InstructionBuffer* buffer) {
@@ -27,7 +30,7 @@ bool instruction_buffer_add(InstructionBuffer* buffer, Instruction* instruction)
 }
 
 ControlFlowGraph* control_flow_graph_create(void) {
-    return (ControlFlowGraph*)calloc(1, sizeof(void*));
+    return (ControlFlowGraph*)calloc(1, STUB_STRUCT_SIZE);
 }
 
 void control_flow_graph_destroy(ControlFlowGraph* cfg) {
@@ -39,15 +42,17 @@ bool control_flow_graph_build(ControlFlowGraph* cfg, InstructionBuffer* buffer) 
 }
 
 BasicBlock* control_flow_graph_get_entry_block(ControlFlowGraph* cfg) {
-    return (BasicBlock*)0x1; // Return a non-null pointer
+    static char stub_block[STUB_STRUCT_SIZE];
+    return (BasicBlock*)stub_block; // Return a valid pointer to static memory
 }
 
 BasicBlock* control_flow_graph_get_block_by_index(ControlFlowGraph* cfg, int index) {
-    return (BasicBlock*)0x1; // Return a non-null pointer
+    static char stub_block[STUB_STRUCT_SIZE];
+    return (BasicBlock*)stub_block; // Return a valid pointer to static memory
 }
 
 ReachingDefinitions* reaching_definitions_create(void) {
-    return (ReachingDefinitions*)calloc(1, sizeof(void*));
+    return (ReachingDefinitions*)calloc(1, STUB_STRUCT_SIZE);
 }
 
 void reaching_definitions_destroy(ReachingDefinitions* rd) {
@@ -59,7 +64,8 @@ bool reaching_definitions_analyze(ReachingDefinitions* rd, ControlFlowGraph* cfg
 }
 
 DefinitionSet* reaching_definitions_get_reaching_set(ReachingDefinitions* rd, BasicBlock* block) {
-    return (DefinitionSet*)0x1; // Return a non-null pointer
+    static char stub_set[STUB_STRUCT_SIZE];
+    return (DefinitionSet*)stub_set; // Return a valid pointer to static memory
 }
 
 size_t definition_set_size(DefinitionSet* set) {
@@ -67,7 +73,7 @@ size_t definition_set_size(DefinitionSet* set) {
 }
 
 LiveVariableAnalysis* live_variable_analysis_create(void) {
-    return (LiveVariableAnalysis*)calloc(1, sizeof(void*));
+    return (LiveVariableAnalysis*)calloc(1, STUB_STRUCT_SIZE);
 }
 
 void live_variable_analysis_destroy(LiveVariableAnalysis* lva) {
@@ -79,11 +85,13 @@ bool live_variable_analysis_analyze(LiveVariableAnalysis* lva, ControlFlowGraph*
 }
 
 LivenessSet* live_variable_analysis_get_live_in(LiveVariableAnalysis* lva, BasicBlock* block, int instruction) {
-    return (LivenessSet*)0x1; // Return a non-null pointer
+    static char stub_set[STUB_STRUCT_SIZE];
+    return (LivenessSet*)stub_set; // Return a valid pointer to static memory
 }
 
 LivenessSet* live_variable_analysis_get_live_out(LiveVariableAnalysis* lva, BasicBlock* block) {
-    return (LivenessSet*)0x1; // Return a non-null pointer
+    static char stub_set[STUB_STRUCT_SIZE];
+    return (LivenessSet*)stub_set; // Return a valid pointer to static memory
 }
 
 bool liveness_set_contains(LivenessSet* set, int reg) {
@@ -91,7 +99,7 @@ bool liveness_set_contains(LivenessSet* set, int reg) {
 }
 
 UseDefChains* use_def_chains_create(void) {
-    return (UseDefChains*)calloc(1, sizeof(void*));
+    return (UseDefChains*)calloc(1, STUB_STRUCT_SIZE);
 }
 
 void use_def_chains_destroy(UseDefChains* udc) {
@@ -109,7 +117,8 @@ static int last_operand_queried = -1;
 DefList* use_def_chains_get_defs_for_use(UseDefChains* udc, int instruction, int operand) {
     last_instruction_queried = instruction;
     last_operand_queried = operand;
-    return (DefList*)0x1; // Return a non-null pointer
+    static char stub_list[STUB_STRUCT_SIZE];
+    return (DefList*)stub_list; // Return a valid pointer to static memory
 }
 
 size_t def_list_size(DefList* list) {

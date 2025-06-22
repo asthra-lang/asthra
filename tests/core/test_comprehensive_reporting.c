@@ -13,6 +13,7 @@
 #include <string.h>
 #include <time.h>
 #include <sys/wait.h>
+#include <errno.h>
 
 // =============================================================================
 // AI FEEDBACK UTILITIES
@@ -33,7 +34,11 @@ void asthra_v12_record_ai_feedback(AsthraV12TestContext *ctx,
 
 void asthra_v12_generate_test_report(const char *output_file) {
     FILE *report = fopen(output_file, "w");
-    if (!report) return;
+    if (!report) {
+        fprintf(stderr, "Warning: Failed to create test report file '%s': %s\n", 
+                output_file, strerror(errno));
+        return;
+    }
 
     // Get test statistics
     uint64_t total_tests = 0;

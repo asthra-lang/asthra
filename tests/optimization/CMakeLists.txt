@@ -44,6 +44,13 @@ set(OPTIMIZATION_EXCLUDE
     test_sanitizer_integration_main.c
     test_sanitizer_msan.c
     test_sanitizer_tsan.c
+    test_sanitizer_suite.c  # Integration test that requires full build environment
+    # Integration tests that require make and full build environment
+    test_automation_suite.c
+    test_cicd_suite.c
+    test_makefile_suite.c
+    test_pgo_suite.c
+    test_gperf_suite.c
 )
 
 foreach(exclude_file ${OPTIMIZATION_EXCLUDE})
@@ -52,11 +59,7 @@ endforeach()
 
 # Tests that need test_optimization_common.c
 set(COMMON_DEPENDENT_TESTS
-    test_automation_suite.c
-    test_cicd_suite.c
-    test_makefile_suite.c
-    test_pgo_suite.c
-    test_sanitizer_suite.c
+    # All integration tests have been moved to OPTIMIZATION_EXCLUDE
 )
 
 # Tests that need test_pgo_performance_common.c
@@ -70,7 +73,6 @@ set(GPERF_DEPENDENT_TESTS
     test_gperf_hash_correctness.c
     test_gperf_keyword_extraction.c
     test_gperf_performance.c
-    test_gperf_suite.c
 )
 
 # Create individual test executables for other tests
