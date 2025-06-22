@@ -68,6 +68,20 @@ bool analyze_call_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
             return false;
         }
         
+        // Set the return type on the call expression
+        if (func_symbol->type && func_symbol->type->category == TYPE_FUNCTION) {
+            TypeDescriptor *return_type = func_symbol->type->data.function.return_type;
+            if (return_type) {
+                expr->type_info = type_info_from_descriptor(return_type);
+                if (!expr->type_info) {
+                    semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL,
+                                         expr->location,
+                                         "Failed to create type info for function call");
+                    return false;
+                }
+            }
+        }
+        
         return true;
     }
     // For enum variant calls (Option.Some(value)), the function is an enum variant

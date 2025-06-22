@@ -113,15 +113,6 @@ bool analyze_expression_statement(SemanticAnalyzer *analyzer, ASTNode *stmt) {
     // Analyze the expression - its value will be discarded
     bool result = semantic_analyze_expression(analyzer, expression);
     
-    // In test mode, be more permissive about what expressions can be statements
-    if (analyzer->config.test_mode && !result) {
-        // If analysis failed in test mode, check if it's a known test pattern
-        // that should be allowed (e.g., bare expressions for testing)
-        // For now, we'll just suppress the error and return true
-        semantic_clear_errors(analyzer);  // Clear any errors from the failed analysis
-        return true;
-    }
-    
     // For expression statements, we don't need to check if the expression type
     // matches the function return type - the value is simply discarded
     return result;
