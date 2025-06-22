@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-// Function prototypes added by fix_missing_prototypes.py
 
 
 // asthra_safety_security_cleanup
