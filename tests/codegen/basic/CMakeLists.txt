@@ -7,6 +7,7 @@ set(SIMPLE_CODEGEN_TESTS
     test_tuple_codegen.c
     test_option_type_codegen.c
     ../test_never_type_codegen.c
+    test_simple_option_usage.c
 )
 
 # Create executables for simple tests
