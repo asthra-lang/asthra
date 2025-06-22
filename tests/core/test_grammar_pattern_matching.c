@@ -26,7 +26,7 @@ AsthraTestResult test_pattern_match_statement_syntax(AsthraTestContext *ctx) {
     // Mock test cases for match statement syntax
     const char *match_syntax_tests[] = {
         "match value { Ok(x) => x, Err(e) => 0 }",                    // Basic Result matching
-        "match option { Some(val) => val, None => default }",         // Option matching
+        "match option { Option.Some(val) => val, Option.None => default }",         // Option matching
         "match tuple { (a, b) => a + b }",                           // Tuple destructuring
         "match list { [head, ...tail] => process(head, tail) }",     // List pattern
         "match struct { Point { x, y } => distance(x, y) }",         // Struct pattern
@@ -58,7 +58,7 @@ AsthraTestResult test_pattern_if_let_constructs(AsthraTestContext *ctx) {
     // Mock test cases for if-let syntax
     const char *if_let_tests[] = {
         "if let Ok(value) = result { use(value); }",                    // Basic if-let
-        "if let Some(x) = option { process(x); } else { default(); }",  // If-let-else
+        "if let Option.Some(x) = option { process(x); } else { default(); }",  // If-let-else
         "if let (x, y) = point { calculate(x, y); }",                  // Tuple destructuring
         "if let User { name, id } = user { greet(name); }",            // Struct destructuring
         NULL

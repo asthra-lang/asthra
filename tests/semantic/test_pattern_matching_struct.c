@@ -102,9 +102,9 @@ AsthraTestResult test_nested_pattern_matching(AsthraTestContext* context) {
         "}\n"
         "pub fn test_complex_nested(r: Result<TestOption<i32>, string>) -> i32 {\n"
         "    match r {\n"
-        "        Ok(Some(value)) => value,\n"
-        "        Ok(None) => 0,\n"
-        "        Err(_) => -1\n"
+        "        Result.Ok(TestOption.Some(value)) => value,\n"
+        "        Result.Ok(TestOption.None) => 0,\n"
+        "        Result.Err(_) => -1\n"
         "    }\n"
         "}\n",
         "complex_nested_patterns"
