@@ -22,8 +22,8 @@ AsthraTestResult test_basic_enum_pattern_matching(AsthraTestContext* context) {
         "}\n"
         "pub fn test_match(opt: TestOption<i32>) -> i32 {\n"
         "    match opt {\n"
-        "        Some(value) => value + 1,\n"
-        "        None => 0\n"
+        "        TestOption.Some(value) => value + 1,\n"
+        "        TestOption.None => 0\n"
         "    }\n"
         "}\n",
         "valid_exhaustive_enum_match"
@@ -38,7 +38,7 @@ AsthraTestResult test_basic_enum_pattern_matching(AsthraTestContext* context) {
         "}\n"
         "pub fn test_match(opt: TestOption<i32>) -> i32 {\n"
         "    match opt {\n"
-        "        Some(value) => value + 1\n"
+        "        TestOption.Some(value) => value + 1\n"
         "        // Missing None case\n"
         "    }\n"
         "}\n",
@@ -55,7 +55,7 @@ AsthraTestResult test_basic_enum_pattern_matching(AsthraTestContext* context) {
         "}\n"
         "pub fn test_match(opt: TestOption<i32>) -> i32 {\n"
         "    match opt {\n"
-        "        Some(value) => value,\n"
+        "        TestOption.Some(value) => value,\n"
         "        Nothing => 0  // Wrong variant name\n"
         "    }\n"
         "}\n",

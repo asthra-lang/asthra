@@ -134,6 +134,10 @@ int compute_field_offset(CodeGenerator *generator, ASTNode *base_obj, const char
 
 // If-let statement code generation
 bool code_generate_if_let_statement(CodeGenerator *generator, ASTNode *stmt);
+
+// Match statement code generation
+bool code_generate_match_statement(CodeGenerator *generator, ASTNode *stmt);
+
 bool code_generate_pattern_test(CodeGenerator *generator, ASTNode *pattern, Register value_reg, 
                                char *match_label, char *no_match_label);
 bool code_generate_pattern_bindings(CodeGenerator *generator, ASTNode *pattern, Register value_reg);

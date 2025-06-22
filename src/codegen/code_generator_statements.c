@@ -444,6 +444,10 @@ bool code_generate_statement(CodeGenerator *generator, ASTNode *stmt) {
             return emit_jump(generator, generator->loop_context.continue_label);
         }
         
+        case AST_MATCH_STMT: {
+            return code_generate_match_statement(generator, stmt);
+        }
+        
         default:
             // Unknown statement type
             return false;
@@ -615,9 +619,39 @@ bool code_generate_pattern_test(CodeGenerator *generator, ASTNode *pattern, Regi
                 return false;
             }
             
-            // Compute expected tag hash
+            // Compute expected tag based on enum type
+            const char *enum_name = pattern->data.enum_pattern.enum_name;
             const char *variant_name = pattern->data.enum_pattern.variant_name;
-            uint32_t expected_tag = simple_string_hash(variant_name);
+            uint32_t expected_tag;
+            
+            // Special handling for Option type
+            if (enum_name && strcmp(enum_name, "Option") == 0) {
+                if (strcmp(variant_name, "Some") == 0) {
+                    expected_tag = 0; // ASTHRA_OPTION_TAG_SOME
+                } else if (strcmp(variant_name, "None") == 0) {
+                    expected_tag = 1; // ASTHRA_OPTION_TAG_NONE
+                } else {
+                    // Invalid Option variant
+                    register_free(generator->register_allocator, tag_reg);
+                    return false;
+                }
+            }
+            // Special handling for Result type
+            else if (enum_name && strcmp(enum_name, "Result") == 0) {
+                if (strcmp(variant_name, "Ok") == 0) {
+                    expected_tag = 0; // ASTHRA_RESULT_TAG_OK
+                } else if (strcmp(variant_name, "Err") == 0) {
+                    expected_tag = 1; // ASTHRA_RESULT_TAG_ERR
+                } else {
+                    // Invalid Result variant
+                    register_free(generator->register_allocator, tag_reg);
+                    return false;
+                }
+            }
+            // For user-defined enums, use hash
+            else {
+                expected_tag = simple_string_hash(variant_name);
+            }
             
             // Load expected tag into register
             Register expected_reg = register_allocate(generator->register_allocator, true);
@@ -768,5 +802,114 @@ bool code_generate_struct_pattern_bindings(CodeGenerator *generator, ASTNode *pa
     
     (void)generator;
     (void)value_reg;
+    return true;
+}
+
+/**
+ * Generate code for match statement
+ */
+bool code_generate_match_statement(CodeGenerator *generator, ASTNode *stmt) {
+    if (!generator || !stmt || stmt->type != AST_MATCH_STMT) {
+        return false;
+    }
+    
+    ASTNode *expr = stmt->data.match_stmt.expression;
+    ASTNodeList *arms = stmt->data.match_stmt.arms;
+    
+    if (!expr || !arms) {
+        return false;
+    }
+    
+    // Generate the match expression
+    Register value_reg = code_generate_expression(generator, expr, ASTHRA_REG_NONE);
+    if (value_reg == ASTHRA_REG_NONE) {
+        return false;
+    }
+    
+    // Create match end label
+    char *match_end = label_manager_create_label(generator->label_manager, LABEL_BRANCH_TARGET, ".L_match_end");
+    if (!match_end) {
+        register_free(generator->register_allocator, value_reg);
+        return false;
+    }
+    
+    // Generate code for each match arm
+    size_t arm_count = ast_node_list_size(arms);
+    for (size_t i = 0; i < arm_count; i++) {
+        ASTNode *arm = ast_node_list_get(arms, i);
+        if (!arm || arm->type != AST_MATCH_ARM) {
+            continue;
+        }
+        
+        ASTNode *pattern = arm->data.match_arm.pattern;
+        ASTNode *body = arm->data.match_arm.body;
+        
+        if (!pattern || !body) {
+            continue;
+        }
+        
+        // Create labels for this arm
+        char *next_arm_label = NULL;
+        if (i < arm_count - 1) {
+            next_arm_label = label_manager_create_label(generator->label_manager, LABEL_BRANCH_TARGET, ".L_match_next");
+            if (!next_arm_label) {
+                register_free(generator->register_allocator, value_reg);
+                return false;
+            }
+        } else {
+            // For the last arm, we need a label even if we don't use it
+            // This is because code_generate_pattern_test requires a non-NULL fail label
+            next_arm_label = match_end;  // Use match_end as the fail label for exhaustiveness
+        }
+        
+        // Test pattern - will jump to next_arm_label if pattern doesn't match
+        if (!code_generate_pattern_test(generator, pattern, value_reg, NULL, next_arm_label)) {
+            register_free(generator->register_allocator, value_reg);
+            return false;
+        }
+        
+        // Pattern matched - generate bindings
+        if (!code_generate_pattern_bindings(generator, pattern, value_reg)) {
+            register_free(generator->register_allocator, value_reg);
+            return false;
+        }
+        
+        // Generate arm body (can be either a block statement or an expression)
+        if (body->type == AST_BLOCK) {
+            // Body is a block statement
+            if (!code_generate_statement(generator, body)) {
+                register_free(generator->register_allocator, value_reg);
+                return false;
+            }
+        } else {
+            // Body is an expression - evaluate it
+            Register expr_reg = code_generate_expression(generator, body, ASTHRA_REG_NONE);
+            if (expr_reg == ASTHRA_REG_NONE) {
+                register_free(generator->register_allocator, value_reg);
+                return false;
+            }
+            register_free(generator->register_allocator, expr_reg);
+        }
+        
+        // Jump to end of match
+        if (!emit_jump(generator, match_end)) {
+            register_free(generator->register_allocator, value_reg);
+            return false;
+        }
+        
+        // Emit next arm label if not the last arm
+        if (i < arm_count - 1 && next_arm_label && !emit_label(generator, next_arm_label)) {
+            register_free(generator->register_allocator, value_reg);
+            return false;
+        }
+    }
+    
+    // Emit match end label
+    if (!emit_label(generator, match_end)) {
+        register_free(generator->register_allocator, value_reg);
+        return false;
+    }
+    
+    register_free(generator->register_allocator, value_reg);
     return true;
 }

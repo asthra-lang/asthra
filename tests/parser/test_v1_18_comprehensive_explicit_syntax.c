@@ -69,7 +69,7 @@ static AsthraTestResult test_v1_18_valid_explicit_syntax(AsthraTestContext* cont
         
         // Explicit Pattern Arguments
         "match status { Active(void) => \"active\", Inactive(void) => \"inactive\" }",
-        "match option { Some(value) => value, None(void) => 0 }",
+        "match option { Option.Some(value) => value, Option.None(void) => 0 }",
         
         // Explicit Array Elements
         "let empty: []i32 = [void];",
@@ -132,7 +132,7 @@ static AsthraTestResult test_v1_18_reject_old_implicit_syntax(AsthraTestContext*
         
         // Missing Explicit Pattern Arguments (should be rejected)
         "match status { Active => \"active\", Inactive => \"inactive\" }",
-        "match option { Some(value) => value, None => 0 }",
+        "match option { Option.Some(value) => value, Option.None => 0 }",
         
         // Missing Explicit Array Elements (should be rejected)
         "let empty: []i32 = [];",

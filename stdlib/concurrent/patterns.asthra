@@ -222,10 +222,10 @@ impl WorkerPool {
     pub fn try_get_result(self) -> Option<Result<*mut void, string>> {
         match self.result_channel.try_recv() {
             RecvResult.Ok(result) => {
-                return Some(result);
+                return Option.Some(result);
             },
             _ => {
-                return None;
+                return Option.None;
             }
         }
     }

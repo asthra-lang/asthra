@@ -159,7 +159,7 @@ fn demonstrate_advanced_file_handling(none) -> Result<void, fs.FSError> {
         truncate: false,
         append: false,
         sync: false,
-        permissions: Some(fs.permissions_readwrite())
+        permissions: Option.Some(fs.permissions_readwrite())
     };
     
     let file_result: auto  // Manual review needed = fs.open_with_options("test_advanced.txt", open_options);
@@ -349,7 +349,7 @@ fn demonstrate_directory_operations(none) -> Result<void, fs.FSError> {
         recursive: true,
         include_hidden: false,
         follow_symlinks: true,
-        max_depth: Some(10),
+        max_depth: Option.Some(10),
         load_metadata: true
     };
     
