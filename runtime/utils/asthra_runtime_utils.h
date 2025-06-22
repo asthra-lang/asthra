@@ -43,6 +43,7 @@ void asthra_eprintln(const char *message);
 // Predeclared functions for Asthra language
 void asthra_simple_log(const char *message);
 void asthra_panic(const char *message) __attribute__((noreturn));
+AsthraSliceHeader asthra_infinite_iterator(void);
 
 // Type-generic macros using C17 _Generic
 #if ASTHRA_HAS_C17

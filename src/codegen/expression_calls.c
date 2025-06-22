@@ -163,6 +163,8 @@ bool code_generate_function_call(CodeGenerator *generator, ASTNode *call_expr, R
         runtime_function_name = "asthra_panic";
     } else if (strcmp(function_name, "args") == 0) {
         runtime_function_name = "asthra_runtime_get_args";
+    } else if (strcmp(function_name, "infinite") == 0) {
+        runtime_function_name = "asthra_infinite_iterator";
     }
     
     // Use runtime name if it's a predeclared function
