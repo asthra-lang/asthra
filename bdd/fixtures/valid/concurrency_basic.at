@@ -1,0 +1,89 @@
+// Basic concurrency with spawn
+package concurrency_basic;
+
+// Simple task to be spawned
+pub fn print_message(msg: string) -> void {
+    print("Task: ");
+    print(msg);
+    return ();
+}
+
+// Task that performs computation
+pub fn compute_sum(start: int, end: int) -> int {
+    let mut sum: int = 0;
+    for i in range(start, end + 1) {
+        sum = sum + i;
+    }
+    return sum;
+}
+
+// Function demonstrating fire-and-forget spawn
+pub fn demo_spawn(none) -> void {
+    // Spawn tasks without waiting for results
+    spawn print_message("Hello from task 1");
+    spawn print_message("Hello from task 2");
+    spawn print_message("Hello from task 3");
+    
+    // Main continues immediately
+    print("Main continues...");
+    
+    return ();
+}
+
+// Function demonstrating spawn_with_handle
+pub fn demo_spawn_with_handle(none) -> int {
+    // Spawn tasks and collect handles
+    let handle1: TaskHandle<int> = spawn_with_handle compute_sum(1, 100);
+    let handle2: TaskHandle<int> = spawn_with_handle compute_sum(101, 200);
+    let handle3: TaskHandle<int> = spawn_with_handle compute_sum(201, 300);
+    
+    // Do other work while tasks run
+    print("Tasks are running...");
+    
+    // Wait for results
+    let sum1: int = handle1.wait();
+    let sum2: int = handle2.wait();
+    let sum3: int = handle3.wait();
+    
+    return sum1 + sum2 + sum3;
+}
+
+// Task with multiple parameters
+pub fn process_data(id: int, data: []int) -> int {
+    print("Processing task ");
+    print(id);
+    
+    let mut result: int = 0;
+    for val in data {
+        result = result + val * id;
+    }
+    
+    return result;
+}
+
+pub fn main(none) -> void {
+    // Demonstrate basic spawn
+    demo_spawn();
+    
+    // Demonstrate spawn with handle
+    let total: int = demo_spawn_with_handle();
+    print("Total sum: ");
+    print(total);
+    
+    // Spawn multiple tasks with data
+    let data1: []int = []int{1, 2, 3, 4, 5};
+    let data2: []int = []int{6, 7, 8, 9, 10};
+    
+    let h1: TaskHandle<int> = spawn_with_handle process_data(1, data1);
+    let h2: TaskHandle<int> = spawn_with_handle process_data(2, data2);
+    
+    let r1: int = h1.wait();
+    let r2: int = h2.wait();
+    
+    print("Results: ");
+    print(r1);
+    print(", ");
+    print(r2);
+    
+    return ();
+}

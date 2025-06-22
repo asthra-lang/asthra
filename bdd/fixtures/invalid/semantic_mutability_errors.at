@@ -1,0 +1,56 @@
+// ERROR: Mutability and assignment errors
+package mutability_errors;
+
+pub fn immutable_assignment_errors(none) -> void {
+    // ERROR: Assigning to immutable variable
+    let x: int = 42;
+    x = 50; // ERROR: x is immutable
+    
+    // ERROR: Mutating through immutable binding
+    let point: Point = Point { x: 1, y: 2 };
+    point.x = 5; // ERROR: point is immutable
+    
+    // ERROR: Reassigning immutable array element
+    let numbers: []int = []int{1, 2, 3};
+    numbers[0] = 10; // ERROR: numbers is immutable
+    
+    return ();
+}
+
+pub fn parameter_mutation_errors(x: int, p: Point) -> void {
+    // ERROR: Parameters are always immutable
+    x = 10; // ERROR: cannot assign to parameter
+    
+    // ERROR: Cannot mutate parameter fields
+    p.x = 20; // ERROR: p is immutable parameter
+    
+    return ();
+}
+
+pub fn const_mutation_errors(none) -> void {
+    // ERROR: Cannot use mutable with const
+    const mut VALUE: int = 42; // ERROR: const cannot be mutable
+    
+    // ERROR: Cannot assign to const
+    const X: int = 10;
+    X = 20; // ERROR: cannot assign to const
+    
+    return ();
+}
+
+pub struct Point {
+    pub x: int,
+    pub y: int
+}
+
+// ERROR: Struct field cannot have mut modifier
+pub struct BadStruct {
+    pub mut field: int // ERROR: fields inherit mutability from binding
+}
+
+impl Point {
+    // ERROR: self parameter cannot be mutable
+    pub fn bad_method(mut self) -> void {
+        return ();
+    }
+}

@@ -1,0 +1,71 @@
+// ERROR: Undefined symbols and name resolution errors
+package undefined_errors;
+
+pub fn undefined_variables(none) -> void {
+    // ERROR: Using undefined variable
+    print(undefined_var);
+    
+    // ERROR: Variable used before declaration
+    let y: int = x + 5;
+    let x: int = 10;
+    
+    // ERROR: Variable out of scope
+    if true {
+        let scoped: int = 42;
+    }
+    print(scoped); // ERROR: scoped not visible here
+    
+    return ();
+}
+
+pub fn undefined_functions(none) -> void {
+    // ERROR: Calling undefined function
+    let result: int = does_not_exist(42);
+    
+    // ERROR: Wrong number of arguments
+    let sum: int = add(1); // add expects 2 arguments
+    
+    // ERROR: Too many arguments
+    let value: int = get_constant(1, 2, 3); // expects none
+    
+    return ();
+}
+
+// Function definitions for error cases
+pub fn add(a: int, b: int) -> int {
+    return a + b;
+}
+
+pub fn get_constant(none) -> int {
+    return 42;
+}
+
+pub fn undefined_types(none) -> void {
+    // ERROR: Unknown type
+    let x: UnknownType = 42;
+    
+    // ERROR: Undefined struct
+    let point: NonExistentStruct = NonExistentStruct { x: 1, y: 2 };
+    
+    // ERROR: Undefined enum
+    let status: MissingEnum = MissingEnum::Ok;
+    
+    return ();
+}
+
+pub fn undefined_fields(none) -> void {
+    let p: Point = Point { x: 1, y: 2 };
+    
+    // ERROR: Accessing non-existent field
+    let z: int = p.z;
+    
+    // ERROR: Wrong field name
+    let value: int = p.X; // field names are case-sensitive
+    
+    return ();
+}
+
+pub struct Point {
+    pub x: int,
+    pub y: int
+}

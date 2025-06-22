@@ -1,0 +1,44 @@
+// ERROR: Type mismatch errors
+package type_errors;
+
+pub fn type_mismatches(none) -> void {
+    // ERROR: Assigning string to int variable
+    let x: int = "hello";
+    
+    // ERROR: Assigning int to bool variable
+    let flag: bool = 42;
+    
+    // ERROR: Wrong type in function argument
+    let len: int = strlen(123); // expects string, got int
+    
+    // ERROR: Incompatible types in binary operation
+    let result: int = 5 + "hello";
+    
+    // ERROR: Wrong return type
+    let value: string = get_number(); // returns int, not string
+    
+    return ();
+}
+
+pub fn get_number(none) -> int {
+    return 42;
+}
+
+pub fn wrong_return_type(none) -> string {
+    // ERROR: Returning int when string expected
+    return 123;
+}
+
+pub fn array_type_errors(none) -> void {
+    // ERROR: Mixed types in array literal
+    let mixed: []int = []int{1, "two", 3, true};
+    
+    // ERROR: Assigning wrong array type
+    let numbers: []int = []string{"one", "two", "three"};
+    
+    // ERROR: Wrong element type in array access
+    let strings: []string = []string{"a", "b", "c"};
+    let num: int = strings[0]; // element is string, not int
+    
+    return ();
+}

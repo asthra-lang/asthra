@@ -1,0 +1,113 @@
+// FFI with C structs and complex data types
+package ffi_structs;
+
+// C-compatible struct with ownership annotation
+#[ownership(c)]
+pub struct CPoint {
+    pub x: f64,
+    pub y: f64
+}
+
+// C-compatible struct with string (char*)
+#[ownership(c)]
+pub struct CMessage {
+    pub id: u32,
+    pub text: *const u8,
+    pub length: usize
+}
+
+// External C functions that work with structs
+extern "C" fn distance(#[borrowed] p1: *const CPoint, #[borrowed] p2: *const CPoint) -> f64;
+extern "C" fn translate_point(#[borrowed] p: *mut CPoint, dx: f64, dy: f64) -> void;
+extern "C" fn create_message(id: u32, #[transfer_none] text: *const u8) -> #[transfer_full] *mut CMessage;
+extern "C" fn destroy_message(#[transfer_full] msg: *mut CMessage) -> void;
+
+// Safe wrapper for distance calculation
+pub fn calculate_distance(p1: CPoint, p2: CPoint) -> float {
+    unsafe {
+        let ptr1: *const CPoint = &p1;
+        let ptr2: *const CPoint = &p2;
+        return distance(ptr1, ptr2);
+    }
+}
+
+// Safe wrapper for point translation
+pub fn move_point(mut point: CPoint, dx: float, dy: float) -> CPoint {
+    unsafe {
+        let ptr: *mut CPoint = &mut point;
+        translate_point(ptr, dx, dy);
+    }
+    return point;
+}
+
+// Message handling with ownership transfer
+pub fn make_message(id: int, text: string) -> Option<*mut CMessage> {
+    unsafe {
+        let text_ptr: *const u8 = text.as_ptr();
+        let msg_ptr: *mut CMessage = create_message(id, text_ptr);
+        
+        if msg_ptr == null {
+            return Option::None;
+        } else {
+            return Option::Some(msg_ptr);
+        }
+    }
+}
+
+pub fn cleanup_message(#[transfer_full] msg: *mut CMessage) -> void {
+    unsafe {
+        if msg != null {
+            destroy_message(msg);
+        }
+    }
+    return ();
+}
+
+// Array interop example
+extern "C" fn sum_array(#[borrowed] arr: *const int, len: usize) -> int;
+
+pub fn sum_int_array(numbers: []int) -> int {
+    unsafe {
+        let ptr: *const int = numbers.as_ptr();
+        let len: usize = numbers.len();
+        return sum_array(ptr, len);
+    }
+}
+
+pub fn main(none) -> void {
+    // Test struct interop
+    let p1: CPoint = CPoint { x: 0.0, y: 0.0 };
+    let p2: CPoint = CPoint { x: 3.0, y: 4.0 };
+    
+    let dist: float = calculate_distance(p1, p2);
+    print("Distance: ");
+    print(dist);
+    
+    // Test struct mutation
+    let mut point: CPoint = CPoint { x: 10.0, y: 20.0 };
+    point = move_point(point, 5.0, -3.0);
+    print("New position: ");
+    print(point.x);
+    print(", ");
+    print(point.y);
+    
+    // Test message creation/destruction
+    let msg_opt: Option<*mut CMessage> = make_message(123, "Hello from Asthra");
+    match msg_opt {
+        Option::Some(msg_ptr) => {
+            print("Message created");
+            cleanup_message(msg_ptr);
+        }
+        Option::None => {
+            print("Failed to create message");
+        }
+    }
+    
+    // Test array interop
+    let numbers: []int = []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    let total: int = sum_int_array(numbers);
+    print("Array sum: ");
+    print(total);
+    
+    return ();
+}

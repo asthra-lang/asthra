@@ -1,0 +1,126 @@
+// Performance test: Memory-intensive operations
+package memory_intensive;
+
+// Struct for memory allocation testing
+pub struct DataNode {
+    pub value: int,
+    pub data: []int,
+    pub next: Option<DataNode>
+}
+
+// Large array operations
+pub fn create_large_array(size: int) -> []int {
+    let mut arr: []int = []int{};
+    let mut i: int = 0;
+    
+    // Simulate filling large array
+    for _ in range(0, size) {
+        arr.push(i * 2);
+        i = i + 1;
+    }
+    
+    return arr;
+}
+
+// Recursive data structure creation
+pub fn create_linked_list(depth: int, value: int) -> Option<DataNode> {
+    if depth <= 0 {
+        return Option::None;
+    }
+    
+    let node: DataNode = DataNode {
+        value: value,
+        data: create_large_array(100),
+        next: create_linked_list(depth - 1, value + 1)
+    };
+    
+    return Option::Some(node);
+}
+
+// Matrix operations for memory testing
+pub fn create_matrix(rows: int, cols: int) -> [][]int {
+    let mut matrix: [][]int = [][]int{};
+    
+    for r in range(0, rows) {
+        let mut row: []int = []int{};
+        for c in range(0, cols) {
+            row.push(r * cols + c);
+        }
+        matrix.push(row);
+    }
+    
+    return matrix;
+}
+
+// String manipulation for memory allocation
+pub fn build_large_string_array(count: int) -> []string {
+    let mut strings: []string = []string{};
+    
+    for i in range(0, count) {
+        // Would build unique strings in real implementation
+        strings.push("test_string");
+    }
+    
+    return strings;
+}
+
+// Memory-intensive computation
+pub fn process_large_dataset(none) -> int {
+    // Create multiple large data structures
+    let arr1: []int = create_large_array(1000);
+    let arr2: []int = create_large_array(2000);
+    let arr3: []int = create_large_array(3000);
+    
+    // Create matrix
+    let matrix: [][]int = create_matrix(100, 100);
+    
+    // Create linked structure
+    let list: Option<DataNode> = create_linked_list(50, 1);
+    
+    // Create string array
+    let strings: []string = build_large_string_array(500);
+    
+    // Perform some computation to prevent optimization
+    let mut sum: int = 0;
+    for val in arr1 {
+        sum = sum + val;
+    }
+    
+    return sum;
+}
+
+// Concurrent memory allocation test
+pub fn concurrent_memory_test(none) -> void {
+    // Spawn multiple tasks that allocate memory
+    spawn process_large_dataset();
+    spawn process_large_dataset();
+    spawn process_large_dataset();
+    spawn process_large_dataset();
+    
+    // Main thread also does work
+    let result: int = process_large_dataset();
+    print("Main thread result: ");
+    print(result);
+    
+    return ();
+}
+
+pub fn main(none) -> void {
+    print("Starting memory-intensive tests...");
+    
+    // Test large array creation
+    let large_arr: []int = create_large_array(10000);
+    print("Created array of size: ");
+    print(large_arr.len());
+    
+    // Test matrix operations
+    let mat: [][]int = create_matrix(50, 50);
+    print("Created matrix");
+    
+    // Test concurrent memory allocation
+    concurrent_memory_test();
+    
+    print("Memory tests complete");
+    
+    return ();
+}

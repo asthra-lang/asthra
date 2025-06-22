@@ -1,0 +1,34 @@
+// ERROR: Various struct syntax errors
+package struct_errors;
+
+// ERROR: Missing visibility modifier
+struct NoVisibility {
+    x: int
+}
+
+// ERROR: Missing struct body braces
+pub struct NoBraces
+    x: int,
+    y: int
+
+// ERROR: Invalid field syntax (missing type)
+pub struct BadField {
+    pub x,
+    pub y: int
+}
+
+// ERROR: Trailing comma not allowed after 'none'
+pub struct InvalidNone {
+    none,
+}
+
+// ERROR: Mixing 'none' with fields
+pub struct MixedContent {
+    none,
+    pub x: int
+}
+
+// ERROR: Field with mutability modifier (not allowed)
+pub struct MutableField {
+    pub mut x: int
+}
