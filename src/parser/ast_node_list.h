@@ -47,8 +47,11 @@ size_t ast_node_list_size(const ASTNodeList *list);
 // Clear all nodes from list
 void ast_node_list_clear(ASTNodeList *list);
 
-// Clone node list
+// Clone node list (shallow copy - retains existing nodes)
 ASTNodeList *ast_node_list_clone(const ASTNodeList *list);
+
+// Clone node list (deep copy - clones all nodes)
+ASTNodeList *ast_node_list_clone_deep(const ASTNodeList *list);
 
 #ifdef __cplusplus
 }
