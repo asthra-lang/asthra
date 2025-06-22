@@ -9,6 +9,10 @@ on:
       compatibility_result:
         type: string
         required: true
+      bdd_test_result:
+        type: string
+        required: false
+        default: 'skipped'
       security_result:
         type: string
         required: false
@@ -33,6 +37,7 @@ jobs:
       run: |
         echo "=== CI/CD Pipeline Results ==="
         echo "Build and Test: ${{ inputs.build_test_result }}"
+        echo "BDD Tests: ${{ inputs.bdd_test_result }}"
         echo "Cross-Platform Compatibility: ${{ inputs.compatibility_result }}"
         echo "Security Scan: ${{ inputs.security_result }}"
         echo "Documentation and Format: ${{ inputs.docs_format_result }}"
@@ -42,6 +47,14 @@ jobs:
           echo "✅ Core build and test pipeline succeeded"
         else
           echo "❌ Core build and test pipeline failed"
+        fi
+        
+        if [[ "${{ inputs.bdd_test_result }}" == "success" ]]; then
+          echo "✅ BDD tests succeeded"
+        elif [[ "${{ inputs.bdd_test_result }}" == "skipped" ]]; then
+          echo "⚠️ BDD tests were skipped"
+        else
+          echo "❌ BDD tests failed"
         fi
         
         if [[ "${{ inputs.comprehensive_test_result }}" == "success" ]]; then
