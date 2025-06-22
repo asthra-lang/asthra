@@ -136,6 +136,24 @@ coverage_*.txt
 */summary.csv
 summary.txt
 
+# BDD Test artifacts
+bdd/bin/
+bdd/build/
+bdd/test-results/
+bdd/**/*.o
+bdd/**/*.d
+bdd/**/*.gcov
+bdd/**/*.gcda
+bdd/**/*.gcno
+bdd/fixtures/*.out
+bdd/fixtures/*.tmp
+bdd-results.xml
+bdd-report*.html
+bdd-report*.json
+*.feature.log
+*_steps.o
+*_steps.d
+
 # Documentation build
 docs/build/
 docs/_build/

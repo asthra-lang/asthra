@@ -41,6 +41,9 @@ include(cmake/Installation.cmake)  # Install/uninstall/dist targets
 include(cmake/BuildInfo.cmake)     # Build information display
 include(cmake/Help.cmake)          # Comprehensive help
 
+# Build options
+option(BUILD_BDD_TESTS "Build BDD (Behavior-Driven Development) tests" OFF)
+
 # Global configuration
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -52,6 +55,11 @@ add_subdirectory(runtime)
 add_subdirectory(stdlib)
 add_subdirectory(tools)
 add_subdirectory(tests)
+
+# Add BDD tests if enabled
+if(BUILD_BDD_TESTS)
+    add_subdirectory(bdd)
+endif()
 
 # Include interim test runner
 include(cmake/TestRunner.cmake)
