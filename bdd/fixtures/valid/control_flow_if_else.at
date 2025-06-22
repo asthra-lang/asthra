@@ -1,0 +1,54 @@
+// Control flow with if-else expressions
+package control_if;
+
+pub fn max(a: int, b: int) -> int {
+    // If-else as expression
+    let result: int = if a > b { a } else { b };
+    return result;
+}
+
+pub fn classify_number(n: int) -> string {
+    // Nested if-else expressions
+    let classification: string = if n < 0 {
+        "negative"
+    } else {
+        if n == 0 {
+            "zero"
+        } else {
+            if n < 10 {
+                "single digit"
+            } else {
+                "multi digit"
+            }
+        }
+    };
+    return classification;
+}
+
+pub fn check_range(value: int, min: int, max: int) -> bool {
+    // Compound conditions
+    if value >= min && value <= max {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+pub fn main(none) -> void {
+    let larger: int = max(5, 3);
+    print(larger);
+    
+    let class1: string = classify_number(-5);
+    print(class1);
+    
+    let class2: string = classify_number(0);
+    print(class2);
+    
+    let class3: string = classify_number(7);
+    print(class3);
+    
+    let in_range: bool = check_range(5, 1, 10);
+    print(in_range);
+    
+    return ();
+}

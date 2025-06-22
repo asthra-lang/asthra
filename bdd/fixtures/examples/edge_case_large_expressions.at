@@ -1,0 +1,78 @@
+// Edge case: Very large expressions and long identifier names
+package large_expressions;
+
+// Struct with very long field names
+pub struct VeryLongStructNameWithManyDescriptiveWords {
+    pub this_is_a_very_long_field_name_that_describes_something_important: int,
+    pub another_extremely_long_field_name_for_testing_parser_limits: string,
+    pub yet_another_ridiculously_long_field_name_to_stress_test_the_system: bool
+}
+
+// Function with very long parameter names
+pub fn function_with_extremely_long_parameter_names_for_edge_case_testing(
+    first_parameter_with_a_very_descriptive_and_unnecessarily_long_name: int,
+    second_parameter_that_also_has_an_excessively_verbose_identifier: int,
+    third_parameter_continuing_the_pattern_of_unreasonably_long_names: int
+) -> int {
+    // Very long arithmetic expression
+    let result: int = (first_parameter_with_a_very_descriptive_and_unnecessarily_long_name * 2 + 
+                      second_parameter_that_also_has_an_excessively_verbose_identifier * 3 - 
+                      third_parameter_continuing_the_pattern_of_unreasonably_long_names * 4) * 
+                     ((first_parameter_with_a_very_descriptive_and_unnecessarily_long_name + 
+                       second_parameter_that_also_has_an_excessively_verbose_identifier) / 
+                      (third_parameter_continuing_the_pattern_of_unreasonably_long_names + 1)) +
+                     (first_parameter_with_a_very_descriptive_and_unnecessarily_long_name % 
+                      second_parameter_that_also_has_an_excessively_verbose_identifier) -
+                     (third_parameter_continuing_the_pattern_of_unreasonably_long_names / 2);
+    
+    return result;
+}
+
+// Very long boolean expression
+pub fn complex_boolean_expression(a: int, b: int, c: int, d: int, e: int, f: int) -> bool {
+    return (a > b && b > c && c > d && d > e && e > f) ||
+           (a < b && b < c && c < d && d < e && e < f) ||
+           (a == b && b == c && c == d && d == e && e == f) ||
+           ((a + b) > (c + d) && (c + d) > (e + f)) ||
+           ((a * b) < (c * d) && (c * d) < (e * f)) ||
+           ((a - b) == (c - d) && (c - d) == (e - f)) ||
+           (a % 2 == 0 && b % 2 == 1 && c % 2 == 0 && d % 2 == 1 && e % 2 == 0 && f % 2 == 1);
+}
+
+// Very long string concatenation (simulated)
+pub fn build_very_long_string(none) -> string {
+    let part1: string = "This is the beginning of a very long string that ";
+    let part2: string = "continues with more text to test how the parser ";
+    let part3: string = "handles long string literals and expressions that ";
+    let part4: string = "span multiple lines and contain many characters ";
+    let part5: string = "to ensure the system can handle real-world cases ";
+    let part6: string = "where developers might create verbose messages.";
+    
+    // Would use string concatenation if supported
+    return part1; // Simplified for now
+}
+
+pub fn main(none) -> void {
+    // Create instance with long field names
+    let instance: VeryLongStructNameWithManyDescriptiveWords = 
+        VeryLongStructNameWithManyDescriptiveWords {
+            this_is_a_very_long_field_name_that_describes_something_important: 42,
+            another_extremely_long_field_name_for_testing_parser_limits: "test",
+            yet_another_ridiculously_long_field_name_to_stress_test_the_system: true
+        };
+    
+    // Call function with long expression
+    let result: int = function_with_extremely_long_parameter_names_for_edge_case_testing(
+        instance.this_is_a_very_long_field_name_that_describes_something_important,
+        instance.this_is_a_very_long_field_name_that_describes_something_important * 2,
+        instance.this_is_a_very_long_field_name_that_describes_something_important * 3
+    );
+    
+    print(result);
+    
+    // Test complex boolean
+    let bool_result: bool = complex_boolean_expression(1, 2, 3, 4, 5, 6);
+    print(bool_result);
+    
+    return ();
+}

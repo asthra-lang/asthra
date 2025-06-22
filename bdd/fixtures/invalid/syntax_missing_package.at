@@ -1,0 +1,7 @@
+// ERROR: Missing package declaration
+// Expected: "package" keyword at start of file
+
+pub fn main(none) -> void {
+    print("This won't compile - no package declaration");
+    return ();
+}

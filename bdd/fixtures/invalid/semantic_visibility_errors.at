@@ -1,0 +1,51 @@
+// ERROR: Visibility and access control errors
+package visibility_errors;
+
+pub struct PublicStruct {
+    pub public_field: int,
+    priv private_field: int  // Private field
+}
+
+priv struct PrivateStruct {
+    pub x: int,
+    pub y: int
+}
+
+priv fn private_function(none) -> int {
+    return 42;
+}
+
+pub fn access_violations(none) -> void {
+    let ps: PublicStruct = PublicStruct {
+        public_field: 1,
+        private_field: 2  // ERROR: Cannot access private field from outside
+    };
+    
+    // ERROR: Accessing private field
+    let value: int = ps.private_field;
+    
+    // ERROR: Calling private function from outside module
+    let result: int = private_function();
+    
+    // ERROR: Using private struct from outside module
+    let priv_struct: PrivateStruct = PrivateStruct { x: 1, y: 2 };
+    
+    return ();
+}
+
+// ERROR: Missing visibility modifier on top-level declaration
+fn no_visibility(none) -> void {
+    return ();
+}
+
+// ERROR: Missing visibility on struct declaration
+struct NoVisStruct {
+    pub x: int
+}
+
+// ERROR: Missing visibility on impl methods
+impl PublicStruct {
+    fn missing_visibility(self) -> int {
+        return self.public_field;
+    }
+}

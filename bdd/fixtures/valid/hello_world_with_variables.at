@@ -1,0 +1,17 @@
+// Hello World with variables and string interpolation
+package hello_vars;
+
+pub fn main(none) -> void {
+    // Immutable variable declaration
+    let greeting: string = "Hello";
+    let target: string = "World";
+    
+    // Print with multiple arguments
+    print(greeting);
+    print(", ");
+    print(target);
+    print("!");
+    
+    // Explicit return
+    return ();
+}

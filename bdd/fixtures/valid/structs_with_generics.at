@@ -1,0 +1,68 @@
+// Struct definitions with generic type parameters
+package generics;
+
+// Generic container struct
+pub struct Container<T> {
+    pub value: T
+}
+
+// Generic pair struct
+pub struct Pair<T, U> {
+    pub first: T,
+    pub second: U
+}
+
+// Generic stack structure
+pub struct Stack<T> {
+    priv items: []T,
+    priv size: usize
+}
+
+// Implementation for generic Container
+impl Container {
+    pub fn new<T>(value: T) -> Container<T> {
+        return Container { value: value };
+    }
+    
+    pub fn get<T>(self) -> T {
+        return self.value;
+    }
+}
+
+// Implementation for Stack
+impl Stack {
+    pub fn new<T>(none) -> Stack<T> {
+        return Stack { 
+            items: []T{},
+            size: 0
+        };
+    }
+    
+    pub fn push<T>(self, item: T) -> void {
+        // Add item to stack (would require mutable self in real implementation)
+        return ();
+    }
+    
+    pub fn is_empty<T>(self) -> bool {
+        return self.size == 0;
+    }
+}
+
+pub fn main(none) -> void {
+    // Create generic struct instances
+    let int_container: Container<int> = Container::new(42);
+    let string_container: Container<string> = Container::new("Hello");
+    
+    // Create pair with different types
+    let mixed_pair: Pair<int, string> = Pair {
+        first: 123,
+        second: "ABC"
+    };
+    
+    // Create and use stack
+    let stack: Stack<int> = Stack::new();
+    let empty: bool = stack.is_empty();
+    print(empty);
+    
+    return ();
+}

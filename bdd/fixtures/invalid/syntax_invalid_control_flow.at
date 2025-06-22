@@ -1,0 +1,60 @@
+// ERROR: Various control flow syntax errors
+package control_errors;
+
+pub fn bad_if_statements(none) -> void {
+    // ERROR: Missing condition parentheses in traditional style
+    if x > 5 {
+        print("bad");
+    }
+    
+    // ERROR: Missing block braces
+    if true
+        print("no braces");
+    
+    // ERROR: else without if
+    else {
+        print("orphan else");
+    }
+    
+    return ();
+}
+
+pub fn bad_loops(none) -> void {
+    // ERROR: Missing 'in' keyword
+    for i range(0, 10) {
+        print(i);
+    }
+    
+    // ERROR: Missing iterator expression
+    for x in {
+        print(x);
+    }
+    
+    // ERROR: Invalid for loop syntax
+    for (let i: int = 0; i < 10; i++) {
+        print(i);
+    }
+    
+    return ();
+}
+
+pub fn bad_match(x: int) -> void {
+    // ERROR: Missing match expression
+    match {
+        1 => { print("one"); }
+    }
+    
+    // ERROR: Missing arrow in match arm
+    match x {
+        1 { print("one"); }
+        2 => { print("two"); }
+    }
+    
+    // ERROR: Missing block in match arm
+    match x {
+        1 => print("one");
+        2 => { print("two"); }
+    }
+    
+    return ();
+}
