@@ -150,6 +150,12 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
     fprintf(temp_c, "#include <stdlib.h>\n");
     fprintf(temp_c, "#include <string.h>\n\n");
     
+    // Forward declarations for runtime functions
+    // TODO: Properly include runtime headers once path resolution is implemented
+    fprintf(temp_c, "// Runtime function declarations\n");
+    fprintf(temp_c, "typedef struct { void* data; size_t length; size_t element_size; } AsthraSliceHeader;\n");
+    fprintf(temp_c, "extern AsthraSliceHeader asthra_runtime_get_args(void);\n\n");
+    
     // Generate code from AST
     if (generate_c_code(temp_c, program) != 0) {
         printf("Error: Code generation failed\n");
@@ -170,6 +176,8 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
     
     // Compile the generated C file
     char compile_cmd[512];
+    // TODO: Link with runtime library once path resolution is implemented
+    // For now, just compile without runtime linking (will fail at runtime if args() is called)
     snprintf(compile_cmd, sizeof(compile_cmd), "cc -o %s temp_asthra_output.c", output_file);
     int result = system(compile_cmd);
     
