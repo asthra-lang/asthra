@@ -38,10 +38,23 @@ function(add_bdd_test name category)
     set(test_target bdd_${category}_${name})
     
     # Collect source files
-    file(GLOB step_sources 
-        ${CMAKE_CURRENT_SOURCE_DIR}/steps/${category}/${name}_steps.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/steps/${category}/common_steps.c
-    )
+    # Check if step files are in category subdirectory or root steps directory
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/steps/${category}/${name}_steps.c)
+        file(GLOB step_sources 
+            ${CMAKE_CURRENT_SOURCE_DIR}/steps/${category}/${name}_steps.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/steps/${category}/common_steps.c
+        )
+    else()
+        # Look in root steps directory
+        file(GLOB step_sources 
+            ${CMAKE_CURRENT_SOURCE_DIR}/steps/${name}_steps.c
+        )
+    endif()
+    
+    # Always include the main common_steps.c if it exists
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/steps/common_steps.c)
+        list(APPEND step_sources ${CMAKE_CURRENT_SOURCE_DIR}/steps/common_steps.c)
+    endif()
     
     file(GLOB support_sources
         ${CMAKE_CURRENT_SOURCE_DIR}/support/*.c
@@ -56,7 +69,7 @@ function(add_bdd_test name category)
     # Link with Asthra runtime and test framework
     target_link_libraries(${test_target}
         asthra_runtime
-        test_framework
+        asthra_test_framework
     )
     
     # Platform-specific configurations
@@ -206,9 +219,13 @@ add_custom_target(bdd-clean
 # add_bdd_test(user_login acceptance)
 # add_bdd_test(compiler_workflow integration)
 
-# Register sample BDD tests (uncomment when ready to use)
-# add_bdd_test(compiler_basic unit)
-# add_bdd_test(ffi_integration integration)
+# Register BDD tests
+add_bdd_test(compilation unit)
+add_bdd_test(parser unit)
+add_bdd_test(semantic unit)
+add_bdd_test(cli integration)
+add_bdd_test(compiler_basic unit)
+add_bdd_test(ffi_integration integration)
 
 # Configuration summary
 message(STATUS "BDD testing infrastructure configured")
