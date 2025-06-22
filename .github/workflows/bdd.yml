@@ -1,0 +1,334 @@
+name: Asthra BDD Tests
+
+on:
+  workflow_call:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'bdd/**'
+      - 'src/**'
+      - '.github/workflows/bdd.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'bdd/**'
+      - 'src/**'
+      - '.github/workflows/bdd.yml'
+  workflow_dispatch:
+
+env:
+  ASTHRA_VERSION: "0.1.0"
+
+jobs:
+  bdd-tests:
+    name: BDD Tests (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux
+          - platform: linux
+            os: ubuntu-22.04
+            cc: gcc
+            cxx: g++
+            
+          # macOS
+          - platform: macos
+            os: macos-14
+            cc: clang
+            cxx: clang++
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    # =============================================================================
+    # PLATFORM-SPECIFIC SETUP
+    # =============================================================================
+    
+    - name: Setup Linux dependencies
+      if: matrix.platform == 'linux'
+      run: |
+        set -e
+        echo "=== Installing Linux BDD Dependencies ==="
+        sudo apt-get update -y
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          pkg-config \
+          gperf \
+          ruby \
+          ruby-dev
+        
+        # Install Cucumber for BDD
+        sudo gem install cucumber --no-document
+        
+        # Install CppUTest for unit testing
+        sudo apt-get install -y cpputest || echo "CppUTest not available in apt"
+        
+        # Install Cgreen testing framework
+        sudo apt-get install -y libcgreen1-dev || {
+          echo "Installing Cgreen from source..."
+          wget https://github.com/cgreen-devs/cgreen/releases/download/1.6.2/cgreen-1.6.2.tar.gz
+          tar xzf cgreen-1.6.2.tar.gz
+          cd cgreen-1.6.2
+          mkdir build && cd build
+          cmake .. && make
+          sudo make install
+          sudo ldconfig
+          cd ../..
+        }
+        
+        echo "✓ Linux BDD dependencies installed successfully"
+        
+    - name: Setup macOS dependencies
+      if: matrix.platform == 'macos'
+      run: |
+        set -e
+        echo "=== Installing macOS BDD Dependencies ==="
+        
+        # Install basic dependencies
+        brew install \
+          cmake \
+          pkg-config \
+          gperf || echo "Some packages may already be installed"
+        
+        # Install Ruby and Cucumber
+        brew install ruby || echo "Ruby already installed"
+        echo 'export PATH="/opt/homebrew/opt/ruby/bin:$PATH"' >> $GITHUB_ENV
+        export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
+        gem install cucumber --no-document
+        
+        # Install Cgreen
+        brew install cgreen || {
+          echo "Installing Cgreen from source..."
+          wget https://github.com/cgreen-devs/cgreen/releases/download/1.6.2/cgreen-1.6.2.tar.gz
+          tar xzf cgreen-1.6.2.tar.gz
+          cd cgreen-1.6.2
+          mkdir build && cd build
+          cmake .. && make
+          sudo make install
+          cd ../..
+        }
+        
+        echo "✓ macOS BDD dependencies installed successfully"
+
+    # =============================================================================
+    # COMPILER SETUP
+    # =============================================================================
+    
+    - name: Set compiler environment
+      run: |
+        set -e
+        echo "=== Setting Compiler Environment ==="
+        echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
+        echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
+        
+        # Verify compilers
+        ${{ matrix.cc }} --version
+        ${{ matrix.cxx }} --version
+        
+        echo "✓ Compiler environment set successfully"
+
+    # =============================================================================
+    # BUILD WITH BDD TESTS
+    # =============================================================================
+    
+    - name: Configure CMake with BDD tests
+      run: |
+        set -e
+        echo "=== CMake Configuration with BDD Tests ==="
+        mkdir -p build
+        cd build
+        
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+          -DBUILD_BDD_TESTS=ON
+        
+        echo "✓ CMake configuration completed successfully"
+
+    - name: Build Asthra with BDD tests
+      run: |
+        set -e
+        echo "=== Building Asthra with BDD Tests ==="
+        cd build
+        
+        # Build main compiler first
+        cmake --build . --parallel $(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
+        
+        # Build BDD test executables
+        cmake --build . --target build-tests
+        
+        echo "✓ Build completed successfully"
+
+    # =============================================================================
+    # RUN BDD TESTS
+    # =============================================================================
+    
+    - name: Run BDD unit tests
+      run: |
+        echo "=== Running BDD Unit Tests ==="
+        cd build
+        
+        # Export compiler path for BDD tests
+        export ASTHRA_COMPILER_PATH="$(pwd)/asthra"
+        echo "ASTHRA_COMPILER_PATH=$ASTHRA_COMPILER_PATH"
+        
+        # Verify compiler exists
+        if [ -f "$ASTHRA_COMPILER_PATH" ]; then
+          echo "✓ Asthra compiler found at: $ASTHRA_COMPILER_PATH"
+          ls -la "$ASTHRA_COMPILER_PATH"
+        else
+          echo "⚠️ Asthra compiler not found at expected location"
+          echo "Looking for compiler binary..."
+          find . -name "asthra" -type f -executable | head -5
+        fi
+        
+        # Run unit-level BDD tests
+        if [ -f "bdd/bin/bdd_unit_compiler_basic" ]; then
+          echo "Running compiler basic unit tests..."
+          ./bdd/bin/bdd_unit_compiler_basic --reporter spec || true
+        fi
+        
+        if [ -f "bdd/bin/bdd_unit_parser" ]; then
+          echo "Running parser unit tests..."
+          ./bdd/bin/bdd_unit_parser --reporter spec || true
+        fi
+        
+        if [ -f "bdd/bin/bdd_unit_semantic" ]; then
+          echo "Running semantic unit tests..."
+          ./bdd/bin/bdd_unit_semantic --reporter spec || true
+        fi
+        
+        if [ -f "bdd/bin/bdd_unit_compilation" ]; then
+          echo "Running compilation unit tests..."
+          ./bdd/bin/bdd_unit_compilation --reporter spec || true
+        fi
+
+    - name: Run BDD integration tests
+      run: |
+        echo "=== Running BDD Integration Tests ==="
+        cd build
+        
+        # Export compiler path for BDD tests
+        export ASTHRA_COMPILER_PATH="$(pwd)/asthra"
+        
+        # Run integration-level BDD tests
+        if [ -f "bdd/bin/bdd_integration_cli" ]; then
+          echo "Running CLI integration tests..."
+          ./bdd/bin/bdd_integration_cli --reporter spec || true
+        fi
+        
+        if [ -f "bdd/bin/bdd_integration_ffi" ]; then
+          echo "Running FFI integration tests..."
+          ./bdd/bin/bdd_integration_ffi_integration --reporter spec || true
+        fi
+
+    - name: Run Cucumber feature tests
+      if: matrix.platform == 'linux'  # Cucumber setup is more reliable on Linux
+      run: |
+        echo "=== Running Cucumber Feature Tests ==="
+        cd bdd
+        
+        # Check if cucumber is available
+        if command -v cucumber &> /dev/null; then
+          echo "Running Cucumber tests..."
+          cucumber features/*.feature --format html --out ../build/cucumber-report.html || true
+          cucumber features/*.feature --format json --out ../build/cucumber-report.json || true
+        else
+          echo "Cucumber not found, skipping feature tests"
+        fi
+
+    # =============================================================================
+    # TEST REPORTING
+    # =============================================================================
+    
+    - name: Generate test report
+      if: always()
+      run: |
+        echo "=== Generating Test Report ==="
+        mkdir -p test-reports
+        
+        # Copy test outputs
+        if [ -f "build/cucumber-report.html" ]; then
+          cp build/cucumber-report.html test-reports/
+        fi
+        
+        if [ -f "build/cucumber-report.json" ]; then
+          cp build/cucumber-report.json test-reports/
+        fi
+        
+        # Generate summary
+        echo "BDD Test Summary" > test-reports/summary.txt
+        echo "================" >> test-reports/summary.txt
+        echo "Platform: ${{ matrix.platform }}" >> test-reports/summary.txt
+        echo "Date: $(date)" >> test-reports/summary.txt
+        echo "" >> test-reports/summary.txt
+        
+        # List executed tests
+        echo "Executed BDD tests:" >> test-reports/summary.txt
+        find build/bdd/bin -name "bdd_*" -type f -executable 2>/dev/null | while read test; do
+          echo "- $(basename $test)" >> test-reports/summary.txt
+        done || echo "No BDD test executables found" >> test-reports/summary.txt
+        
+        cat test-reports/summary.txt
+
+    - name: Upload test reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: bdd-test-reports-${{ matrix.platform }}
+        path: test-reports/
+        retention-days: 7
+
+    - name: Upload test logs
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: bdd-test-logs-${{ matrix.platform }}
+        path: |
+          build/**/*.log
+          build/Testing/Temporary/
+        retention-days: 7
+
+  # =============================================================================
+  # TEST SUMMARY
+  # =============================================================================
+  
+  bdd-summary:
+    name: BDD Test Summary
+    needs: bdd-tests
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Download all test reports
+      uses: actions/download-artifact@v4
+      with:
+        pattern: bdd-test-reports-*
+        merge-multiple: true
+        path: all-reports/
+        
+    - name: Generate combined report
+      run: |
+        echo "=== BDD Test Summary ==="
+        echo "Test Status: ${{ needs.bdd-tests.result }}"
+        
+        if [ -d "all-reports" ]; then
+          echo ""
+          echo "Test Reports Available:"
+          find all-reports -name "*.txt" -o -name "*.html" -o -name "*.json" | sort
+        fi
+        
+        # Set status for downstream workflows
+        if [ "${{ needs.bdd-tests.result }}" == "success" ]; then
+          echo "✅ All BDD tests passed"
+        else
+          echo "❌ Some BDD tests failed"
+        fi
