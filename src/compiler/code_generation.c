@@ -107,6 +107,13 @@ int generate_c_code(FILE *output, ASTNode *node) {
                 fprintf(output, ");\n");
                 fprintf(output, "    fprintf(stderr, \"\\n\");\n");
                 fprintf(output, "    exit(1)");
+            } else if (node->data.call_expr.function && 
+                       node->data.call_expr.function->type == AST_IDENTIFIER &&
+                       strcmp(node->data.call_expr.function->data.identifier.name, "args") == 0) {
+                
+                // Handle args() - generate inline stub for testing
+                // TODO: Use asthra_runtime_get_args() once runtime linking is implemented
+                fprintf(output, "((AsthraSliceHeader){.data = NULL, .length = 0, .element_size = sizeof(char*)})");
             } else {
                 // Other function calls
                 if (node->data.call_expr.function) {

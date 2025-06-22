@@ -97,6 +97,12 @@ typedef struct {
     AsthraError last_error;
     AsthraAtomicMemoryStats atomic_stats;  // C17 atomic statistics
     pthread_mutex_t error_mutex;
+    
+    // Command-line arguments storage
+    int argc;
+    char **argv;
+    AsthraSliceHeader args_slice;  // Cached slice of strings for args() function
+    bool args_slice_initialized;    // Whether args_slice has been created
 } AsthraRuntimeState;
 
 static AsthraRuntimeState g_runtime = {0};
@@ -138,6 +144,10 @@ static void cleanup_thread_gc_state(void) {
 // =============================================================================
 
 int asthra_runtime_init(AsthraGCConfig *gc_config) {
+    return asthra_runtime_init_with_args(gc_config, 0, NULL);
+}
+
+int asthra_runtime_init_with_args(AsthraGCConfig *gc_config, int argc, char **argv) {
     if (g_runtime.initialized) {
         return 0;
     }
@@ -148,6 +158,11 @@ int asthra_runtime_init(AsthraGCConfig *gc_config) {
     } else {
         g_runtime.gc_config = ASTHRA_DEFAULT_GC_CONFIG;
     }
+    
+    // Store command-line arguments
+    g_runtime.argc = argc;
+    g_runtime.argv = argv;
+    g_runtime.args_slice_initialized = false;  // Will be created lazily when needed
 
     // Initialize atomic statistics with C17 atomic initialization
     #if ASTHRA_HAS_ATOMICS
@@ -198,6 +213,12 @@ int asthra_runtime_init(AsthraGCConfig *gc_config) {
 void asthra_runtime_cleanup(void) {
     if (!g_runtime.initialized) {
         return;
+    }
+
+    // Cleanup args slice if it was created
+    if (g_runtime.args_slice_initialized) {
+        asthra_slice_free(g_runtime.args_slice);
+        g_runtime.args_slice_initialized = false;
     }
 
     // Cleanup thread-local GC state
@@ -412,3 +433,35 @@ void asthra_gc_flush_thread_local_roots(void) {
     asthra_thread_gc_state->root_count = 0;
 }
 #endif 
+
+// =============================================================================
+// COMMAND-LINE ARGUMENTS ACCESS
+// =============================================================================
+
+AsthraSliceHeader asthra_runtime_get_args(void) {
+    if (!g_runtime.initialized) {
+        // Return empty slice
+        return (AsthraSliceHeader){0};
+    }
+    
+    // Create args slice lazily on first access
+    if (!g_runtime.args_slice_initialized && g_runtime.argc > 0 && g_runtime.argv != NULL) {
+        // Allocate array for strings
+        AsthraString *strings = (AsthraString*)asthra_alloc(sizeof(AsthraString) * g_runtime.argc, ASTHRA_ZONE_GC);
+        if (!strings) {
+            return (AsthraSliceHeader){0};
+        }
+        
+        // Convert each C string to AsthraString
+        for (int i = 0; i < g_runtime.argc; i++) {
+            strings[i] = asthra_string_from_cstr(g_runtime.argv[i]);
+        }
+        
+        // Create slice from the array
+        g_runtime.args_slice = asthra_slice_from_raw_parts(strings, g_runtime.argc, sizeof(AsthraString), 
+                                                           false, ASTHRA_OWNERSHIP_GC);
+        g_runtime.args_slice_initialized = true;
+    }
+    
+    return g_runtime.args_slice_initialized ? g_runtime.args_slice : (AsthraSliceHeader){0};
+}
