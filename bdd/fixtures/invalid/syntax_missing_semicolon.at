@@ -1,0 +1,12 @@
+// ERROR: Missing semicolons
+package syntax_errors;
+
+pub fn main(none) -> void {
+    let x: int = 42  // ERROR: Missing semicolon
+    let y: int = 10; // This line is OK
+    
+    print(x)         // ERROR: Missing semicolon
+    print(y);        // This line is OK
+    
+    return ()        // ERROR: Missing semicolon
+}

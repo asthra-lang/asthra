@@ -1,0 +1,99 @@
+// Control flow with pattern matching
+package control_match;
+
+// Enum for pattern matching examples
+pub enum Status {
+    Success,
+    Error(int),
+    Warning(string)
+}
+
+pub enum Shape {
+    Circle(float),
+    Rectangle(float, float),
+    Square(float)
+}
+
+pub fn process_status(status: Status) -> string {
+    // Match on enum variants
+    match status {
+        Status::Success => {
+            return "Operation succeeded";
+        }
+        Status::Error(code) => {
+            if code == 404 {
+                return "Not found";
+            } else {
+                return "Error occurred";
+            }
+        }
+        Status::Warning(msg) => {
+            return msg;
+        }
+    }
+}
+
+pub fn calculate_area(shape: Shape) -> float {
+    // Pattern matching with destructuring
+    match shape {
+        Shape::Circle(radius) => {
+            return 3.14159 * radius * radius;
+        }
+        Shape::Rectangle(width, height) => {
+            return width * height;
+        }
+        Shape::Square(side) => {
+            return side * side;
+        }
+    }
+}
+
+pub fn process_option(opt: Option<int>) -> int {
+    // Match on Option type
+    match opt {
+        Option::Some(value) => {
+            return value * 2;
+        }
+        Option::None => {
+            return 0;
+        }
+    }
+}
+
+pub fn handle_result(res: Result<int, string>) -> void {
+    // Match on Result type
+    match res {
+        Result::Ok(value) => {
+            print("Success: ");
+            print(value);
+        }
+        Result::Err(error) => {
+            print("Error: ");
+            print(error);
+        }
+    }
+    return ();
+}
+
+pub fn main(none) -> void {
+    let status1: Status = Status::Success;
+    let msg1: string = process_status(status1);
+    print(msg1);
+    
+    let status2: Status = Status::Error(404);
+    let msg2: string = process_status(status2);
+    print(msg2);
+    
+    let circle: Shape = Shape::Circle(5.0);
+    let area: float = calculate_area(circle);
+    print(area);
+    
+    let some_value: Option<int> = Option::Some(21);
+    let doubled: int = process_option(some_value);
+    print(doubled);
+    
+    let result: Result<int, string> = Result::Ok(42);
+    handle_result(result);
+    
+    return ();
+}

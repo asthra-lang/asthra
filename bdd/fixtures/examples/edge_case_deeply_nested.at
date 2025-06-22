@@ -1,0 +1,133 @@
+// Edge case: Deeply nested structures and control flow
+package deeply_nested;
+
+// Deeply nested struct definitions
+pub struct Level1 {
+    pub data: int,
+    pub next: Level2
+}
+
+pub struct Level2 {
+    pub data: int,
+    pub next: Level3
+}
+
+pub struct Level3 {
+    pub data: int,
+    pub next: Option<Level4>
+}
+
+pub struct Level4 {
+    pub data: int,
+    pub values: [][]int
+}
+
+pub fn deeply_nested_control_flow(x: int) -> int {
+    // Deeply nested if-else expressions
+    let result: int = if x > 100 {
+        if x > 200 {
+            if x > 300 {
+                if x > 400 {
+                    if x > 500 {
+                        1000
+                    } else {
+                        500
+                    }
+                } else {
+                    400
+                }
+            } else {
+                300
+            }
+        } else {
+            200
+        }
+    } else {
+        if x > 50 {
+            if x > 75 {
+                75
+            } else {
+                50
+            }
+        } else {
+            if x > 25 {
+                25
+            } else {
+                if x > 10 {
+                    10
+                } else {
+                    0
+                }
+            }
+        }
+    };
+    
+    return result;
+}
+
+pub fn deeply_nested_match(opt: Option<Result<Option<int>, string>>) -> int {
+    // Deeply nested pattern matching
+    match opt {
+        Option::Some(res) => {
+            match res {
+                Result::Ok(inner_opt) => {
+                    match inner_opt {
+                        Option::Some(value) => {
+                            if value > 0 {
+                                value
+                            } else {
+                                -value
+                            }
+                        }
+                        Option::None => {
+                            0
+                        }
+                    }
+                }
+                Result::Err(msg) => {
+                    match msg {
+                        "error1" => { -1 }
+                        "error2" => { -2 }
+                        _ => { -99 }
+                    }
+                }
+            }
+        }
+        Option::None => {
+            -1000
+        }
+    }
+}
+
+pub fn main(none) -> void {
+    // Create deeply nested structure
+    let nested: Level1 = Level1 {
+        data: 1,
+        next: Level2 {
+            data: 2,
+            next: Level3 {
+                data: 3,
+                next: Option::Some(Level4 {
+                    data: 4,
+                    values: [][]int{
+                        []int{1, 2, 3},
+                        []int{4, 5, 6},
+                        []int{7, 8, 9}
+                    }
+                })
+            }
+        }
+    };
+    
+    // Test deeply nested control flow
+    let result1: int = deeply_nested_control_flow(350);
+    print(result1);
+    
+    // Test deeply nested pattern matching
+    let complex: Option<Result<Option<int>, string>> = 
+        Option::Some(Result::Ok(Option::Some(42)));
+    let result2: int = deeply_nested_match(complex);
+    print(result2);
+    
+    return ();
+}

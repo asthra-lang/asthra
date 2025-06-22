@@ -1,0 +1,25 @@
+// ERROR: Various function syntax errors
+package function_errors;
+
+// ERROR: Missing parameter list parentheses
+pub fn bad_params -> int {
+    return 42;
+}
+
+// ERROR: Missing return type arrow
+pub fn no_return_type(x: int) int {
+    return x;
+}
+
+// ERROR: Missing visibility modifier
+fn no_visibility(none) -> void {
+    return ();
+}
+
+// ERROR: Invalid parameter syntax (missing type)
+pub fn bad_param_type(x) -> int {
+    return x;
+}
+
+// ERROR: Missing function body
+pub fn no_body(none) -> void;

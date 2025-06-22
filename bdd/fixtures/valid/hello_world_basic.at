@@ -1,0 +1,11 @@
+// Basic Hello World example - simplest valid Asthra program
+package hello;
+
+// Entry point function with no parameters
+pub fn main(none) -> void {
+    // Use print builtin to output text
+    print("Hello, World!");
+    
+    // Explicit return required for void functions
+    return ();
+}

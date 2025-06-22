@@ -1,0 +1,65 @@
+// Basic struct definitions and usage
+package structs;
+
+// Simple struct with public fields
+pub struct Point {
+    pub x: int,
+    pub y: int
+}
+
+// Struct with mixed visibility
+pub struct Person {
+    pub name: string,
+    priv age: int
+}
+
+// Empty struct
+pub struct EmptyStruct {
+    none
+}
+
+// Nested struct
+pub struct Rectangle {
+    pub top_left: Point,
+    pub bottom_right: Point
+}
+
+// Implementation block for Point
+impl Point {
+    // Constructor method
+    pub fn new(x: int, y: int) -> Point {
+        return Point { x: x, y: y };
+    }
+    
+    // Instance method
+    pub fn distance_from_origin(self) -> float {
+        // Calculate Euclidean distance
+        let x_squared: int = self.x * self.x;
+        let y_squared: int = self.y * self.y;
+        let sum: int = x_squared + y_squared;
+        // Note: sqrt would be a builtin or imported function
+        return sqrt(sum);
+    }
+}
+
+pub fn main(none) -> void {
+    // Create struct instances
+    let p1: Point = Point { x: 3, y: 4 };
+    let p2: Point = Point::new(5, 12);
+    
+    // Access public fields
+    print(p1.x);
+    print(p1.y);
+    
+    // Call instance method
+    let distance: float = p2.distance_from_origin();
+    print(distance);
+    
+    // Create nested struct
+    let rect: Rectangle = Rectangle {
+        top_left: Point { x: 0, y: 0 },
+        bottom_right: Point { x: 10, y: 10 }
+    };
+    
+    return ();
+}
