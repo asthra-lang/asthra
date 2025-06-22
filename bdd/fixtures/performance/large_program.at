@@ -1,0 +1,101 @@
+// Performance test: Large program with many functions and types
+package large_program;
+
+// Multiple struct definitions to test symbol table performance
+pub struct Entity1 { pub id: int, pub name: string, pub active: bool }
+pub struct Entity2 { pub id: int, pub name: string, pub active: bool }
+pub struct Entity3 { pub id: int, pub name: string, pub active: bool }
+pub struct Entity4 { pub id: int, pub name: string, pub active: bool }
+pub struct Entity5 { pub id: int, pub name: string, pub active: bool }
+pub struct Entity6 { pub id: int, pub name: string, pub active: bool }
+pub struct Entity7 { pub id: int, pub name: string, pub active: bool }
+pub struct Entity8 { pub id: int, pub name: string, pub active: bool }
+pub struct Entity9 { pub id: int, pub name: string, pub active: bool }
+pub struct Entity10 { pub id: int, pub name: string, pub active: bool }
+
+// Multiple enum definitions
+pub enum Status1 { Active, Inactive, Pending }
+pub enum Status2 { Ready, Processing, Complete, Failed }
+pub enum Status3 { Open, InProgress, Closed }
+pub enum Status4 { New, Assigned, Resolved, Verified }
+pub enum Status5 { Draft, Review, Published, Archived }
+
+// Many function definitions to test compilation performance
+pub fn process_entity1(e: Entity1) -> int { return e.id * 2; }
+pub fn process_entity2(e: Entity2) -> int { return e.id * 3; }
+pub fn process_entity3(e: Entity3) -> int { return e.id * 4; }
+pub fn process_entity4(e: Entity4) -> int { return e.id * 5; }
+pub fn process_entity5(e: Entity5) -> int { return e.id * 6; }
+pub fn process_entity6(e: Entity6) -> int { return e.id * 7; }
+pub fn process_entity7(e: Entity7) -> int { return e.id * 8; }
+pub fn process_entity8(e: Entity8) -> int { return e.id * 9; }
+pub fn process_entity9(e: Entity9) -> int { return e.id * 10; }
+pub fn process_entity10(e: Entity10) -> int { return e.id * 11; }
+
+// Helper functions with various signatures
+pub fn helper1(none) -> int { return 1; }
+pub fn helper2(a: int) -> int { return a + 1; }
+pub fn helper3(a: int, b: int) -> int { return a + b; }
+pub fn helper4(a: int, b: int, c: int) -> int { return a + b + c; }
+pub fn helper5(a: int, b: int, c: int, d: int) -> int { return a + b + c + d; }
+
+// Functions with different return types
+pub fn get_string1(none) -> string { return "test1"; }
+pub fn get_string2(none) -> string { return "test2"; }
+pub fn get_string3(none) -> string { return "test3"; }
+pub fn get_bool1(none) -> bool { return true; }
+pub fn get_bool2(none) -> bool { return false; }
+
+// Complex function with many local variables
+pub fn complex_computation(input: int) -> int {
+    let a1: int = input * 2;
+    let a2: int = a1 + 3;
+    let a3: int = a2 - 1;
+    let a4: int = a3 * 4;
+    let a5: int = a4 / 2;
+    let a6: int = a5 % 3;
+    let a7: int = a6 + 7;
+    let a8: int = a7 * 2;
+    let a9: int = a8 - 5;
+    let a10: int = a9 + 10;
+    
+    let b1: int = a10 * 3;
+    let b2: int = b1 - 8;
+    let b3: int = b2 + 15;
+    let b4: int = b3 / 4;
+    let b5: int = b4 * 2;
+    
+    let result: int = b5 + a5 - a3 + b2;
+    return result;
+}
+
+// Generic functions to test type parameter handling
+pub fn identity<T>(value: T) -> T { return value; }
+pub fn pair_first<T, U>(first: T, second: U) -> T { return first; }
+pub fn pair_second<T, U>(first: T, second: U) -> U { return second; }
+
+// Main function that uses many of the defined entities
+pub fn main(none) -> void {
+    // Create many entities
+    let e1: Entity1 = Entity1 { id: 1, name: "Entity 1", active: true };
+    let e2: Entity2 = Entity2 { id: 2, name: "Entity 2", active: false };
+    let e3: Entity3 = Entity3 { id: 3, name: "Entity 3", active: true };
+    
+    // Process entities
+    let r1: int = process_entity1(e1);
+    let r2: int = process_entity2(e2);
+    let r3: int = process_entity3(e3);
+    
+    // Use helpers
+    let h1: int = helper1();
+    let h2: int = helper2(10);
+    let h3: int = helper3(20, 30);
+    
+    // Complex computation
+    let complex: int = complex_computation(42);
+    
+    print("Performance test complete");
+    print(complex);
+    
+    return ();
+}

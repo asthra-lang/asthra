@@ -1,0 +1,108 @@
+// Basic FFI integration with C functions
+package ffi_basic;
+
+// External C function declarations
+extern "C" fn strlen(#[transfer_none] s: *const u8) -> usize;
+extern "C" fn strcmp(#[transfer_none] s1: *const u8, #[transfer_none] s2: *const u8) -> int;
+extern "C" fn malloc(size: usize) -> #[transfer_full] *mut void;
+extern "C" fn free(#[transfer_full] ptr: *mut void) -> void;
+
+// Math functions from C standard library
+extern "C" fn abs(n: int) -> int;
+extern "C" fn sqrt(x: f64) -> f64;
+extern "C" fn pow(base: f64, exp: f64) -> f64;
+
+// Wrapper function for string length
+pub fn get_string_length(s: string) -> usize {
+    unsafe {
+        // Get raw pointer to string data
+        let ptr: *const u8 = s.as_ptr();
+        return strlen(ptr);
+    }
+}
+
+// Wrapper for string comparison
+pub fn compare_strings(s1: string, s2: string) -> int {
+    unsafe {
+        let ptr1: *const u8 = s1.as_ptr();
+        let ptr2: *const u8 = s2.as_ptr();
+        return strcmp(ptr1, ptr2);
+    }
+}
+
+// Safe wrapper for memory allocation
+pub fn allocate_buffer(size: usize) -> Option<*mut void> {
+    unsafe {
+        let ptr: *mut void = malloc(size);
+        if ptr == null {
+            return Option::None;
+        } else {
+            return Option::Some(ptr);
+        }
+    }
+}
+
+// Safe wrapper for memory deallocation
+pub fn deallocate_buffer(#[transfer_full] ptr: *mut void) -> void {
+    unsafe {
+        if ptr != null {
+            free(ptr);
+        }
+    }
+    return ();
+}
+
+// Math function wrappers
+pub fn absolute_value(n: int) -> int {
+    return abs(n);
+}
+
+pub fn square_root(x: float) -> float {
+    return sqrt(x);
+}
+
+pub fn power(base: float, exponent: float) -> float {
+    return pow(base, exponent);
+}
+
+pub fn main(none) -> void {
+    // Test string functions
+    let str1: string = "Hello, World!";
+    let len: usize = get_string_length(str1);
+    print("Length: ");
+    print(len);
+    
+    let str2: string = "Hello";
+    let str3: string = "World";
+    let cmp: int = compare_strings(str2, str3);
+    print("Comparison: ");
+    print(cmp);
+    
+    // Test memory allocation
+    let buffer: Option<*mut void> = allocate_buffer(1024);
+    match buffer {
+        Option::Some(ptr) => {
+            print("Allocation successful");
+            deallocate_buffer(ptr);
+        }
+        Option::None => {
+            print("Allocation failed");
+        }
+    }
+    
+    // Test math functions
+    let neg: int = -42;
+    let pos: int = absolute_value(neg);
+    print("Absolute: ");
+    print(pos);
+    
+    let root: float = square_root(16.0);
+    print("Square root: ");
+    print(root);
+    
+    let result: float = power(2.0, 8.0);
+    print("Power: ");
+    print(result);
+    
+    return ();
+}

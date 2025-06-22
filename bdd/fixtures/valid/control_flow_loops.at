@@ -1,0 +1,68 @@
+// Control flow with for loops and iterators
+package control_loops;
+
+pub fn sum_array(numbers: []int) -> int {
+    let mut sum: int = 0;
+    
+    // For loop over array elements
+    for num in numbers {
+        sum = sum + num;
+    }
+    
+    return sum;
+}
+
+pub fn factorial(n: int) -> int {
+    let mut result: int = 1;
+    let mut i: int = 1;
+    
+    // Loop with manual counter (would use range in real code)
+    for _ in range(1, n + 1) {
+        result = result * i;
+        i = i + 1;
+    }
+    
+    return result;
+}
+
+pub fn find_first_negative(values: []int) -> Option<int> {
+    // Early return with break
+    for val in values {
+        if val < 0 {
+            return Option::Some(val);
+        }
+    }
+    
+    return Option::None;
+}
+
+pub fn count_even_numbers(numbers: []int) -> int {
+    let mut count: int = 0;
+    
+    for num in numbers {
+        // Continue to skip odd numbers
+        if num % 2 != 0 {
+            continue;
+        }
+        count = count + 1;
+    }
+    
+    return count;
+}
+
+pub fn main(none) -> void {
+    let numbers: []int = []int{1, 2, 3, 4, 5};
+    let total: int = sum_array(numbers);
+    print(total);
+    
+    let fact: int = factorial(5);
+    print(fact);
+    
+    let mixed: []int = []int{1, 3, -5, 7, -2};
+    let first_neg: Option<int> = find_first_negative(mixed);
+    
+    let even_count: int = count_even_numbers(numbers);
+    print(even_count);
+    
+    return ();
+}
