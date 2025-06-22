@@ -363,6 +363,26 @@ void asthra_eprintln(const char *message) {
     }
 }
 
+// Predeclared function for simple logging
+void asthra_simple_log(const char *message) {
+    if (message) {
+        printf("%s\n", message);
+        fflush(stdout);
+    }
+}
+
+// Predeclared function for panic (never returns)
+void asthra_panic(const char *message) {
+    if (message) {
+        fprintf(stderr, "panic: %s\n", message);
+        fflush(stderr);
+    } else {
+        fprintf(stderr, "panic\n");
+        fflush(stderr);
+    }
+    exit(1);
+}
+
 // =============================================================================
 // CORE ATOMIC STATISTICS ACCESSORS
 // =============================================================================
