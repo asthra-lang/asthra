@@ -14,6 +14,7 @@
 #include <string.h>
 #include <assert.h>
 #include "ast.h"
+#include "ast_node_creation.h"
 
 // =============================================================================
 // AST NODE LIST IMPLEMENTATION
@@ -141,6 +142,39 @@ ASTNodeList *ast_node_list_clone(const ASTNodeList *list) {
     
     for (size_t i = 0; i < list->count; i++) {
         ast_node_list_add(&new_list, list->nodes[i]);
+    }
+    
+    return new_list;
+}
+
+ASTNodeList *ast_node_list_clone_deep(const ASTNodeList *list) {
+    if (!list) return NULL;
+    
+    ASTNodeList *new_list = ast_node_list_create(list->capacity);
+    if (!new_list) return NULL;
+    
+    for (size_t i = 0; i < list->count; i++) {
+        ASTNode *cloned_node = ast_clone_node(list->nodes[i]);
+        if (!cloned_node) {
+            // Clean up on failure
+            ast_node_list_destroy(new_list);
+            return NULL;
+        }
+        // ast_node_list_add will retain the node, but ast_clone_node already set ref_count to 1
+        // So we need to add without retaining
+        if (new_list->count >= new_list->capacity) {
+            size_t new_capacity = new_list->capacity * 2;
+            ASTNodeList *resized = realloc(new_list, sizeof(ASTNodeList) + new_capacity * sizeof(ASTNode*));
+            if (!resized) {
+                ast_release_node(cloned_node);
+                ast_node_list_destroy(new_list);
+                return NULL;
+            }
+            resized->capacity = new_capacity;
+            new_list = resized;
+        }
+        new_list->nodes[new_list->count] = cloned_node;
+        new_list->count++;
     }
     
     return new_list;
