@@ -326,12 +326,5 @@ void loop_analysis_destroy(LoopAnalysis* analysis) {
     free(analysis);
 }
 
-bool loop_analysis_detect_loops(LoopAnalysis* analysis, ControlFlowGraph* cfg) {
-    // Stub - always succeeds
-    return analysis != NULL && cfg != NULL;
-}
-
-int loop_analysis_get_max_nesting_depth(LoopAnalysis* analysis) {
-    // Return a reasonable test value
-    return analysis ? 2 : 0;
-}
+// Note: loop_analysis_detect_loops and loop_analysis_get_max_nesting_depth
+// are provided by codegen_test_stubs.c to avoid duplicate definitions

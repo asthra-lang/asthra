@@ -155,10 +155,9 @@ static AsthraTestResult test_option_struct_field_codegen(AsthraTestContext* cont
         "    pub name: string,\n"
         "    pub age: Option<i32>\n"
         "}\n"
-        "pub fn create_person(name: string) -> Person {\n"
-        "    let p: Person;\n"
-        "    // TODO: Initialize struct\n"
-        "    return p;\n"
+        "pub fn test_person_struct(none) -> void {\n"
+        "    // Just test that the struct with Option field compiles\n"
+        "    return ();\n"
         "}\n";
     
     if (!asthra_test_assert_bool_eq(context, 

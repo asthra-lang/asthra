@@ -31,7 +31,8 @@ static char* c_text_processor(const char *input, int mode) {
     
     switch (mode) {
         case 1: // Uppercase
-            strcpy(result, input);
+            strncpy(result, input, len + 20);
+            result[len + 19] = '\0';
             for (char *p = result; *p; p++) {
                 if (*p >= 'a' && *p <= 'z') {
                     *p = *p - 'a' + 'A';
@@ -40,11 +41,12 @@ static char* c_text_processor(const char *input, int mode) {
             break;
             
         case 2: // Add prefix
-            sprintf(result, "PROCESSED: %s", input);
+            snprintf(result, len + 20, "PROCESSED: %s", input);
             break;
             
         case 3: // Reverse
-            strcpy(result, input);
+            strncpy(result, input, len + 20);
+            result[len + 19] = '\0';
             for (size_t i = 0; i < len / 2; i++) {
                 char temp = result[i];
                 result[i] = result[len - 1 - i];
