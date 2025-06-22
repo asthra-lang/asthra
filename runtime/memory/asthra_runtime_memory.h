@@ -13,21 +13,10 @@
 #define ASTHRA_RUNTIME_MEMORY_H
 
 #include "../core/asthra_runtime_core.h"
+#include "../collections/asthra_runtime_slices.h"
 
 #ifdef __cplusplus
 extern "C" {
-
-// asthra_memory_zones_init
-;
-
-
-// asthra_memory_zones_cleanup
-;
-
-
-// asthra_safety_memory_ffi_cleanup
-;
-
 #endif
 
 // =============================================================================
@@ -96,7 +85,11 @@ typedef struct {
 
 // Runtime initialization and cleanup
 int asthra_runtime_init(AsthraGCConfig *gc_config);
+int asthra_runtime_init_with_args(AsthraGCConfig *gc_config, int argc, char **argv);
 void asthra_runtime_cleanup(void);
+
+// Command-line arguments access  
+AsthraSliceHeader asthra_runtime_get_args(void);
 
 // =============================================================================
 // MEMORY ALLOCATION FUNCTIONS

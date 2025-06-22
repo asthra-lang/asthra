@@ -207,6 +207,15 @@ static PredeclaredIdentifier g_predeclared_identifiers[] = {
         .kind = SYMBOL_FUNCTION, 
         .type = NULL,
         .is_predeclared = true
+    },
+    
+    // Command-line arguments access
+    {
+        .name = "args",
+        .signature = "fn() -> []string",
+        .kind = SYMBOL_FUNCTION,
+        .type = NULL,  // Will be created dynamically
+        .is_predeclared = true
     }
 };
 
@@ -429,6 +438,22 @@ TypeDescriptor *create_predeclared_function_type(const char *name, const char *s
         slice_type->name = strdup("[]i32");
         atomic_init(&slice_type->ref_count, 1);
         slice_type->data.slice.element_type = &g_builtin_types[PRIMITIVE_I32];
+        
+        func_type->data.function.return_type = slice_type;
+    } else if (strcmp(name, "args") == 0) {
+        // args() -> []string
+        func_type->data.function.param_count = 0;
+        func_type->data.function.param_types = NULL;
+        
+        // Create slice type for []string
+        TypeDescriptor *slice_type = malloc(sizeof(TypeDescriptor));
+        slice_type->category = TYPE_SLICE;
+        slice_type->flags = (TypeFlags){0};
+        slice_type->size = sizeof(void*) + sizeof(size_t);  // ptr + len
+        slice_type->alignment = _Alignof(void*);
+        slice_type->name = strdup("[]string");
+        atomic_init(&slice_type->ref_count, 1);
+        slice_type->data.slice.element_type = &g_builtin_types[PRIMITIVE_STRING];
         
         func_type->data.function.return_type = slice_type;
     } else {

@@ -48,6 +48,7 @@ pub fn main(none) -> void {
 
 ```asthra
 log(message: string) -> void              // Debug/diagnostic logging
+args() -> []string                        // Access command-line arguments
 ```
 
 ### Range Functions
@@ -67,6 +68,12 @@ package main;
 fn main() -> i32 {
     // Predeclared functions work out of the box
     log("Application starting");
+    
+    // Access command-line arguments
+    let arguments = args();
+    for arg in arguments {
+        log("Argument: " + arg);
+    }
     
     // Predeclared range functions work in for loops
     for i in range(5) {
@@ -224,6 +231,43 @@ log("Error occurred: " + error_message);
 
 // Custom formatting
 log("Values: x=" + x + ", y=" + y);
+```
+
+### args Function
+
+```asthra
+fn args() -> []string
+```
+
+**Purpose:** Access command-line arguments passed to the program.
+
+**Behavior:**
+- Returns a slice of strings containing all command-line arguments
+- First element (index 0) is the program name/path
+- Subsequent elements are the arguments passed by the user
+- Returns empty slice if no arguments available
+- Thread-safe and can be called multiple times
+
+**Examples:**
+```asthra
+let arguments = args();
+
+// Check if any arguments were provided
+if arguments.len() > 1 {
+    log("First argument: " + arguments[1]);
+}
+
+// Iterate over all arguments
+for arg in arguments {
+    log("Argument: " + arg);
+}
+
+// Process specific arguments
+if arguments.len() >= 3 {
+    let input_file = arguments[1];
+    let output_file = arguments[2];
+    process_files(input_file, output_file);
+}
 ```
 
 ### range Functions

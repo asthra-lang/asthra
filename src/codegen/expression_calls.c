@@ -155,6 +155,21 @@ bool code_generate_function_call(CodeGenerator *generator, ASTNode *call_expr, R
         return false;
     }
     
+    // Map predeclared functions to their runtime names
+    const char* runtime_function_name = NULL;
+    if (strcmp(function_name, "log") == 0) {
+        runtime_function_name = "asthra_log";
+    } else if (strcmp(function_name, "panic") == 0) {
+        runtime_function_name = "asthra_panic";
+    } else if (strcmp(function_name, "args") == 0) {
+        runtime_function_name = "asthra_runtime_get_args";
+    }
+    
+    // Use runtime name if it's a predeclared function
+    if (runtime_function_name) {
+        function_name = runtime_function_name;
+    }
+    
     // Generate arguments
     Register *arg_regs = NULL;
     size_t arg_count = 0;
