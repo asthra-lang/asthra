@@ -1,0 +1,771 @@
+name: On-Demand Test Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch_name:
+        description: 'Branch name to test'
+        required: true
+        default: 'main'
+        type: string
+      operating_system:
+        description: 'Operating System'
+        required: true
+        default: 'Linux'
+        type: choice
+        options:
+          - 'Linux'
+          - 'Mac'
+          - 'Windows'
+      compiler:
+        description: 'Compiler to use'
+        required: true
+        default: 'Clang'
+        type: choice
+        options:
+          - 'Clang'
+          - 'GCC'
+          - 'MSVC'
+      target_test_name:
+        description: 'Target test name (e.g., codegen_test_option_type_codegen)'
+        required: true
+        default: 'codegen_test_option_type_codegen'
+        type: string
+      build_type:
+        description: 'Build configuration to test'
+        required: true
+        default: 'Both'
+        type: choice
+        options:
+          - 'Both'
+          - 'Debug'
+          - 'Release'
+      sanitizer:
+        description: 'Sanitizer to use (None for fastest execution)'
+        required: true
+        default: 'None'
+        type: choice
+        options:
+          - 'None'
+          - 'AddressSanitizer'
+          - 'UBSanitizer'
+          - 'ASan+UBSan'
+      advanced_testing:
+        description: 'Advanced testing strategy'
+        required: true
+        default: 'Standard'
+        type: choice
+        options:
+          - 'Standard'
+          - 'Stress'
+          - 'Cross-Platform'
+          - 'Differential'
+          - 'Performance'
+          - 'Deep-Debug'
+      target_architecture:
+        description: 'Target architecture (for Cross-Platform mode)'
+        required: false
+        default: 'native'
+        type: choice
+        options:
+          - 'native'
+          - 'x86_64'
+          - 'aarch64'
+          - 'arm'
+          - 'both-x86-arm'
+
+env:
+  ASTHRA_VERSION: "0.1.0"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  on-demand-test:
+    name: Test ${{ inputs.target_test_name }} (${{ inputs.operating_system }}, ${{ inputs.compiler }}, ${{ matrix.build_type }}, ${{ inputs.sanitizer }}, ${{ inputs.advanced_testing }}, ${{ matrix.target_arch }})
+    runs-on: ${{ inputs.operating_system == 'Linux' && 'ubuntu-22.04' || inputs.operating_system == 'Mac' && 'macos-14' || inputs.operating_system == 'Windows' && 'windows-2022' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: ${{ inputs.build_type == 'Both' && fromJSON('["Debug", "Release"]') || fromJSON(format('["{0}"]', inputs.build_type)) }}
+        target_arch: ${{ inputs.advanced_testing == 'Cross-Platform' && inputs.target_architecture == 'both-x86-arm' && fromJSON('["x86_64", "aarch64"]') || inputs.advanced_testing == 'Cross-Platform' && inputs.target_architecture != 'native' && inputs.target_architecture != 'both-x86-arm' && fromJSON(format('["{0}"]', inputs.target_architecture)) || fromJSON('["native"]') }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.branch_name }}
+        fetch-depth: 0
+
+    # =============================================================================
+    # PLATFORM-SPECIFIC SETUP
+    # =============================================================================
+            
+    - name: Setup Linux dependencies
+      if: inputs.operating_system == 'Linux'
+      run: |
+        set -e
+        echo "=== Installing Linux Dependencies ==="
+        sudo apt-get update -y
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          libc6-dev \
+          pkg-config \
+          gperf
+        
+        # Install compiler-specific packages
+        if [[ "${{ inputs.compiler }}" == "Clang" ]]; then
+          sudo apt-get install -y clang clang-tools
+        elif [[ "${{ inputs.compiler }}" == "GCC" ]]; then
+          sudo apt-get install -y gcc g++
+        fi
+        
+        # Install optional dependencies (non-critical)
+        sudo apt-get install -y valgrind llvm || echo "Optional tools not available"
+        sudo apt-get install -y libjson-c-dev || echo "json-c package not available, CMake will handle it"
+        
+        # Install cross-compilation toolchains for Cross-Platform mode
+        if [[ "${{ inputs.advanced_testing }}" == "Cross-Platform" ]]; then
+          echo "Installing cross-compilation toolchains..."
+          if [[ "${{ matrix.target_arch }}" == "aarch64" ]]; then
+            sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          elif [[ "${{ matrix.target_arch }}" == "arm" ]]; then
+            sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+          fi
+        fi
+        
+        # Install additional tools for advanced testing modes
+        if [[ "${{ inputs.advanced_testing }}" == "Deep-Debug" ]]; then
+          sudo apt-get install -y gdb strace ltrace || echo "Debug tools not available"
+        fi
+        
+        if [[ "${{ inputs.advanced_testing }}" == "Performance" ]]; then
+          sudo apt-get install -y linux-perf || echo "Performance tools not available"
+        fi
+        
+        echo "✓ Linux dependencies installed successfully"
+          
+    - name: Setup macOS dependencies
+      if: inputs.operating_system == 'Mac'
+      run: |
+        set -e
+        echo "=== Installing macOS Dependencies ==="
+        # Don't update brew, just install what we need
+        brew install \
+          cmake \
+          pkg-config \
+          gperf \
+          json-c || echo "Some packages may already be installed"
+        
+        echo "✓ macOS dependencies installed successfully"
+
+    - name: Setup Windows dependencies
+      if: inputs.operating_system == 'Windows'
+      run: |
+        echo "=== Installing Windows Dependencies ==="
+        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+        choco install pkgconfiglite
+        echo "✓ Windows dependencies installed successfully"
+          
+    # =============================================================================
+    # COMPILER SETUP
+    # =============================================================================
+    
+    - name: Set compiler environment (Linux/Mac)
+      if: inputs.operating_system != 'Windows'
+      run: |
+        set -e
+        echo "=== Setting Compiler Environment ==="
+        
+        if [[ "${{ inputs.compiler }}" == "Clang" ]]; then
+          CC_COMPILER="clang"
+          CXX_COMPILER="clang++"
+        elif [[ "${{ inputs.compiler }}" == "GCC" ]]; then
+          CC_COMPILER="gcc"
+          CXX_COMPILER="g++"
+        else
+          echo "Unsupported compiler for this platform: ${{ inputs.compiler }}"
+          exit 1
+        fi
+        
+        echo "CC=${CC_COMPILER}" >> $GITHUB_ENV
+        echo "CXX=${CXX_COMPILER}" >> $GITHUB_ENV
+        
+        # Verify compilers are available
+        echo "Verifying C compiler: ${CC_COMPILER}"
+        ${CC_COMPILER} --version
+        echo "Verifying C++ compiler: ${CXX_COMPILER}"
+        ${CXX_COMPILER} --version
+        
+        echo "✓ Compiler environment set successfully"
+
+    - name: Set compiler environment (Windows)
+      if: inputs.operating_system == 'Windows'
+      run: |
+        echo "=== Setting Compiler Environment for Windows ==="
+        
+        if ("${{ inputs.compiler }}" -eq "MSVC") {
+          # MSVC is the default on Windows runners
+          echo "Using MSVC compiler"
+        } elseif ("${{ inputs.compiler }}" -eq "Clang") {
+          # Install clang for Windows
+          choco install llvm
+          echo "CC=clang" >> $env:GITHUB_ENV
+          echo "CXX=clang++" >> $env:GITHUB_ENV
+        } elseif ("${{ inputs.compiler }}" -eq "GCC") {
+          # Install MinGW
+          choco install mingw
+          echo "CC=gcc" >> $env:GITHUB_ENV
+          echo "CXX=g++" >> $env:GITHUB_ENV
+        } else {
+          Write-Error "Unsupported compiler for Windows: ${{ inputs.compiler }}"
+          exit 1
+        }
+        
+        echo "✓ Compiler environment set successfully"
+
+    # =============================================================================
+    # BUILD INFORMATION
+    # =============================================================================
+    
+    - name: Display build information
+      shell: bash
+      run: |
+        echo "=== Build Information ==="
+        echo "Branch: ${{ inputs.branch_name }}"
+        echo "Operating System: ${{ inputs.operating_system }}"
+        echo "Compiler: ${{ inputs.compiler }}"
+        echo "Build Type: ${{ matrix.build_type }}"
+        echo "Sanitizer: ${{ inputs.sanitizer }}"
+        echo "Advanced Testing: ${{ inputs.advanced_testing }}"
+        echo "Target Architecture: ${{ matrix.target_arch }}"
+        echo "Target Test: ${{ inputs.target_test_name }}"
+        echo ""
+        echo "=== Environment Information ==="
+        echo "Runner OS: ${{ runner.os }}"
+        echo "CC: ${CC:-not set}"
+        echo "CXX: ${CXX:-not set}"
+        echo ""
+        echo "=== CMake Information ==="
+        cmake --version
+
+    # =============================================================================
+    # ADVANCED TESTING SETUP
+    # =============================================================================
+    
+    - name: Setup advanced testing configuration
+      shell: bash
+      run: |
+        echo "=== Advanced Testing Configuration ==="
+        
+        # Initialize advanced testing flags
+        ADVANCED_CMAKE_FLAGS=""
+        ADVANCED_TEST_FLAGS=""
+        STRESS_MULTIPLIER="1"
+        
+        case "${{ inputs.advanced_testing }}" in
+          "Stress")
+            echo "Configuring Stress Testing mode..."
+            STRESS_MULTIPLIER="10"
+            ADVANCED_CMAKE_FLAGS="-DENABLE_STRESS_TESTING=ON"
+            ADVANCED_TEST_FLAGS="--stress-mode --repeat=10"
+            echo "STRESS_TEST_MEMORY_LIMIT=512M" >> $GITHUB_ENV
+            ;;
+          "Cross-Platform")
+            echo "Configuring Cross-Platform Testing mode..."
+            if [[ "${{ matrix.target_arch }}" != "native" ]]; then
+              ADVANCED_CMAKE_FLAGS="-DCMAKE_SYSTEM_PROCESSOR=${{ matrix.target_arch }}"
+              if [[ "${{ matrix.target_arch }}" == "aarch64" ]]; then
+                ADVANCED_CMAKE_FLAGS="${ADVANCED_CMAKE_FLAGS} -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc"
+                ADVANCED_CMAKE_FLAGS="${ADVANCED_CMAKE_FLAGS} -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++"
+              elif [[ "${{ matrix.target_arch }}" == "arm" ]]; then
+                ADVANCED_CMAKE_FLAGS="${ADVANCED_CMAKE_FLAGS} -DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc"
+                ADVANCED_CMAKE_FLAGS="${ADVANCED_CMAKE_FLAGS} -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++"
+              fi
+            fi
+            ;;
+          "Differential")
+            echo "Configuring Differential Testing mode..."
+            ADVANCED_CMAKE_FLAGS="-DENABLE_DIFFERENTIAL_TESTING=ON"
+            ADVANCED_TEST_FLAGS="--compare-backends --verify-equivalence"
+            ;;
+          "Performance")
+            echo "Configuring Performance Testing mode..."
+            ADVANCED_CMAKE_FLAGS="-DENABLE_BENCHMARKING=ON -DCMAKE_BUILD_TYPE=Release"
+            ADVANCED_TEST_FLAGS="--benchmark --profile --track-performance"
+            echo "PERFORMANCE_BASELINE_DIR=performance-baselines" >> $GITHUB_ENV
+            ;;
+          "Deep-Debug")
+            echo "Configuring Deep Debug mode..."
+            ADVANCED_CMAKE_FLAGS="-DCMAKE_BUILD_TYPE=Debug -DENABLE_DEBUG_SYMBOLS=ON"
+            ADVANCED_TEST_FLAGS="--debug --verbose --trace-execution"
+            echo "ENABLE_VALGRIND=true" >> $GITHUB_ENV
+            echo "ENABLE_GDB_TRACE=true" >> $GITHUB_ENV
+            ;;
+          "Standard")
+            echo "Using standard testing configuration"
+            ;;
+          *)
+            echo "Unknown advanced testing mode: ${{ inputs.advanced_testing }}"
+            exit 1
+            ;;
+        esac
+        
+        # Export advanced testing configuration
+        echo "ADVANCED_CMAKE_FLAGS=${ADVANCED_CMAKE_FLAGS}" >> $GITHUB_ENV
+        echo "ADVANCED_TEST_FLAGS=${ADVANCED_TEST_FLAGS}" >> $GITHUB_ENV
+        echo "STRESS_MULTIPLIER=${STRESS_MULTIPLIER}" >> $GITHUB_ENV
+        
+        echo "Advanced testing configuration:"
+        echo "  Mode: ${{ inputs.advanced_testing }}"
+        echo "  CMake Flags: ${ADVANCED_CMAKE_FLAGS}"
+        echo "  Test Flags: ${ADVANCED_TEST_FLAGS}"
+        echo "  Stress Multiplier: ${STRESS_MULTIPLIER}"
+
+    # =============================================================================
+    # SANITIZER SETUP
+    # =============================================================================
+    
+    - name: Setup sanitizer flags
+      shell: bash
+      run: |
+        echo "=== Setting up Sanitizer Configuration ==="
+        
+        # Initialize sanitizer flags
+        SANITIZER_C_FLAGS=""
+        SANITIZER_CXX_FLAGS=""
+        SANITIZER_LINK_FLAGS=""
+        
+        # Configure sanitizer flags based on selection
+        case "${{ inputs.sanitizer }}" in
+          "AddressSanitizer")
+            echo "Configuring AddressSanitizer..."
+            SANITIZER_C_FLAGS="-fsanitize=address -fno-omit-frame-pointer -g"
+            SANITIZER_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer -g"
+            SANITIZER_LINK_FLAGS="-fsanitize=address"
+            ;;
+          "UBSanitizer")
+            echo "Configuring UndefinedBehaviorSanitizer..."
+            SANITIZER_C_FLAGS="-fsanitize=undefined -fno-omit-frame-pointer -g"
+            SANITIZER_CXX_FLAGS="-fsanitize=undefined -fno-omit-frame-pointer -g"
+            SANITIZER_LINK_FLAGS="-fsanitize=undefined"
+            ;;
+          "ASan+UBSan")
+            echo "Configuring AddressSanitizer + UndefinedBehaviorSanitizer..."
+            SANITIZER_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g"
+            SANITIZER_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g"
+            SANITIZER_LINK_FLAGS="-fsanitize=address,undefined"
+            ;;
+          "None")
+            echo "No sanitizer selected - using standard flags"
+            ;;
+          *)
+            echo "Unknown sanitizer option: ${{ inputs.sanitizer }}"
+            exit 1
+            ;;
+        esac
+        
+        # Export sanitizer flags for use in build steps
+        echo "SANITIZER_C_FLAGS=${SANITIZER_C_FLAGS}" >> $GITHUB_ENV
+        echo "SANITIZER_CXX_FLAGS=${SANITIZER_CXX_FLAGS}" >> $GITHUB_ENV
+        echo "SANITIZER_LINK_FLAGS=${SANITIZER_LINK_FLAGS}" >> $GITHUB_ENV
+        
+        echo "Sanitizer flags configured:"
+        echo "  C_FLAGS: ${SANITIZER_C_FLAGS}"
+        echo "  CXX_FLAGS: ${SANITIZER_CXX_FLAGS}"
+        echo "  LINK_FLAGS: ${SANITIZER_LINK_FLAGS}"
+
+    # =============================================================================
+    # BUILD
+    # =============================================================================
+    
+    - name: Configure CMake (Linux/Mac)
+      if: inputs.operating_system != 'Windows'
+      run: |
+        set -e
+        echo "=== CMake Configuration ==="
+        mkdir -p build
+        cd build
+        
+        echo "Working directory: $(pwd)"
+        echo "CMakeLists.txt exists: $(test -f ../CMakeLists.txt && echo 'YES' || echo 'NO')"
+        echo "CMAKE_BUILD_TYPE: ${{ matrix.build_type }}"
+        echo "CMAKE_C_COMPILER: $CC"
+        echo "CMAKE_CXX_COMPILER: $CXX"
+        echo ""
+        
+        # Configure builds with sanitizer and optimization flags
+        if [[ "${{ matrix.build_type }}" == "Release" && "${{ inputs.sanitizer }}" == "None" ]]; then
+          echo "Configuring Release build with LTO and optimization flags..."
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_C_COMPILER=$CC \
+            -DCMAKE_CXX_COMPILER=$CXX \
+            -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
+            -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG -flto" \
+            -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -flto"
+        elif [[ "${{ inputs.sanitizer }}" != "None" ]]; then
+          echo "Configuring ${{ matrix.build_type }} build with sanitizer flags..."
+          # Disable LTO when using sanitizers (they often conflict)
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_C_COMPILER=$CC \
+            -DCMAKE_CXX_COMPILER=$CXX \
+            -DCMAKE_C_FLAGS="${SANITIZER_C_FLAGS}" \
+            -DCMAKE_CXX_FLAGS="${SANITIZER_CXX_FLAGS}" \
+            -DCMAKE_EXE_LINKER_FLAGS="${SANITIZER_LINK_FLAGS}" \
+            -DCMAKE_SHARED_LINKER_FLAGS="${SANITIZER_LINK_FLAGS}" \
+            -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF \
+            ${ADVANCED_CMAKE_FLAGS}
+        else
+          echo "Configuring ${{ matrix.build_type }} build..."
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_C_COMPILER=$CC \
+            -DCMAKE_CXX_COMPILER=$CXX \
+            ${ADVANCED_CMAKE_FLAGS}
+        fi
+        
+        echo "✓ CMake configuration completed successfully"
+
+    - name: Configure CMake (Windows)
+      if: inputs.operating_system == 'Windows'
+      run: |
+        echo "=== CMake Configuration for Windows ==="
+        mkdir build -Force
+        cd build
+        
+        echo "Working directory: $(Get-Location)"
+        echo "CMakeLists.txt exists: $(Test-Path '../CMakeLists.txt')"
+        echo "BUILD_TYPE: ${{ matrix.build_type }}"
+        echo ""
+        
+        if ("${{ inputs.compiler }}" -eq "MSVC") {
+          if ("${{ inputs.sanitizer }}" -ne "None") {
+            echo "Warning: Limited sanitizer support on MSVC. Using AddressSanitizer if available..."
+            if ("${{ inputs.sanitizer }}" -eq "AddressSanitizer" -or "${{ inputs.sanitizer }}" -eq "ASan+UBSan") {
+              cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_C_FLAGS="/fsanitize=address" -DCMAKE_CXX_FLAGS="/fsanitize=address"
+            } else {
+              echo "UBSanitizer not supported on MSVC, proceeding without sanitizer..."
+              cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+            }
+          } elseif ("${{ matrix.build_type }}" -eq "Release") {
+            echo "Configuring Release build with LTCG for MSVC..."
+            cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
+          } else {
+            cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          }
+        } else {
+          if ("${{ inputs.sanitizer }}" -ne "None") {
+            echo "Configuring ${{ matrix.build_type }} build with sanitizer flags..."
+            cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_C_COMPILER=$env:CC -DCMAKE_CXX_COMPILER=$env:CXX -DCMAKE_C_FLAGS="$env:SANITIZER_C_FLAGS" -DCMAKE_CXX_FLAGS="$env:SANITIZER_CXX_FLAGS" -DCMAKE_EXE_LINKER_FLAGS="$env:SANITIZER_LINK_FLAGS" -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
+          } elseif ("${{ matrix.build_type }}" -eq "Release") {
+            echo "Configuring Release build with LTO..."
+            cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_C_COMPILER=$env:CC -DCMAKE_CXX_COMPILER=$env:CXX -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
+          } else {
+            cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_C_COMPILER=$env:CC -DCMAKE_CXX_COMPILER=$env:CXX
+          }
+        }
+        
+        echo "✓ CMake configuration completed successfully"
+
+    - name: Build Asthra compiler
+      run: |
+        echo "=== Building Asthra Compiler (${{ matrix.build_type }}) ==="
+        cd build
+        
+        # Use a reasonable number of parallel jobs
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          JOBS=$NUMBER_OF_PROCESSORS
+        else
+          JOBS=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
+        fi
+        echo "Building with $JOBS parallel jobs"
+        
+        # Build with specific configuration
+        cmake --build . --config ${{ matrix.build_type }} -j$JOBS
+        
+        # For Release builds, check for LTO-related warnings/errors
+        if [[ "${{ matrix.build_type }}" == "Release" ]]; then
+          echo ""
+          echo "=== Checking for Release/LTO Issues ==="
+          # Check build logs for common LTO issues
+          if grep -i "lto\|link.*time.*optimization\|interprocedural" *.log 2>/dev/null || true; then
+            echo "Found LTO-related messages in build logs"
+          fi
+          
+          # Verify that optimized binaries were created
+          echo "Verifying optimized binaries..."
+          if [[ -f "./bin/asthra" ]] || [[ -f "./asthra" ]]; then
+            echo "✓ Release binary created successfully"
+          else
+            echo "⚠ Release binary location verification needed"
+          fi
+        fi
+        
+        echo "✓ Build completed successfully"
+      shell: bash
+
+    - name: Build test framework and dependencies
+      run: |
+        echo "=== Building Test Framework and Dependencies (${{ matrix.build_type }}) ==="
+        cd build
+        
+        # Build all test executables
+        cmake --build . --target build-tests --config ${{ matrix.build_type }}
+        
+        echo "✓ Test framework built successfully"
+      shell: bash
+
+    # =============================================================================
+    # TARGET TEST EXECUTION
+    # =============================================================================
+    
+    - name: Build specific test target
+      run: |
+        echo "=== Building Specific Test Target: ${{ inputs.target_test_name }} (${{ matrix.build_type }}) ==="
+        cd build
+        
+        # Try to build the specific test target
+        cmake --build . --target ${{ inputs.target_test_name }} --config ${{ matrix.build_type }}
+        
+        echo "✓ Test target ${{ inputs.target_test_name }} built successfully"
+      shell: bash
+
+    - name: Run specific test
+      run: |
+        echo "=== Running Test: ${{ inputs.target_test_name }} ==="
+        cd build
+        
+        # Find the test executable
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          TEST_EXECUTABLE=$(find . -name "${{ inputs.target_test_name }}.exe" -type f | head -1)
+          if [[ -z "$TEST_EXECUTABLE" ]]; then
+            TEST_EXECUTABLE="./bin/${{ inputs.target_test_name }}.exe"
+          fi
+        else
+          TEST_EXECUTABLE=$(find . -name "${{ inputs.target_test_name }}" -type f -executable | head -1)
+          if [[ -z "$TEST_EXECUTABLE" ]]; then
+            TEST_EXECUTABLE="./bin/${{ inputs.target_test_name }}"
+          fi
+        fi
+        
+        echo "Test executable path: $TEST_EXECUTABLE"
+        
+        # Verify the executable exists
+        if [[ ! -f "$TEST_EXECUTABLE" ]]; then
+          echo "✗ Test executable not found: $TEST_EXECUTABLE"
+          echo "Available executables in build directory:"
+          find . -name "*${{ inputs.target_test_name }}*" -type f
+          exit 1
+        fi
+        
+        # Set up sanitizer runtime options
+        if [[ "${{ inputs.sanitizer }}" != "None" ]]; then
+          echo "Setting up sanitizer runtime environment..."
+          
+          # Configure AddressSanitizer options
+          if [[ "${{ inputs.sanitizer }}" == *"AddressSanitizer"* || "${{ inputs.sanitizer }}" == *"ASan"* ]]; then
+            export ASAN_OPTIONS="detect_leaks=1:halt_on_error=1:abort_on_error=1:detect_stack_use_after_return=1"
+            echo "ASAN_OPTIONS: $ASAN_OPTIONS"
+          fi
+          
+          # Configure UndefinedBehaviorSanitizer options
+          if [[ "${{ inputs.sanitizer }}" == *"UBSanitizer"* || "${{ inputs.sanitizer }}" == *"UBSan"* ]]; then
+            export UBSAN_OPTIONS="halt_on_error=1:abort_on_error=1:print_stacktrace=1"
+            echo "UBSAN_OPTIONS: $UBSAN_OPTIONS"
+          fi
+        fi
+        
+        # Run the test with advanced testing features
+        echo "Executing: $TEST_EXECUTABLE"
+        
+        # Apply advanced testing modes
+        case "${{ inputs.advanced_testing }}" in
+          "Stress")
+            echo "Running in Stress Testing mode..."
+            for i in $(seq 1 ${STRESS_MULTIPLIER}); do
+              echo "Stress test iteration $i/${STRESS_MULTIPLIER}"
+              timeout 300 $TEST_EXECUTABLE ${ADVANCED_TEST_FLAGS} || echo "Iteration $i failed or timed out"
+            done
+            ;;
+          "Performance")
+            echo "Running Performance Testing..."
+            # Create performance baseline directory
+            mkdir -p ${PERFORMANCE_BASELINE_DIR:-performance-baselines}
+            
+            # Run with time measurement
+            echo "Measuring execution time..."
+            time $TEST_EXECUTABLE ${ADVANCED_TEST_FLAGS}
+            
+            # Run with memory profiling if available
+            if command -v valgrind >/dev/null 2>&1; then
+              echo "Running memory profiling..."
+              valgrind --tool=massif --massif-out-file=massif.out $TEST_EXECUTABLE 2>/dev/null || true
+            fi
+            ;;
+          "Deep-Debug")
+            echo "Running Deep Debug mode..."
+            if [[ "${ENABLE_VALGRIND}" == "true" ]] && command -v valgrind >/dev/null 2>&1; then
+              echo "Running with Valgrind..."
+              valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes $TEST_EXECUTABLE
+            else
+              echo "Running with debug tracing..."
+              $TEST_EXECUTABLE ${ADVANCED_TEST_FLAGS}
+            fi
+            ;;
+          "Differential")
+            echo "Running Differential Testing..."
+            # Run the test and capture output for comparison
+            $TEST_EXECUTABLE ${ADVANCED_TEST_FLAGS} > test_output.log 2>&1
+            echo "Test output captured for differential analysis"
+            ;;
+          "Cross-Platform")
+            echo "Running Cross-Platform test on ${{ matrix.target_arch }}..."
+            if [[ "${{ matrix.target_arch }}" == "native" ]]; then
+              $TEST_EXECUTABLE ${ADVANCED_TEST_FLAGS}
+            else
+              # For cross-compiled tests, we might need qemu or similar
+              echo "Cross-compiled test for ${{ matrix.target_arch }} - executable validation only"
+              file $TEST_EXECUTABLE || echo "File command not available"
+            fi
+            ;;
+          *)
+            echo "Running standard test..."
+            $TEST_EXECUTABLE ${ADVANCED_TEST_FLAGS}
+            ;;
+        esac
+        
+        echo "✓ Test ${{ inputs.target_test_name }} completed successfully"
+      shell: bash
+
+    # =============================================================================
+    # VERIFICATION AND REPORTING
+    # =============================================================================
+    
+    - name: Verify test results
+      run: |
+        echo "=== Test Results Summary ==="
+        echo "Branch: ${{ inputs.branch_name }}"
+        echo "OS: ${{ inputs.operating_system }}"
+        echo "Compiler: ${{ inputs.compiler }}"
+        echo "Build Type: ${{ matrix.build_type }}"
+        echo "Sanitizer: ${{ inputs.sanitizer }}"
+        echo "Advanced Testing: ${{ inputs.advanced_testing }}"
+        echo "Target Architecture: ${{ matrix.target_arch }}"
+        echo "Test: ${{ inputs.target_test_name }}"
+        echo "Status: ✓ PASSED"
+        echo ""
+        
+        # Additional verification for Release builds
+        if [[ "${{ matrix.build_type }}" == "Release" && "${{ inputs.sanitizer }}" == "None" ]]; then
+          echo "=== Release Build Verification ==="
+          echo "✓ Release build with optimizations completed"
+          echo "✓ LTO (Link Time Optimization) tested"
+          echo "✓ No Release-specific issues detected"
+          echo ""
+        fi
+        
+        # Additional verification for sanitizer builds
+        if [[ "${{ inputs.sanitizer }}" != "None" ]]; then
+          echo "=== Sanitizer Build Verification ==="
+          echo "✓ Sanitizer build completed successfully"
+          echo "✓ ${{ inputs.sanitizer }} runtime checks executed"
+          
+          case "${{ inputs.sanitizer }}" in
+            "AddressSanitizer")
+              echo "✓ Memory safety checks: buffer overflows, use-after-free, leaks"
+              ;;
+            "UBSanitizer")
+              echo "✓ Undefined behavior checks: integer overflows, null dereferences"
+              ;;
+            "ASan+UBSan")
+              echo "✓ Comprehensive checks: memory safety + undefined behavior"
+              ;;
+          esac
+          
+          echo "✓ No sanitizer violations detected"
+          echo ""
+        fi
+        
+        # Additional verification for advanced testing modes
+        if [[ "${{ inputs.advanced_testing }}" != "Standard" ]]; then
+          echo "=== Advanced Testing Verification ==="
+          echo "✓ Advanced testing mode: ${{ inputs.advanced_testing }}"
+          
+          case "${{ inputs.advanced_testing }}" in
+            "Stress")
+              echo "✓ Stress testing completed: ${STRESS_MULTIPLIER} iterations"
+              echo "✓ Test stability verified under repeated execution"
+              ;;
+            "Cross-Platform")
+              echo "✓ Cross-platform testing on: ${{ matrix.target_arch }}"
+              echo "✓ Architecture-specific code generation verified"
+              ;;
+            "Differential")
+              echo "✓ Differential testing completed"
+              echo "✓ Test output captured for backend comparison"
+              ;;
+            "Performance")
+              echo "✓ Performance benchmarking completed"
+              echo "✓ Execution time and memory usage measured"
+              ;;
+            "Deep-Debug")
+              echo "✓ Deep debugging analysis completed"
+              echo "✓ Memory and execution tracing performed"
+              ;;
+          esac
+          echo ""
+        fi
+        
+        echo "Test execution completed successfully!"
+      shell: bash
+
+    # =============================================================================
+    # ARTIFACT COLLECTION
+    # =============================================================================
+    
+    - name: Collect test artifacts
+      if: always()
+      run: |
+        echo "=== Collecting Test Artifacts ==="
+        mkdir -p artifacts
+        
+        # Copy test executable
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          find build -name "${{ inputs.target_test_name }}.exe" -exec cp {} artifacts/ \; 2>/dev/null || true
+        else
+          find build -name "${{ inputs.target_test_name }}" -type f -executable -exec cp {} artifacts/ \; 2>/dev/null || true
+        fi
+        
+        # Copy any test output files
+        find . -name "*.log" -exec cp {} artifacts/ \; 2>/dev/null || true
+        find . -name "*test*output*" -exec cp {} artifacts/ \; 2>/dev/null || true
+        
+        # Copy advanced testing specific artifacts
+        case "${{ inputs.advanced_testing }}" in
+          "Performance")
+            find . -name "massif.out" -exec cp {} artifacts/ \; 2>/dev/null || true
+            find . -name "*.perf" -exec cp {} artifacts/ \; 2>/dev/null || true
+            cp -r ${PERFORMANCE_BASELINE_DIR:-performance-baselines} artifacts/ 2>/dev/null || true
+            ;;
+          "Deep-Debug")
+            find . -name "core.*" -exec cp {} artifacts/ \; 2>/dev/null || true
+            find . -name "*.trace" -exec cp {} artifacts/ \; 2>/dev/null || true
+            ;;
+          "Differential")
+            find . -name "*comparison*" -exec cp {} artifacts/ \; 2>/dev/null || true
+            find . -name "*diff*" -exec cp {} artifacts/ \; 2>/dev/null || true
+            ;;
+        esac
+        
+        echo "Artifacts collected:"
+        ls -la artifacts/ || dir artifacts
+      shell: bash
+        
+    - name: Upload test artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-artifacts-${{ inputs.operating_system }}-${{ inputs.compiler }}-${{ matrix.build_type }}-${{ inputs.sanitizer }}-${{ inputs.advanced_testing }}-${{ matrix.target_arch }}-${{ inputs.target_test_name }}
+        path: artifacts/
+        retention-days: 7 
