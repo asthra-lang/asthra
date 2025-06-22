@@ -225,6 +225,7 @@ add_bdd_test(parser unit)
 add_bdd_test(semantic unit)
 add_bdd_test(cli integration)
 add_bdd_test(compiler_basic unit)
+add_bdd_test(if_conditions unit)
 add_bdd_test(ffi_integration integration)
 
 # Configuration summary
