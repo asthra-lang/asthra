@@ -175,40 +175,11 @@ ASTNode *parse_pattern(Parser *parser) {
             struct_pattern->data.struct_pattern.type_args = type_args;
             return struct_pattern;
         } else if (match_token(parser, TOKEN_LEFT_PAREN)) {
-            // This is an enum variant pattern without enum name: Variant(binding)
-            // In match patterns, we allow Some(x) instead of Option.Some(x)
-            advance_token(parser);
-            
-            char *binding = NULL;
-            if (match_token(parser, TOKEN_NONE)) {
-                // Explicit none for empty pattern arguments
-                advance_token(parser);
-                binding = NULL;
-            } else if (match_token(parser, TOKEN_IDENTIFIER)) {
-                // Parse pattern binding
-                binding = strdup(parser->current_token.data.identifier.name);
-                advance_token(parser);
-            }
-            
-            if (!expect_token(parser, TOKEN_RIGHT_PAREN)) {
-                free(name);
-                if (binding) free(binding);
-                return NULL;
-            }
-            
-            // Create enum pattern node without enum name
-            ASTNode *node = ast_create_node(AST_ENUM_PATTERN, start_loc);
-            if (!node) {
-                free(name);
-                if (binding) free(binding);
-                return NULL;
-            }
-            
-            node->data.enum_pattern.enum_name = NULL;  // No enum name in pattern
-            node->data.enum_pattern.variant_name = name;
-            node->data.enum_pattern.binding = binding;
-            
-            return node;
+            // This looks like a function call pattern, which is not supported
+            // Users must use qualified syntax like Option.Some(x)
+            report_error(parser, "Unqualified enum variant patterns are not allowed. Use qualified syntax like Option.Some(x) or Option.None");
+            free(name);
+            return NULL;
         } else {
             // Simple identifier pattern
             ASTNode *node = ast_create_node(AST_IDENTIFIER, start_loc);
