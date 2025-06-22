@@ -10,6 +10,7 @@ set(TYPE_SYSTEM_TESTS
     test_function_types.c
     test_advanced_types.c
     test_tuple_type_checking.c
+    test_predeclared_functions.c
 )
 
 # Create executables for type system tests with common file
