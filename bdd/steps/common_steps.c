@@ -9,6 +9,9 @@
 
 // Common utilities and step definitions shared across all BDD tests
 
+// Temporary directory for BDD test artifacts
+#define BDD_TEMP_DIR "bdd-temp"
+
 // Global state for test execution
 static char* current_source_file = NULL;
 static char* current_executable = NULL;
@@ -17,6 +20,14 @@ static char* error_output = NULL;
 static int compilation_exit_code = -1;
 static int execution_exit_code = -1;
 static char* execution_output = NULL;
+
+// Initialize BDD temp directory
+static void ensure_temp_dir(void) {
+    struct stat st = {0};
+    if (stat(BDD_TEMP_DIR, &st) == -1) {
+        mkdir(BDD_TEMP_DIR, 0755);
+    }
+}
 
 // Utility functions
 static void cleanup_test_files(void) {
@@ -112,9 +123,14 @@ void given_file_with_content(const char* filename, const char* content) {
     snprintf(desc, sizeof(desc), "I have a file \"%s\" with content", filename);
     bdd_given(desc);
     
-    // Create temporary file
-    current_source_file = strdup(filename);
-    int result = write_file_contents(filename, content);
+    // Ensure temp directory exists
+    ensure_temp_dir();
+    
+    // Create temporary file in BDD temp directory
+    char temp_path[512];
+    snprintf(temp_path, sizeof(temp_path), "%s/%s", BDD_TEMP_DIR, filename);
+    current_source_file = strdup(temp_path);
+    int result = write_file_contents(temp_path, content);
     
     BDD_ASSERT_EQ(result, 0);
 }
@@ -271,6 +287,18 @@ void then_exit_code_is(int expected_code) {
 // Cleanup function to be called at the end of tests
 void common_cleanup(void) {
     cleanup_test_files();
+    
+    // Check environment variable to control cleanup behavior
+    const char* keep_artifacts = getenv("BDD_KEEP_ARTIFACTS");
+    if (!keep_artifacts || strcmp(keep_artifacts, "1") != 0) {
+        // Only clean up if BDD_KEEP_ARTIFACTS is not set to "1"
+        const char* clean_temp = getenv("BDD_CLEAN_TEMP");
+        if (clean_temp && strcmp(clean_temp, "1") == 0) {
+            char command[256];
+            snprintf(command, sizeof(command), "rm -rf %s", BDD_TEMP_DIR);
+            system(command);
+        }
+    }
 }
 
 // Helper to get current source file path
