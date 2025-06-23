@@ -231,6 +231,9 @@ Token token_clone(const Token *token);
 // Get token type name (for debugging)
 const char *token_type_name(TokenType type);
 
+// Get user-friendly token display name
+const char *token_type_display_name(TokenType type);
+
 // Check if token is a keyword
 bool token_is_keyword(TokenType type);
 
