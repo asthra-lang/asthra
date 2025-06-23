@@ -28,6 +28,7 @@ void ast_free_statement_nodes(ASTNode *node) {
             AST_FREE_STRING(node->data.let_stmt.name);
             AST_RELEASE_NODE(node->data.let_stmt.type);
             AST_RELEASE_NODE(node->data.let_stmt.initializer);
+            AST_DESTROY_NODE_LIST(node->data.let_stmt.annotations);
             break;
             
         case AST_RETURN_STMT:
