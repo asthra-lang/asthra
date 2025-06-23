@@ -43,12 +43,41 @@ ctest --test-dir build --output-on-failure     # View test failures with output
 # BDD (Behavior-Driven Development) Testing
 cmake -B build -DBUILD_BDD_TESTS=ON            # Enable BDD tests in build configuration
 cmake --build build --target bdd_tests         # Build all BDD test executables
-cmake --build build --target run_bdd_tests     # Run full BDD test suite
+cmake --build build --target run_bdd_tests     # Run full BDD test suite (may show "No tests found")
 cmake --build build --target bdd_unit          # Run C BDD unit tests only
 cmake --build build --target bdd_integration   # Run BDD integration tests only
 cmake --build build --target bdd_cucumber      # Run Cucumber features (or C-based equivalents)
 cmake --build build --target bdd-report        # Generate BDD test report (JUnit format)
 ctest --test-dir build -L bdd                  # Run BDD tests using CTest
+
+# Running specific BDD feature files
+./build/bdd/bin/bdd_unit_compiler_basic        # Run compiler basic functionality tests
+./build/bdd/bin/bdd_unit_function_calls        # Run function call tests
+./build/bdd/bin/bdd_unit_if_conditions         # Run if condition tests
+./build/bdd/bin/bdd_unit_bitwise_operators     # Run bitwise operator tests
+./build/bdd/bin/bdd_integration_cli            # Run CLI integration tests
+./build/bdd/bin/bdd_integration_ffi_integration # Run FFI integration tests
+
+# BDD test output interpretation
+# ✓ = Test passed
+# ✗ = Test failed
+# Each scenario shows step-by-step execution with assertions
+# Summary shows: Passed/Failed/Total counts at the end
+
+# BDD test structure
+# Feature files: bdd/features/*.feature (Gherkin format)
+# Step definitions: bdd/steps/ (C implementations)
+# Test executables: build/bdd/bin/bdd_*
+# Scenarios marked with @wip are skipped
+
+# Example BDD test execution:
+# Feature: Basic Compiler Functionality
+#   Scenario: Compile and run a simple Hello World program
+#     Given the Asthra compiler is available
+#       ✓ exists should be true
+#     When I compile the file
+#     Then the compilation should succeed
+#       ✓ compilation_exit_code should equal 0
 ```
 
 **⚠️ Test Build Strategy**: See `docs/contributor/guides/test-build-strategy.md` for critical information about test building and common build failures.
@@ -209,6 +238,20 @@ cargo test --test language_tests   # Language feature tests
 ### Test File Naming Convention
 - **All test files must use the `test_` prefix** - test files should follow the pattern `test_<name>.c`
 - **No trailing `_test` suffix needed** - use `test_semantic.c` instead of `semantic_test.c`
+
+### BDD Testing Best Practices (MANDATORY)
+- **Follow BDD best practices guide** - See `bdd/BDD_BEST_PRACTICES.md` for comprehensive guidelines
+- **Feature files in Gherkin format** - Write human-readable scenarios in `bdd/features/*.feature`
+- **Step definitions in C** - Implement test logic in `bdd/steps/` following established patterns
+- **Handle @wip scenarios properly** - Comment out @wip test functions in main() with clear annotations
+- **Reuse common step functions** - Use functions from `common_steps.c` for consistency
+- **Follow Given-When-Then pattern** - Structure tests with clear setup, action, and assertion phases
+- **Register tests in CMakeLists.txt** - Add `add_bdd_test(test_name unit/integration)` for new tests
+- **Test organization**:
+  - Unit tests in `bdd/steps/unit/` for component-level testing
+  - Integration tests in `bdd/steps/integration/` for end-to-end testing
+- **Debugging**: Use `BDD_KEEP_ARTIFACTS=1` to preserve test artifacts in `bdd-temp/`
+- **Clean test execution**: Always call `common_cleanup()` before `bdd_report()`
 
 ## Performance Targets
 - **Compilation speed**: 15-25% faster than baseline with C17 optimizations
