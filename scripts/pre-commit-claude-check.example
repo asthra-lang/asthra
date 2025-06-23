@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Example pre-commit hook to check CLAUDE.md size
+# To use: copy this file to .git/hooks/pre-commit and make it executable
+
+# Check if CLAUDE.md is being committed
+if git diff --cached --name-only | grep -q "^CLAUDE.md$"; then
+    echo "Checking CLAUDE.md size..."
+    
+    # Run the size check script
+    ./scripts/check-claude-md-size.sh
+    
+    # Exit with the script's exit code
+    exit $?
+fi
+
+# If CLAUDE.md is not being modified, continue
+exit 0

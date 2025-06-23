@@ -4,6 +4,33 @@
 
 This document captures the key architectural insights discovered during the development and testing of Asthra's code generation system, specifically relating to the language's expression-oriented design and its impact on compiler implementation.
 
+## Test Pattern Examples
+
+### Expression-Oriented Test Patterns
+
+When writing tests for Asthra, follow expression-oriented patterns:
+
+```c
+// ✅ CORRECT: Expression-oriented patterns
+const char* source = 
+    "package test;\n"
+    "pub fn main(none) -> void {\n"
+    "    let result = if condition { 42 } else { 0 };\n"
+    "    return ();\n"  // Explicit return required
+    "}\n";
+
+// ❌ INCORRECT: Statement-oriented patterns  
+const char* bad_source = 
+    "if (condition) { action(); } else { other(); }"  // Missing package, returns, types
+```
+
+### Key Testing Principles
+
+1. **Always include package declaration** - Asthra requires explicit package context
+2. **Explicit returns** - Even void functions must use `return ();`
+3. **Expression values** - Control flow constructs return values
+4. **Type consistency** - All branches must return compatible types
+
 ## Expression-Oriented Language Design
 
 ### Core Principle
