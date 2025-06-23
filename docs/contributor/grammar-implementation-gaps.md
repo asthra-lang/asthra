@@ -80,10 +80,19 @@ These are grammar features that may need reconsideration:
 
 ### 4. Additional Grammar Features Needing Implementation Verification
 
-#### Pattern Matching Completeness
+#### Complex Pattern Matching ⚠️ PARTIALLY IMPLEMENTED
 - **Grammar**: Lines 104-110: Full pattern system including `TuplePattern`, `EnumPattern`, `StructPattern`
-- **Status**: Basic patterns work, but complex nested patterns may have gaps
-- **Example**: `let (a, (b, c)) = nested_tuple;` - nested tuple patterns
+- **Status**: ⚠️ PARTIALLY IMPLEMENTED
+- **Working**: Basic patterns, simple tuples, basic enum/struct patterns
+- **Partial**: Nested patterns, generic struct patterns, exhaustiveness checking
+- **Not Working**: Nested enum patterns, shorthand struct syntax, guard conditions
+- **Issues**: 
+  - Struct patterns require explicit field binding: `Point { x: px }` not `Point { x }`
+  - Cannot nest enum patterns: `Option.Some(Result.Ok(x))` not supported
+  - No guard conditions: `pattern if condition => ...` not implemented
+- **Test Coverage**: Comprehensive tests created in `test_complex_pattern_matching.c`
+- **Documentation**: See `docs/contributor/complex-pattern-matching-analysis.md`
+- **Test Branch**: test/complex-pattern-matching
 
 #### Complex Pattern Matching
 - **Grammar**: Lines 104-110: Nested patterns, enum patterns with extraction
@@ -167,12 +176,20 @@ During implementation, these specific issues were found:
 
 ### Definitely Missing/Incomplete
 1. **Complex tuple access patterns** (nested access like .0.1) - Lines 130-131
+2. **Associated Function Calls with Generic Types** ❌ - Implementation exists but not integrated
 
-### Needs Verification
-1. **Raw multi-line strings** (`r"""..."""`) - Line 230
-2. **Repeated array elements** (`[0; 100]`) - Line 155
-3. **Struct field visibility** - Line 46
-4. **Complex pattern matching** (nested patterns) - Lines 104-110
+### Partially Implemented  
+1. **Complex Pattern Matching** ⚠️ - Basic patterns work, advanced features missing
+2. **Struct Field Visibility** ⚠️ - Parsed but not enforced
+
+### Fully Verified
+1. **Raw Multi-line Strings** ✅ - Fully implemented and tested
+2. **Repeated Array Elements** ✅ - Fully implemented across all phases
+3. **Logical NOT Operator** ✅ - Fully implemented and tested
+4. **Const Expressions** ✅ - All operators work at compile time
+5. **Ownership Tags on Variables** ✅ - Fully implemented
+6. **Full Slice Syntax** ✅ - All patterns work correctly
+7. **SizeOf Expression** ✅ - Fully implemented
 
 ### Design Issues in Grammar
 1. **'none' marker** - unique design requiring explicit empty markers - Multiple lines
