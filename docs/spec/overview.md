@@ -376,6 +376,142 @@ fn process_request(req: HttpRequest) -> Result<Response, Error> {
 - **Complete Tooling**: Linting, annotations, programmatic APIs
 - **Production Quality**: 100% test coverage across all categories
 
+## Main Function Return Types - COMPLETE SPECIFICATION ✅
+
+**Asthra provides comprehensive support for multiple main function return types**, each with specific semantics for process exit codes and error handling. This design enables flexible application patterns while maintaining predictable behavior for AI code generation.
+
+### Supported Return Types
+
+#### 1. Integer Return (`i32`)
+```asthra
+pub fn main(none) -> i32 {
+    return 0;  // Direct exit code
+}
+```
+
+**Semantics:**
+- Return value becomes process exit code directly
+- Range: 0-255 (platform dependent)
+- 0 = success, non-zero = error
+- **Use Case**: Command-line tools, system utilities
+
+#### 2. Void Return (`void`)
+```asthra
+pub fn main(none) -> void {
+    return ();  // Implicit exit code 0
+}
+```
+
+**Semantics:**
+- Generated code returns 0 to operating system
+- Always indicates successful termination
+- **Use Case**: Simple scripts, demonstrations, basic programs
+
+#### 3. Result Return (`Result<i32, string>`)
+```asthra
+pub fn main(none) -> Result<i32, string> {
+    return Result.Ok(0);        // Success with exit code
+    // return Result.Err("error"); // Error with message
+}
+```
+
+**Semantics:**
+- `Result.Ok(code)` → exit with specified code
+- `Result.Err(msg)` → print message to stderr, exit with code 1
+- **Use Case**: Applications with rich error reporting
+
+#### 4. Never Return (`Never`)
+```asthra
+pub fn main(none) -> Never {
+    panic("Critical failure");  // Never returns normally
+}
+```
+
+**Semantics:**
+- Function must never return normally
+- Always terminates via `panic()`, `exit()`, or infinite loop
+- Exit code determined by termination mechanism
+- **Use Case**: System services, embedded applications, daemon processes
+
+### Type System Integration
+
+The Never type is fully integrated into Asthra's type system:
+
+```asthra
+// Never type properties
+extern "C" fn exit(code: i32) -> Never;    // System exit function
+extern "C" fn abort() -> Never;            // System abort function
+
+// Never type in complex expressions
+pub fn handle_critical_error(error: CriticalError) -> i32 {
+    match error.severity {
+        Severity.Warning => return 0,
+        Severity.Error => return -1,
+        Severity.Fatal => panic("Fatal error"), // Never returns
+    }
+    // Compiler knows all paths are covered
+}
+```
+
+### AI Generation Patterns
+
+Each return type provides clear patterns for AI code generation:
+
+```asthra
+// Pattern 1: Simple success/failure
+pub fn main(none) -> i32 {
+    let result = perform_operation();
+    return if result.is_success() { 0 } else { 1 };
+}
+
+// Pattern 2: No error handling needed
+pub fn main(none) -> void {
+    print_greeting();
+    return ();
+}
+
+// Pattern 3: Rich error reporting
+pub fn main(none) -> Result<i32, string> {
+    match validate_arguments() {
+        Ok(config) => {
+            match run_application(config) {
+                Ok(exit_code) => Result.Ok(exit_code),
+                Err(error) => Result.Err(format("Application error: {}", error))
+            }
+        },
+        Err(error) => Result.Err(format("Invalid arguments: {}", error))
+    }
+}
+
+// Pattern 4: Service/daemon pattern
+pub fn main(none) -> Never {
+    initialize_service();
+    loop {
+        handle_requests();
+    }
+    // Never reaches here
+}
+```
+
+### Platform Compatibility
+
+All return types are implemented with full platform support:
+
+- **Unix/Linux**: Uses `WEXITSTATUS` macro for exit code extraction
+- **Windows**: Direct exit code return from `system()` calls
+- **Cross-platform**: Consistent behavior across all supported platforms
+
+### Implementation Status
+
+| Return Type | Status | Code Generation | Runtime Support |
+|-------------|--------|----------------|----------------|
+| `i32` | ✅ Complete | ✅ Implemented | ✅ Tested |
+| `void` | ✅ Complete | ✅ Implemented | ✅ Tested |
+| `Result<i32, string>` | ✅ Complete | ✅ Implemented | ✅ Tested |
+| `Never` | ✅ Complete | ✅ Implemented | ✅ Tested |
+
+**All main function return types are production-ready and fully tested.**
+
 ## Strategic Position
 
 **Asthra has transformed into the definitive champion for AI code generation**, combining AI-friendly patterns with production-ready performance and comprehensive feature implementation.

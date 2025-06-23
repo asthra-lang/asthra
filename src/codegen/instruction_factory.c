@@ -103,6 +103,35 @@ AssemblyInstruction *create_je_instruction(const char *label) {
     );
 }
 
+AssemblyInstruction *create_jump_instruction(InstructionType jump_type, const char *label) {
+    char *label_copy = strdup(label);
+    if (!label_copy) return NULL;
+    
+    return create_instruction(jump_type, 1,
+        (AssemblyOperand){.type = OPERAND_LABEL, .data.label = label_copy}
+    );
+}
+
+AssemblyInstruction *create_setcc_instruction(ConditionCode condition, Register dest) {
+    // Map condition code to appropriate SETCC instruction
+    InstructionType inst_type;
+    switch (condition) {
+        case COND_E:  inst_type = INST_SETE; break;
+        case COND_NE: inst_type = INST_SETNE; break;
+        case COND_L:  inst_type = INST_SETL; break;
+        case COND_LE: inst_type = INST_SETLE; break;
+        case COND_G:  inst_type = INST_SETG; break;
+        case COND_GE: inst_type = INST_SETGE; break;
+        case COND_Z:  inst_type = INST_SETZ; break;
+        case COND_NZ: inst_type = INST_SETNZ; break;
+        default:      inst_type = INST_SETE; break; // Default to SETE
+    }
+    
+    return create_instruction(inst_type, 1,
+        (AssemblyOperand){.type = OPERAND_REGISTER, .data.reg = dest}
+    );
+}
+
 AssemblyInstruction *create_cmp_instruction(Register reg1, Register reg2) {
     return create_instruction(INST_CMP, 2,
         (AssemblyOperand){.type = OPERAND_REGISTER, .data.reg = reg1},

@@ -124,6 +124,116 @@ bool generate_binary_arithmetic(CodeGenerator *generator, BinaryOperator op,
         return mov_inst && instruction_buffer_add(generator->instruction_buffer, mov_inst);
     }
     
+    // Handle logical operators with short-circuit evaluation
+    if (op == BINOP_AND || op == BINOP_OR) {
+        // For logical operators, we need to implement short-circuit evaluation
+        // For now, use a simplified approach that evaluates both operands
+        
+        // Test left operand
+        AssemblyInstruction *test_left = create_instruction(INST_TEST, 2,
+            create_register_operand(left_reg),
+            create_register_operand(left_reg));
+        if (!test_left || !instruction_buffer_add(generator->instruction_buffer, test_left)) {
+            return false;
+        }
+        
+        if (op == BINOP_AND) {
+            // For AND: if left is false (0), result is false
+            // Create labels for the short-circuit case
+            const char *false_label = label_manager_create_label(generator->label_manager, LABEL_BRANCH_TARGET, "and_false");
+            const char *end_label = label_manager_create_label(generator->label_manager, LABEL_BRANCH_TARGET, "and_end");
+            
+            // JZ false_label (jump if zero/false)
+            AssemblyInstruction *jz_inst = create_jump_instruction(INST_JZ, false_label);
+            if (!jz_inst || !instruction_buffer_add(generator->instruction_buffer, jz_inst)) {
+                return false;
+            }
+            
+            // Left is true, check right operand
+            AssemblyInstruction *test_right = create_instruction(INST_TEST, 2,
+                create_register_operand(right_reg),
+                create_register_operand(right_reg));
+            if (!test_right || !instruction_buffer_add(generator->instruction_buffer, test_right)) {
+                return false;
+            }
+            
+            // SETNZ result_reg (set if not zero)
+            AssemblyInstruction *setnz_inst = create_setcc_instruction(COND_NZ, result_reg);
+            if (!setnz_inst || !instruction_buffer_add(generator->instruction_buffer, setnz_inst)) {
+                return false;
+            }
+            
+            // JMP end_label
+            AssemblyInstruction *jmp_inst = create_jump_instruction(INST_JMP, end_label);
+            if (!jmp_inst || !instruction_buffer_add(generator->instruction_buffer, jmp_inst)) {
+                return false;
+            }
+            
+            // false_label: MOV result_reg, 0
+            label_manager_define_label(generator->label_manager, false_label, 
+                                     generator->instruction_buffer->count);
+            AssemblyInstruction *mov_false = create_instruction(INST_MOV, 2,
+                create_register_operand(result_reg),
+                create_immediate_operand(0));
+            if (!mov_false || !instruction_buffer_add(generator->instruction_buffer, mov_false)) {
+                return false;
+            }
+            
+            // Add end label
+            label_manager_define_label(generator->label_manager, end_label,
+                                     generator->instruction_buffer->count);
+            
+        } else { // BINOP_OR
+            // For OR: if left is true (non-zero), result is true
+            const char *true_label = label_manager_create_label(generator->label_manager, LABEL_BRANCH_TARGET, "or_true");
+            const char *end_label = label_manager_create_label(generator->label_manager, LABEL_BRANCH_TARGET, "or_end");
+            
+            // JNZ true_label (jump if not zero/true)
+            AssemblyInstruction *jnz_inst = create_jump_instruction(INST_JNZ, true_label);
+            if (!jnz_inst || !instruction_buffer_add(generator->instruction_buffer, jnz_inst)) {
+                return false;
+            }
+            
+            // Left is false, check right operand
+            AssemblyInstruction *test_right = create_instruction(INST_TEST, 2,
+                create_register_operand(right_reg),
+                create_register_operand(right_reg));
+            if (!test_right || !instruction_buffer_add(generator->instruction_buffer, test_right)) {
+                return false;
+            }
+            
+            // SETNZ result_reg
+            AssemblyInstruction *setnz_inst = create_setcc_instruction(COND_NZ, result_reg);
+            if (!setnz_inst || !instruction_buffer_add(generator->instruction_buffer, setnz_inst)) {
+                return false;
+            }
+            
+            // JMP end_label
+            AssemblyInstruction *jmp_inst = create_jump_instruction(INST_JMP, end_label);
+            if (!jmp_inst || !instruction_buffer_add(generator->instruction_buffer, jmp_inst)) {
+                return false;
+            }
+            
+            // true_label:
+            label_manager_define_label(generator->label_manager, true_label,
+                                     generator->instruction_buffer->count);
+            
+            // MOV result_reg, 1
+            AssemblyInstruction *mov_true = create_instruction(INST_MOV, 2,
+                create_register_operand(result_reg),
+                create_immediate_operand(1));
+            if (!mov_true || !instruction_buffer_add(generator->instruction_buffer, mov_true)) {
+                return false;
+            }
+            
+            // end_label:
+            label_manager_define_label(generator->label_manager, end_label,
+                                     generator->instruction_buffer->count);
+        }
+        
+        return true;
+    }
+    
     // Handle arithmetic operators
     InstructionType inst_type;
     switch (op) {

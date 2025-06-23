@@ -196,6 +196,228 @@ return Result.Ok(0);
 ```
 The function returns a successful result with exit code 0.
 
+## Main Function Return Types
+
+Asthra provides flexible options for main function return types, each suited for different application patterns. Understanding these options helps you choose the right approach for your program's needs.
+
+### 1. Integer Return Type (`i32`)
+
+**Best for**: Command-line tools, system utilities, build scripts
+
+```asthra
+pub fn main(none) -> i32 {
+    let result = perform_operation();
+    return if result.is_success() { 0 } else { 1 };
+}
+```
+
+**Characteristics:**
+- Return value becomes the process exit code directly
+- 0 indicates success, non-zero indicates error
+- Range: typically 0-255 (platform dependent)
+- Simple and direct for basic success/failure scenarios
+
+**Example Use Cases:**
+```asthra
+// File processing utility
+pub fn main(none) -> i32 {
+    let file_path = get_command_line_arg(1);
+    match process_file(file_path) {
+        true => return 0,   // Success
+        false => return 1   // Error
+    }
+}
+
+// Validation tool with different exit codes
+pub fn main(none) -> i32 {
+    match validate_system() {
+        ValidationResult.AllGood => return 0,
+        ValidationResult.Warnings => return 1,
+        ValidationResult.Errors => return 2,
+        ValidationResult.CriticalFailure => return 3
+    }
+}
+```
+
+### 2. Void Return Type (`void`)
+
+**Best for**: Simple programs, tutorials, demonstrations
+
+```asthra
+pub fn main(none) -> void {
+    print_greeting();
+    perform_simple_task();
+    return ();
+}
+```
+
+**Characteristics:**
+- Always exits with code 0 (success)
+- No explicit exit code handling needed
+- Simplest option for programs that don't need error reporting
+- Uses unit type `()` for return statement
+
+**Example Use Cases:**
+```asthra
+// Simple greeting program
+pub fn main(none) -> void {
+    let name = "World";
+    print("Hello, " + name + "!");
+    return ();
+}
+
+// Basic calculation demo
+pub fn main(none) -> void {
+    let a = 10;
+    let b = 20;
+    let sum = a + b;
+    print("Sum: " + sum.to_string());
+    return ();
+}
+```
+
+### 3. Result Return Type (`Result<i32, string>`)
+
+**Best for**: Applications with rich error reporting, complex programs
+
+```asthra
+pub fn main(none) -> Result<i32, string> {
+    return Result.Ok(0);        // Success with exit code
+    // return Result.Err("error message"); // Error with description
+}
+```
+
+**Characteristics:**
+- `Result.Ok(code)` exits with the specified code
+- `Result.Err(message)` prints the message to stderr and exits with code 1
+- Enables descriptive error messages for debugging
+- Supports different success exit codes
+
+**Example Use Cases:**
+```asthra
+// Configuration-based application
+pub fn main(none) -> Result<i32, string> {
+    let config = match load_config("app.conf") {
+        Ok(c) => c,
+        Err(e) => return Result.Err("Failed to load config: " + e)
+    };
+    
+    let result = match run_application(config) {
+        Ok(exit_code) => exit_code,
+        Err(e) => return Result.Err("Application error: " + e)
+    };
+    
+    return Result.Ok(result);
+}
+
+// Network service with detailed error reporting
+pub fn main(none) -> Result<i32, string> {
+    match initialize_network() {
+        Ok(_) => {},
+        Err(e) => return Result.Err("Network initialization failed: " + e)
+    }
+    
+    match start_server() {
+        Ok(_) => Result.Ok(0),
+        Err(e) => Result.Err("Server startup failed: " + e)
+    }
+}
+```
+
+### 4. Never Return Type (`Never`)
+
+**Best for**: System services, daemon processes, embedded applications
+
+```asthra
+pub fn main(none) -> Never {
+    initialize_service();
+    loop {
+        handle_requests();
+    }
+    // Never reaches here - function never returns normally
+}
+```
+
+**Characteristics:**
+- Function must never return through normal control flow
+- Always terminates via `panic()`, `exit()`, or infinite loops
+- Exit code determined by the termination mechanism
+- Enables compiler optimizations and exhaustiveness checking
+
+**Example Use Cases:**
+```asthra
+// HTTP server daemon
+pub fn main(none) -> Never {
+    initialize_server();
+    log("Server started, entering main loop");
+    
+    loop {
+        let request = wait_for_request();
+        handle_request(request);
+    }
+}
+
+// Embedded system main loop
+pub fn main(none) -> Never {
+    initialize_hardware();
+    
+    loop {
+        read_sensors();
+        update_actuators();
+        sleep_microseconds(1000);
+    }
+}
+
+// Critical system monitor
+pub fn main(none) -> Never {
+    while true {
+        let system_status = check_system_health();
+        if system_status.is_critical() {
+            panic("Critical system failure detected");
+        }
+        sleep_seconds(1);
+    }
+}
+```
+
+### Choosing the Right Return Type
+
+| Use Case | Recommended Type | Reason |
+|----------|------------------|---------|
+| Simple scripts | `void` | No error handling needed |
+| Command-line tools | `i32` | Standard Unix exit codes |
+| Complex applications | `Result<i32, string>` | Rich error reporting |
+| System services | `Never` | Continuous operation |
+| Build tools | `i32` | Integration with build systems |
+| Embedded systems | `Never` | Continuous operation |
+| Tutorials/demos | `void` | Simplicity |
+
+### Migration Between Return Types
+
+You can easily migrate between return types as your program evolves:
+
+```asthra
+// Start simple
+pub fn main(none) -> void {
+    process_data();
+    return ();
+}
+
+// Add basic error handling
+pub fn main(none) -> i32 {
+    let success = process_data();
+    return if success { 0 } else { 1 };
+}
+
+// Add rich error reporting
+pub fn main(none) -> Result<i32, string> {
+    match process_data() {
+        Ok(_) => Result.Ok(0),
+        Err(e) => Result.Err("Processing failed: " + e)
+    }
+}
+```
+
 ## Next Steps
 
 Now that you have a working Asthra program, you can:

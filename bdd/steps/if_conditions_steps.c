@@ -208,8 +208,7 @@ int main(void) {
     test_simple_if_false();
     test_if_else_condition();
     test_nested_if_conditions();
-    // Note: test_if_expression_result() and test_complex_boolean_expression() 
-    // are marked as @wip in feature file - not implemented yet
+    test_complex_boolean_expression(); // Test the @wip scenario
     
     // Cleanup
     common_cleanup();

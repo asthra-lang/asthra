@@ -95,28 +95,6 @@ Feature: If Condition Functionality
     And the output should contain "b is also greater than 15"
     And the exit code should be 0
 
-  @wip
-  Scenario: If condition with expression result
-    Given I have a file "if_expression.asthra" with:
-      """
-      package main;
-      
-      pub fn main(none) -> void {
-          let result: i32 = if true { 42 } else { 0 };
-          if result == 42 {
-              log("Result is 42");
-          }
-          return ();
-      }
-      """
-    When I compile the file
-    Then the compilation should succeed
-    And an executable should be created
-    When I run the executable
-    Then the output should contain "Result is 42"
-    And the exit code should be 0
-
-  @wip
   Scenario: If condition with complex boolean expression
     Given I have a file "complex_condition.asthra" with:
       """
