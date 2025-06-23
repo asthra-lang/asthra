@@ -39,7 +39,12 @@ typedef enum {
     // Comparison and control flow
     INST_CMP, INST_TEST, INST_JMP, INST_JE, INST_JNE, INST_JL, INST_JLE,
     INST_JG, INST_JGE, INST_JA, INST_JAE, INST_JB, INST_JBE,
+    INST_JZ, INST_JNZ, INST_JS, INST_JNS, INST_JO, INST_JNO,
     INST_CALL, INST_RET,
+    
+    // Set condition codes
+    INST_SETE, INST_SETNE, INST_SETL, INST_SETLE, INST_SETG, INST_SETGE,
+    INST_SETA, INST_SETAE, INST_SETB, INST_SETBE, INST_SETZ, INST_SETNZ,
     
     // Stack operations
     INST_PUSH, INST_POP,
@@ -61,6 +66,26 @@ typedef enum {
     BRANCH_HINT_LIKELY,
     BRANCH_HINT_UNLIKELY
 } BranchHint;
+
+// Condition codes for conditional instructions
+typedef enum {
+    COND_E,   // Equal
+    COND_NE,  // Not equal
+    COND_L,   // Less than (signed)
+    COND_LE,  // Less than or equal (signed)
+    COND_G,   // Greater than (signed)
+    COND_GE,  // Greater than or equal (signed)
+    COND_A,   // Above (unsigned)
+    COND_AE,  // Above or equal (unsigned)
+    COND_B,   // Below (unsigned)
+    COND_BE,  // Below or equal (unsigned)
+    COND_Z,   // Zero
+    COND_NZ,  // Not zero
+    COND_S,   // Sign (negative)
+    COND_NS,  // Not sign (positive or zero)
+    COND_O,   // Overflow
+    COND_NO   // Not overflow
+} ConditionCode;
 
 // Operand types
 typedef enum {
@@ -153,6 +178,8 @@ AssemblyInstruction *create_call_instruction(const char *function_name);
 AssemblyInstruction *create_ret_instruction(void);
 AssemblyInstruction *create_jmp_instruction(const char *label);
 AssemblyInstruction *create_je_instruction(const char *label);
+AssemblyInstruction *create_jump_instruction(InstructionType jump_type, const char *label);
+AssemblyInstruction *create_setcc_instruction(ConditionCode condition, Register dest);
 AssemblyInstruction *create_cmp_instruction(Register reg1, Register reg2);
 AssemblyInstruction *create_load_instruction(Register dest_reg, Register base_reg, int32_t offset);
 AssemblyInstruction *create_inc_instruction(Register reg);

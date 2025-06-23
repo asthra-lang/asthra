@@ -693,6 +693,63 @@ priv fn add(a: int, b: int) -> int " +
 
 Code blocks `{}` group statements and define scope. Variables declared within a block are only accessible within that block.
 
+## Main Function Return Types
+
+The `main` function serves as the entry point for Asthra programs and supports multiple return types, each with specific semantics for process exit codes:
+
+### Integer Return (`i32`)
+```asthra
+pub fn main(none) -> i32 {
+    return 0;  // Direct exit code (0 = success)
+}
+```
+
+**Use Cases**: Command-line tools, build scripts, system utilities
+- Return value becomes process exit code directly
+- 0 indicates success, non-zero indicates error
+
+### Void Return (`void`)
+```asthra
+pub fn main(none) -> void {
+    print("Hello, Asthra!");
+    return ();  // Implicit exit code 0
+}
+```
+
+**Use Cases**: Simple programs, tutorials, demonstrations
+- Always exits with success code (0)
+- Uses unit type `()` for return statement
+
+### Result Return (`Result<i32, string>`)
+```asthra
+pub fn main(none) -> Result<i32, string> {
+    match initialize_application() {
+        Ok(_) => Result.Ok(0),
+        Err(error) => Result.Err("Initialization failed: " + error)
+    }
+}
+```
+
+**Use Cases**: Applications with rich error reporting
+- `Result.Ok(code)` exits with specified code
+- `Result.Err(message)` prints message to stderr, exits with code 1
+
+### Never Return (`Never`)
+```asthra
+pub fn main(none) -> Never {
+    initialize_service();
+    loop {
+        handle_requests();  // Infinite service loop
+    }
+    // Never returns normally
+}
+```
+
+**Use Cases**: System services, daemon processes, embedded systems
+- Function never returns through normal control flow
+- Terminates via `panic()`, `exit()`, or infinite loops
+- Enables compiler optimizations and exhaustiveness checking
+
 ## Enhanced Error Handling with `Result<T,E>` and Pattern Matching
 
 Asthra uses a `Result<T, E>` type for explicit error handling with systematic pattern matching. A function that might fail returns a `Result`, which is either an `Ok(T)` value (success) or an `Err(E)` value (error).

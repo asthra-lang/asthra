@@ -63,14 +63,8 @@ ASTNode *parse_primary(Parser *parser) {
         char *name = strdup(parser->current_token.data.identifier.name);
         advance_token(parser);
         
-        // Try generic type parsing first
-        if (match_token(parser, TOKEN_LESS_THAN)) {
-            node = parse_identifier_with_generics(parser, name, start_loc);
-            if (node) {
-                free(name);
-                return node;
-            }
-        }
+        // Don't try to parse generics here - they should only be parsed in type contexts
+        // or when we know we're parsing a struct literal (handled in postfix)
         
         // Check for associated function call: Type::function
         if (match_token(parser, TOKEN_DOUBLE_COLON)) {
