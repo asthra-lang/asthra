@@ -1,0 +1,39 @@
+package i128_u128_demo;
+
+// Demo of 128-bit integer types in Asthra
+// This demonstrates the new i128 and u128 type support
+
+fn main() -> void {
+    // Signed 128-bit integers
+    let large_signed: i128 = 170141183460469231731687303715884105727;
+    let negative_large: i128 = -170141183460469231731687303715884105728;
+    
+    // Unsigned 128-bit integers  
+    let very_large: u128 = 340282366920938463463374607431768211455;
+    let zero: u128 = 0;
+    
+    // Function parameter usage
+    let result: i128 = add_large_numbers(large_signed, negative_large);
+    
+    return ();
+}
+
+fn add_large_numbers(a: i128, b: i128) -> i128 {
+    // This would require code generation support to actually work
+    return a; // Simplified for now
+}
+
+// Struct with 128-bit fields
+struct LargeNumber {
+    value: i128,
+    unsigned_value: u128
+}
+
+fn create_large_struct() -> LargeNumber {
+    let big_num: LargeNumber = LargeNumber {
+        value: 12345678901234567890123456789012345678,
+        unsigned_value: 98765432109876543210987654321098765432
+    };
+    
+    return big_num;
+}

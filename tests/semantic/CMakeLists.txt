@@ -11,6 +11,7 @@ set(TYPE_SYSTEM_TESTS
     test_advanced_types.c
     test_tuple_type_checking.c
     test_predeclared_functions.c
+    test_i128_u128_types.c
 )
 
 # Create executables for type system tests with common file

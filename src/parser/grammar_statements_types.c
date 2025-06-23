@@ -267,6 +267,7 @@ ASTNode *parse_type(Parser *parser) {
         match_token(parser, TOKEN_I16) || match_token(parser, TOKEN_U16) ||
         match_token(parser, TOKEN_I32) || match_token(parser, TOKEN_U32) ||
         match_token(parser, TOKEN_I64) || match_token(parser, TOKEN_U64) ||
+        match_token(parser, TOKEN_I128) || match_token(parser, TOKEN_U128) ||
         match_token(parser, TOKEN_F32) || match_token(parser, TOKEN_F64) ||
         match_token(parser, TOKEN_BOOL) || match_token(parser, TOKEN_STRING_TYPE) ||
         match_token(parser, TOKEN_VOID) || match_token(parser, TOKEN_USIZE) ||
@@ -285,6 +286,8 @@ ASTNode *parse_type(Parser *parser) {
             case TOKEN_U32: type_name = strdup("u32"); break;
             case TOKEN_I64: type_name = strdup("i64"); break;
             case TOKEN_U64: type_name = strdup("u64"); break;
+            case TOKEN_I128: type_name = strdup("i128"); break;
+            case TOKEN_U128: type_name = strdup("u128"); break;
             case TOKEN_F32: type_name = strdup("f32"); break;
             case TOKEN_F64: type_name = strdup("f64"); break;
             case TOKEN_BOOL: type_name = strdup("bool"); break;

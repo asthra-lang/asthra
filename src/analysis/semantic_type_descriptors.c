@@ -84,8 +84,8 @@ void type_descriptor_release(TypeDescriptor *type) {
     // Check if this type has a name that matches primitive types (defensive check)
     if (type->name && type->category == TYPE_PRIMITIVE) {
         const char* primitive_names[] = {
-            "void", "bool", "i8", "i16", "i32", "i64", "isize",
-            "u8", "u16", "u32", "u64", "usize", "f32", "f64", 
+            "void", "bool", "i8", "i16", "i32", "i64", "i128", "isize",
+            "u8", "u16", "u32", "u64", "u128", "usize", "f32", "f64", 
             "char", "string", "never"
         };
         for (size_t i = 0; i < sizeof(primitive_names) / sizeof(primitive_names[0]); i++) {
