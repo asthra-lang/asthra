@@ -90,10 +90,15 @@ These are grammar features that may need reconsideration:
 - **Status**: Grammar allows visibility modifiers on struct fields
 - **Testing**: Need to verify if field-level visibility is enforced
 
-#### Repeated Array Elements
+#### Repeated Array Elements ✅ TESTED
 - **Grammar**: Line 155: `RepeatedElements <- ConstExpr ';' ConstExpr` (e.g., `[0; 100]`)
-- **Status**: Rust-style array initialization syntax
-- **Testing**: Limited evidence of usage
+- **Status**: ✅ FULLY IMPLEMENTED AND TESTED
+- **Parser**: Complete implementation in `grammar_arrays.c` with special marker
+- **Semantic**: Full type checking and const validation
+- **Codegen**: Generates efficient initialization code
+- **Test Coverage**: Comprehensive tests in `test_repeated_array_elements.c` and `test_repeated_array_semantic.c`
+- **Documentation**: See `docs/contributor/repeated-array-elements-testing.md`
+- **Test Branch**: test/repeated-array-elements
 
 #### Associated Function Calls with Generic Types
 - **Grammar**: Lines 139-140: `AssociatedFuncCall <- (SimpleIdent / GenericType) '::' SimpleIdent '(' ArgList ')'`
