@@ -124,6 +124,24 @@ static TypeDescriptor g_builtin_types[] = {
         .data.primitive = {.primitive_kind = PRIMITIVE_U64},
         .ref_count = 1000000
     },
+    [PRIMITIVE_USIZE] = {
+        .category = TYPE_PRIMITIVE,
+        .flags = {.is_constant = false},
+        .size = sizeof(size_t),
+        .alignment = _Alignof(size_t),
+        .name = "usize",
+        .data.primitive = {.primitive_kind = PRIMITIVE_USIZE},
+        .ref_count = 1000000
+    },
+    [PRIMITIVE_ISIZE] = {
+        .category = TYPE_PRIMITIVE,
+        .flags = {.is_constant = false},
+        .size = sizeof(ptrdiff_t),
+        .alignment = _Alignof(ptrdiff_t),
+        .name = "isize",
+        .data.primitive = {.primitive_kind = PRIMITIVE_ISIZE},
+        .ref_count = 1000000
+    },
     [PRIMITIVE_F32] = {
         .category = TYPE_PRIMITIVE,
         .flags = {.is_constant = false},

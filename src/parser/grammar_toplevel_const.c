@@ -119,13 +119,8 @@ static ASTNode *convert_expr_to_const_expr(ASTNode *expr) {
 static ASTNode *parse_const_expr(Parser *parser) {
     if (!parser) return NULL;
     
-    // Try to parse different const expression types
-    if (match_token(parser, TOKEN_SIZEOF)) {
-        return parse_sizeof(parser);
-    }
-    
-    // For now, parse as regular expression and validate later in semantic analysis
-    // This allows us to handle all literal types, identifiers, and operations
+    // Parse as regular expression and validate later in semantic analysis
+    // This allows us to handle all literal types, identifiers, operations, and sizeof
     ASTNode *expr = parse_expr(parser);
     if (!expr) {
         return NULL;

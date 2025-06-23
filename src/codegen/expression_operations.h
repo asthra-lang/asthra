@@ -7,6 +7,7 @@
 
 // Binary and unary operation generation
 bool generate_binary_expression(CodeGenerator *generator, ASTNode *expr, Register target_reg);
+bool generate_unary_expression(CodeGenerator *generator, ASTNode *expr, Register target_reg);
 bool generate_assignment_expression(CodeGenerator *generator, ASTNode *expr, Register target_reg);
 bool generate_identifier_expression(CodeGenerator *generator, ASTNode *expr, Register target_reg);
 

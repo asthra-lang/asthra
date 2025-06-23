@@ -226,6 +226,21 @@ static bool validate_integer_range(SemanticAnalyzer *analyzer,
             }
             break;
             
+        case PRIMITIVE_USIZE:
+            // usize is platform-dependent, typically 64-bit on 64-bit systems
+            if (value < 0) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH,
+                                     location,
+                                     "Value %lld cannot be negative for usize type", (long long)value);
+                return false;
+            }
+            break;
+            
+        case PRIMITIVE_ISIZE:
+            // isize is platform-dependent, typically 64-bit on 64-bit systems
+            // Can hold any int64_t value
+            break;
+            
         default:
             return false;
     }
@@ -257,6 +272,8 @@ bool validate_const_type_compatibility(SemanticAnalyzer *analyzer,
             case PRIMITIVE_U16:
             case PRIMITIVE_U32:
             case PRIMITIVE_U64:
+            case PRIMITIVE_USIZE:
+            case PRIMITIVE_ISIZE:
                 if (const_value->type != CONST_VALUE_INTEGER) {
                     semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH,
                                          location,

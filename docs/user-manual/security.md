@@ -442,6 +442,101 @@ pub fn test_security_features() -> Result<void, string> {// Test constant-time c
 }
 ```
 
+## Pointer Safety in Security Context
+
+### Safe Raw Pointer Operations
+
+When working with security-sensitive data, raw pointer operations must be carefully managed:
+
+```asthra
+#[human_review(high, context = "security")]
+#[volatile_memory]
+pub fn secure_pointer_operation(sensitive_data: *mut u8, size: usize) -> Result<void, string> {
+    // Validate pointer before use
+    unsafe {
+        if sensitive_data.is_null() {
+            return Result.Err("Null pointer in security context");
+        }
+        
+        // Safe to dereference in unsafe block with validation
+        for i in range(0, size) {
+            *sensitive_data.offset(i) = 0;  // Secure zeroing
+        }
+    }
+    
+    return Result.Ok(void);
+}
+```
+
+### Address-of Operator for Security
+
+The address-of operator creates raw pointers that require careful handling in security contexts:
+
+```asthra
+#[constant_time]
+pub fn secure_address_operation() -> Result<void, string> {
+    let mut secret_key: [u8; 32] = [0; 32];
+    
+    // Generate key material
+    fill_secure_random(&mut secret_key)?;
+    
+    // Get raw pointer for C FFI
+    let key_ptr: *mut u8 = &secret_key;
+    
+    // Use in cryptographic operation
+    let result = unsafe {
+        crypto_operation(key_ptr, 32)
+    };
+    
+    // Always clear the key
+    unsafe {
+        for i in range(0, 32) {
+            *(key_ptr.offset(i)) = 0;
+        }
+    }
+    
+    return result;
+}
+```
+
+**Security Guidelines for Pointers**:
+- Always validate pointers before dereferencing
+- Use `unsafe` blocks only for necessary operations
+- Clear sensitive data through pointers after use
+- Combine with `#[volatile_memory]` to prevent optimization
+
+### Memory Safety in Cryptographic Context
+
+```asthra
+#[human_review(high, context = "crypto")]
+#[constant_time]
+#[volatile_memory]
+pub fn crypto_key_comparison(key1: *const u8, key2: *const u8, size: usize) -> Result<bool, string> {
+    // Constant-time pointer-based comparison
+    let mut diff: u8 = 0;
+    
+    unsafe {
+        // Validate both pointers
+        if key1.is_null() || key2.is_null() {
+            return Result.Err("Null pointer in cryptographic comparison");
+        }
+        
+        // Constant-time comparison using raw pointers
+        for i in range(0, size) {
+            diff |= *key1.offset(i) ^ *key2.offset(i);
+        }
+    }
+    
+    return Result.Ok(diff == 0);
+}
+```
+
+This pattern ensures:
+- Raw pointer operations are contained in `unsafe` blocks
+- Null pointer checks prevent crashes
+- Constant-time execution prevents timing attacks
+- Volatile memory prevents compiler optimizations
+
 ## Next Steps
 
 Now that you understand security features, explore:

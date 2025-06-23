@@ -28,27 +28,68 @@ int generate_c_code(FILE *output, ASTNode *node) {
     
     switch (node->type) {
         case AST_PROGRAM:
-            // Generate main function
-            fprintf(output, "int main() {\n");
-            
-            // Process all declarations in the program
+            // First pass: Generate forward declarations for all functions
             if (node->data.program.declarations) {
                 ASTNodeList *declarations = node->data.program.declarations;
+                for (size_t i = 0; i < declarations->count; i++) {
+                    ASTNode *decl = declarations->nodes[i];
+                    if (decl && decl->type == AST_FUNCTION_DECL) {
+                        const char *func_name = decl->data.function_decl.name;
+                        
+                        // Skip forward declaration for main function
+                        if (strcmp(func_name, "main") == 0) {
+                            continue;
+                        }
+                        
+                        // Generate forward declaration
+                        const char *return_type = "void"; // Default to void
+                        if (decl->data.function_decl.return_type) {
+                            return_type = get_c_type_string(decl->data.function_decl.return_type);
+                        }
+                        fprintf(output, "%s %s();\n", return_type, func_name);
+                    }
+                }
+                fprintf(output, "\n");
+                
+                // Second pass: Generate function definitions
                 for (size_t i = 0; i < declarations->count; i++) {
                     if (declarations->nodes[i]) {
                         generate_c_code(output, declarations->nodes[i]);
                     }
                 }
             }
-            
-            fprintf(output, "    return 0;\n");
-            fprintf(output, "}\n");
             break;
             
         case AST_FUNCTION_DECL:
-            // For now, just process the function body
-            if (node->data.function_decl.body) {
-                generate_c_code(output, node->data.function_decl.body);
+            {
+                // Generate proper C function definition
+                const char *func_name = node->data.function_decl.name;
+                const char *return_type = "void"; // Default to void
+                
+                if (node->data.function_decl.return_type) {
+                    return_type = get_c_type_string(node->data.function_decl.return_type);
+                }
+                
+                // Check if this is the main function
+                if (strcmp(func_name, "main") == 0) {
+                    // Generate C main function
+                    fprintf(output, "int main() {\n");
+                } else {
+                    // Generate regular function
+                    fprintf(output, "%s %s() {\n", return_type, func_name);
+                }
+                
+                // Generate function body
+                if (node->data.function_decl.body) {
+                    generate_c_code(output, node->data.function_decl.body);
+                }
+                
+                // Add return statement if needed
+                if (strcmp(func_name, "main") == 0) {
+                    fprintf(output, "    return 0;\n");
+                }
+                
+                fprintf(output, "}\n\n");
             }
             break;
             
@@ -195,6 +236,19 @@ int generate_c_code(FILE *output, ASTNode *node) {
             }
             
             generate_c_code(output, node->data.binary_expr.right);
+            break;
+            
+        case AST_UNARY_EXPR:
+            // Handle unary expressions
+            switch (node->data.unary_expr.operator) {
+                case UNOP_MINUS: fprintf(output, "-"); break;
+                case UNOP_NOT: fprintf(output, "!"); break;
+                case UNOP_BITWISE_NOT: fprintf(output, "~"); break;
+                case UNOP_DEREF: fprintf(output, "*"); break;
+                case UNOP_ADDRESS_OF: fprintf(output, "&"); break;
+                default: fprintf(output, "/* unknown unary op */"); break;
+            }
+            generate_c_code(output, node->data.unary_expr.operand);
             break;
             
         case AST_LET_STMT:

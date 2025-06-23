@@ -48,7 +48,7 @@ ASTNode* parse_test_source(const char* source, const char* filename) {
     }
 
     // Parse the source and create AST
-    ASTNode* ast = parser_parse_program(parser);
+    ASTNode* ast = parse_program(parser);
     if (ast) {
         track_memory_allocation(sizeof(ASTNode));
     }

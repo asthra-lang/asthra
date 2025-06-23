@@ -86,6 +86,9 @@ bool code_generate_expression(CodeGenerator *generator, ASTNode *expr, Register 
         case AST_BINARY_EXPR:
             return generate_binary_expression(generator, expr, target_reg);
         
+        case AST_UNARY_EXPR:
+            return generate_unary_expression(generator, expr, target_reg);
+        
         case AST_ASSIGNMENT:
             return generate_assignment_expression(generator, expr, target_reg);
         

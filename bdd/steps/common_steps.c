@@ -112,7 +112,8 @@ void given_asthra_compiler_available(void) {
     // Check if compiler exists
     struct stat st;
     int exists = (stat("./build/bin/asthra", &st) == 0) || 
-                 (stat("./build/asthra", &st) == 0) || 
+                 (stat("./bin/asthra", &st) == 0) ||  // When run from build directory
+                 (stat("../build/bin/asthra", &st) == 0) ||  // When run from bdd directory
                  (stat("./asthra", &st) == 0);
     
     BDD_ASSERT_TRUE(exists);
@@ -164,9 +165,12 @@ void when_compile_file(void) {
     // Try to find the compiler
     const char* compiler_path = "./build/bin/asthra";
     if (access(compiler_path, X_OK) != 0) {
-        compiler_path = "./build/asthra";
+        compiler_path = "./bin/asthra";  // When run from build directory
         if (access(compiler_path, X_OK) != 0) {
-            compiler_path = "./asthra";
+            compiler_path = "../build/bin/asthra";  // When run from bdd directory
+            if (access(compiler_path, X_OK) != 0) {
+                compiler_path = "./asthra";
+            }
         }
     }
     

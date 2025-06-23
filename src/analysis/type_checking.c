@@ -37,6 +37,26 @@ bool semantic_check_type_compatibility(SemanticAnalyzer *analyzer,
         return true;
     }
     
+    // Pointer type compatibility: mutable pointer can be assigned to const pointer
+    // e.g., *i32 can be assigned to *const i32
+    if (type1->category == TYPE_POINTER && type2->category == TYPE_POINTER) {
+        TypeDescriptor *pointee1 = type1->data.pointer.pointee_type;
+        TypeDescriptor *pointee2 = type2->data.pointer.pointee_type;
+        
+        // Check if pointee types are compatible
+        if (pointee1 && pointee2 && type_descriptor_equals(pointee1, pointee2)) {
+            // Mutable pointer (*i32) can be assigned to const pointer (*const i32)
+            // but not vice versa (covariance)
+            if (type1->flags.is_mutable && !type2->flags.is_mutable) {
+                return true; // *mut T -> *const T (allowed)
+            }
+            // Same mutability is always fine (exact match already handled above)
+            if (type1->flags.is_mutable == type2->flags.is_mutable) {
+                return true;
+            }
+        }
+    }
+    
     // Special case: Result<T, E> type compatibility with Result generic instances
     // Handle case where variable is declared as Result<T, E> (TYPE_RESULT) but
     // expression produces Result generic instance (TYPE_GENERIC_INSTANCE)
