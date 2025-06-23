@@ -105,10 +105,16 @@ These are grammar features that may need reconsideration:
 - **Documentation**: See `docs/contributor/repeated-array-elements-testing.md`
 - **Test Branch**: test/repeated-array-elements
 
-#### Associated Function Calls with Generic Types
+#### Associated Function Calls with Generic Types ❌ NOT INTEGRATED
 - **Grammar**: Lines 139-140: `AssociatedFuncCall <- (SimpleIdent / GenericType) '::' SimpleIdent '(' ArgList ')'`
 - **Example**: `Vec<i32>::new()` - generic type before `::`
-- **Status**: May work but needs verification
+- **Status**: ❌ IMPLEMENTATION EXISTS BUT NOT INTEGRATED
+- **Parser**: Implementation in `grammar_generics.c` but function never called
+- **Issue**: `parse_identifier_with_generics()` exists but not connected to main parser
+- **Impact**: Generic type associated functions completely non-functional
+- **Test Coverage**: All tests fail - created `test_associated_func_generic_types.c`
+- **Documentation**: See `docs/contributor/associated-func-generic-types-analysis.md`
+- **Test Branch**: test/associated-function-generic-types
 
 ### 5. Edge Case Issues Discovered
 
