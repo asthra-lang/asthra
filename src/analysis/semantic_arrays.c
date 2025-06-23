@@ -17,6 +17,7 @@
 #include "semantic_diagnostics.h"
 #include "semantic_builtins.h"
 #include "type_info.h"
+#include "const_evaluator.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -39,7 +40,116 @@ bool analyze_array_literal(SemanticAnalyzer *analyzer, ASTNode *expr) {
         return false;
     }
 
-    // Analyze all elements and find common type
+    // Check if this is a repeated array [value; count]
+    // Repeated arrays have exactly 3 elements: marker, value, count
+    if (elements->count == 3) {
+        ASTNode *first = elements->nodes[0];
+        if (first && first->type == AST_IDENTIFIER && 
+            first->data.identifier.name && 
+            strcmp(first->data.identifier.name, "__repeated_array__") == 0) {
+            
+            // This is a repeated array: [value; count]
+            ASTNode *value_expr = elements->nodes[1];
+            ASTNode *count_expr = elements->nodes[2];
+            
+            // Analyze the value expression
+            if (!semantic_analyze_expression(analyzer, value_expr)) {
+                return false;
+            }
+            
+            // Analyze the count expression (should be a constant integer)
+            if (!semantic_analyze_expression(analyzer, count_expr)) {
+                return false;
+            }
+            
+            // Get the element type from the value expression
+            TypeDescriptor *element_type = semantic_get_expression_type(analyzer, value_expr);
+            if (!element_type) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_INFERENCE_FAILED, value_expr->location,
+                                     "Failed to determine type for repeated array value");
+                return false;
+            }
+            
+            // Verify count is a constant expression
+            if (!count_expr->flags.is_constant_expr) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_EXPRESSION, count_expr->location,
+                                     "Array size must be a compile-time constant");
+                type_descriptor_release(element_type);
+                return false;
+            }
+            
+            // Evaluate the constant expression to get the size
+            ConstValue *count_value = NULL;
+            
+            // Handle different types of constant expressions
+            if (count_expr->type == AST_INTEGER_LITERAL) {
+                // Direct integer literal
+                count_value = const_value_create_integer(count_expr->data.integer_literal.value);
+            } else if (count_expr->type == AST_IDENTIFIER) {
+                // Const identifier - look up in symbol table
+                SymbolEntry *symbol = semantic_resolve_identifier(analyzer, count_expr->data.identifier.name);
+                if (symbol && symbol->kind == SYMBOL_CONST && symbol->const_value) {
+                    if (symbol->const_value->type == CONST_VALUE_INTEGER) {
+                        count_value = const_value_create_integer(symbol->const_value->data.integer_value);
+                    }
+                }
+            } else {
+                // Try the general const expression evaluator
+                count_value = evaluate_literal_as_const(analyzer, count_expr);
+            }
+            if (!count_value) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_EXPRESSION, count_expr->location,
+                                     "Failed to evaluate array size");
+                type_descriptor_release(element_type);
+                return false;
+            }
+            
+            // Ensure it's an integer
+            if (count_value->type != CONST_VALUE_INTEGER) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, count_expr->location,
+                                     "Array size must be an integer");
+                const_value_destroy(count_value);
+                type_descriptor_release(element_type);
+                return false;
+            }
+            
+            // Get the size value
+            int64_t array_size = count_value->data.integer_value;
+            const_value_destroy(count_value);
+            
+            // Validate size is positive
+            if (array_size <= 0) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_EXPRESSION, count_expr->location,
+                                     "Array size must be positive, got %lld", (long long)array_size);
+                type_descriptor_release(element_type);
+                return false;
+            }
+            
+            // Create fixed-size array type
+            TypeDescriptor *array_type = type_descriptor_create_array(element_type, (size_t)array_size);
+            if (!array_type) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, expr->location,
+                                     "Failed to create array type");
+                type_descriptor_release(element_type);
+                return false;
+            }
+            
+            // Set the type info for the expression
+            semantic_set_expression_type(analyzer, expr, array_type);
+            
+            // Release references
+            type_descriptor_release(element_type);
+            type_descriptor_release(array_type);
+            
+            expr->flags.is_constant_expr = value_expr->flags.is_constant_expr && count_expr->flags.is_constant_expr;
+            expr->flags.has_side_effects = value_expr->flags.has_side_effects || count_expr->flags.has_side_effects;
+            expr->flags.is_lvalue = false; // Array literals are rvalues
+            
+            return true;
+        }
+    }
+
+    // Regular array literal - analyze all elements and find common type
     TypeDescriptor *common_element_type = NULL;
     bool all_elements_constant = true;
     bool has_side_effects = false;
@@ -47,30 +157,41 @@ bool analyze_array_literal(SemanticAnalyzer *analyzer, ASTNode *expr) {
     for (size_t i = 0; i < elements->count; i++) {
         ASTNode *element = elements->nodes[i];
         if (!semantic_analyze_expression(analyzer, element)) {
+            if (common_element_type) {
+                type_descriptor_release(common_element_type);
+            }
             return false;
         }
 
         all_elements_constant = all_elements_constant && element->flags.is_constant_expr;
         has_side_effects = has_side_effects || element->flags.has_side_effects;
 
-        if (!element->type_info || !element->type_info->type_descriptor) {
+        TypeDescriptor *element_type = semantic_get_expression_type(analyzer, element);
+        if (!element_type) {
             semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_INFERENCE_FAILED, element->location,
                                  "Failed to determine type for array element");
+            if (common_element_type) {
+                type_descriptor_release(common_element_type);
+            }
             return false;
         }
 
         if (!common_element_type) {
-            common_element_type = (TypeDescriptor*)element->type_info->type_descriptor;
+            common_element_type = element_type;
+            type_descriptor_retain(common_element_type);
         } else {
-            TypeDescriptor *promoted_type = get_promoted_type(analyzer, common_element_type, (TypeDescriptor*)element->type_info->type_descriptor);
-            if (!promoted_type) {
+            // Check if types are compatible
+            if (!semantic_check_type_compatibility(analyzer, element_type, common_element_type)) {
                 semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, element->location,
                                      "Incompatible types in array literal: %s and %s",
-                                     common_element_type->name, ((TypeDescriptor*)element->type_info->type_descriptor)->name);
+                                     common_element_type->name ? common_element_type->name : "unknown",
+                                     element_type->name ? element_type->name : "unknown");
+                type_descriptor_release(element_type);
+                type_descriptor_release(common_element_type);
                 return false;
             }
-            common_element_type = promoted_type;
         }
+        type_descriptor_release(element_type);
     }
 
     if (!common_element_type) {
@@ -79,21 +200,21 @@ bool analyze_array_literal(SemanticAnalyzer *analyzer, ASTNode *expr) {
         return false;
     }
 
-    // Create array type descriptor: [size]ElementType
-    // For now, create a simple slice type since we don't have array type creation
-    TypeDescriptor *array_type_descriptor = get_builtin_type_descriptor(analyzer, "slice");
-    if (!array_type_descriptor) {
+    // Create fixed-size array type [size]ElementType
+    TypeDescriptor *array_type = type_descriptor_create_array(common_element_type, elements->count);
+    if (!array_type) {
         semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, expr->location,
                              "Failed to create array type descriptor");
+        type_descriptor_release(common_element_type);
         return false;
     }
 
-    expr->type_info = create_type_info_from_descriptor(array_type_descriptor);
-    if (!expr->type_info) {
-         semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, expr->location,
-                                 "Failed to create type info for array literal");
-        return false;
-    }
+    // Set the type info for the expression
+    semantic_set_expression_type(analyzer, expr, array_type);
+    
+    // Release references
+    type_descriptor_release(common_element_type);
+    type_descriptor_release(array_type);
 
     expr->flags.is_constant_expr = all_elements_constant;
     expr->flags.has_side_effects = has_side_effects;
