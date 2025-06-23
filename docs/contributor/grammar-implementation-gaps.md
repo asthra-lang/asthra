@@ -85,10 +85,15 @@ These are grammar features that may need reconsideration:
 - **Status**: Basic patterns work, but complex nested patterns may have gaps
 - **Example**: `let (a, (b, c)) = nested_tuple;` - nested tuple patterns
 
-#### Field Visibility in Structs
+#### Field Visibility in Structs ⚠️ PARTIALLY IMPLEMENTED
 - **Grammar**: Line 46: `StructField <- VisibilityModifier? SimpleIdent ':' Type`
-- **Status**: Grammar allows visibility modifiers on struct fields
-- **Testing**: Need to verify if field-level visibility is enforced
+- **Status**: ⚠️ PARSED BUT NOT ENFORCED
+- **Parser**: Fully implemented - correctly extracts `pub`/`priv` modifiers
+- **Semantic**: NOT enforced - has TODO comment in `semantic_structs_visibility.c`
+- **Issue**: All fields are effectively public regardless of modifier
+- **Test Coverage**: Parser tests pass, semantic tests document lack of enforcement
+- **Documentation**: See `docs/contributor/struct-field-visibility-analysis.md`
+- **Test Branch**: test/struct-field-visibility
 
 #### Repeated Array Elements ✅ TESTED
 - **Grammar**: Line 155: `RepeatedElements <- ConstExpr ';' ConstExpr` (e.g., `[0; 100]`)
