@@ -9,6 +9,7 @@
 #include "grammar_statements.h"
 #include "grammar_expressions.h"
 #include "grammar_patterns.h"
+#include "grammar_annotations.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -204,7 +205,22 @@ ASTNode *parse_var_decl(Parser *parser) {
     }
     
     // OwnershipTag is optional and comes after the type
-    // TODO: Parse ownership tags if needed in future versions
+    ASTNodeList *annotations = NULL;
+    if (is_annotation_start(parser)) {
+        // Parse annotations after type
+        annotations = parse_annotation_list(parser);
+        
+        // Validate that only ownership annotations are allowed on variables
+        if (annotations) {
+            for (size_t i = 0; i < annotations->count; i++) {
+                ASTNode *ann = annotations->nodes[i];
+                if (ann->type != AST_OWNERSHIP_TAG) {
+                    report_error(parser, "Only ownership annotations are allowed on variables");
+                    // Don't free annotations here, they'll be freed with the node
+                }
+            }
+        }
+    }
     
     ASTNode *initializer = NULL;
     if (match_token(parser, TOKEN_ASSIGN)) {
@@ -213,6 +229,7 @@ ASTNode *parse_var_decl(Parser *parser) {
         if (!initializer) {
             free(var_name);
             ast_free_node(type);
+            if (annotations) ast_node_list_destroy(annotations);
             return NULL;
         }
     }
@@ -221,6 +238,7 @@ ASTNode *parse_var_decl(Parser *parser) {
         free(var_name);
         ast_free_node(type);
         if (initializer) ast_free_node(initializer);
+        if (annotations) ast_node_list_destroy(annotations);
         return NULL;
     }
     
@@ -229,6 +247,7 @@ ASTNode *parse_var_decl(Parser *parser) {
         free(var_name);
         ast_free_node(type);
         if (initializer) ast_free_node(initializer);
+        if (annotations) ast_node_list_destroy(annotations);
         return NULL;
     }
     
@@ -236,6 +255,7 @@ ASTNode *parse_var_decl(Parser *parser) {
     node->data.let_stmt.type = type;  // Always non-NULL in v1.15+
     node->data.let_stmt.initializer = initializer;
     node->data.let_stmt.is_mutable = is_mutable;  // Set mutability flag
+    node->data.let_stmt.annotations = annotations;  // Ownership tags
     
     return node;
 }

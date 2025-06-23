@@ -121,6 +121,35 @@ if (!var_type) {
     var_symbol->flags.is_mutable = is_mutable;
     var_symbol->flags.is_initialized = (initializer != NULL);
     
+    // Process ownership annotations on the variable
+    if (stmt->data.let_stmt.annotations) {
+        ASTNodeList *annotations = stmt->data.let_stmt.annotations;
+        for (size_t i = 0; i < ast_node_list_size(annotations); i++) {
+            ASTNode *ann = ast_node_list_get(annotations, i);
+            if (ann && ann->type == AST_OWNERSHIP_TAG) {
+                // Process ownership annotation
+                OwnershipType ownership = ann->data.ownership_tag.ownership;
+                
+                // Validate ownership type (already validated by parser, but double-check)
+                if (ownership != OWNERSHIP_GC && 
+                    ownership != OWNERSHIP_C && 
+                    ownership != OWNERSHIP_PINNED) {
+                    semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_ANNOTATION,
+                                         ann->location,
+                                         "Invalid ownership type");
+                    symbol_entry_destroy(var_symbol);
+                    type_descriptor_release(var_type);
+                    return false;
+                }
+                
+                // Store ownership information in symbol
+                // For now, we just validate it's correct
+                // The actual ownership tracking would be handled by the memory manager
+                // TODO: Add ownership field to SymbolEntry to store this information
+            }
+        }
+    }
+    
     // Register the variable in the symbol table
     if (!symbol_table_insert_safe(analyzer->current_scope, var_name, var_symbol)) {
         symbol_entry_destroy(var_symbol);

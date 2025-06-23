@@ -20,20 +20,22 @@ These features exist in grammar.txt but have implementation limitations:
 - **Workaround**: Parser has special handling for float-like tuple access
 - **Impact**: Nested tuple access may require parentheses
 
-#### Const Expression Evaluation  
+#### Const Expression Evaluation ✅ COMPLETED
 - **Grammar**: Lines 33-35: `ConstExpr <- Literal / SimpleIdent / BinaryConstExpr / UnaryConstExpr / SizeOf`
 - **Status**: ✅ FULLY IMPLEMENTED (discovered during investigation)
 - **Parser**: Complete support in `grammar_toplevel_const.c`
 - **Evaluator**: All operators implemented in `const_evaluator.c`
+- **Test Coverage**: test_const_expressions.c verifies all operators work
 - **Limitation**: Const values not emitted in generated C code (compile-time only)
 - **Example**: `priv const SIZE: i32 = 10 * 4;` works perfectly at compile time
 
-#### Ownership Tags on Variables
+#### Ownership Tags on Variables ✅ COMPLETED
 - **Grammar**: Line 89: `VarDecl <- 'let' MutModifier? SimpleIdent ':' Type OwnershipTag? '=' Expr ';'`
-- **Grammar**: Line 26: `OwnershipTag <- '#[ownership(' ('gc'|'c'|'pinned') ')]'`
-- **Implemented**: Ownership tags on struct/enum declarations (lines 43, 48)
-- **Missing**: Ownership tags on variable declarations
-- **Code Comment**: "TODO: Parse ownership tags if needed in future versions"
+- **Grammar**: Line 26: `OwnershipTag <- '@ownership(' ('gc'|'c'|'pinned') ')'`
+- **Status**: FULLY IMPLEMENTED
+- **Implementation PR**: feat/ownership-tags-on-variables
+- **Test Coverage**: Comprehensive test suite in test_ownership_tags.c
+- **Documentation**: See docs/contributor/ownership-tags-implementation.md
 
 ### 2. Implemented but Under-tested Features
 
@@ -121,15 +123,13 @@ During implementation, these specific issues were found:
 3. **Document** the 'none' marker usage clearly for users
 
 ### Low Priority
-1. **Consider** if ownership tags on variables are needed
-2. **Add tests** for repeated array elements syntax
-3. **Verify** raw multi-line string support
+1. **Add tests** for repeated array elements syntax
+2. **Verify** raw multi-line string support
 
 ## Summary of Grammar-Defined Features with Implementation Gaps
 
 ### Definitely Missing/Incomplete
-1. **Ownership tags on variables** - Line 89
-2. **Complex tuple access patterns** (nested access like .0.1) - Lines 130-131
+1. **Complex tuple access patterns** (nested access like .0.1) - Lines 130-131
 
 ### Needs Verification
 1. **All slice syntax patterns** (`:end`, `start:`, `:`) - Lines 134-137
