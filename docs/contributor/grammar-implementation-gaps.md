@@ -54,10 +54,14 @@ These appear to work but may have limited test coverage:
 - **Status**: Multi-line strings work, raw variant uncertain
 - **Testing**: Processed strings tested, raw strings less so
 
-#### SizeOf Expression
+#### SizeOf Expression ✅ VERIFIED
 - **Grammar**: Line 142: `SizeOf <- 'sizeof' '(' Type ')'`
-- **Status**: Defined in grammar as primary expression and const expression
-- **Testing**: Limited evidence of usage in tests
+- **Status**: ✅ FULLY IMPLEMENTED AND TESTED
+- **Parser**: Complete implementation in `grammar_expressions_special.c`
+- **Semantic**: Returns `usize` type (see `semantic_binary_unary.c` line 284)
+- **Test Coverage**: Comprehensive tests in `test_sizeof_operator.c` and `test_sizeof_operator_semantic.c`
+- **Documentation**: See `docs/contributor/sizeof-operator-verification.md`
+- **Test Branch**: test/sizeof-operator-verification
 
 ### 3. Design Issues in Grammar
 
@@ -137,9 +141,8 @@ During implementation, these specific issues were found:
 ### Needs Verification
 1. **Raw multi-line strings** (`r"""..."""`) - Line 230
 2. **Repeated array elements** (`[0; 100]`) - Line 155
-3. **sizeof operator** - Line 142
-4. **Struct field visibility** - Line 46
-5. **Complex pattern matching** (nested patterns) - Lines 104-110
+3. **Struct field visibility** - Line 46
+4. **Complex pattern matching** (nested patterns) - Lines 104-110
 
 ### Design Issues in Grammar
 1. **'none' marker** - unique design requiring explicit empty markers - Multiple lines
