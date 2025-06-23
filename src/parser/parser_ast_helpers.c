@@ -57,6 +57,7 @@ ASTNode *create_literal_int(Parser *parser, int64_t value) {
     if (!node) return NULL;
     
     node->data.integer_literal.value = value;
+    node->flags.is_constant_expr = true;  // Integer literals are compile-time constants
     
     return node;
 }

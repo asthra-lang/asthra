@@ -265,6 +265,99 @@ pub fn memory_safety_example() -> Result<void, string> {// Safe: GC-managed slic
 - Bounds checking can be disabled in release builds
 - Direct memory access when needed
 
+## Pointer Safety and TypeDescriptor Lifecycle
+
+### Critical Memory Management Pattern
+
+Asthra's type system uses a reference-counted TypeDescriptor system with specific lifecycle rules that prevent memory corruption:
+
+```c
+// ✅ CORRECT: TypeInfo owns TypeDescriptor references
+TypeInfo *type_info = create_type_info_from_descriptor(result_type);
+if (type_info) {
+    expr->type_info = type_info;
+    // NOTE: Do NOT release result_type here! TypeInfo owns this reference.
+} else {
+    // Only release on failure since TypeInfo creation failed
+    type_descriptor_release(result_type);
+}
+```
+
+**Critical Rule**: When `create_type_info_from_descriptor()` succeeds, the TypeInfo takes ownership of the TypeDescriptor reference. Releasing it prematurely causes use-after-free bugs.
+
+### Pointer Operations and Unsafe Blocks
+
+All raw pointer dereferences in Asthra require explicit unsafe blocks, following the AI-friendly safety model:
+
+```asthra
+pub fn pointer_safety_example() -> void {
+    let mut x: i32 = 42;
+    let ref_x: *const i32 = &x;     // Address-of operator creates raw pointer
+    let mut y: i32 = 0;
+    
+    // ✅ CORRECT: Pointer dereference in unsafe block
+    unsafe {
+        y = *ref_x;     // Raw pointer dereference requires unsafe
+    }
+    
+    return ();
+}
+```
+
+**Safety Design Philosophy**:
+- `&x` creates `*const T` (raw pointer) - safe operation
+- `*pointer` (raw pointer dereference) requires `unsafe` block
+- Clear, local unsafe boundaries that AI can reliably generate
+- No complex global analysis required
+
+### Address-of Operator Behavior
+
+The address-of operator (`&`) creates raw pointers with specific type rules:
+
+```asthra
+let x: i32 = 42;
+let ptr: *const i32 = &x;    // Creates immutable raw pointer
+let mut y: i32 = 42;
+let mut_ptr: *mut i32 = &y;  // Creates mutable raw pointer (with mut context)
+```
+
+**Type System Integration**:
+- Address-of always produces raw pointer types (`*const T` or `*mut T`)
+- Raw pointers require unsafe blocks for dereference
+- This provides memory safety while maintaining C interoperability
+
+### Memory Corruption Prevention
+
+Common patterns that prevent memory corruption in the type system:
+
+1. **Reference Counting**: All TypeDescriptors use atomic reference counting
+2. **Ownership Transfer**: TypeInfo creation transfers ownership of TypeDescriptor
+3. **Cleanup on Failure**: Only release TypeDescriptor if TypeInfo creation fails
+4. **Explicit Unsafe**: Raw pointer operations require explicit unsafe boundaries
+
+```asthra
+// Example of safe pointer patterns
+pub fn safe_pointer_patterns() -> Result<i32, string> {
+    let data: i32 = 100;
+    let ptr: *const i32 = &data;
+    
+    let result: i32 = unsafe {
+        if ptr.is_null() {
+            return Result.Err("Null pointer");
+        }
+        *ptr  // Safe dereference in unsafe block
+    };
+    
+    return Result.Ok(result);
+}
+```
+
+This design ensures that AI code generators can:
+- Reliably identify unsafe operations
+- Generate correct unsafe block patterns
+- Avoid complex lifetime analysis
+- Maintain local reasoning about safety
+
 ## Next Steps
 
 Now that you understand memory management, explore:

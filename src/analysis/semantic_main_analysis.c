@@ -344,8 +344,7 @@ bool semantic_analyze_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
         }
             
         case AST_UNARY_EXPR:
-            // Analyze the operand of unary expressions
-            result = semantic_analyze_expression(analyzer, expr->data.unary_expr.operand);
+            result = analyze_unary_expression(analyzer, expr);
             break;
             
         case AST_CALL_EXPR: {
@@ -471,7 +470,24 @@ bool semantic_analyze_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
                         }
                         
                         // Evaluate the constant expression to get the size
-                        ConstValue *count_value = evaluate_const_expression(analyzer, count_expr);
+                        ConstValue *count_value = NULL;
+                        
+                        // Handle different types of constant expressions
+                        if (count_expr->type == AST_INTEGER_LITERAL) {
+                            // Direct integer literal
+                            count_value = const_value_create_integer(count_expr->data.integer_literal.value);
+                        } else if (count_expr->type == AST_IDENTIFIER) {
+                            // Const identifier - look up in symbol table
+                            SymbolEntry *symbol = semantic_resolve_identifier(analyzer, count_expr->data.identifier.name);
+                            if (symbol && symbol->kind == SYMBOL_CONST && symbol->const_value) {
+                                if (symbol->const_value->type == CONST_VALUE_INTEGER) {
+                                    count_value = const_value_create_integer(symbol->const_value->data.integer_value);
+                                }
+                            }
+                        } else {
+                            // Try the general const expression evaluator
+                            count_value = evaluate_literal_as_const(analyzer, count_expr);
+                        }
                         if (!count_value) {
                             semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_EXPRESSION,
                                                  count_expr->location,

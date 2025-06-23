@@ -31,7 +31,7 @@ static inline bool is_numeric_type(TypeDescriptor *type) {
     if (!type) return false;
     if (type->category == TYPE_PRIMITIVE) {
         PrimitiveKind kind = (PrimitiveKind)type->data.primitive.primitive_kind;
-        return (kind >= PRIMITIVE_I8 && kind <= PRIMITIVE_U64) ||
+        return (kind >= PRIMITIVE_I8 && kind <= PRIMITIVE_USIZE) ||
                (kind == PRIMITIVE_F32 || kind == PRIMITIVE_F64);
     }
     return type->category == TYPE_INTEGER || 
@@ -45,7 +45,7 @@ static inline bool is_integer_type(TypeDescriptor *type) {
     if (!type) return false;
     if (type->category == TYPE_PRIMITIVE) {
         PrimitiveKind kind = (PrimitiveKind)type->data.primitive.primitive_kind;
-        return (kind >= PRIMITIVE_I8 && kind <= PRIMITIVE_U64);
+        return (kind >= PRIMITIVE_I8 && kind <= PRIMITIVE_USIZE);
     }
     return type->category == TYPE_INTEGER;
 }

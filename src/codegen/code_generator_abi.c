@@ -259,6 +259,65 @@ bool generate_binary_arithmetic(CodeGenerator *generator, BinaryOperator op,
     return arith_inst && instruction_buffer_add(generator->instruction_buffer, arith_inst);
 }
 
+bool generate_unary_arithmetic(CodeGenerator *generator, UnaryOperator op,
+                              Register operand_reg, Register result_reg) {
+    if (!generator) return false;
+    
+    InstructionType inst_type;
+    
+    switch (op) {
+        case UNOP_MINUS:
+            // Move operand to result register if different
+            if (operand_reg != result_reg) {
+                AssemblyInstruction *mov_inst = create_mov_instruction(result_reg, operand_reg);
+                if (!mov_inst || !instruction_buffer_add(generator->instruction_buffer, mov_inst)) {
+                    return false;
+                }
+            }
+            // NEG result_reg
+            inst_type = INST_NEG;
+            break;
+            
+        case UNOP_NOT:
+            // TEST operand_reg, operand_reg
+            {
+                AssemblyInstruction *test_inst = create_instruction(INST_TEST, 2,
+                    create_register_operand(operand_reg),
+                    create_register_operand(operand_reg));
+                if (!test_inst || !instruction_buffer_add(generator->instruction_buffer, test_inst)) {
+                    return false;
+                }
+                // SETZ result_reg (set if zero)
+                AssemblyInstruction *setz_inst = create_setcc_instruction(COND_Z, result_reg);
+                return setz_inst && instruction_buffer_add(generator->instruction_buffer, setz_inst);
+            }
+            
+        case UNOP_BITWISE_NOT:
+            // Move operand to result register if different
+            if (operand_reg != result_reg) {
+                AssemblyInstruction *mov_inst = create_mov_instruction(result_reg, operand_reg);
+                if (!mov_inst || !instruction_buffer_add(generator->instruction_buffer, mov_inst)) {
+                    return false;
+                }
+            }
+            // NOT result_reg
+            inst_type = INST_NOT;
+            break;
+            
+        default:
+            return false; // Unsupported operation
+    }
+    
+    // For NEG and NOT instructions
+    if (op == UNOP_MINUS || op == UNOP_BITWISE_NOT) {
+        AssemblyInstruction *unary_inst = create_instruction(inst_type, 1,
+            create_register_operand(result_reg));
+        return unary_inst && instruction_buffer_add(generator->instruction_buffer, unary_inst);
+    }
+    
+    return true;
+}
+
 bool generate_parameter_setup(CodeGenerator *generator, ASTNode *params) {
     if (!generator || !params) {
         return false;

@@ -340,6 +340,10 @@ const PRIME_COUNT: usize = primes.len;   // Evaluates to 5
 
 ### Pointer Types
 
+Asthra provides raw pointer types for systems programming and C interoperability, with explicit safety requirements through unsafe blocks.
+
+#### Raw Pointer Declaration
+
 ```asthra
 // Immutable pointers
 let const_ptr: *const i32 = &value;
@@ -353,6 +357,102 @@ let mut_array_ptr: *mut []u8 = &mut buffer;
 let void_ptr: *mut void = unsafe { malloc(256) };
 let const_void_ptr: *const void = data_ptr as *const void;
 ```
+
+#### Address-of Operator (`&`)
+
+The address-of operator creates raw pointers from values, with mutability preserved:
+
+```asthra
+pub fn address_of_examples() -> void {
+    let x: i32 = 42;
+    let mut y: i32 = 100;
+    
+    // Address-of creates raw pointers (safe operation)
+    let x_ptr: *const i32 = &x;     // Immutable pointer to immutable data
+    let y_ptr: *mut i32 = &y;       // Mutable pointer to mutable data
+    
+    // Can also get immutable pointer to mutable data
+    let y_const_ptr: *const i32 = &y;
+    
+    return ();
+}
+```
+
+#### Pointer Dereference Safety
+
+All raw pointer dereferences require explicit unsafe blocks, following Asthra's AI-friendly safety model:
+
+```asthra
+pub fn pointer_dereference_examples() -> void {
+    let x: i32 = 42;
+    let ptr: *const i32 = &x;
+    
+    // ✅ CORRECT: Pointer dereference in unsafe block
+    let value: i32 = unsafe {
+        *ptr  // Raw pointer dereference requires unsafe
+    };
+    
+    // ❌ ERROR: This would fail to compile
+    // let value: i32 = *ptr;  // Error: requires unsafe block
+    
+    return ();
+}
+```
+
+#### TypeDescriptor Lifecycle and Memory Safety
+
+**Critical Implementation Pattern**: Asthra's type system uses reference-counted TypeDescriptors with specific lifecycle rules to prevent memory corruption:
+
+```c
+// ✅ CORRECT PATTERN: TypeInfo owns TypeDescriptor references
+TypeInfo *type_info = create_type_info_from_descriptor(result_type);
+if (type_info) {
+    expr->type_info = type_info;
+    // CRITICAL: Do NOT release result_type here! TypeInfo owns this reference.
+} else {
+    // Only release on failure since TypeInfo creation failed
+    type_descriptor_release(result_type);
+}
+```
+
+**Key Rules for Compiler Implementation**:
+1. When `create_type_info_from_descriptor()` succeeds, TypeInfo takes ownership
+2. Never release TypeDescriptor after successful TypeInfo creation
+3. Only release TypeDescriptor on TypeInfo creation failure
+4. Address-of operator must properly retain TypeDescriptor references
+
+#### Pointer Type Rules
+
+1. **Safety Boundary**: Address-of (`&`) is safe, dereference (`*`) requires unsafe
+2. **Type Preservation**: `&T` creates `*const T`, `&mut T` creates `*mut T`
+3. **Memory Model**: Raw pointers provide C-compatible memory access
+4. **AI-Friendly**: Clear unsafe boundaries enable reliable AI code generation
+5. **Local Reasoning**: No complex lifetime analysis required
+
+#### Pointer Operations in Unsafe Context
+
+```asthra
+pub fn unsafe_pointer_operations() -> Result<i32, string> {
+    let mut data: [i32; 5] = [1, 2, 3, 4, 5];
+    let ptr: *mut i32 = &data[0];
+    
+    let sum: i32 = unsafe {
+        let mut total: i32 = 0;
+        for i in range(0, 5) {
+            total += *(ptr.offset(i));  // Pointer arithmetic and dereference
+        }
+        total
+    };
+    
+    return Result.Ok(sum);
+}
+```
+
+This design ensures:
+- Raw pointer operations are explicit and contained
+- AI code generators can identify unsafe boundaries
+- Memory safety is maintained through compiler enforcement
+- C interoperability is preserved without complex analysis
 
 ### Slice Types
 

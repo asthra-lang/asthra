@@ -57,10 +57,46 @@ void type_descriptor_retain(TypeDescriptor *type) {
 void type_descriptor_release(TypeDescriptor *type) {
     if (!type) return;
     
-    // Check if this is a builtin type - builtin types should never be freed
-    if (semantic_is_builtin_type(type)) {
+    // Check for double-free attempt
+    if (type->category == (TypeCategory)-1) {
+        printf("ERROR: Double-free detected! Type descriptor at %p was already freed!\n", (void*)type);
         return;
     }
+    
+    // DEBUG: Print information about the type being released
+    // // printf("DEBUG: type_descriptor_release called on type=%p, name='%s', category=%d, ref_count=%u\n", 
+    //        (void*)type, type->name ? type->name : "NULL", type->category, type->ref_count);
+    
+    // Check if this is a builtin type - builtin types should never be freed
+    bool is_builtin = semantic_is_builtin_type(type);
+    // printf("DEBUG: semantic_is_builtin_type returned %s\n", is_builtin ? "true" : "false");
+    if (is_builtin) {
+        // printf("DEBUG: Returning early - builtin type\n");
+        return;
+    }
+    
+    // Additional safety check for high ref counts indicating builtin types
+    if (type->ref_count >= 1000000) {
+        // printf("DEBUG: Returning early - high ref count %u\n", type->ref_count);
+        return;
+    }
+    
+    // Check if this type has a name that matches primitive types (defensive check)
+    if (type->name && type->category == TYPE_PRIMITIVE) {
+        const char* primitive_names[] = {
+            "void", "bool", "i8", "i16", "i32", "i64", "isize",
+            "u8", "u16", "u32", "u64", "usize", "f32", "f64", 
+            "char", "string", "never"
+        };
+        for (size_t i = 0; i < sizeof(primitive_names) / sizeof(primitive_names[0]); i++) {
+            if (strcmp(type->name, primitive_names[i]) == 0) {
+                // printf("DEBUG: Returning early - primitive type name match: %s\n", type->name);
+                return; // Don't free primitive types
+            }
+        }
+    }
+    
+    // printf("DEBUG: Proceeding with atomic_fetch_sub\n");
     
     uint32_t old_count = atomic_fetch_sub(&type->ref_count, 1);
     if (old_count == 1) {
@@ -157,9 +193,13 @@ void type_descriptor_release(TypeDescriptor *type) {
         // Note: For TYPE_GENERIC_INSTANCE, name points to the same memory as canonical_name
         // which is already freed above, so we must not free it again
         if (type->name && type->category != TYPE_GENERIC_INSTANCE) {
+            // printf("DEBUG: About to free type name: %s\n", type->name);
             free((char*)type->name);
         }
         
+        // printf("DEBUG: About to free type descriptor at %p\n", (void*)type);
+        // Mark as freed to detect double-free attempts
+        type->category = (TypeCategory)-1;  // Poison the memory
         free(type);
     }
 }

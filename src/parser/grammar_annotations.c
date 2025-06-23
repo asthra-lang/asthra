@@ -421,6 +421,35 @@ ASTNode *parse_bracketed_annotation(Parser *parser) {
         return NULL;
     }
     
+    // Check if this is an ownership annotation and create the appropriate node type
+    if (strcmp(annotation_name, "ownership") == 0 && parameters) {
+        // Create AST_OWNERSHIP_TAG node for ownership annotations
+        ASTNode *node = ast_create_node(AST_OWNERSHIP_TAG, start_loc);
+        if (!node) {
+            free(annotation_name);
+            free(parameters);
+            return NULL;
+        }
+        
+        // Set ownership type based on parameter
+        OwnershipType ownership;
+        if (strcmp(parameters, "gc") == 0) {
+            ownership = OWNERSHIP_GC;
+        } else if (strcmp(parameters, "c") == 0) {
+            ownership = OWNERSHIP_C;
+        } else if (strcmp(parameters, "pinned") == 0) {
+            ownership = OWNERSHIP_PINNED;
+        } else {
+            // This shouldn't happen as we validated earlier
+            ownership = OWNERSHIP_GC;
+        }
+        
+        node->data.ownership_tag.ownership = ownership;
+        free(annotation_name);
+        free(parameters);
+        return node;
+    }
+    
     // Create a semantic tag node for general annotations
     ASTNode *node = ast_create_node(AST_SEMANTIC_TAG, start_loc);
     if (!node) {
