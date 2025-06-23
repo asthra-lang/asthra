@@ -154,6 +154,9 @@ bdd-report*.json
 *_steps.o
 *_steps.d
 
+# BDD temporary directory for test artifacts
+bdd-temp/
+
 # Documentation build
 docs/build/
 docs/_build/
