@@ -20,11 +20,13 @@ These features exist in grammar.txt but have implementation limitations:
 - **Workaround**: Parser has special handling for float-like tuple access
 - **Impact**: Nested tuple access may require parentheses
 
-#### Const Expression Evaluation
+#### Const Expression Evaluation  
 - **Grammar**: Lines 33-35: `ConstExpr <- Literal / SimpleIdent / BinaryConstExpr / UnaryConstExpr / SizeOf`
-- **Implemented**: Basic literals and identifiers
-- **Missing**: Complex const expressions with operators (`BinaryConstExpr`, `UnaryConstExpr`)
-- **Example**: `const SIZE: i32 = 10 * 4;` may not work
+- **Status**: ✅ FULLY IMPLEMENTED (discovered during investigation)
+- **Parser**: Complete support in `grammar_toplevel_const.c`
+- **Evaluator**: All operators implemented in `const_evaluator.c`
+- **Limitation**: Const values not emitted in generated C code (compile-time only)
+- **Example**: `priv const SIZE: i32 = 10 * 4;` works perfectly at compile time
 
 #### Ownership Tags on Variables
 - **Grammar**: Line 89: `VarDecl <- 'let' MutModifier? SimpleIdent ':' Type OwnershipTag? '=' Expr ';'`
@@ -126,9 +128,8 @@ During implementation, these specific issues were found:
 ## Summary of Grammar-Defined Features with Implementation Gaps
 
 ### Definitely Missing/Incomplete
-1. **Const expression operators** (BinaryConstExpr, UnaryConstExpr) - Lines 34-35
-2. **Ownership tags on variables** - Line 89
-3. **Complex tuple access patterns** (nested access like .0.1) - Lines 130-131
+1. **Ownership tags on variables** - Line 89
+2. **Complex tuple access patterns** (nested access like .0.1) - Lines 130-131
 
 ### Needs Verification
 1. **All slice syntax patterns** (`:end`, `start:`, `:`) - Lines 134-137
