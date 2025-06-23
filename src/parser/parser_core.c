@@ -161,9 +161,9 @@ bool expect_token(Parser *parser, TokenType expected) {
     
     char error_msg[256];
     snprintf(error_msg, sizeof(error_msg), 
-             "Expected %s, got %s", 
-             token_type_name(expected), 
-             token_type_name(parser->current_token.type));
+             "expected '%s' but found '%s'", 
+             token_type_display_name(expected), 
+             token_type_display_name(parser->current_token.type));
     report_error(parser, error_msg);
     
     return false;
