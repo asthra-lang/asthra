@@ -81,10 +81,10 @@ bool analyze_literal_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
     // Handle other literal types
     switch (expr->type) {
         case AST_INTEGER_LITERAL: {
-            TypeDescriptor *int_type = semantic_get_builtin_type(analyzer, "int");
+            TypeDescriptor *int_type = semantic_get_builtin_type(analyzer, "i32");
             if (!int_type) {
                 semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, expr->location,
-                                     "Failed to get builtin type 'int'");
+                                     "Failed to get builtin type 'i32'");
                 return false;
             }
             expr->type_info = create_type_info_from_descriptor(int_type);
@@ -92,10 +92,10 @@ bool analyze_literal_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
         }
         
         case AST_FLOAT_LITERAL: {
-            TypeDescriptor *float_type = semantic_get_builtin_type(analyzer, "float");
+            TypeDescriptor *float_type = semantic_get_builtin_type(analyzer, "f32");
             if (!float_type) {
                 semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, expr->location,
-                                     "Failed to get builtin type 'float'");
+                                     "Failed to get builtin type 'f32'");
                 return false;
             }
             expr->type_info = create_type_info_from_descriptor(float_type);

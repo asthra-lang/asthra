@@ -181,6 +181,14 @@ ASTNode *parse_pattern(Parser *parser) {
             free(name);
             return NULL;
         } else {
+            // Check for wildcard pattern
+            if (strcmp(name, "_") == 0) {
+                free(name);
+                ASTNode *node = ast_create_node(AST_WILDCARD_PATTERN, start_loc);
+                if (!node) return NULL;
+                return node;
+            }
+            
             // Simple identifier pattern
             ASTNode *node = ast_create_node(AST_IDENTIFIER, start_loc);
             if (!node) {
@@ -287,16 +295,7 @@ ASTNode *parse_pattern(Parser *parser) {
         return node;
     }
     
-    // Handle underscore wildcard pattern
-    if (match_token(parser, TOKEN_IDENTIFIER) && 
-        strcmp(parser->current_token.data.identifier.name, "_") == 0) {
-        advance_token(parser);
-        
-        ASTNode *node = ast_create_node(AST_WILDCARD_PATTERN, start_loc);
-        if (!node) return NULL;
-        
-        return node;
-    }
+    // Note: Wildcard patterns are now handled in the identifier pattern section above
     
     // Handle literals and other patterns
     if (match_token(parser, TOKEN_INTEGER)) {
@@ -307,6 +306,7 @@ ASTNode *parse_pattern(Parser *parser) {
         if (!node) return NULL;
         
         node->data.integer_literal.value = value;
+        node->flags.is_constant_expr = true;  // Integer literals are compile-time constants
         return node;
     }
     
@@ -321,6 +321,7 @@ ASTNode *parse_pattern(Parser *parser) {
         }
         
         node->data.string_literal.value = value;
+        node->flags.is_constant_expr = true;  // String literals are compile-time constants
         return node;
     }
     
@@ -331,6 +332,7 @@ ASTNode *parse_pattern(Parser *parser) {
         if (!node) return NULL;
         
         node->data.bool_literal.value = true;
+        node->flags.is_constant_expr = true;  // Boolean literals are compile-time constants
         return node;
     }
     
@@ -341,6 +343,7 @@ ASTNode *parse_pattern(Parser *parser) {
         if (!node) return NULL;
         
         node->data.bool_literal.value = false;
+        node->flags.is_constant_expr = true;  // Boolean literals are compile-time constants
         return node;
     }
     

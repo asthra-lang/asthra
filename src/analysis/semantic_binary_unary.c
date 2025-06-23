@@ -13,6 +13,7 @@
 #include "semantic_utilities.h"
 #include "semantic_types.h"
 #include "semantic_type_helpers.h"
+#include <stdio.h>
 #include "semantic_diagnostics.h"
 #include "semantic_builtins.h"
 #include "type_info.h"
@@ -137,9 +138,17 @@ bool analyze_binary_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
         return false;
     }
 
+    // DEBUG: Log binary operation type checking
+    printf("DEBUG: Binary operation %d with left='%s', right='%s'\n", 
+           op, left_type->name ? left_type->name : "NULL", 
+           right_type->name ? right_type->name : "NULL");
+
     // Determine result type and check compatibility
     TypeDescriptor *result_type_descriptor = get_binary_op_result_type(
         analyzer, op, left_type, right_type, &expr->location);
+
+    printf("DEBUG: get_binary_op_result_type returned: %s\n", 
+           result_type_descriptor ? (result_type_descriptor->name ? result_type_descriptor->name : "NULL") : "NULL");
 
     if (!result_type_descriptor) {
         return false; // Error already reported by get_binary_op_result_type
@@ -205,18 +214,31 @@ bool analyze_unary_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
         }
     }
     
-    // Analyze the operand
-    if (!semantic_analyze_expression(analyzer, operand)) {
-        return false;
-    }
-    
-    // Get the operand type
-    TypeDescriptor *operand_type = semantic_get_expression_type(analyzer, operand);
-    if (!operand_type) {
-        semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_INFERENCE_FAILED,
-                             operand->location,
-                             "Cannot determine type of operand in unary expression");
-        return false;
+    // Handle sizeof specially - its operand is a type, not an expression
+    TypeDescriptor *operand_type = NULL;
+    if (op == UNOP_SIZEOF) {
+        // For sizeof, the operand is a type node, not an expression
+        operand_type = analyze_type_node(analyzer, operand);
+        if (!operand_type) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_INFERENCE_FAILED,
+                                 operand->location,
+                                 "Cannot determine type for sizeof operand");
+            return false;
+        }
+    } else {
+        // For other unary operators, analyze the operand as an expression
+        if (!semantic_analyze_expression(analyzer, operand)) {
+            return false;
+        }
+        
+        // Get the operand type
+        operand_type = semantic_get_expression_type(analyzer, operand);
+        if (!operand_type) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_INFERENCE_FAILED,
+                                 operand->location,
+                                 "Cannot determine type of operand in unary expression");
+            return false;
+        }
     }
     
     // Determine result type based on operator and operand type
@@ -303,13 +325,14 @@ bool analyze_unary_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
         type_info = create_type_info_from_descriptor(result_type);
         if (type_info) {
             expr->type_info = type_info;
+            // NOTE: Do NOT release result_type here! The TypeInfo now owns this reference.
         } else {
             semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL,
                                  expr->location,
                                  "Failed to create type info for unary expression");
+            // Only release on failure
+            type_descriptor_release(result_type);
         }
-        
-        type_descriptor_release(result_type);  // Release our reference
     }
     
     type_descriptor_release(operand_type);

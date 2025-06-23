@@ -87,6 +87,14 @@ void const_value_destroy(ConstValue *value);
 ConstValue *evaluate_const_expression(SemanticAnalyzer *analyzer, ASTNode *const_expr);
 
 /**
+ * Evaluate a literal node as a constant value
+ * @param analyzer The semantic analyzer instance
+ * @param literal The literal AST node (e.g., AST_INTEGER_LITERAL) to evaluate
+ * @return The evaluated const value, or NULL if evaluation failed
+ */
+ConstValue *evaluate_literal_as_const(SemanticAnalyzer *analyzer, ASTNode *literal);
+
+/**
  * Check for dependency cycles in const declarations
  * @param analyzer The semantic analyzer instance
  * @param const_name The name of the const being declared

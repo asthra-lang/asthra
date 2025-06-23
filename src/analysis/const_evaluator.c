@@ -394,6 +394,10 @@ static ConstValue *evaluate_const_sizeof(SemanticAnalyzer *analyzer, ASTNode *ty
                 case PRIMITIVE_STRING:
                     size = 8; // Pointer size
                     break;
+                case PRIMITIVE_USIZE:
+                case PRIMITIVE_ISIZE:
+                    size = 8; // Platform-dependent, 8 bytes on 64-bit systems
+                    break;
                 default:
                     size = 8; // Default pointer size
                     break;
@@ -523,4 +527,16 @@ bool check_const_dependency_cycle(SemanticAnalyzer *analyzer, const char *const_
     }
     
     return true;
+}
+
+// =============================================================================
+// PUBLIC LITERAL EVALUATION
+// =============================================================================
+
+/**
+ * Evaluate a literal node as a constant value
+ * This is a public wrapper around evaluate_const_literal for direct literal evaluation
+ */
+ConstValue *evaluate_literal_as_const(SemanticAnalyzer *analyzer, ASTNode *literal) {
+    return evaluate_const_literal(analyzer, literal);
 }

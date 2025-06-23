@@ -32,6 +32,7 @@ ASTNode *parse_bool_literal(Parser *parser, SourceLocation start_loc) {
     if (!node) return NULL;
     
     node->data.bool_literal.value = value;
+    node->flags.is_constant_expr = true;  // Boolean literals are compile-time constants
     return node;
 }
 
@@ -48,6 +49,7 @@ ASTNode *parse_integer_literal(Parser *parser, SourceLocation start_loc) {
     if (!node) return NULL;
     
     node->data.integer_literal.value = value;
+    node->flags.is_constant_expr = true;  // Integer literals are compile-time constants
     return node;
 }
 
@@ -64,6 +66,7 @@ ASTNode *parse_float_literal(Parser *parser, SourceLocation start_loc) {
     if (!node) return NULL;
     
     node->data.float_literal.value = value;
+    node->flags.is_constant_expr = true;  // Float literals are compile-time constants
     return node;
 }
 
@@ -83,6 +86,7 @@ ASTNode *parse_string_literal(Parser *parser, SourceLocation start_loc) {
     }
     
     node->data.string_literal.value = value;
+    node->flags.is_constant_expr = true;  // String literals are compile-time constants
     return node;
 }
 
@@ -99,5 +103,6 @@ ASTNode *parse_char_literal(Parser *parser, SourceLocation start_loc) {
     if (!node) return NULL;
     
     node->data.char_literal.value = value;
+    node->flags.is_constant_expr = true;  // Character literals are compile-time constants
     return node;
 }

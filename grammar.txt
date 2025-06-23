@@ -72,7 +72,7 @@ Type           <- BaseType / SliceType / FixedArrayType / StructType / EnumType 
 TupleType      <- '(' Type ',' Type (',' Type)* ')'       # Tuple types: (T, U) or (T, U, V) - minimum 2 elements
 NeverType      <- 'Never'                                  # Never type for functions that don't return
 BaseType       <- 'int' / 'float' / 'bool' / 'string' / 'void' / 'usize' / 'isize' /  # Primitive types (void preserved as legitimate type)
-                  'u8' / 'i8' / 'u16' / 'i16' / 'u32' / 'i32' / 'u64' / 'i64' / 'f32' / 'f64'
+                  'u8' / 'i8' / 'u16' / 'i16' / 'u32' / 'i32' / 'u64' / 'i64' / 'u128' / 'i128' / 'f32' / 'f64'
 FixedArrayType <- '[' ConstExpr ']' Type                   # Fixed-size arrays: [size]Type
 SliceType      <- '[' ']' Type                             # Dynamic arrays: []Type
 StructType     <- SimpleIdent TypeArgs?                    # User-defined structs with optional generics
@@ -135,7 +135,7 @@ SliceBounds    <- Expr ':' Expr /                         # start:end (slice fro
                   Expr ':' /                              # start: (slice from start to end)
                   ':' Expr /                              # :end (slice from beginning to end)
                   ':'                                     # : (full slice copy)
-Primary        <- Literal / EnumConstructor / SimpleIdent / '(' Expr ')' / SizeOf / AssociatedFuncCall  # Primary expressions
+Primary        <- Literal / EnumConstructor / SimpleIdent / '(' Expr ')' / SizeOf / AssociatedFuncCall  # Primary expressions (SimpleIdent includes predeclared identifiers)
 AssociatedFuncCall <- (SimpleIdent / GenericType) '::' SimpleIdent '(' ArgList ')'  # Static method calls: Type::function() or Type<T>::function()
 GenericType      <- SimpleIdent TypeArgs                      # Generic type for associated function calls
 EnumConstructor<- SimpleIdent '.' SimpleIdent ('(' ArgList ')')?    # Enum variant construction: Enum.Variant(args)
@@ -160,7 +160,19 @@ FieldInit      <- SimpleIdent ':' Expr                     # Struct field initia
 # Lexical rules and identifiers
 IDENT          <- [a-zA-Z_][a-zA-Z0-9_]*                   # Base identifier pattern
 
-# Reserved keywords (prevents conflicts with user identifiers)
+# =============================================================================
+# RESERVED KEYWORDS
+# =============================================================================
+#
+# Reserved keywords are part of the language syntax and CANNOT be used as user identifiers.
+# These are different from predeclared identifiers (see section below) which CAN be shadowed.
+#
+# DESIGN PRINCIPLE: Keywords vs Predeclared Identifiers
+# - KEYWORDS: Structural language elements (if, fn, let, etc.) - cannot be redefined
+# - PREDECLARED: Utility functions (log, range, etc.) - can be shadowed by user code
+#
+# This distinction provides the right balance of language stability and user flexibility.
+#
 ReservedKeyword <- 'as'                                     # Import aliasing
                  / 'fn'                                     # Function declaration
                  / 'let'                                    # Variable declaration
@@ -194,16 +206,16 @@ ReservedKeyword <- 'as'                                     # Import aliasing
                  / 'none'                                   # Structural absence marker (semantic clarity)
                  / 'Result'                                 # Built-in Result<T,E> type
                  / 'Option'                                 # Built-in Option<T> type
-# Apart from these keywords, there are few predeclared identifiers (mostly functions - similar to Go):
-# - log("msg %s", "word") - print to stdout
-# - range(10, 2) -- Two overloaded versions:
-#    1. range(end: i32) -> []i32 - generates [0, 1, ..., end-1]
-#    2. range(start: i32, end: i32) -> []i32 - generates [start, start+1, ..., end-1]
-# - infinite() - for infinite loop
-# - panic("msg") - exit process
-# - args() - get command line arguments (like os.Args in Go)
 
-SimpleIdent    <- !ReservedKeyword IDENT                   # User identifiers (excludes reserved keywords)
+# =============================================================================
+# USER IDENTIFIERS
+# =============================================================================
+#
+# SimpleIdent defines valid user identifiers by excluding reserved keywords.
+# This production allows predeclared identifiers (log, range, etc.) to be used as regular
+# identifiers, enabling shadowing while preventing conflicts with language keywords.
+#
+SimpleIdent    <- !ReservedKeyword IDENT                   # User identifiers (excludes reserved keywords, allows predeclared)
 
 # Immutable-by-Default Semantic Rules:
 # - Variables are immutable by default: 'let x: i32 = 42;' (cannot be reassigned)
@@ -245,3 +257,59 @@ FLOAT          <- [0-9]+ '.' [0-9]* / '.' [0-9]+           # Floating-point lite
 
 BOOL           <- 'true' / 'false'                         # Boolean literals
 CHAR           <- "'" (EscapeSequence / (!"'" .)) "'"      # Character literals with escape support
+
+# =============================================================================
+# PREDECLARED IDENTIFIERS
+# =============================================================================
+#
+# Following Go's design philosophy, Asthra provides predeclared identifiers that are
+# automatically available in all packages without explicit import statements. These
+# identifiers provide essential utility functions and follow these design principles:
+#
+# 1. SHADOWING ALLOWED: All predeclared identifiers can be shadowed by user declarations
+#    This provides flexibility while maintaining convenience for common operations
+#
+# 2. SEMANTIC-LEVEL RESOLUTION: These are NOT keywords in the grammar - they are resolved
+#    during semantic analysis and registered in the global symbol table
+#
+# 3. TYPE-SAFE: All predeclared functions have well-defined type signatures and undergo
+#    full semantic analysis including type checking and overload resolution
+#
+# 4. OVERLOADING SUPPORT: Functions like 'range' can have multiple signatures, handled
+#    naturally through semantic analysis rather than complex grammar productions
+#
+# AVAILABLE PREDECLARED IDENTIFIERS:
+#
+# Utility Functions:
+# - log(message: string) -> void              # Debug/diagnostic output to stderr
+# - panic(message: string) -> Never           # Program termination with error message
+# - args() -> []string                        # Access command-line arguments
+#
+# Range Functions (overloaded):
+# - range(end: i32) -> []i32                  # Generate [0, 1, 2, ..., end-1]
+# - range(start: i32, end: i32) -> []i32      # Generate [start, start+1, ..., end-1]
+#
+# Iterator Functions:
+# - infinite() -> InfiniteIterator            # Generate infinite iterator (requires #[non_deterministic])
+#
+# USAGE EXAMPLES:
+#
+# Basic usage (predeclared functions work immediately):
+#   log("Hello, World!");
+#   for i in range(5) { log("Count: " + string(i)); }
+#   let arguments = args();
+#
+# Shadowing examples (user can override predeclared functions):
+#   fn log(level: string, msg: string) -> void { /* custom logging */ }
+#   log("INFO", "Using custom log function");  // Uses user-defined version
+#   let nums = range(3, 7);                    // Still uses predeclared range(i32, i32)
+#
+# IMPLEMENTATION NOTES:
+# - Predeclared identifiers are registered during semantic analyzer initialization
+# - They are stored in src/analysis/semantic_builtins.c as PredeclaredIdentifier structs
+# - Runtime implementations are in the asthra runtime system (asthra_runtime_*)
+# - No parser changes needed - treated as regular identifiers during parsing
+# - Overload resolution happens during semantic analysis, not parsing
+#
+# This production is never used in parsing, only for documentation and tooling:
+PredeclaredIdent <- 'log' / 'range' / 'infinite' / 'panic' / 'args'

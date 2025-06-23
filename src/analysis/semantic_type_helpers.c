@@ -13,6 +13,7 @@
 #include "semantic_symbols.h"
 #include "type_info.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 // =============================================================================
@@ -24,8 +25,14 @@ TypeDescriptor* get_promoted_type(SemanticAnalyzer *analyzer,
                                  TypeDescriptor *right_type) {
     if (!analyzer || !left_type || !right_type) return NULL;
     
+    // DEBUG: Log type promotion attempts
+    printf("DEBUG: get_promoted_type called with left='%s', right='%s'\n", 
+           left_type->name ? left_type->name : "NULL",
+           right_type->name ? right_type->name : "NULL");
+    
     // If same type, return it
     if (semantic_types_equal(left_type, right_type)) {
+        printf("DEBUG: Types are equal, returning left type\n");
         return left_type;
     }
     
@@ -53,8 +60,33 @@ TypeDescriptor* get_promoted_type(SemanticAnalyzer *analyzer,
         // Both integers - promote to larger size
         // i64 > i32 > i16 > i8
         // u64 > u32 > u16 > u8
+        // usize and isize are platform-dependent (typically 64-bit)
         
-        // If one is signed and one unsigned of same size, promote to signed
+        // Special handling for usize and isize
+        bool left_is_size_type = (strcmp(left_type->name, "usize") == 0 || strcmp(left_type->name, "isize") == 0);
+        bool right_is_size_type = (strcmp(right_type->name, "usize") == 0 || strcmp(right_type->name, "isize") == 0);
+        
+        printf("DEBUG: left_is_size_type=%d, right_is_size_type=%d\n", left_is_size_type, right_is_size_type);
+        
+        // If one operand is usize/isize, prefer that type (platform size)
+        if (left_is_size_type && !right_is_size_type) {
+            printf("DEBUG: Promoting to left type (size type): %s\n", left_type->name);
+            return left_type;
+        }
+        if (right_is_size_type && !left_is_size_type) {
+            printf("DEBUG: Promoting to right type (size type): %s\n", right_type->name);
+            return right_type;
+        }
+        
+        // Both are size types or both are regular integers
+        if (left_is_size_type && right_is_size_type) {
+            // isize vs usize - prefer isize (signed)
+            if (strcmp(left_type->name, "isize") == 0) return left_type;
+            if (strcmp(right_type->name, "isize") == 0) return right_type;
+            return left_type; // Both usize
+        }
+        
+        // Regular integer promotion
         bool left_signed = (left_type->name[0] == 'i');
         bool right_signed = (right_type->name[0] == 'i');
         

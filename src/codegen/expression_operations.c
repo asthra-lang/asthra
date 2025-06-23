@@ -102,6 +102,32 @@ bool generate_binary_expression(CodeGenerator *generator, ASTNode *expr, Registe
     return success;
 }
 
+bool generate_unary_expression(CodeGenerator *generator, ASTNode *expr, Register target_reg) {
+    if (!generator || !expr || expr->type != AST_UNARY_EXPR) {
+        return false;
+    }
+    
+    Register operand_reg = register_allocate(generator->register_allocator, true);
+    
+    if (operand_reg == ASTHRA_REG_NONE) {
+        return false;
+    }
+    
+    // Generate operand
+    if (!code_generate_expression(generator, expr->data.unary_expr.operand, operand_reg)) {
+        register_free(generator->register_allocator, operand_reg);
+        return false;
+    }
+    
+    // Generate unary operation
+    bool success = generate_unary_arithmetic(generator, expr->data.unary_expr.operator,
+                                           operand_reg, target_reg);
+    
+    register_free(generator->register_allocator, operand_reg);
+    
+    return success;
+}
+
 bool generate_assignment_expression(CodeGenerator *generator, ASTNode *expr, Register target_reg) {
     if (!generator || !expr || expr->type != AST_ASSIGNMENT) {
         return false;
