@@ -304,6 +304,32 @@ cmake --build build --target bdd_acceptance
 
 # Run specific scenarios
 ./build/bdd/bin/test_parser_expressions -s "Binary expression"
+
+# Running specific BDD feature files
+./build/bdd/bin/bdd_unit_compiler_basic        # Run compiler basic functionality tests
+./build/bdd/bin/bdd_unit_function_calls        # Run function call tests
+./build/bdd/bin/bdd_unit_if_conditions         # Run if condition tests
+./build/bdd/bin/bdd_unit_bitwise_operators     # Run bitwise operator tests
+./build/bdd/bin/bdd_integration_cli            # Run CLI integration tests
+./build/bdd/bin/bdd_integration_ffi_integration # Run FFI integration tests
+```
+
+### BDD Test Output Interpretation
+
+- ✓ = Test passed
+- ✗ = Test failed
+- Each scenario shows step-by-step execution with assertions
+- Summary shows: Passed/Failed/Total counts at the end
+
+Example output:
+```
+Feature: Basic Compiler Functionality
+  Scenario: Compile and run a simple Hello World program
+    Given the Asthra compiler is available
+      ✓ exists should be true
+    When I compile the file
+    Then the compilation should succeed
+      ✓ compilation_exit_code should equal 0
 ```
 
 ### Generate Test Reports
@@ -322,11 +348,11 @@ open build/bdd/reports/bdd-report.html
 
 ```
 bdd/
-├── features/              # Gherkin feature files
+├── features/              # Gherkin feature files (*.feature)
 │   ├── compiler/         # Compiler features
 │   ├── parser/           # Parser features
 │   └── semantic/         # Semantic analysis features
-├── steps/                # Step definitions
+├── steps/                # Step definitions (C implementations)
 │   ├── unit/            # Unit test steps
 │   │   ├── parser/      # Parser unit tests
 │   │   ├── semantic/    # Semantic unit tests
@@ -336,7 +362,11 @@ bdd/
 │   ├── scenario/        # Scenario test steps
 │   └── feature/         # Feature test steps
 ├── support/             # Shared test support code
-└── fixtures/            # Test data and examples
+├── fixtures/            # Test data and examples
+└── CMakeLists.txt       # BDD test configuration
+
+Test executables are built to: build/bdd/bin/bdd_*
+Scenarios marked with @wip are skipped during test runs.
 ```
 
 ### Test Categories
@@ -370,6 +400,20 @@ bdd/
   - Example: `parser_expressions.feature`
 - Test functions: Descriptive scenario names
   - Example: "Parse binary arithmetic expressions"
+
+### Test Artifacts and Debugging Environment
+
+To preserve test artifacts for debugging:
+```bash
+export BDD_KEEP_ARTIFACTS=1  # Preserve test artifacts in bdd-temp/
+```
+
+Clean test execution pattern:
+```c
+// Always call cleanup before reporting
+common_cleanup();
+return bdd_report();
+```
 
 ## Debugging BDD Tests
 

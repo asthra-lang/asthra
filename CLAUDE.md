@@ -8,99 +8,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Essential Commands
 
-### Build Commands
+### Most Common Commands
 ```bash
-cmake -B build && cmake --build build          # Build compiler with optimizations (default)
-cmake --build build --target clean             # Clean all build artifacts
-cmake -B build -DCMAKE_BUILD_TYPE=Debug && cmake --build build    # Build with debug symbols
-cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build  # Build optimized release
+# Build and test workflow
+cmake -B build && cmake --build build -j8      # Build compiler (parallel)
+cmake --build build --target build-tests       # Build test executables
+ctest --test-dir build -L semantic -j8         # Run component tests (fast)
+ctest --test-dir build                         # Run all tests
+
+# Code quality
+cmake --build build --target format            # Format code
+cmake --build build --target analyze           # Static analysis
 ```
 
-### Testing Commands
+### Quick Testing
 ```bash
-ctest --test-dir build                          # Run all tests
-ctest --test-dir build --verbose               # Comprehensive test suite with reporting
-
-# IMPORTANT: Build test executables before running tests
-cmake --build build --target build-tests       # Build all test executables (required after clean)
-
-# Component-specific testing (component must exist under tests/)
-ctest --test-dir build -L <component-name>     # Example: ctest -L semantic, ctest -L parser
-
-# Sub-category testing (available for some components)
-ctest --test-dir build -R "codegen.*function"  # Run only function call tests
-ctest --test-dir build -R "codegen.*control"   # Run only control flow tests
-ctest --test-dir build -R "parser.*expression" # Run only expression parser tests
-ctest --test-dir build -R "parser.*statement"  # Run only statement parser tests
-
-# Fast variants (parallel execution for quicker iteration)
-ctest --test-dir build -j8                     # Run tests in parallel
-ctest --test-dir build -L <component> -j8      # Component tests in parallel
-
-# Test reporting
-ctest --test-dir build --output-on-failure     # View test failures with output
-
-# BDD (Behavior-Driven Development) Testing
-cmake -B build -DBUILD_BDD_TESTS=ON            # Enable BDD tests in build configuration
-cmake --build build --target bdd_tests         # Build all BDD test executables
-cmake --build build --target run_bdd_tests     # Run full BDD test suite (may show "No tests found")
-cmake --build build --target bdd_unit          # Run C BDD unit tests only
-cmake --build build --target bdd_integration   # Run BDD integration tests only
-cmake --build build --target bdd_cucumber      # Run Cucumber features (or C-based equivalents)
-cmake --build build --target bdd-report        # Generate BDD test report (JUnit format)
-ctest --test-dir build -L bdd                  # Run BDD tests using CTest
-
-# Running specific BDD feature files
-./build/bdd/bin/bdd_unit_compiler_basic        # Run compiler basic functionality tests
-./build/bdd/bin/bdd_unit_function_calls        # Run function call tests
-./build/bdd/bin/bdd_unit_if_conditions         # Run if condition tests
-./build/bdd/bin/bdd_unit_bitwise_operators     # Run bitwise operator tests
-./build/bdd/bin/bdd_integration_cli            # Run CLI integration tests
-./build/bdd/bin/bdd_integration_ffi_integration # Run FFI integration tests
-
-# BDD test output interpretation
-# ✓ = Test passed
-# ✗ = Test failed
-# Each scenario shows step-by-step execution with assertions
-# Summary shows: Passed/Failed/Total counts at the end
-
-# BDD test structure
-# Feature files: bdd/features/*.feature (Gherkin format)
-# Step definitions: bdd/steps/ (C implementations)
-# Test executables: build/bdd/bin/bdd_*
-# Scenarios marked with @wip are skipped
-
-# Example BDD test execution:
-# Feature: Basic Compiler Functionality
-#   Scenario: Compile and run a simple Hello World program
-#     Given the Asthra compiler is available
-#       ✓ exists should be true
-#     When I compile the file
-#     Then the compilation should succeed
-#       ✓ compilation_exit_code should equal 0
+# Component testing: ctest -L <parser|semantic|codegen|etc>
+ctest --test-dir build -L semantic -j8         # Test semantic analysis
+ctest --test-dir build -R "parser.*expr"       # Test parser expressions
 ```
 
-**⚠️ Test Build Strategy**: See `docs/contributor/guides/test-build-strategy.md` for critical information about test building and common build failures.
+**📚 Full Command Reference**: See `docs/contributor/reference/commands-quick-reference.md` for all commands.
 
-**📚 BDD Testing Guide**: See `docs/contributor/guides/bdd-testing-guide.md` for comprehensive BDD testing documentation.
+**⚠️ Test Build Strategy**: See `docs/contributor/guides/test-build-strategy.md` for critical test building info.
 
-### Coverage and Analysis
-```bash
-cmake --build build --target coverage          # Generate coverage reports
-cmake --build build --target coverage-html     # HTML coverage reports
-cmake --build build --target analyze           # Run static analysis
-cmake --build build --target format            # Format code with clang-format
-
-# Performance testing
-cmake --build build --target benchmark         # Run optimized benchmarks
-```
-
-### Build Tool Commands (Ampu - Rust-based)
-```bash
-cd ampu && cargo build              # Build the build tool
-./ampu/run_e2e_tests.sh            # End-to-end tests
-cargo test --test language_tests   # Language feature tests
-```
+**📚 BDD Testing Guide**: See `docs/contributor/guides/bdd-testing-guide.md` for BDD testing documentation.
 
 ## Architecture Overview
 
@@ -123,82 +55,15 @@ cargo test --test language_tests   # Language feature tests
 
 ## Critical Development Rules
 
-### Asthra Design Principles Compliance (MANDATORY)
-- **ALL changes must strictly follow Asthra's 5 Core Design Principles** as defined in `docs/spec/overview.md`:
-  1. **Minimal syntax for maximum AI generation efficiency** - Predictable patterns, unambiguous grammar, local reasoning
-  2. **Safe C interoperability through explicit annotations** - FFI safety, ownership transfer annotations, unsafe blocks
-  3. **Deterministic execution for reproducible builds** - Consistent behavior, reproducible errors, reliable outcomes
-  4. **Built-in observability and debugging primitives** - Enhanced diagnostics, precise error reporting, AI-friendly messages
-  5. **Pragmatic system evolution** - Backward compatibility, incremental enhancement, essential features first
-- **Every implementation must demonstrate alignment** with all 5 principles
-- **Reject changes that violate** AI-friendly patterns or introduce complex global analysis requirements
-
-### Grammar Compliance (MANDATORY)
-- **`grammar.txt`** is the single source of truth for Asthra language syntax
-- **Never** implement language features not defined in the PEG grammar
-- **Forbidden features**: traits, interfaces, advanced generics, closures, macros, tuple types
-- All parser/lexer changes must strictly conform to the grammar
-
-### Documentation Authority
-- **`docs/spec/`** contains the Master Implementation Status table - the single source of truth for feature status
-- **Status symbols**: ✅ Fully Implemented, 🔧 Partially Implemented, ❌ Not Yet Implemented, 📋 Planned
-- Always update implementation status when making changes
-
-### Documentation Organization (MANDATORY)
-- **NEVER place files directly under `docs/`** - All documentation must be organized into appropriate subfolders
-- **Use the established 5-folder structure**:
-  - `docs/architecture/` - Technical architecture, design diagrams, and system analysis
-  - `docs/contributor/` - Development guides, references, workflows, and contribution materials
-  - `docs/spec/` - Language specification, grammar, and formal technical specifications
-  - `docs/stdlib/` - Standard library documentation and API references
-  - `docs/user-manual/` - User-facing guides, tutorials, and language usage documentation
-- **Exception**: Only `docs/index.md` (main documentation landing page) is allowed at the root level
-- **When adding new documentation**, choose the most appropriate subfolder based on the audience and content type
-- **Maintain organized substructure** within each folder (e.g., `guides/`, `reference/`, `api/`, etc.)
-
-### Compiler Architecture Separation of Concerns (MANDATORY)
-- **STRICT phase separation** - Parser, Semantic Analysis, and Code Generation must be completely independent
-- **Parser responsibilities**: ONLY tokenization, syntax analysis, and AST construction - NO semantic analysis or code generation
-- **Semantic Analysis responsibilities**: ONLY type checking, symbol resolution, and semantic validation - NO code generation
-- **Code Generation responsibilities**: ONLY takes semantically-analyzed AST and produces executable code
-- **FORBIDDEN**: Parser triggering semantic analysis, semantic analysis triggering code generation, shared global state between phases
-- **Required**: Each phase must have clean input/output interfaces with no side effects on other phases
-- **Testing**: Each phase must be testable in isolation without dependencies on other phases
-
-### Expression-Oriented Language Design (MANDATORY)
-- **Asthra is expression-oriented** - Most constructs return values, not just perform actions
-- **If-else as expressions** - Control flow constructs return values and have types
-- **Explicit returns required** - Void functions must use `return ();` explicitly
-- **Unit type support** - `()` represents void/no-value contexts
-- **Type inference implications** - Every expression must have a well-defined type
-- **Test patterns** - Tests must respect expression semantics, avoid statement-oriented patterns
-- **Code generation** - Must handle expressions appearing in statement contexts
-- **Documentation**: See `docs/architecture/expression-oriented-design.md` for comprehensive details
-
-### Source File Gitignore Compliance (MANDATORY)
-- **CRITICAL: Never create source files (*.c, *.h, tests, docs) that match .gitignore patterns**
-- **Why this matters**: Files matching .gitignore patterns will NOT be committed to Git and WILL BE LOST when running `git clean -fdx`
-- **Common problematic patterns for source files**:
-  - Debug source files: `debug_*.c`, `debug_*.h`, `*_debug.c`, `*_debug.h` - These will be ignored!
-  - Test executables: `*_test` (without .c/.h extension) - Never name source files this way!
-  - Analysis docs: `*_error_analysis.md`, `*_migration_summary.md` - These are temporary and will be lost!
-  - Local notes: `TODO.local.md`, `local-notes.txt` - These are explicitly ignored!
-- **Before creating ANY source file or documentation**, verify the filename won't be ignored by Git
-- **Safe patterns**: 
-  - Test source files: `test_*.c`, `test_*.h` (with test_ prefix)
-  - Test files with _test_ in name: `*_test_*.c`, `*_test_*.h` (explicitly allowed in .gitignore)
-- **If you create a file that matches .gitignore patterns**, it will be lost and cause confusion
-
-### Temporary Debug Files (ENCOURAGED)
-- **DO create temporary debug files using .gitignore patterns** for debugging and analysis
-- **Purpose**: These files are meant to be temporary and should not clutter the repository
-- **Recommended patterns for temporary files**:
-  - Debug files: Use `debug_*.c`, `debug_*.h`, `*_debug.c`, `*_debug.h` for temporary debugging code
-  - Analysis docs: Use `*_error_analysis.md`, `*_migration_summary.md` for temporary analysis
-  - Test outputs: Use `*_test_output.txt`, `*_test_output.log` for test results
-  - Local notes: Use `TODO.local.md`, `local-notes.txt` for personal notes
-- **Benefits**: These files won't be accidentally committed and can be cleaned up with `git clean -fdx`
-- **Use case**: When debugging or analyzing issues, use these patterns to ensure your temporary work doesn't pollute the repository
+| Rule | Description | Reference |
+|------|-------------|-----------|
+| **Design Principles** | Follow all 5 core principles: AI efficiency, safe FFI, determinism, observability, pragmatic evolution | `docs/spec/overview.md` |
+| **Grammar Authority** | `grammar.txt` is single source of truth. No traits, interfaces, advanced generics, closures, macros | `grammar.txt` |
+| **Implementation Status** | Check/update Master Implementation Status table for all features | `docs/spec/` |
+| **Documentation Structure** | Use 5-folder structure: architecture/, contributor/, spec/, stdlib/, user-manual/ | `docs/index.md` |
+| **Compiler Phases** | Strict separation: Parser → Semantic → CodeGen. No cross-phase dependencies | Design docs |
+| **Expression-Oriented** | All constructs return values. Explicit `return ();` for void. Unit type `()` support | `docs/architecture/expression-oriented-design.md` |
+| **Gitignore Compliance** | Check files with `git check-ignore -v`. Use `test_*.c` pattern | `docs/contributor/guides/gitignore-compliance.md` |
 
 ### C17 Standards
 - **Must use** modern C17 features appropriately: `_Static_assert`, `_Generic`, `<stdatomic.h>`, `_Thread_local`
@@ -239,19 +104,9 @@ cargo test --test language_tests   # Language feature tests
 - **All test files must use the `test_` prefix** - test files should follow the pattern `test_<name>.c`
 - **No trailing `_test` suffix needed** - use `test_semantic.c` instead of `semantic_test.c`
 
-### BDD Testing Best Practices (MANDATORY)
-- **Follow BDD best practices guide** - See `bdd/BDD_BEST_PRACTICES.md` for comprehensive guidelines
-- **Feature files in Gherkin format** - Write human-readable scenarios in `bdd/features/*.feature`
-- **Step definitions in C** - Implement test logic in `bdd/steps/` following established patterns
-- **Handle @wip scenarios properly** - Comment out @wip test functions in main() with clear annotations
-- **Reuse common step functions** - Use functions from `common_steps.c` for consistency
-- **Follow Given-When-Then pattern** - Structure tests with clear setup, action, and assertion phases
-- **Register tests in CMakeLists.txt** - Add `add_bdd_test(test_name unit/integration)` for new tests
-- **Test organization**:
-  - Unit tests in `bdd/steps/unit/` for component-level testing
-  - Integration tests in `bdd/steps/integration/` for end-to-end testing
-- **Debugging**: Use `BDD_KEEP_ARTIFACTS=1` to preserve test artifacts in `bdd-temp/`
-- **Clean test execution**: Always call `common_cleanup()` before `bdd_report()`
+### BDD Testing
+- **📚 Full Guide**: See `bdd/BDD_BEST_PRACTICES.md` and `docs/contributor/guides/bdd-testing-guide.md`
+- Use Given-When-Then pattern, handle @wip scenarios, register tests in CMakeLists.txt
 
 ## Performance Targets
 - **Compilation speed**: 15-25% faster than baseline with C17 optimizations
@@ -294,20 +149,6 @@ TEST_CASE("descriptive_test_name") {
 }
 ```
 
-### Expression-Oriented Test Patterns
-```c
-// ✅ CORRECT: Expression-oriented patterns
-const char* source = 
-    "package test;\n"
-    "pub fn main(none) -> void {\n"
-    "    let result = if condition { 42 } else { 0 };\n"
-    "    return ();\n"  // Explicit return required
-    "}\n";
-
-// ❌ INCORRECT: Statement-oriented patterns  
-const char* bad_source = 
-    "if (condition) { action(); } else { other(); }"  // Missing package, returns, types
-```
 
 ## Important Files
 
@@ -336,17 +177,14 @@ cmake --build build --target format    # clang-format code formatting
 cmake --build build --target analyze   # Static analysis with Clang Static Analyzer
 ```
 
-## Notes for AI Development
+## Key Development Guidelines
 
-- **ALWAYS validate against Asthra's 5 Design Principles** - Every change must enhance AI generation efficiency, safety, determinism, observability, and pragmatic evolution
-- **Never guess** about language features - always check `grammar.txt`
-- **Always update** implementation status in `docs/spec/` when completing features
-- **Test thoroughly** - this is a systems language where correctness is critical
-- **Follow C17 standards** - use modern C features appropriately with fallbacks
-- **Maintain cross-platform compatibility** - test on multiple platforms when possible
-- **Run comprehensive tests** - ensure all tests pass before committing changes
-- **Prioritize AI-friendly patterns** - Local reasoning over global analysis, predictable behavior over complex features
-- **Document principle alignment** - Explain how changes support each of the 5 core design principles
+- **Validate** against 5 Design Principles (see table above)
+- **Check** `grammar.txt` before implementing features  
+- **Update** Master Implementation Status in `docs/spec/`
+- **Test** thoroughly - run full test suite before commits
+- **Use** C17 features with fallbacks
+- **Prioritize** AI-friendly patterns and local reasoning
 
 ## Commit Message Standards
 
@@ -371,7 +209,7 @@ cmake --build build --target analyze   # Static analysis with Clang Static Analy
   - `test(codegen): add comprehensive function call tests`
   - `refactor(runtime)!: restructure memory management API`
 
-## Development Memories
+## Development Workflow Reminders
 
-- At the end of every source file modification (Changes to *.c, *.h, etc.), run 'cmake --build build -j8 && cmake --build build --target build-tests' and fix errors, if any
-- **Test Build Best Practice**: Use incremental builds for test work. See `docs/contributor/guides/test-build-strategy.md` for the proven approach to avoid cascade test failures
+- After modifying source files: `cmake --build build -j8 && cmake --build build --target build-tests`
+- Use incremental builds (see `docs/contributor/guides/test-build-strategy.md`)
