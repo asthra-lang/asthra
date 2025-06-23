@@ -10,10 +10,13 @@ extern void given_asthra_compiler_available(void);
 extern void given_file_with_content(const char* filename, const char* content);
 extern void when_compile_file(void);
 extern void when_compile_with_flags(const char* flags);
+extern void when_run_executable(void);
 extern void then_compilation_should_succeed(void);
 extern void then_compilation_should_fail(void);
 extern void then_executable_created(void);
 extern void then_error_contains(const char* expected_error);
+extern void then_output_contains(const char* expected_output);
+extern void then_exit_code_is(int expected_code);
 extern void common_cleanup(void);
 extern const char* get_compiler_output(void);
 extern const char* get_current_executable(void);
@@ -49,7 +52,7 @@ void given_valid_asthra_source_file(void) {
         "\n"
         "pub fn main(none) -> void {\n"
         "    let result = factorial(5);\n"
-        "    println(\"Factorial of 5 is: {}\", result);\n"
+        "    log(\"Factorial of 5 is: {}\");\n"
         "    return ();\n"
         "}\n";
     
@@ -116,7 +119,7 @@ void test_compile_hello_world(void) {
         "package main;\n"
         "\n"
         "pub fn main(none) -> void {\n"
-        "    println(\"Hello, World!\");\n"
+        "    log(\"Hello, World!\");\n"
         "    return ();\n"
         "}\n";
     
@@ -155,6 +158,28 @@ void test_optimize_with_o2(void) {
     then_binary_size_smaller_than_unoptimized();
 }
 
+void test_compile_and_run_hello_world(void) {
+    bdd_scenario("Compile and run Hello World program");
+    
+    given_asthra_compiler_available();
+    
+    const char* hello_source = 
+        "package main;\n"
+        "\n"
+        "pub fn main(none) -> void {\n"
+        "    log(\"Hello, World!\");\n"
+        "    return ();\n"
+        "}\n";
+    
+    given_file_with_content("hello_run.asthra", hello_source);
+    when_compile_file();
+    then_compilation_should_succeed();
+    then_executable_created();
+    when_run_executable();
+    then_output_contains("Hello, World!");
+    then_exit_code_is(0);
+}
+
 // Main test runner
 int main(void) {
     bdd_init("Basic Compiler Functionality");
@@ -162,6 +187,7 @@ int main(void) {
     // Run all scenarios
     test_compile_hello_world();
     test_handle_syntax_errors();
+    test_compile_and_run_hello_world();
     test_optimize_with_o2();
     
     // Cleanup

@@ -100,7 +100,8 @@ void given_asthra_compiler_available(void) {
     
     // Check if compiler exists
     struct stat st;
-    int exists = (stat("./build/asthra", &st) == 0) || 
+    int exists = (stat("./build/bin/asthra", &st) == 0) || 
+                 (stat("./build/asthra", &st) == 0) || 
                  (stat("./asthra", &st) == 0);
     
     BDD_ASSERT_TRUE(exists);
@@ -145,9 +146,12 @@ void when_compile_file(void) {
     current_executable = executable;
     
     // Try to find the compiler
-    const char* compiler_path = "./build/asthra";
+    const char* compiler_path = "./build/bin/asthra";
     if (access(compiler_path, X_OK) != 0) {
-        compiler_path = "./asthra";
+        compiler_path = "./build/asthra";
+        if (access(compiler_path, X_OK) != 0) {
+            compiler_path = "./asthra";
+        }
     }
     
     snprintf(command, sizeof(command), "%s %s -o %s 2>&1", 
@@ -181,9 +185,12 @@ void when_compile_with_flags(const char* flags) {
     
     current_executable = executable;
     
-    const char* compiler_path = "./build/asthra";
+    const char* compiler_path = "./build/bin/asthra";
     if (access(compiler_path, X_OK) != 0) {
-        compiler_path = "./asthra";
+        compiler_path = "./build/asthra";
+        if (access(compiler_path, X_OK) != 0) {
+            compiler_path = "./asthra";
+        }
     }
     
     snprintf(command, sizeof(command), "%s %s %s -o %s 2>&1", 

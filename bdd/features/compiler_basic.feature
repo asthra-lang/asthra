@@ -34,6 +34,23 @@ Feature: Basic Compiler Functionality
     Then the compilation should fail
     And the error message should contain "expected ';'"
 
+  Scenario: Compile and run Hello World program
+    Given I have a file "hello_run.asthra" with:
+      """
+      package main;
+      
+      pub fn main(none) -> void {
+          log("Hello, World!");
+          return ();
+      }
+      """
+    When I compile the file
+    Then the compilation should succeed
+    And an executable should be created
+    When I run the executable
+    Then the output should contain "Hello, World!"
+    And the exit code should be 0
+
   @wip
   Scenario: Optimize code with -O2 flag
     Given I have a valid Asthra source file

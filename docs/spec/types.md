@@ -215,6 +215,58 @@ pub fn unreachable_function(never_param: Never) -> i32 {
 4. **Type Safety**: Prevents accidental use of diverging functions
 5. **FFI Integration**: Works with C functions that never return
 
+#### Never Type in Main Functions
+
+The Never type can be used as a return type for main functions in specific scenarios:
+
+```asthra
+// System service that runs indefinitely
+pub fn main(none) -> Never {
+    initialize_service();
+    log("Service started, entering main loop");
+    
+    loop {
+        handle_requests();
+        process_events();
+    }
+    // Never reaches here - function never returns normally
+}
+
+// Embedded system main loop
+pub fn main(none) -> Never {
+    initialize_hardware();
+    
+    loop {
+        read_sensors();
+        update_actuators();
+        sleep_microseconds(1000);
+    }
+}
+
+// Critical system monitor
+pub fn main(none) -> Never {
+    while true {
+        let system_status = check_system_health();
+        if system_status.is_critical() {
+            panic("Critical system failure detected");
+        }
+        sleep_seconds(1);
+    }
+}
+```
+
+**Never-returning main functions are appropriate for:**
+- System services and daemons
+- Embedded system main loops
+- Real-time monitoring applications
+- Server applications with infinite event loops
+
+**Exit code behavior:**
+- Process exit code is determined by termination mechanism
+- `panic()` typically exits with code 1
+- `exit(code)` uses the specified exit code
+- Abnormal termination uses platform-specific codes
+
 ### Fixed-Size Arrays
 
 Asthra supports fixed-size arrays with compile-time known dimensions for performance-critical applications.
