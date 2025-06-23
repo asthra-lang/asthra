@@ -85,6 +85,11 @@ These are grammar features that may need reconsideration:
 - **Status**: Basic patterns work, but complex nested patterns may have gaps
 - **Example**: `let (a, (b, c)) = nested_tuple;` - nested tuple patterns
 
+#### Complex Pattern Matching
+- **Grammar**: Lines 104-110: Nested patterns, enum patterns with extraction
+- **Status**: Needs comprehensive testing of edge cases
+- **Examples**: Nested tuple patterns, struct patterns with type parameters
+
 #### Field Visibility in Structs ⚠️ PARTIALLY IMPLEMENTED
 - **Grammar**: Line 46: `StructField <- VisibilityModifier? SimpleIdent ':' Type`
 - **Status**: ⚠️ PARSED BUT NOT ENFORCED
@@ -126,10 +131,15 @@ During implementation, these specific issues were found:
 - **Fix Applied**: Removed generic parsing from expression contexts
 - **Lesson**: Context-sensitive parsing needed - generics should only be parsed in type contexts
 
-#### Logical NOT Operator Status
+#### Logical NOT Operator ✅ VERIFIED
 - **Grammar**: Line 126: `LogicalPrefix <- ('!' / '-' / '~')`
-- **Status**: Implemented in lexer and parser but not thoroughly tested
-- **Note**: Should work but needs test coverage
+- **Status**: ✅ FULLY IMPLEMENTED AND TESTED
+- **Lexer**: Complete implementation with `TOKEN_LOGICAL_NOT`
+- **Parser**: Full support in `grammar_expressions_unary.c`
+- **Semantic**: Type checking enforces boolean operands
+- **Test Coverage**: Comprehensive tests in `test_unary_operator_restrictions.c` and `test_expression_validation_unary.c`
+- **Documentation**: See `docs/contributor/logical-not-operator-verification.md`
+- **Test Branch**: test/logical-not-operator
 
 #### None Marker Usage
 - **Grammar**: Multiple uses of 'none' marker (lines 44, 50, 65, 67, 107, 146, 154, 194)
@@ -140,18 +150,18 @@ During implementation, these specific issues were found:
 ## Recommendations
 
 ### High Priority
-1. **Complete implementation** of const expression evaluation (BinaryConstExpr, UnaryConstExpr)
-2. **Add comprehensive tests** for all slice syntax patterns
-3. **Clarify** spawn_with_handle design - should it be only a statement?
+1. **Enforce** struct field visibility in semantic analyzer (currently parsed but not enforced)
+2. **Fix integration** of associated function calls with generic types
+3. **Test** complex pattern matching scenarios (nested patterns)
 
 ### Medium Priority
-1. **Test** complex pattern matching scenarios (nested patterns)
-2. **Verify** struct field visibility enforcement
-3. **Document** the 'none' marker usage clearly for users
+1. **Document** the 'none' marker usage clearly for users
+2. **Improve** error messages for generic type parsing in wrong contexts
+3. **Add tests** for edge cases in tuple element access
 
 ### Low Priority
-1. **Add tests** for repeated array elements syntax
-2. **Verify** raw multi-line string support
+1. **Consider** if double logical NOT (`!!x`) should be allowed with a warning
+2. **Document** all verified features in user manual
 
 ## Summary of Grammar-Defined Features with Implementation Gaps
 
