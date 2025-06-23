@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <errno.h>
 #include "bdd_support.h"
 
@@ -101,7 +102,16 @@ static char* execute_command(const char* command, int* exit_code) {
         result_size += len;
     }
     
-    *exit_code = pclose(pipe);
+    int status = pclose(pipe);
+    
+    // Extract the actual exit code from the wait status
+    if (WIFEXITED(status)) {
+        *exit_code = WEXITSTATUS(status);
+    } else {
+        // Process didn't exit normally (e.g., killed by signal)
+        *exit_code = -1;
+    }
+    
     return result;
 }
 
