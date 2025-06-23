@@ -407,6 +407,7 @@ ASTNode *ast_clone_node(ASTNode *node) {
             clone->data.let_stmt.type = ast_clone_node(node->data.let_stmt.type);
             clone->data.let_stmt.initializer = ast_clone_node(node->data.let_stmt.initializer);
             clone->data.let_stmt.is_mutable = node->data.let_stmt.is_mutable;
+            clone->data.let_stmt.annotations = ast_node_list_clone_deep(node->data.let_stmt.annotations);
             break;
             
         case AST_RETURN_STMT:

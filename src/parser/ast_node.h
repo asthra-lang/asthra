@@ -148,6 +148,7 @@ struct ASTNode {
             ASTNode *type;  // Required in v1.15+ (was optional)
             ASTNode *initializer;
             bool is_mutable;          // NEW (v1.25): true if declared with 'mut' keyword
+            ASTNodeList *annotations; // NEW (v1.30): Ownership tags on variables
         } let_stmt;
         
         struct {
