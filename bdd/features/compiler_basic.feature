@@ -110,6 +110,23 @@ Feature: Basic Compiler Functionality
     And the output should contain "Main function ending"
     And the exit code should be 0
 
+  Scenario: Compile and run a program that returns 1
+    Given I have a file "return_one.asthra" with:
+      """
+      package main;
+      
+      pub fn main(none) -> i32 {
+          log("Program will exit with code 1");
+          return 1;
+      }
+      """
+    When I compile the file
+    Then the compilation should succeed
+    And an executable should be created
+    When I run the executable
+    Then the output should contain "Program will exit with code 1"
+    And the exit code should be 1
+
   @wip
   Scenario: Compile and run a program with boolean operations
     Given I have a file "boolean_ops.asthra" with:

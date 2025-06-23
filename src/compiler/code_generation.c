@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "../parser/ast.h"
 #include "code_generation.h"
@@ -16,9 +17,39 @@
 // Forward declaration for type generation
 static const char* get_c_type_string(ASTNode *type_node);
 
+// Helper to check if an AST node ends with a return statement
+static bool ends_with_return(ASTNode *node) {
+    if (!node) return false;
+    
+    switch (node->type) {
+        case AST_RETURN_STMT:
+            return true;
+            
+        case AST_BLOCK:
+            if (node->data.block.statements && node->data.block.statements->count > 0) {
+                size_t last_idx = node->data.block.statements->count - 1;
+                return ends_with_return(node->data.block.statements->nodes[last_idx]);
+            }
+            return false;
+            
+        case AST_IF_STMT:
+            // Both branches must end with return for the if-else to count as ending with return
+            return node->data.if_stmt.else_block != NULL &&
+                   ends_with_return(node->data.if_stmt.then_block) &&
+                   ends_with_return(node->data.if_stmt.else_block);
+            
+        default:
+            return false;
+    }
+}
+
 // =============================================================================
 // CODE GENERATION
 // =============================================================================
+
+// Global context for tracking current function during code generation
+static const char *current_function_name = NULL;
+static bool current_function_returns_void = false;
 
 // Helper function to generate C code from AST
 int generate_c_code(FILE *output, ASTNode *node) {
@@ -71,7 +102,22 @@ int generate_c_code(FILE *output, ASTNode *node) {
                 }
                 
                 // Check if this is the main function
-                if (strcmp(func_name, "main") == 0) {
+                bool is_main = strcmp(func_name, "main") == 0;
+                bool main_returns_int = false;
+                bool main_returns_void = false;
+                
+                if (is_main) {
+                    // Check if main returns int/i32 or void
+                    if (node->data.function_decl.return_type && 
+                        node->data.function_decl.return_type->type == AST_BASE_TYPE &&
+                        node->data.function_decl.return_type->data.base_type.name) {
+                        const char *type_name = node->data.function_decl.return_type->data.base_type.name;
+                        if (strcmp(type_name, "i32") == 0 || strcmp(type_name, "int") == 0) {
+                            main_returns_int = true;
+                        } else if (strcmp(type_name, "void") == 0) {
+                            main_returns_void = true;
+                        }
+                    }
                     // Generate C main function
                     fprintf(output, "int main() {\n");
                 } else {
@@ -79,17 +125,27 @@ int generate_c_code(FILE *output, ASTNode *node) {
                     fprintf(output, "%s %s() {\n", return_type, func_name);
                 }
                 
+                // Set context for return statement handling
+                const char *old_function_name = current_function_name;
+                bool old_function_returns_void = current_function_returns_void;
+                current_function_name = func_name;
+                current_function_returns_void = (strcmp(return_type, "void") == 0) || main_returns_void;
+                
                 // Generate function body
                 if (node->data.function_decl.body) {
                     generate_c_code(output, node->data.function_decl.body);
                 }
                 
-                // Add return statement if needed
-                if (strcmp(func_name, "main") == 0) {
+                // Add return statement only if main doesn't already end with one
+                if (is_main && !ends_with_return(node->data.function_decl.body)) {
                     fprintf(output, "    return 0;\n");
                 }
                 
                 fprintf(output, "}\n\n");
+                
+                // Restore context
+                current_function_name = old_function_name;
+                current_function_returns_void = old_function_returns_void;
             }
             break;
             
@@ -196,6 +252,34 @@ int generate_c_code(FILE *output, ASTNode *node) {
         case AST_UNIT_LITERAL:
             // Output unit literal as empty (void)
             // In C, unit type is typically represented as void or no value
+            break;
+            
+        case AST_RETURN_STMT:
+            // Handle return statements
+            fprintf(output, "    return");
+            
+            // Special case: main function with void return type needs to return 0
+            bool is_main_void_return = current_function_name && 
+                                      strcmp(current_function_name, "main") == 0 && 
+                                      current_function_returns_void;
+            
+            if (node->data.return_stmt.expression) {
+                // Check if the expression is a unit literal
+                if (node->data.return_stmt.expression->type == AST_UNIT_LITERAL) {
+                    // For unit literals in void main, return 0
+                    if (is_main_void_return) {
+                        fprintf(output, " 0");
+                    }
+                    // Otherwise, don't output anything for unit literals
+                } else {
+                    fprintf(output, " ");
+                    generate_c_code(output, node->data.return_stmt.expression);
+                }
+            } else if (is_main_void_return) {
+                // Empty return in void main should return 0
+                fprintf(output, " 0");
+            }
+            fprintf(output, ";\n");
             break;
             
         case AST_INTEGER_LITERAL:

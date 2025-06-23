@@ -228,6 +228,7 @@ add_bdd_test(compiler_basic unit)
 add_bdd_test(if_conditions unit)
 add_bdd_test(function_calls unit)
 add_bdd_test(bitwise_operators unit)
+add_bdd_test(boolean_operators unit)
 add_bdd_test(ffi_integration integration)
 
 # Configuration summary
