@@ -94,7 +94,7 @@ IfLetStmt      <- 'if' 'let' Pattern '=' Expr Block ('else' Block)?  # Pattern m
 ForStmt        <- 'for' SimpleIdent 'in' Expr Block        # Iterator-based loops
 ReturnStmt     <- 'return' Expr ';'                        # Function return with required expression - eliminates AI ambiguity
 ExprStmt       <- Expr ';'                                 # Expression as statement
-SpawnStmt      <- ('spawn' / 'spawn_with_handle') PostfixExpr ';'  # Tier 1 concurrency: deterministic task spawning
+SpawnStmt      <- 'spawn' PostfixExpr ';' / 'spawn_with_handle' SimpleIdent '=' PostfixExpr ';'  # Tier 1 concurrency: spawn and spawn with handle capture
 MatchStmt      <- 'match' Expr '{' MatchArm* '}'           # Pattern matching statement
 MatchArm       <- Pattern '=>' Block                        # Match arm with pattern and code block
 BreakStmt      <- 'break' ';'                              # Exit current loop
@@ -121,7 +121,7 @@ Relational     <- Shift (('<' / '<=' / '>' / '>=') Shift)* # Relational comparis
 Shift          <- Add (('<<' / '>>') Add)*                 # Bitwise shift operations (fixed precedence)
 Add            <- Mult (('+' / '-') Mult)*                 # Addition and subtraction
 Mult           <- Unary (('*' / '/' / '%') Unary)*         # Multiplication, division, modulo
-Unary          <- ('await' PostfixExpr) / ('spawn_with_handle' PostfixExpr) / (UnaryPrefix PostfixExpr)  # Unary operations
+Unary          <- ('await' PostfixExpr) / (UnaryPrefix PostfixExpr)  # Unary operations
 UnaryPrefix    <- LogicalPrefix? PointerPrefix?            # Restricted unary operators (prevents !!x, **ptr)
 LogicalPrefix  <- ('!' / '-' / '~')                        # Logical not, arithmetic negation, bitwise complement
 PointerPrefix  <- ('*' / '&')                              # Dereference and address-of operators

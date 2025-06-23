@@ -61,11 +61,12 @@ These appear to work but may have limited test coverage:
 
 These are grammar features that may need reconsideration:
 
-#### spawn_with_handle as Unary Operator
-- **Grammar**: Line 124: `Unary <- ('await' PostfixExpr) / ('spawn_with_handle' PostfixExpr) / (UnaryPrefix PostfixExpr)`
-- **Grammar**: Line 97: Also appears as statement: `SpawnStmt <- ('spawn' / 'spawn_with_handle') PostfixExpr ';'`
-- **Issue**: Treating spawn_with_handle as both unary operator and statement is confusing
-- **Impact**: Inconsistent syntax for similar operations
+#### spawn_with_handle as Unary Operator ✅ FIXED
+- **Grammar**: Line 124: Previously had `spawn_with_handle` as unary operator
+- **Grammar**: Line 97: Also appeared as statement
+- **Issue**: Treating spawn_with_handle as both unary operator and statement was confusing
+- **Resolution**: Removed from unary operators, fixed statement syntax to match implementation
+- **Fix PR**: fix/spawn-with-handle-grammar-issue
 
 ### 4. Additional Grammar Features Needing Implementation Verification
 
