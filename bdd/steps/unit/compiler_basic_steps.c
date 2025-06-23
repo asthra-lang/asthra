@@ -119,6 +119,29 @@ void test_syntax_error(void) {
     then_error_contains("expected ';'");
 }
 
+// Test scenario: Compile and run a program that returns 1
+void test_return_one(void) {
+    bdd_scenario("Compile and run a program that returns 1");
+    
+    given_asthra_compiler_available();
+    
+    const char* source = 
+        "package main;\n"
+        "\n"
+        "pub fn main(none) -> i32 {\n"
+        "    log(\"Program will exit with code 1\");\n"
+        "    return 1;\n"
+        "}\n";
+    
+    given_file_with_content("return_one.asthra", source);
+    when_compile_file();
+    then_compilation_should_succeed();
+    then_executable_created();
+    when_run_executable();
+    then_output_contains("Program will exit with code 1");
+    then_exit_code_is(1);
+}
+
 // Test scenario: Compile and run a program with function calls
 void test_function_calls(void) {
     bdd_scenario("Compile and run a program with function calls");
@@ -199,6 +222,7 @@ int main(void) {
     test_multiple_logs();
     test_arithmetic();
     test_syntax_error();
+    test_return_one();
     // @wip - Disabled until function calls are implemented
     // test_function_calls();
     // @wip - Disabled until boolean operations are implemented
