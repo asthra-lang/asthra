@@ -336,7 +336,7 @@ TypeDescriptor *arg_type = analyze_type_node(analyzer, type_arg);
             }
             
             // Evaluate the constant expression to get the size
-            ConstValue *size_value = evaluate_const_expression(analyzer, size_node);
+            ConstValue *size_value = evaluate_literal_as_const(analyzer, size_node);
             if (!size_value) {
                 semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_EXPRESSION,
                                      size_node->location,

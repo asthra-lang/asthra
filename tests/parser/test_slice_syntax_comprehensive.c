@@ -294,7 +294,7 @@ void test_slice_edge_cases(void) {
         const char* source = 
             "package test;\n"
             "pub fn main(none) -> void {\n"
-            "    let arr: []i32 = [];\n"
+            "    let arr: []i32 = [none];\n"
             "    let s: []i32 = arr[:];\n"
             "    return ();\n"
             "}\n";

@@ -66,7 +66,20 @@ TypeDescriptor *type_descriptor_create_pointer(TypeDescriptor *pointee_type) {
     
     ptr_type->size = sizeof(void*);
     ptr_type->alignment = _Alignof(void*);
-    ptr_type->name = NULL;
+    
+    // Generate a proper name for the pointer type like "*i32"
+    if (pointee_type->name) {
+        size_t name_len = strlen(pointee_type->name) + 2; // "*" + name + null terminator
+        char *name_buffer = malloc(name_len);
+        if (name_buffer) {
+            snprintf(name_buffer, name_len, "*%s", pointee_type->name);
+            ptr_type->name = name_buffer;
+        } else {
+            ptr_type->name = NULL;
+        }
+    } else {
+        ptr_type->name = NULL;
+    }
     
     ptr_type->data.pointer.pointee_type = pointee_type;
     type_descriptor_retain(pointee_type); // Retain the pointee type
