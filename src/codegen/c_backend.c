@@ -39,6 +39,7 @@ static int c_backend_initialize(AsthraBackend *backend, const AsthraCompilerOpti
     backend->options.debug_info = options->debug_info;
     backend->options.verbose = options->verbose;
     backend->options.target_arch = options->target_arch;
+    backend->options.asm_syntax = options->asm_syntax;
     
     // Determine if we need runtime includes
     data->include_runtime = !options->no_stdlib;

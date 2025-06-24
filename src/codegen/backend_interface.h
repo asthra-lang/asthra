@@ -33,6 +33,9 @@ struct AsthraBackendOptions {
     AsthraTargetArch target_arch;
     const char *target_triple;
     
+    // Assembly-specific options
+    AsthraAssemblySyntax asm_syntax;
+    
     // Backend-specific data
     void *backend_specific;
 };

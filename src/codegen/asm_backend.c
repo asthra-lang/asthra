@@ -20,6 +20,7 @@ typedef struct AsmBackendData {
     CodeGenerator *codegen_ctx;
     char *output_filename;
     AsthraTargetArch target_arch;
+    AsthraAssemblySyntax asm_syntax;
 } AsmBackendData;
 
 // Initialize the Assembly backend
@@ -38,7 +39,9 @@ static int asm_backend_initialize(AsthraBackend *backend, const AsthraCompilerOp
     backend->options.debug_info = options->debug_info;
     backend->options.verbose = options->verbose;
     backend->options.target_arch = options->target_arch;
+    backend->options.asm_syntax = options->asm_syntax;
     data->target_arch = options->target_arch;
+    data->asm_syntax = options->asm_syntax;
     
     // Initialize code generator context
     // Map Asthra target arch to code generator arch
@@ -50,12 +53,32 @@ static int asm_backend_initialize(AsthraBackend *backend, const AsthraCompilerOp
         case ASTHRA_TARGET_ARM64:
             arch = TARGET_ARCH_AARCH64;
             break;
+        case ASTHRA_TARGET_WASM32:
+            arch = TARGET_ARCH_WASM32;
+            break;
         default:
             arch = TARGET_ARCH_X86_64;
             break;
     }
     
-    data->codegen_ctx = code_generator_create(arch, CALLING_CONV_SYSTEM_V_AMD64);
+    // Choose appropriate calling convention based on architecture
+    CallingConvention conv;
+    switch (arch) {
+        case TARGET_ARCH_X86_64:
+            conv = CALLING_CONV_SYSTEM_V_AMD64;
+            break;
+        case TARGET_ARCH_AARCH64:
+            conv = CALLING_CONV_AARCH64_AAPCS;
+            break;
+        case TARGET_ARCH_WASM32:
+            conv = CALLING_CONV_WASM_C;
+            break;
+        default:
+            conv = CALLING_CONV_SYSTEM_V_AMD64;
+            break;
+    }
+    
+    data->codegen_ctx = code_generator_create_with_syntax(arch, conv, data->asm_syntax);
     if (!data->codegen_ctx) {
         free(data);
         backend->last_error = "Failed to create code generator context";
@@ -189,8 +212,13 @@ static bool asm_backend_supports_feature(AsthraBackend *backend, const char *fea
         "instruction_selection",
         "x86_64",
         "arm64",
+        "wasm32",
+        "webassembly",
+        "intel_syntax",
+        "att_syntax",
         "elf_output",
         "macho_output",
+        "wat_output",
         NULL
     };
     
