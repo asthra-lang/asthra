@@ -148,6 +148,8 @@ const char *token_type_name(TokenType type) {
         case TOKEN_I32: return "I32";
         case TOKEN_U64: return "U64";
         case TOKEN_I64: return "I64";
+        case TOKEN_U128: return "U128";
+        case TOKEN_I128: return "I128";
         case TOKEN_F32: return "F32";
         case TOKEN_F64: return "F64";
         case TOKEN_RESULT: return "RESULT";
@@ -334,6 +336,8 @@ const char *token_type_display_name(TokenType type) {
         case TOKEN_I32: return "i32";
         case TOKEN_U64: return "u64";
         case TOKEN_I64: return "i64";
+        case TOKEN_U128: return "u128";
+        case TOKEN_I128: return "i128";
         case TOKEN_F32: return "f32";
         case TOKEN_F64: return "f64";
         case TOKEN_RESULT: return "Result";

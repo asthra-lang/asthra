@@ -17,10 +17,12 @@ static int map_descriptor_to_info_primitive(int descriptor_kind) {
         case PRIMITIVE_I16: return PRIMITIVE_INFO_I16;
         case PRIMITIVE_I32: return PRIMITIVE_INFO_I32;
         case PRIMITIVE_I64: return PRIMITIVE_INFO_I64;
+        case PRIMITIVE_I128: return PRIMITIVE_INFO_I128;
         case PRIMITIVE_U8: return PRIMITIVE_INFO_U8;
         case PRIMITIVE_U16: return PRIMITIVE_INFO_U16;
         case PRIMITIVE_U32: return PRIMITIVE_INFO_U32;
         case PRIMITIVE_U64: return PRIMITIVE_INFO_U64;
+        case PRIMITIVE_U128: return PRIMITIVE_INFO_U128;
         case PRIMITIVE_F32: return PRIMITIVE_INFO_F32;
         case PRIMITIVE_F64: return PRIMITIVE_INFO_F64;
         case PRIMITIVE_CHAR: return PRIMITIVE_INFO_CHAR;
@@ -38,10 +40,12 @@ static int map_info_to_descriptor_primitive(enum PrimitiveInfoKind info_kind) {
         case PRIMITIVE_INFO_I16: return PRIMITIVE_I16;
         case PRIMITIVE_INFO_I32: return PRIMITIVE_I32;
         case PRIMITIVE_INFO_I64: return PRIMITIVE_I64;
+        case PRIMITIVE_INFO_I128: return PRIMITIVE_I128;
         case PRIMITIVE_INFO_U8: return PRIMITIVE_U8;
         case PRIMITIVE_INFO_U16: return PRIMITIVE_U16;
         case PRIMITIVE_INFO_U32: return PRIMITIVE_U32;
         case PRIMITIVE_INFO_U64: return PRIMITIVE_U64;
+        case PRIMITIVE_INFO_U128: return PRIMITIVE_U128;
         case PRIMITIVE_INFO_F32: return PRIMITIVE_F32;
         case PRIMITIVE_INFO_F64: return PRIMITIVE_F64;
         case PRIMITIVE_INFO_CHAR: return PRIMITIVE_CHAR;

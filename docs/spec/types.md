@@ -1,8 +1,8 @@
 # Type System
 
-**Version:** 1.6  
-**Last Updated:** 2025-01-20  
-**Change:** Promoted Option<T> to built-in type status alongside Result<T,E>
+**Version:** 2.0  
+**Last Updated:** 2025-01-24  
+**Change:** Added 128-bit integer types (i128/u128) for cryptographic and high-precision operations
 
 Asthra implements a comprehensive type system with Go-style simple type inference optimized for AI code generation. The design prioritizes predictability and local reasoning over complex global type analysis.
 
@@ -31,6 +31,10 @@ let word: u16 = 65535;         // 16-bit unsigned (0 to 65,535)
 let dword: u32 = 4294967295;   // 32-bit unsigned (0 to 4,294,967,295)
 let qword: u64 = 18446744073709551615; // 64-bit unsigned
 
+// 128-bit integers (v2.0+)
+let very_large: i128 = -170141183460469231731687303715884105728; // 128-bit signed
+let huge_unsigned: u128 = 340282366920938463463374607431768211455; // 128-bit unsigned
+
 // Platform-dependent sizes
 let size: usize = 1024;        // Pointer-sized unsigned integer
 let signed_size: isize = -512; // Pointer-sized signed integer
@@ -47,6 +51,57 @@ let double: f64 = 2.718281828; // 64-bit IEEE 754 double (default float type)
 let large_float: f64 = 1.23e10;
 let small_float: f64 = 4.56e-5;
 ```
+
+### 128-bit Integer Types (v2.0+)
+
+Asthra provides 128-bit integer types for applications requiring extended numeric range, such as cryptographic operations, UUID generation, and high-precision arithmetic.
+
+```asthra
+// 128-bit integers
+let crypto_key: u128 = 0x123456789ABCDEF0123456789ABCDEF0; // 128-bit unsigned
+let huge_signed: i128 = -85070591730234615865843651857942052864; // 128-bit signed
+
+// Use cases
+pub fn generate_uuid() -> u128 {
+    // Generate 128-bit UUID
+    let timestamp: u64 = current_timestamp();
+    let random: u64 = secure_random_u64();
+    return ((timestamp as u128) << 64) | (random as u128);
+}
+
+pub fn high_precision_multiply(a: i64, b: i64) -> i128 {
+    // Prevent overflow in 64-bit multiplication
+    return (a as i128) * (b as i128);
+}
+
+// Cryptographic operations
+pub fn mod_pow(base: u128, exp: u128, modulus: u128) -> u128 {
+    // Modular exponentiation for cryptography
+    let mut result: u128 = 1;
+    let mut base = base % modulus;
+    let mut exp = exp;
+    
+    while exp > 0 {
+        if exp & 1 == 1 {
+            result = (result * base) % modulus;
+        }
+        exp >>= 1;
+        base = (base * base) % modulus;
+    }
+    
+    return result;
+}
+```
+
+#### 128-bit Type Properties
+
+- **Range**: 
+  - `i128`: -170,141,183,460,469,231,731,687,303,715,884,105,728 to 170,141,183,460,469,231,731,687,303,715,884,105,727
+  - `u128`: 0 to 340,282,366,920,938,463,463,374,607,431,768,211,455
+- **Size**: 16 bytes (128 bits)
+- **Alignment**: 16 bytes on most platforms
+- **Performance**: Operations may be slower than native register-sized types
+- **Use Cases**: Cryptography, UUIDs, high-precision arithmetic, large counters
 
 ### Other Primitive Types
 

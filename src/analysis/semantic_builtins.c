@@ -88,6 +88,15 @@ static TypeDescriptor g_builtin_types[] = {
         .data.primitive = {.primitive_kind = PRIMITIVE_I64},
         .ref_count = 1000000
     },
+    [PRIMITIVE_I128] = {
+        .category = TYPE_PRIMITIVE,
+        .flags = {.is_constant = false},
+        .size = 16,
+        .alignment = 16,
+        .name = "i128",
+        .data.primitive = {.primitive_kind = PRIMITIVE_I128},
+        .ref_count = 1000000
+    },
     [PRIMITIVE_U8] = {
         .category = TYPE_PRIMITIVE,
         .flags = {.is_constant = false},
@@ -122,6 +131,15 @@ static TypeDescriptor g_builtin_types[] = {
         .alignment = _Alignof(uint64_t),
         .name = "u64",
         .data.primitive = {.primitive_kind = PRIMITIVE_U64},
+        .ref_count = 1000000
+    },
+    [PRIMITIVE_U128] = {
+        .category = TYPE_PRIMITIVE,
+        .flags = {.is_constant = false},
+        .size = 16,
+        .alignment = 16,
+        .name = "u128",
+        .data.primitive = {.primitive_kind = PRIMITIVE_U128},
         .ref_count = 1000000
     },
     [PRIMITIVE_USIZE] = {

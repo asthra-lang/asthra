@@ -29,6 +29,8 @@ size_t get_basic_type_size(const char *type_name) {
     if (strcmp(type_name, "u16") == 0) return 2;
     if (strcmp(type_name, "u32") == 0) return 4;
     if (strcmp(type_name, "u64") == 0) return 8;
+    if (strcmp(type_name, "i128") == 0) return 16;
+    if (strcmp(type_name, "u128") == 0) return 16;
     if (strcmp(type_name, "f32") == 0) return 4;
     if (strcmp(type_name, "f64") == 0) return 8;
     if (strcmp(type_name, "bool") == 0) return 1;

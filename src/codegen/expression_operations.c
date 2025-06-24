@@ -9,6 +9,8 @@
  */
 
 #include "expression_operations.h"
+#include "codegen_128bit_operations.h"
+#include "../analysis/type_info.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -92,9 +94,25 @@ bool generate_binary_expression(CodeGenerator *generator, ASTNode *expr, Registe
         return false;
     }
     
-    // Generate binary operation
-    bool success = generate_binary_arithmetic(generator, expr->data.binary_expr.operator,
-                                            left_reg, right_reg, target_reg);
+    // Check if this is a 128-bit operation
+    bool success = false;
+    if (expr->type_info && expr->type_info->type_descriptor) {
+        TypeDescriptor *type = (TypeDescriptor *)expr->type_info->type_descriptor;
+        
+        if (is_128bit_type(type)) {
+            // Use specialized 128-bit code generation
+            success = generate_128bit_binary_operation(generator, expr->data.binary_expr.operator,
+                                                     type, left_reg, right_reg, target_reg);
+        } else {
+            // Use standard binary arithmetic
+            success = generate_binary_arithmetic(generator, expr->data.binary_expr.operator,
+                                              left_reg, right_reg, target_reg);
+        }
+    } else {
+        // Fallback to standard binary arithmetic if no type info
+        success = generate_binary_arithmetic(generator, expr->data.binary_expr.operator,
+                                          left_reg, right_reg, target_reg);
+    }
     
     register_free(generator->register_allocator, left_reg);
     register_free(generator->register_allocator, right_reg);
