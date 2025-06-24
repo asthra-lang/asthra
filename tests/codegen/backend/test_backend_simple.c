@@ -192,7 +192,8 @@ int test_backend_initialization(void) {
         
         const char *error = asthra_backend_get_last_error(backend);
         TEST_ASSERT_NOT_NULL(error, "Error message should not be null");
-        TEST_ASSERT(strstr(error, "not yet implemented") != NULL, "Error should mention not implemented");
+        TEST_ASSERT(strstr(error, "not yet implemented") != NULL || strstr(error, "not compiled in") != NULL, 
+                    "Error should mention not implemented or not compiled in");
         
         asthra_backend_destroy(backend);
     }

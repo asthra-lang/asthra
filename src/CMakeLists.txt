@@ -87,6 +87,11 @@ target_link_libraries(asthra_compiler
         # json-c::json-c  # Removed - only needed by ai_server which is excluded
 )
 
+# Conditionally link LLVM if backend is enabled
+if(ENABLE_LLVM_BACKEND)
+    target_link_libraries(asthra_compiler PUBLIC llvm::llvm)
+endif()
+
 target_compile_definitions(asthra_compiler
     PRIVATE
         ASTHRA_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
