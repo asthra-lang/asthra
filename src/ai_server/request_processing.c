@@ -16,7 +16,7 @@
 #include <string.h>
 #include <time.h>
 #include <pthread.h>
-#include <json-c/json_object.h>
+#include <json_object.h>
 
 // =============================================================================
 // Request Processing

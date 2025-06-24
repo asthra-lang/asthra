@@ -221,16 +221,19 @@ add_custom_target(bdd-clean
 # add_bdd_test(compiler_workflow integration)
 
 # Register BDD tests
-add_bdd_test(compilation unit)
-add_bdd_test(parser unit)
-add_bdd_test(semantic unit)
-add_bdd_test(cli integration)
+# Note: Only register tests that have corresponding step files
+
+# Unit tests with step files in steps/unit/
 add_bdd_test(compiler_basic unit)
-add_bdd_test(if_conditions unit)
 add_bdd_test(function_calls unit)
 add_bdd_test(bitwise_operators unit)
 add_bdd_test(boolean_operators unit)
+
+# Integration tests with step files in steps/integration/
 add_bdd_test(ffi_integration integration)
+
+# Tests with step files in root steps/ directory
+add_bdd_test(if_conditions unit)  # uses steps/if_conditions_steps.c
 
 # Configuration summary
 message(STATUS "BDD testing infrastructure configured")

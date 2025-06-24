@@ -14,8 +14,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <json-c/json_object.h>
-#include <json-c/json_tokener.h>
+#include <json_object.h>
+#include <json_tokener.h>
 
 // =============================================================================
 // Real-time Analysis

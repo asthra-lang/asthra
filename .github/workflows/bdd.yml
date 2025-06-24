@@ -121,11 +121,13 @@ jobs:
         mkdir -p build
         cd build
         
+        # Configure with BDD tests and ensure json-c is available
         cmake .. \
           -DCMAKE_BUILD_TYPE=Debug \
           -DCMAKE_C_COMPILER=${{ matrix.cc }} \
           -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
-          -DBUILD_BDD_TESTS=ON
+          -DBUILD_BDD_TESTS=ON \
+          -DUSE_SYSTEM_JSON_C=OFF
         
         echo "✓ CMake configuration completed successfully"
 
@@ -135,10 +137,20 @@ jobs:
         echo "=== Building Asthra with BDD Tests ==="
         cd build
         
-        # Build main compiler first
+        # Build main compiler and dependencies first
+        echo "Building main compiler and libraries..."
         cmake --build . --parallel $(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
         
+        # Verify asthra_ai_server was built successfully
+        if [ -f "lib/libasthra_ai_server.a" ]; then
+          echo "✓ asthra_ai_server library built successfully"
+        else
+          echo "⚠️ asthra_ai_server library not found, checking available libraries:"
+          find . -name "*.a" | grep -i server || echo "No server libraries found"
+        fi
+        
         # Build BDD test executables
+        echo "Building BDD test executables..."
         cmake --build . --target build-tests
         
         echo "✓ Build completed successfully"
@@ -149,76 +161,154 @@ jobs:
     
     - name: Run BDD unit tests
       run: |
+        set -e  # Exit on any error to make tests mandatory
         echo "=== Running BDD Unit Tests ==="
         cd build
         
-        # Export compiler path for BDD tests
-        export ASTHRA_COMPILER_PATH="$(pwd)/asthra"
-        echo "ASTHRA_COMPILER_PATH=$ASTHRA_COMPILER_PATH"
+        # Find the asthra compiler binary
+        echo "Searching for asthra compiler binary..."
+        
+        # Check common locations
+        ASTHRA_PATHS=(
+          "$(pwd)/asthra"
+          "$(pwd)/bin/asthra"
+          "$(pwd)/src/asthra"
+        )
+        
+        ASTHRA_COMPILER_PATH=""
+        for path in "${ASTHRA_PATHS[@]}"; do
+          if [ -f "$path" ]; then
+            ASTHRA_COMPILER_PATH="$path"
+            break
+          fi
+        done
+        
+        # If not found in common locations, search more broadly
+        if [ -z "$ASTHRA_COMPILER_PATH" ]; then
+          echo "Compiler not found in common locations, searching..."
+          # Cross-platform find command
+          if [[ "$OSTYPE" == "darwin"* ]]; then
+            FOUND_BINARY=$(find . -name "asthra" -type f -perm +111 | head -1)
+          else
+            FOUND_BINARY=$(find . -name "asthra" -type f -executable | head -1)
+          fi
+          
+          if [ -n "$FOUND_BINARY" ]; then
+            ASTHRA_COMPILER_PATH="$FOUND_BINARY"
+          fi
+        fi
         
         # Verify compiler exists
-        if [ -f "$ASTHRA_COMPILER_PATH" ]; then
+        if [ -n "$ASTHRA_COMPILER_PATH" ] && [ -f "$ASTHRA_COMPILER_PATH" ]; then
           echo "✓ Asthra compiler found at: $ASTHRA_COMPILER_PATH"
           ls -la "$ASTHRA_COMPILER_PATH"
+          export ASTHRA_COMPILER_PATH
         else
-          echo "⚠️ Asthra compiler not found at expected location"
-          echo "Looking for compiler binary..."
-          find . -name "asthra" -type f -executable | head -5
+          echo "❌ Asthra compiler not found in any expected location"
+          echo "Current directory structure:"
+          ls -la .
+          if [ -d "bin" ]; then
+            echo "Contents of bin/:"
+            ls -la bin/
+          fi
+          exit 1
         fi
+        
+        # Track test results
+        TESTS_RUN=0
+        TESTS_FAILED=0
         
         # Run unit-level BDD tests
         if [ -f "bdd/bin/bdd_unit_compiler_basic" ]; then
           echo "Running compiler basic unit tests..."
-          ./bdd/bin/bdd_unit_compiler_basic --reporter spec || true
+          TESTS_RUN=$((TESTS_RUN + 1))
+          ./bdd/bin/bdd_unit_compiler_basic --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
         fi
         
-        if [ -f "bdd/bin/bdd_unit_parser" ]; then
-          echo "Running parser unit tests..."
-          ./bdd/bin/bdd_unit_parser --reporter spec || true
+        if [ -f "bdd/bin/bdd_unit_function_calls" ]; then
+          echo "Running function calls unit tests..."
+          TESTS_RUN=$((TESTS_RUN + 1))
+          ./bdd/bin/bdd_unit_function_calls --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
         fi
         
-        if [ -f "bdd/bin/bdd_unit_semantic" ]; then
-          echo "Running semantic unit tests..."
-          ./bdd/bin/bdd_unit_semantic --reporter spec || true
+        if [ -f "bdd/bin/bdd_unit_bitwise_operators" ]; then
+          echo "Running bitwise operators unit tests..."
+          TESTS_RUN=$((TESTS_RUN + 1))
+          ./bdd/bin/bdd_unit_bitwise_operators --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
         fi
         
-        if [ -f "bdd/bin/bdd_unit_compilation" ]; then
-          echo "Running compilation unit tests..."
-          ./bdd/bin/bdd_unit_compilation --reporter spec || true
+        if [ -f "bdd/bin/bdd_unit_boolean_operators" ]; then
+          echo "Running boolean operators unit tests..."
+          TESTS_RUN=$((TESTS_RUN + 1))
+          ./bdd/bin/bdd_unit_boolean_operators --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+        fi
+        
+        if [ -f "bdd/bin/bdd_unit_if_conditions" ]; then
+          echo "Running if conditions unit tests..."
+          TESTS_RUN=$((TESTS_RUN + 1))
+          ./bdd/bin/bdd_unit_if_conditions --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+        fi
+        
+        # Report results and fail if any tests failed
+        echo "BDD Unit Tests Summary: $TESTS_RUN tests run, $TESTS_FAILED failed"
+        if [ $TESTS_FAILED -gt 0 ]; then
+          echo "❌ BDD unit tests failed - this will block the CI pipeline"
+          exit 1
+        elif [ $TESTS_RUN -eq 0 ]; then
+          echo "⚠️ No BDD unit tests were found or executed"
+          exit 1
+        else
+          echo "✅ All BDD unit tests passed"
         fi
 
     - name: Run BDD integration tests
       run: |
+        set -e  # Exit on any error to make tests mandatory
         echo "=== Running BDD Integration Tests ==="
         cd build
         
         # Export compiler path for BDD tests
         export ASTHRA_COMPILER_PATH="$(pwd)/asthra"
         
+        # Track test results
+        TESTS_RUN=0
+        TESTS_FAILED=0
+        
         # Run integration-level BDD tests
-        if [ -f "bdd/bin/bdd_integration_cli" ]; then
-          echo "Running CLI integration tests..."
-          ./bdd/bin/bdd_integration_cli --reporter spec || true
+        if [ -f "bdd/bin/bdd_integration_ffi_integration" ]; then
+          echo "Running FFI integration tests..."
+          TESTS_RUN=$((TESTS_RUN + 1))
+          ./bdd/bin/bdd_integration_ffi_integration --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
         fi
         
-        if [ -f "bdd/bin/bdd_integration_ffi" ]; then
-          echo "Running FFI integration tests..."
-          ./bdd/bin/bdd_integration_ffi_integration --reporter spec || true
+        # Report results and fail if any tests failed
+        echo "BDD Integration Tests Summary: $TESTS_RUN tests run, $TESTS_FAILED failed"
+        if [ $TESTS_FAILED -gt 0 ]; then
+          echo "❌ BDD integration tests failed - this will block the CI pipeline"
+          exit 1
+        elif [ $TESTS_RUN -eq 0 ]; then
+          echo "⚠️ No BDD integration tests were found or executed"
+          exit 1
+        else
+          echo "✅ All BDD integration tests passed"
         fi
 
     - name: Run Cucumber feature tests
       if: matrix.platform == 'linux'  # Cucumber setup is more reliable on Linux
       run: |
+        set -e  # Exit on any error to make tests mandatory
         echo "=== Running Cucumber Feature Tests ==="
         cd bdd
         
         # Check if cucumber is available
         if command -v cucumber &> /dev/null; then
           echo "Running Cucumber tests..."
-          cucumber features/*.feature --format html --out ../build/cucumber-report.html || true
-          cucumber features/*.feature --format json --out ../build/cucumber-report.json || true
+          # Run tests and capture results (non-zero exit code will fail the step)
+          cucumber features/*.feature --format html --out ../build/cucumber-report.html
+          cucumber features/*.feature --format json --out ../build/cucumber-report.json
+          echo "✅ Cucumber feature tests completed successfully"
         else
-          echo "Cucumber not found, skipping feature tests"
+          echo "⚠️ Cucumber not found, skipping feature tests (not mandatory)"
         fi
 
     # =============================================================================
