@@ -467,19 +467,35 @@ void test_negative_shift(void) {
 int main(void) {
     bdd_init("Bitwise Operators");
     
-    // Run all bitwise operator test scenarios
-    test_bitwise_and();
-    test_bitwise_or();
-    test_bitwise_xor();
-    test_bitwise_not();
-    test_left_shift();
-    test_right_shift();
-    test_combined_bitwise();
-    test_bitwise_types();
-    test_bitwise_precedence();
-    test_binary_literals();
-    test_bitwise_type_error();
-    test_negative_shift();
+    // Check if @wip scenarios should be skipped
+    if (bdd_should_skip_wip()) {
+        bdd_skip_scenario("Bitwise AND operation [@wip]");
+        bdd_skip_scenario("Bitwise OR operation [@wip]");
+        bdd_skip_scenario("Bitwise XOR operation [@wip]");
+        bdd_skip_scenario("Bitwise NOT operation [@wip]");
+        bdd_skip_scenario("Left shift operation [@wip]");
+        bdd_skip_scenario("Right shift operation [@wip]");
+        bdd_skip_scenario("Combined bitwise operations [@wip]");
+        bdd_skip_scenario("Bitwise operations with different integer types [@wip]");
+        bdd_skip_scenario("Bitwise operator precedence [@wip]");
+        bdd_skip_scenario("Binary literals with bitwise operations [@wip]");
+        bdd_skip_scenario("Error - bitwise operations on non-integer types [@wip]");
+        bdd_skip_scenario("Error - shift by negative amount [@wip]");
+    } else {
+        // Run all bitwise operator test scenarios
+        test_bitwise_and();
+        test_bitwise_or();
+        test_bitwise_xor();
+        test_bitwise_not();
+        test_left_shift();
+        test_right_shift();
+        test_combined_bitwise();
+        test_bitwise_types();
+        test_bitwise_precedence();
+        test_binary_literals();
+        test_bitwise_type_error();
+        test_negative_shift();
+    }
     
     // Cleanup
     common_cleanup();

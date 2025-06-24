@@ -217,16 +217,25 @@ void test_boolean_operations(void) {
 int main(void) {
     bdd_init("Basic Compiler Functionality");
     
-    // Run all scenarios from compiler_basic.feature
-    test_hello_world();
-    test_multiple_logs();
-    test_arithmetic();
-    test_syntax_error();
-    test_return_one();
-    // @wip - Disabled until function calls are implemented
-    // test_function_calls();
-    // @wip - Disabled until boolean operations are implemented
-    // test_boolean_operations();
+    // Check if @wip scenarios should be skipped
+    if (bdd_should_skip_wip()) {
+        bdd_skip_scenario("Compile and run a simple Hello World program [@wip]");
+        bdd_skip_scenario("Compile and run a program with multiple log statements [@wip]");
+        bdd_skip_scenario("Compile and run a program with basic arithmetic [@wip]");
+        bdd_skip_scenario("Handle syntax errors gracefully [@wip]");
+        bdd_skip_scenario("Compile and run a program that returns 1 [@wip]");
+        bdd_skip_scenario("Compile and run a program with function calls [@wip]");
+        bdd_skip_scenario("Compile and run a program with boolean operations [@wip]");
+    } else {
+        // Run all scenarios from compiler_basic.feature
+        test_hello_world();
+        test_multiple_logs();
+        test_arithmetic();
+        test_syntax_error();
+        test_return_one();
+        test_function_calls();
+        test_boolean_operations();
+    }
     
     // Cleanup
     common_cleanup();

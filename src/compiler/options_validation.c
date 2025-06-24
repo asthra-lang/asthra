@@ -23,6 +23,7 @@ AsthraCompilerOptions asthra_compiler_default_options(void) {
         .output_file = NULL,
         .opt_level = ASTHRA_OPT_STANDARD,
         .target_arch = ASTHRA_TARGET_NATIVE,
+        .backend_type = ASTHRA_BACKEND_C,
         .debug_info = false,
         .verbose = false,
         .emit_llvm = false,
@@ -41,6 +42,7 @@ AsthraCompilerOptions asthra_compiler_options_create(const char *input_file, con
         .output_file = output_file,
         .opt_level = ASTHRA_OPT_STANDARD,
         .target_arch = ASTHRA_TARGET_NATIVE,
+        .backend_type = ASTHRA_BACKEND_C,
         .debug_info = false,
         .verbose = false,
         .emit_llvm = false,
@@ -120,4 +122,24 @@ const char *asthra_get_optimization_level_string(AsthraOptimizationLevel level) 
     }
 
     return "O2"; // Default fallback
+}
+
+const char *asthra_get_backend_type_string(AsthraBackendType backend) {
+    // C17 compound literal for backend type mapping
+    static const struct {
+        AsthraBackendType type;
+        const char *string;
+    } backend_map[] = {
+        {ASTHRA_BACKEND_C, "C"},
+        {ASTHRA_BACKEND_LLVM_IR, "LLVM IR"},
+        {ASTHRA_BACKEND_ASSEMBLY, "Assembly"}
+    };
+
+    for (size_t i = 0; i < sizeof(backend_map) / sizeof(backend_map[0]); i++) {
+        if (backend_map[i].type == backend) {
+            return backend_map[i].string;
+        }
+    }
+
+    return "Unknown"; // Default fallback
 } 

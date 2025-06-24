@@ -12,6 +12,7 @@
 
 #include "../platform.h"
 #include "../compiler.h"
+#include "../codegen/backend_interface.h"
 
 // Platform-specific includes for system() return value handling
 #if ASTHRA_PLATFORM_UNIX
@@ -134,68 +135,10 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
     // Phase 5: Code generation
     printf("  Phase 5: Code generation\n");
     
-    // Generate C code from the AST
-    FILE *temp_c = fopen("temp_asthra_output.c", "w");
-    if (!temp_c) {
-        printf("Error: Failed to create temporary C file\n");
-        ast_free_node(program);
-        parser_destroy(parser);
-        lexer_destroy(lexer);
-        free(source_code);
-        return -1;
-    }
-    
-    // Write C program header
-    fprintf(temp_c, "#include <stdio.h>\n");
-    fprintf(temp_c, "#include <stdlib.h>\n");
-    fprintf(temp_c, "#include <string.h>\n");
-    fprintf(temp_c, "#include <stddef.h>\n");
-    fprintf(temp_c, "#include <stdbool.h>\n");
-    fprintf(temp_c, "#include <stdint.h>\n");
-    fprintf(temp_c, "\n");
-    
-    // Runtime type and function declarations
-    fprintf(temp_c, "// Asthra runtime types and functions for slice support\n");
-    fprintf(temp_c, "typedef enum {\n");
-    fprintf(temp_c, "    ASTHRA_OWNERSHIP_GC,\n");
-    fprintf(temp_c, "    ASTHRA_OWNERSHIP_C,\n");
-    fprintf(temp_c, "    ASTHRA_OWNERSHIP_PINNED\n");
-    fprintf(temp_c, "} AsthraOwnershipHint;\n");
-    fprintf(temp_c, "\n");
-    fprintf(temp_c, "typedef struct {\n");
-    fprintf(temp_c, "    void * restrict ptr;\n");
-    fprintf(temp_c, "    size_t len;\n");
-    fprintf(temp_c, "    size_t cap;\n");
-    fprintf(temp_c, "    size_t element_size;\n");
-    fprintf(temp_c, "    AsthraOwnershipHint ownership;\n");
-    fprintf(temp_c, "    bool is_mutable;\n");
-    fprintf(temp_c, "    uint32_t type_id;\n");
-    fprintf(temp_c, "} AsthraSliceHeader;\n");
-    fprintf(temp_c, "\n");
-    fprintf(temp_c, "// Slice operation functions\n");
-    fprintf(temp_c, "static inline size_t asthra_slice_get_len(AsthraSliceHeader slice) { return slice.len; }\n");
-    fprintf(temp_c, "static inline void* asthra_slice_get_element(AsthraSliceHeader slice, size_t index) {\n");
-    fprintf(temp_c, "    if (index >= slice.len) return NULL;\n");
-    fprintf(temp_c, "    return (char*)slice.ptr + index * slice.element_size;\n");
-    fprintf(temp_c, "}\n");
-    fprintf(temp_c, "static inline AsthraSliceHeader asthra_slice_subslice(AsthraSliceHeader slice, size_t start, size_t end) {\n");
-    fprintf(temp_c, "    if (start > slice.len) start = slice.len;\n");
-    fprintf(temp_c, "    if (end > slice.len) end = slice.len;\n");
-    fprintf(temp_c, "    if (start > end) end = start;\n");
-    fprintf(temp_c, "    return (AsthraSliceHeader){.ptr = (char*)slice.ptr + start * slice.element_size,\n");
-    fprintf(temp_c, "                               .len = end - start, .cap = end - start,\n");
-    fprintf(temp_c, "                               .element_size = slice.element_size,\n");
-    fprintf(temp_c, "                               .ownership = slice.ownership,\n");
-    fprintf(temp_c, "                               .is_mutable = slice.is_mutable,\n");
-    fprintf(temp_c, "                               .type_id = slice.type_id};\n");
-    fprintf(temp_c, "}\n");
-    fprintf(temp_c, "extern AsthraSliceHeader asthra_runtime_get_args(void);\n\n");
-    
-    // Generate code from AST
-    if (generate_c_code(temp_c, program) != 0) {
-        printf("Error: Code generation failed\n");
-        fclose(temp_c);
-        remove("temp_asthra_output.c");
+    // Create backend based on compiler options
+    AsthraBackend *backend = asthra_backend_create(&ctx->options);
+    if (!backend) {
+        printf("Error: Failed to create backend\n");
         semantic_analyzer_destroy(analyzer);
         ast_free_node(program);
         parser_destroy(parser);
@@ -204,20 +147,75 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
         return -1;
     }
     
-    fclose(temp_c);
-
-    // Phase 6: Linking
-    printf("  Phase 6: Linking\n");
+    // Initialize backend
+    if (asthra_backend_initialize(backend, &ctx->options) != 0) {
+        printf("Error: Failed to initialize backend: %s\n", asthra_backend_get_last_error(backend));
+        asthra_backend_destroy(backend);
+        semantic_analyzer_destroy(analyzer);
+        ast_free_node(program);
+        parser_destroy(parser);
+        lexer_destroy(lexer);
+        free(source_code);
+        return -1;
+    }
     
-    // Compile the generated C file
-    char compile_cmd[512];
-    // TODO: Link with runtime library once path resolution is implemented
-    // For now, just compile without runtime linking (will fail at runtime if args() is called)
-    snprintf(compile_cmd, sizeof(compile_cmd), "cc -o %s temp_asthra_output.c", output_file);
-    int result = system(compile_cmd);
+    // Determine output filename based on backend
+    char *backend_output_file = NULL;
+    if (ctx->options.backend_type == ASTHRA_BACKEND_C) {
+        // For C backend, generate temporary file for compilation
+        backend_output_file = strdup("temp_asthra_output.c");
+    } else {
+        // For other backends, use the final output file directly
+        backend_output_file = asthra_backend_get_output_filename(ctx->options.backend_type, 
+                                                                 input_file, 
+                                                                 output_file);
+    }
+    
+    // Generate code using backend
+    if (asthra_backend_generate(backend, ctx, program, backend_output_file) != 0) {
+        printf("Error: Code generation failed: %s\n", asthra_backend_get_last_error(backend));
+        free(backend_output_file);
+        asthra_backend_destroy(backend);
+        semantic_analyzer_destroy(analyzer);
+        ast_free_node(program);
+        parser_destroy(parser);
+        lexer_destroy(lexer);
+        free(source_code);
+        return -1;
+    }
+    
+    // Report backend statistics
+    if (ctx->options.verbose) {
+        size_t lines, functions;
+        double time;
+        asthra_backend_get_stats(backend, &lines, &functions, &time);
+        printf("  ✓ Generated %zu lines for %zu functions in %.3f seconds\n", 
+               lines, functions, time);
+    }
+
+    // Phase 6: Linking (only for C backend)
+    int result = 0;
+    if (ctx->options.backend_type == ASTHRA_BACKEND_C) {
+        printf("  Phase 6: Linking\n");
+        
+        // Compile the generated C file
+        char compile_cmd[512];
+        // TODO: Link with runtime library once path resolution is implemented
+        // For now, just compile without runtime linking (will fail at runtime if args() is called)
+        snprintf(compile_cmd, sizeof(compile_cmd), "cc -o %s %s", output_file, backend_output_file);
+        result = system(compile_cmd);
+        
+        // Clean up temporary C file
+        remove(backend_output_file);
+    } else {
+        // For non-C backends, no linking phase needed
+        printf("  Phase 6: Linking (skipped for %s backend)\n", 
+               asthra_backend_get_name(backend));
+    }
     
     // Clean up
-    remove("temp_asthra_output.c");
+    free(backend_output_file);
+    asthra_backend_destroy(backend);
     semantic_analyzer_destroy(analyzer);
     ast_free_node(program);
     parser_destroy(parser);
