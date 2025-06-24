@@ -93,6 +93,11 @@ AsthraTargetArch cli_parse_target_arch(const char *arch_str);
 AsthraOptimizationLevel cli_parse_optimization_level(const char *opt_str);
 
 /**
+ * Parse backend type string
+ */
+AsthraBackendType cli_parse_backend_type(const char *backend_str);
+
+/**
  * Parse command line arguments
  * Returns 0 on success, non-zero on error or early exit (help/version)
  */
