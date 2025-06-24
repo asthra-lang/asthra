@@ -135,10 +135,15 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
     // Phase 5: Code generation
     printf("  Phase 5: Code generation\n");
     
+    // Validate backend type and provide helpful error messages
+    const char *backend_name = asthra_get_backend_type_string(ctx->options.backend_type);
+    printf("    Using %s backend\n", backend_name);
+    
     // Create backend based on compiler options
     AsthraBackend *backend = asthra_backend_create(&ctx->options);
     if (!backend) {
-        printf("Error: Failed to create backend\n");
+        printf("Error: Failed to create %s backend\n", backend_name);
+        printf("Suggestion: Try using a different backend with --emit-asm or --emit-llvm\n");
         semantic_analyzer_destroy(analyzer);
         ast_free_node(program);
         parser_destroy(parser);
@@ -147,9 +152,28 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
         return -1;
     }
     
-    // Initialize backend
-    if (asthra_backend_initialize(backend, &ctx->options) != 0) {
-        printf("Error: Failed to initialize backend: %s\n", asthra_backend_get_last_error(backend));
+    // Initialize backend with detailed error reporting
+    int init_result = asthra_backend_initialize(backend, &ctx->options);
+    if (init_result != 0) {
+        const char *error_msg = asthra_backend_get_last_error(backend);
+        printf("Error: Failed to initialize %s backend: %s\n", backend_name, error_msg);
+        
+        // Provide specific suggestions based on backend type
+        switch (ctx->options.backend_type) {
+            case ASTHRA_BACKEND_LLVM_IR:
+                printf("Suggestion: LLVM backend requires LLVM to be installed and linked. Try --emit-asm or the default C backend.\n");
+                break;
+            case ASTHRA_BACKEND_ASSEMBLY:
+                printf("Suggestion: Assembly backend may not support your target architecture. Try the default C backend.\n");
+                break;
+            case ASTHRA_BACKEND_C:
+                printf("Suggestion: C backend should always work. Check system resources and permissions.\n");
+                break;
+            default:
+                printf("Suggestion: Try using the default C backend without additional flags.\n");
+                break;
+        }
+        
         asthra_backend_destroy(backend);
         semantic_analyzer_destroy(analyzer);
         ast_free_node(program);
@@ -171,9 +195,29 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
                                                                  output_file);
     }
     
-    // Generate code using backend
-    if (asthra_backend_generate(backend, ctx, program, backend_output_file) != 0) {
-        printf("Error: Code generation failed: %s\n", asthra_backend_get_last_error(backend));
+    // Generate code using backend with progress reporting
+    printf("    Generating code with %s backend...\n", backend_name);
+    int gen_result = asthra_backend_generate(backend, ctx, program, backend_output_file);
+    if (gen_result != 0) {
+        const char *error_msg = asthra_backend_get_last_error(backend);
+        printf("Error: Code generation failed: %s\n", error_msg);
+        
+        // Provide backend-specific troubleshooting
+        switch (ctx->options.backend_type) {
+            case ASTHRA_BACKEND_LLVM_IR:
+                printf("Troubleshooting: LLVM IR generation failed. Check that LLVM is properly installed.\n");
+                printf("  Try: --emit-asm or remove backend flags to use default C backend\n");
+                break;
+            case ASTHRA_BACKEND_ASSEMBLY:
+                printf("Troubleshooting: Assembly generation failed. This may be due to unsupported features.\n");
+                printf("  Try: Remove --emit-asm flag to use default C backend\n");
+                break;
+            case ASTHRA_BACKEND_C:
+                printf("Troubleshooting: C code generation failed. This may indicate an AST issue.\n");
+                printf("  Check: Input file syntax and semantic correctness\n");
+                break;
+        }
+        
         free(backend_output_file);
         asthra_backend_destroy(backend);
         semantic_analyzer_destroy(analyzer);
@@ -184,13 +228,16 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
         return -1;
     }
     
-    // Report backend statistics
+    // Report backend statistics and success
+    size_t lines, functions;
+    double time;
+    asthra_backend_get_stats(backend, &lines, &functions, &time);
+    printf("  ✓ Code generation completed successfully\n");
     if (ctx->options.verbose) {
-        size_t lines, functions;
-        double time;
-        asthra_backend_get_stats(backend, &lines, &functions, &time);
-        printf("  ✓ Generated %zu lines for %zu functions in %.3f seconds\n", 
+        printf("    Statistics: %zu lines, %zu functions, %.3f seconds\n", 
                lines, functions, time);
+        printf("    Backend: %s version %s\n", 
+               asthra_backend_get_name(backend), asthra_backend_get_version(backend));
     }
 
     // Phase 6: Linking (only for C backend)
