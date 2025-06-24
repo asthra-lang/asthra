@@ -184,11 +184,19 @@ void test_compile_and_run_hello_world(void) {
 int main(void) {
     bdd_init("Basic Compiler Functionality");
     
-    // Run all scenarios
-    test_compile_hello_world();
-    test_handle_syntax_errors();
-    test_compile_and_run_hello_world();
-    test_optimize_with_o2();
+    // Check if @wip scenarios should be skipped
+    if (bdd_should_skip_wip()) {
+        bdd_skip_scenario("Compile a simple Hello World program [@wip]");
+        bdd_skip_scenario("Handle syntax errors gracefully [@wip]");
+        bdd_skip_scenario("Compile and run Hello World program [@wip]");
+        bdd_skip_scenario("Optimize code with -O2 flag [@wip]");
+    } else {
+        // Run all scenarios
+        test_compile_hello_world();
+        test_handle_syntax_errors();
+        test_compile_and_run_hello_world();
+        test_optimize_with_o2();
+    }
     
     // Cleanup
     common_cleanup();

@@ -4,6 +4,7 @@
 
 # Phase 1: Core test categories
 add_subdirectory(basic)
+add_subdirectory(backend)
 add_subdirectory(function_calls)
 add_subdirectory(variants)
 add_subdirectory(statements)

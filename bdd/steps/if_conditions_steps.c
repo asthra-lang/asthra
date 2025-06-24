@@ -203,12 +203,23 @@ void test_complex_boolean_expression(void) {
 int main(void) {
     bdd_init("If Condition Functionality");
     
-    // Run all scenarios
-    test_simple_if_true();
-    test_simple_if_false();
-    test_if_else_condition();
-    test_nested_if_conditions();
-    test_complex_boolean_expression(); // Test the @wip scenario
+    // Check if @wip scenarios should be skipped
+    if (bdd_should_skip_wip()) {
+        bdd_skip_scenario("Simple if condition with true branch [@wip]");
+        bdd_skip_scenario("Simple if condition with false branch [@wip]");
+        bdd_skip_scenario("If-else condition [@wip]");
+        bdd_skip_scenario("Nested if conditions [@wip]");
+        bdd_skip_scenario("If condition with expression result [@wip]");
+        bdd_skip_scenario("If condition with complex boolean expression [@wip]");
+    } else {
+        // Run all scenarios
+        test_simple_if_true();
+        test_simple_if_false();
+        test_if_else_condition();
+        test_nested_if_conditions();
+        test_if_expression_result();
+        test_complex_boolean_expression();
+    }
     
     // Cleanup
     common_cleanup();
