@@ -56,7 +56,6 @@ bdd/
 - CMake 3.20+
 - C17-compatible compiler (GCC 11+, Clang 14+)
 - (Optional) Ruby and Cucumber for Gherkin features
-- (Optional) Cgreen testing framework
 
 ### Enable BDD Tests
 

@@ -6,7 +6,6 @@ This guide explains how to run Behavior-Driven Development (BDD) tests locally f
 
 - CMake 3.10 or higher
 - C compiler with C17 support
-- CGreen testing framework (version 1.6.3 or higher)
 
 ## Quick Start
 
@@ -100,26 +99,7 @@ cmake --build build --target bdd_unit -- VERBOSE=1
 
 ### Missing Dependencies
 
-If CGreen is not found:
-
-1. On macOS with Homebrew:
-   ```bash
-   brew install cgreen
-   ```
-
-2. On Ubuntu/Debian:
-   ```bash
-   sudo apt-get install libcgreen1-dev
-   ```
-
-3. On other systems, build from source:
-   ```bash
-   git clone https://github.com/cgreen-devs/cgreen.git
-   cd cgreen
-   cmake -B build
-   cmake --build build
-   sudo cmake --build build --target install
-   ```
+The BDD testing framework uses a custom C-based implementation and does not require external testing frameworks like CTest or CGreen. All dependencies are built from source.
 
 ## Best Practices
 
