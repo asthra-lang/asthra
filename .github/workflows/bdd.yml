@@ -2,19 +2,6 @@ name: Asthra BDD Tests
 
 on:
   workflow_call:
-  push:
-    branches: [ main, develop ]
-    paths:
-      - 'bdd/**'
-      - 'src/**'
-      - '.github/workflows/bdd.yml'
-  pull_request:
-    branches: [ main, develop ]
-    paths:
-      - 'bdd/**'
-      - 'src/**'
-      - '.github/workflows/bdd.yml'
-  workflow_dispatch:
 
 env:
   ASTHRA_VERSION: "0.1.0"
