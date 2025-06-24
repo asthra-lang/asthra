@@ -127,12 +127,14 @@ add_custom_target(bdd_tests
 # Target: run_bdd_tests - Execute full BDD test suite
 add_custom_target(run_bdd_tests
     COMMAND ${CMAKE_CTEST_COMMAND}
+            --test-dir ${CMAKE_BINARY_DIR}
             --output-on-failure
-            --label-regex "^bdd$"
+            --label-regex "bdd"
             --parallel ${CMAKE_BUILD_PARALLEL_LEVEL}
     COMMENT "Executing full BDD test suite"
     USES_TERMINAL
     DEPENDS bdd_tests
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
 # Target: bdd_cucumber - Run Cucumber features

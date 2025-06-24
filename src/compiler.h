@@ -64,6 +64,13 @@ typedef enum {
     ASTHRA_TARGET_NATIVE  // Use host architecture
 } AsthraTargetArch;
 
+// Backend types for code generation
+typedef enum {
+    ASTHRA_BACKEND_C,        // Default: Transpile to C
+    ASTHRA_BACKEND_LLVM_IR,  // Emit LLVM IR
+    ASTHRA_BACKEND_ASSEMBLY  // Emit assembly
+} AsthraBackendType;
+
 // C17 flexible array member for dynamic argument handling
 struct AsthraArgumentList {
     size_t count;
@@ -81,6 +88,7 @@ struct AsthraCompilerOptions {
     const char *output_file;
     AsthraOptimizationLevel opt_level;
     AsthraTargetArch target_arch;
+    AsthraBackendType backend_type;  // Backend selection
     bool debug_info;
     bool verbose;
     bool emit_llvm;
@@ -123,6 +131,8 @@ ASTHRA_STATIC_ASSERT(sizeof(AsthraTargetArch) == sizeof(int),
                      "AsthraTargetArch must be int-sized for ABI compatibility");
 ASTHRA_STATIC_ASSERT(sizeof(AsthraCompilerPhase) == sizeof(int), 
                      "AsthraCompilerPhase must be int-sized for ABI compatibility");
+ASTHRA_STATIC_ASSERT(sizeof(AsthraBackendType) == sizeof(int), 
+                     "AsthraBackendType must be int-sized for ABI compatibility");
 
 // =============================================================================
 // COMPILER INTERFACE
@@ -183,6 +193,9 @@ const char *asthra_get_target_triple(AsthraTargetArch arch);
 
 // Get optimization level string
 const char *asthra_get_optimization_level_string(AsthraOptimizationLevel level);
+
+// Get backend type string
+const char *asthra_get_backend_type_string(AsthraBackendType backend);
 
 // Get compiler version string
 const char *asthra_compiler_get_version(void);

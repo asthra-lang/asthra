@@ -1,0 +1,45 @@
+# Simple Backend Infrastructure Test
+
+# Test executable with minimal dependencies
+add_executable(test_backend_simple
+    test_backend_simple.c
+    # Backend implementation files
+    ${CMAKE_SOURCE_DIR}/src/codegen/backend_factory.c
+    ${CMAKE_SOURCE_DIR}/src/codegen/c_backend.c
+    ${CMAKE_SOURCE_DIR}/src/codegen/asm_backend.c
+    ${CMAKE_SOURCE_DIR}/src/codegen/llvm_backend.c
+    # Minimal compiler core files
+    ${CMAKE_SOURCE_DIR}/src/compiler/options_validation.c
+    ${CMAKE_SOURCE_DIR}/src/compiler/compiler_core.c
+)
+
+# Include directories
+target_include_directories(test_backend_simple PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/parser
+    ${CMAKE_SOURCE_DIR}/src/analysis
+    ${CMAKE_SOURCE_DIR}/src/codegen
+)
+
+# Define minimal stubs to avoid linking issues
+target_compile_definitions(test_backend_simple PRIVATE
+    MINIMAL_TEST_BUILD=1
+)
+
+# Link libraries
+target_link_libraries(test_backend_simple PRIVATE
+    ${COMMON_LIBRARIES}
+)
+
+# Set output directory
+set_target_properties(test_backend_simple PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+# Register test
+add_test(NAME test_backend_simple 
+         COMMAND test_backend_simple)
+set_tests_properties(test_backend_simple PROPERTIES
+    LABELS "codegen;backend"
+    TIMEOUT 30
+)

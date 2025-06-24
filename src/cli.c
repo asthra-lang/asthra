@@ -379,6 +379,15 @@ int cli_parse_arguments(int argc, char *argv[], CliOptions *options) {
     options->compiler_options.library_paths = library_paths;
     options->compiler_options.libraries = libraries;
 
+    // Determine backend type based on flags
+    if (options->compiler_options.emit_llvm) {
+        options->compiler_options.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    } else if (options->compiler_options.emit_asm) {
+        options->compiler_options.backend_type = ASTHRA_BACKEND_ASSEMBLY;
+    } else {
+        options->compiler_options.backend_type = ASTHRA_BACKEND_C;  // Default
+    }
+
     return 0;
 
 cleanup_and_exit:
