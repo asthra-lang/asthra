@@ -34,6 +34,7 @@ static const win_option_t win_long_options[] = {
     {"debug", false, 'g'},
     {"verbose", false, 'v'},
     {"target", true, 't'},
+    {"backend", true, 'b'},
     {"emit-llvm", false, 1000},
     {"emit-asm", false, 1001},
     {"no-stdlib", false, 1002},
@@ -120,6 +121,7 @@ void cli_print_usage(const char *program_name) {
     printf("  -g, --debug             Include debug information\n");
     printf("  -v, --verbose           Verbose output\n");
     printf("  -t, --target <arch>     Target architecture (x86_64, arm64, wasm32, native)\n");
+    printf("  -b, --backend <type>    Backend type (c, llvm, asm, default: c)\n");
     printf("  --emit-llvm             Emit LLVM IR instead of machine code\n");
     printf("  --emit-asm              Emit assembly instead of machine code\n");
     printf("  --no-stdlib             Don't link standard library\n");
@@ -130,9 +132,11 @@ void cli_print_usage(const char *program_name) {
     printf("  --version               Show version information\n");
     printf("  -h, --help              Show this help message\n");
     printf("\nExamples:\n");
-    printf("  %s%s hello.asthra                    # Compile to a%s\n", program_name, exe_ext, exe_ext);
+    printf("  %s%s hello.asthra                    # Compile to a%s (C backend)\n", program_name, exe_ext, exe_ext);
     printf("  %s%s -o hello%s hello.asthra           # Compile to hello%s\n", program_name, exe_ext, exe_ext, exe_ext);
     printf("  %s%s -O3 -g hello.asthra             # Optimize and include debug info\n", program_name, exe_ext);
+    printf("  %s%s --backend llvm hello.asthra     # Use LLVM IR backend\n", program_name, exe_ext);
+    printf("  %s%s --backend asm hello.asthra      # Use Assembly backend\n", program_name, exe_ext);
     printf("  %s%s --target wasm32 hello.asthra    # Compile for WebAssembly\n", program_name, exe_ext);
 }
 
@@ -229,6 +233,35 @@ AsthraOptimizationLevel cli_parse_optimization_level(const char *opt_str) {
     return ASTHRA_OPT_STANDARD;
 }
 
+AsthraBackendType cli_parse_backend_type(const char *backend_str) {
+    // C17 compound literal for backend type mapping
+    static const struct {
+        const char *name;
+        AsthraBackendType type;
+    } backend_map[] = {
+        {"c", ASTHRA_BACKEND_C},
+        {"C", ASTHRA_BACKEND_C},
+        {"llvm", ASTHRA_BACKEND_LLVM_IR},
+        {"LLVM", ASTHRA_BACKEND_LLVM_IR},
+        {"llvm-ir", ASTHRA_BACKEND_LLVM_IR},
+        {"ir", ASTHRA_BACKEND_LLVM_IR},
+        {"asm", ASTHRA_BACKEND_ASSEMBLY},
+        {"ASM", ASTHRA_BACKEND_ASSEMBLY},
+        {"assembly", ASTHRA_BACKEND_ASSEMBLY},
+        {"s", ASTHRA_BACKEND_ASSEMBLY}
+    };
+
+    for (size_t i = 0; i < sizeof(backend_map) / sizeof(backend_map[0]); i++) {
+        if (strcmp(backend_str, backend_map[i].name) == 0) {
+            return backend_map[i].type;
+        }
+    }
+
+    fprintf(stderr, "Error: Unknown backend type '%s'\n", backend_str);
+    fprintf(stderr, "Valid backends: c, llvm, asm\n");
+    return ASTHRA_BACKEND_C;
+}
+
 CliOptions cli_options_init(void) {
     CliOptions options = {0};
     options.compiler_options = asthra_compiler_default_options();
@@ -272,6 +305,7 @@ int cli_parse_arguments(int argc, char *argv[], CliOptions *options) {
         {.name = "debug",        .has_arg = no_argument,       .flag = 0, .val = 'g'},
         {.name = "verbose",      .has_arg = no_argument,       .flag = 0, .val = 'v'},
         {.name = "target",       .has_arg = required_argument, .flag = 0, .val = 't'},
+        {.name = "backend",      .has_arg = required_argument, .flag = 0, .val = 'b'},
         {.name = "emit-llvm",    .has_arg = no_argument,       .flag = 0, .val = 1000},
         {.name = "emit-asm",     .has_arg = no_argument,       .flag = 0, .val = 1001},
         {.name = "no-stdlib",    .has_arg = no_argument,       .flag = 0, .val = 1002},
@@ -288,7 +322,7 @@ int cli_parse_arguments(int argc, char *argv[], CliOptions *options) {
     int c;
     int option_index = 0;
     
-    while ((c = getopt_long(argc, argv, "o:O:gvt:I:L:l:h", 
+    while ((c = getopt_long(argc, argv, "o:O:gvt:b:I:L:l:h", 
 #if ASTHRA_PLATFORM_UNIX
                            long_options, 
 #else
@@ -310,6 +344,9 @@ int cli_parse_arguments(int argc, char *argv[], CliOptions *options) {
                 break;
             case 't':
                 options->compiler_options.target_arch = cli_parse_target_arch(optarg);
+                break;
+            case 'b':
+                options->compiler_options.backend_type = cli_parse_backend_type(optarg);
                 break;
             case 'I':
                 // Add include path using C17 flexible array
@@ -380,13 +417,18 @@ int cli_parse_arguments(int argc, char *argv[], CliOptions *options) {
     options->compiler_options.libraries = libraries;
 
     // Determine backend type based on flags
-    if (options->compiler_options.emit_llvm) {
-        options->compiler_options.backend_type = ASTHRA_BACKEND_LLVM_IR;
-    } else if (options->compiler_options.emit_asm) {
-        options->compiler_options.backend_type = ASTHRA_BACKEND_ASSEMBLY;
-    } else {
-        options->compiler_options.backend_type = ASTHRA_BACKEND_C;  // Default
+    // Priority: explicit --backend flag > legacy --emit-* flags > default
+    if (options->compiler_options.backend_type == 0) {
+        // No explicit backend set, check legacy flags
+        if (options->compiler_options.emit_llvm) {
+            options->compiler_options.backend_type = ASTHRA_BACKEND_LLVM_IR;
+        } else if (options->compiler_options.emit_asm) {
+            options->compiler_options.backend_type = ASTHRA_BACKEND_ASSEMBLY;
+        } else {
+            options->compiler_options.backend_type = ASTHRA_BACKEND_C;  // Default
+        }
     }
+    // If explicit backend was set via --backend flag, it takes precedence over --emit-* flags
 
     return 0;
 
