@@ -313,12 +313,21 @@ int main(void) {
     char original_dir[1024];
     getcwd(original_dir, sizeof(original_dir));
     
-    // Run all CLI scenarios
-    test_cli_help_command();
-    test_cli_version_command();
-    test_cli_invalid_flag();
-    test_cli_build_without_source();
-    test_cli_project_config();
+    // Check if @wip scenarios should be skipped
+    if (bdd_should_skip_wip()) {
+        bdd_skip_scenario("Display help information [@wip]");
+        bdd_skip_scenario("Display version information [@wip]");
+        bdd_skip_scenario("Handle invalid command line flag [@wip]");
+        bdd_skip_scenario("Build command without source files [@wip]");
+        bdd_skip_scenario("Read project configuration [@wip]");
+    } else {
+        // Run all CLI scenarios
+        test_cli_help_command();
+        test_cli_version_command();
+        test_cli_invalid_flag();
+        test_cli_build_without_source();
+        test_cli_project_config();
+    }
     
     // Restore original directory
     chdir(original_dir);
