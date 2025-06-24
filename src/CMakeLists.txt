@@ -84,13 +84,9 @@ target_include_directories(asthra_compiler
 target_link_libraries(asthra_compiler
     PUBLIC
         asthra_runtime
+        llvm::llvm  # LLVM is now required
         # json-c::json-c  # Removed - only needed by ai_server which is excluded
 )
-
-# Conditionally link LLVM if backend is enabled
-if(ENABLE_LLVM_BACKEND)
-    target_link_libraries(asthra_compiler PUBLIC llvm::llvm)
-endif()
 
 target_compile_definitions(asthra_compiler
     PRIVATE
@@ -98,6 +94,7 @@ target_compile_definitions(asthra_compiler
         ASTHRA_VERSION_MINOR=${PROJECT_VERSION_MINOR}
         ASTHRA_VERSION_PATCH=${PROJECT_VERSION_PATCH}
         ASTHRA_COMPILER_BUILD
+        ASTHRA_ENABLE_LLVM_BACKEND  # Enable LLVM backend compilation
 )
 
 # Compiler executable

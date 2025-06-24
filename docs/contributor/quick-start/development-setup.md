@@ -29,8 +29,8 @@ xcode-select --install
 
 **Required Tools:**
 ```bash
-# Core development tools
-brew install llvm make git
+# Core development tools (LLVM is required)
+brew install llvm make git cmake
 
 # Development utilities
 brew install cppcheck valgrind pkg-config
@@ -61,11 +61,13 @@ sudo apt update && sudo apt upgrade -y
 
 **Required Packages:**
 ```bash
-# Core development tools
+# Core development tools (LLVM is required)
 sudo apt install -y \
+    llvm-dev \
     clang-12 \
     gcc \
     make \
+    cmake \
     git \
     build-essential \
     pkg-config
@@ -102,9 +104,9 @@ echo 'export CXX=clang++' >> ~/.bashrc
 # Enable EPEL repository
 sudo yum install -y epel-release
 
-# Install development tools
+# Install development tools (LLVM is required)
 sudo yum groupinstall -y "Development Tools"
-sudo yum install -y clang gcc make git pkg-config
+sudo yum install -y llvm-devel clang gcc make cmake git pkg-config
 
 # Development utilities
 sudo yum install -y cppcheck valgrind gdb htop tree
@@ -112,9 +114,9 @@ sudo yum install -y cppcheck valgrind gdb htop tree
 
 **Fedora:**
 ```bash
-# Install development tools
+# Install development tools (LLVM is required)
 sudo dnf groupinstall -y "Development Tools"
-sudo dnf install -y clang gcc make git pkg-config
+sudo dnf install -y llvm-devel clang gcc make cmake git pkg-config
 
 # Development utilities
 sudo dnf install -y cppcheck valgrind gdb htop tree

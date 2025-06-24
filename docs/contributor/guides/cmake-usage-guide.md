@@ -10,7 +10,25 @@ The Asthra project uses CMake as its primary build system. This guide covers how
 
 - **CMake 3.20+**: Modern CMake with good C support
 - **C Compiler**: GCC, Clang, or MSVC
+- **LLVM 15.0+**: Required for LLVM backend (now the default)
 - **json-c**: Optional system library (will download if not found)
+
+### Installing LLVM
+
+#### macOS
+```bash
+brew install llvm
+```
+
+#### Ubuntu/Debian
+```bash
+sudo apt install llvm-dev
+```
+
+#### Fedora
+```bash
+sudo dnf install llvm-devel
+```
 
 ### Basic Build
 

@@ -121,7 +121,7 @@ void cli_print_usage(const char *program_name) {
     printf("  -g, --debug             Include debug information\n");
     printf("  -v, --verbose           Verbose output\n");
     printf("  -t, --target <arch>     Target architecture (x86_64, arm64, wasm32, native)\n");
-    printf("  -b, --backend <type>    Backend type (c, llvm, asm, default: c)\n");
+    printf("  -b, --backend <type>    Backend type (c, llvm, asm, default: llvm)\n");
     printf("  --emit-llvm             Emit LLVM IR instead of machine code\n");
     printf("  --emit-asm              Emit assembly instead of machine code\n");
     printf("  --no-stdlib             Don't link standard library\n");
@@ -132,10 +132,10 @@ void cli_print_usage(const char *program_name) {
     printf("  --version               Show version information\n");
     printf("  -h, --help              Show this help message\n");
     printf("\nExamples:\n");
-    printf("  %s%s hello.asthra                    # Compile to a%s (C backend)\n", program_name, exe_ext, exe_ext);
+    printf("  %s%s hello.asthra                    # Compile to a%s (LLVM backend)\n", program_name, exe_ext, exe_ext);
     printf("  %s%s -o hello%s hello.asthra           # Compile to hello%s\n", program_name, exe_ext, exe_ext, exe_ext);
     printf("  %s%s -O3 -g hello.asthra             # Optimize and include debug info\n", program_name, exe_ext);
-    printf("  %s%s --backend llvm hello.asthra     # Use LLVM IR backend\n", program_name, exe_ext);
+    printf("  %s%s --backend c hello.asthra        # Use C backend\n", program_name, exe_ext);
     printf("  %s%s --backend asm hello.asthra      # Use Assembly backend\n", program_name, exe_ext);
     printf("  %s%s --target wasm32 hello.asthra    # Compile for WebAssembly\n", program_name, exe_ext);
 }
@@ -259,7 +259,7 @@ AsthraBackendType cli_parse_backend_type(const char *backend_str) {
 
     fprintf(stderr, "Error: Unknown backend type '%s'\n", backend_str);
     fprintf(stderr, "Valid backends: c, llvm, asm\n");
-    return ASTHRA_BACKEND_C;
+    return ASTHRA_BACKEND_LLVM_IR;
 }
 
 CliOptions cli_options_init(void) {
@@ -425,7 +425,7 @@ int cli_parse_arguments(int argc, char *argv[], CliOptions *options) {
         } else if (options->compiler_options.emit_asm) {
             options->compiler_options.backend_type = ASTHRA_BACKEND_ASSEMBLY;
         } else {
-            options->compiler_options.backend_type = ASTHRA_BACKEND_C;  // Default
+            options->compiler_options.backend_type = ASTHRA_BACKEND_LLVM_IR;  // Default to LLVM
         }
     }
     // If explicit backend was set via --backend flag, it takes precedence over --emit-* flags

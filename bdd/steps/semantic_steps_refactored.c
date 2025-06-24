@@ -124,23 +124,11 @@ static SemanticResult mock_analyze_code(const char* code) {
         return result;
     }
     
-    // Check for return () in functions that should return i32 (but be more specific)
-    char* return_void = strstr(code, "return ()");
-    char* return_i32 = strstr(code, "-> i32");
-    if (return_void && return_i32) {
-        // Find the function that contains this return ()
-        char* func_start = return_void;
-        while (func_start > code && strncmp(func_start, "fn ", 3) != 0) {
-            func_start--;
-        }
-        // Check if this specific function expects i32
-        char* func_end = strchr(return_void, '}');
-        if (func_end && return_i32 > func_start && return_i32 < func_end) {
-            result.success = 0;
-            result.error_message = strdup("Type mismatch: returning void from function expecting i32");
-            result.error_count = 1;
-            return result;
-        }
+    if (strstr(code, "return ()") && strstr(code, "-> i32")) {
+        result.success = 0;
+        result.error_message = strdup("Type mismatch: returning void from function expecting i32");
+        result.error_count = 1;
+        return result;
     }
     
     // Pattern: Undefined variable detection
@@ -166,7 +154,7 @@ static SemanticResult mock_analyze_code(const char* code) {
     }
     
     // Pattern: Function parameter type checking
-    if (strstr(code, "call_with_wrong_type") || strstr(code, "add(\"hello\", 42)")) {
+    if (strstr(code, "call_with_wrong_type")) {
         result.success = 0;
         result.error_message = strdup("Function call type mismatch: incompatible argument types");
         result.error_count = 1;
@@ -221,15 +209,6 @@ static SemanticResult mock_analyze_code(const char* code) {
             result.symbols[result.symbol_count].is_defined = 1;
             result.symbols[result.symbol_count].line = 8;
             result.symbols[result.symbol_count].type_signature = strdup("(i32, i32) -> i32");
-            result.symbol_count++;
-        }
-        
-        if (strstr(code, "fn process_person")) {
-            result.symbols[result.symbol_count].name = strdup("process_person");
-            result.symbols[result.symbol_count].type = TYPE_FUNCTION;
-            result.symbols[result.symbol_count].is_defined = 1;
-            result.symbols[result.symbol_count].line = 7;
-            result.symbols[result.symbol_count].type_signature = strdup("(Person) -> i32");
             result.symbol_count++;
         }
         
@@ -500,7 +479,6 @@ void test_analyze_complex_types(void) {
     bdd_assert(semantic_result.success == 1, "Complex types should be analyzed successfully");
     
     bdd_then("symbol table should contain function definitions");
-    
     int found_process = 0, found_main = 0;
     for (int i = 0; i < semantic_result.symbol_count; i++) {
         if (semantic_result.symbols[i].name) {

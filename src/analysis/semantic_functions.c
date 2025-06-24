@@ -11,6 +11,7 @@
 #include "semantic_functions.h"
 #include "semantic_core.h"
 #include "semantic_symbols.h"
+#include "type_info.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -190,6 +191,15 @@ if (!semantic_analyze_statement(analyzer, body)) {
     
     // Restore previous function context
     analyzer->current_function = previous_function;
+    
+    // Set TypeInfo on the AST node for code generation
+    if (success && func_type) {
+        TypeInfo *type_info = type_info_from_descriptor(func_type);
+        if (type_info) {
+            ast_node_set_type_info(func_decl, type_info);
+            type_info_release(type_info); // ast_node_set_type_info retains it
+        }
+    }
     
     return success;
 }
