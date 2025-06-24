@@ -41,12 +41,44 @@ if(NOT JSON_C_FOUND)
     )
     
     set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)  
+    set(BUILD_DOCUMENTATION OFF CACHE BOOL "" FORCE)
+    set(DISABLE_WERROR ON CACHE BOOL "" FORCE)
+    
+    # json-c uses its own DISABLE_WERROR variable but seems to ignore it
+    # We need to ensure warnings don't fail the build
+    set(JSON_C_DISABLE_WERROR ON CACHE BOOL "" FORCE)
     
     FetchContent_MakeAvailable(json-c)
     
+    # After json-c target is created, modify its compile options
+    if(TARGET json-c)
+        # Remove any -Werror flags and add specific warning suppressions
+        get_target_property(JSON_C_COMPILE_OPTIONS json-c COMPILE_OPTIONS)
+        if(JSON_C_COMPILE_OPTIONS)
+            list(REMOVE_ITEM JSON_C_COMPILE_OPTIONS "-Werror")
+        endif()
+        
+        # Add flags to suppress the specific warnings causing issues
+        target_compile_options(json-c PRIVATE 
+            -Wno-error
+            -Wno-error=duplicated-branches
+            -Wno-error=pedantic
+            -Wno-duplicated-branches
+            -Wno-pedantic
+        )
+    endif()
+    
+    # Create the namespace alias that our code expects
+    if(TARGET json-c AND NOT TARGET json-c::json-c)
+        add_library(json-c::json-c ALIAS json-c)
+    endif()
+    
+    # Get the json-c source and build directories for include paths
+    FetchContent_GetProperties(json-c)
+    
     set(JSON_C_LIBRARIES json-c::json-c)
-    set(JSON_C_INCLUDE_DIRS "")
+    set(JSON_C_INCLUDE_DIRS "${json-c_SOURCE_DIR};${json-c_BINARY_DIR}")
 else()
     message(STATUS "Using system json-c library")
     add_library(json-c::json-c INTERFACE IMPORTED)

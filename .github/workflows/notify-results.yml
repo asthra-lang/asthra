@@ -11,8 +11,7 @@ on:
         required: true
       bdd_test_result:
         type: string
-        required: false
-        default: 'skipped'
+        required: true
       security_result:
         type: string
         required: false
