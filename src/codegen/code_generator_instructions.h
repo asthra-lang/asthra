@@ -57,6 +57,16 @@ typedef enum {
     // Memory operations
     INST_MOVQ, INST_MOVL, INST_MOVW, INST_MOVB,
     
+    // 128-bit operations
+    INST_MOVDQA,  // Move aligned 128-bit
+    INST_MOVDQU,  // Move unaligned 128-bit
+    INST_ADC,     // Add with carry
+    INST_SBB,     // Subtract with borrow
+    INST_PXOR,    // Packed XOR (128-bit)
+    INST_POR,     // Packed OR (128-bit)
+    INST_PAND,    // Packed AND (128-bit)
+    INST_PCMPEQQ, // Compare equal (128-bit)
+    
     INST_COUNT
 } InstructionType;
 

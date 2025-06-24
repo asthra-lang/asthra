@@ -61,6 +61,8 @@ static const KeywordEntry keywords[] = {
     {"i32", TOKEN_I32},
     {"u64", TOKEN_U64},
     {"i64", TOKEN_I64},
+    {"u128", TOKEN_U128},
+    {"i128", TOKEN_I128},
     {"f32", TOKEN_F32},
     {"f64", TOKEN_F64},
     {"Result", TOKEN_RESULT},

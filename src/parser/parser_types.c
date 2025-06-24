@@ -19,7 +19,7 @@ bool is_valid_type_name(const char *name) {
     // Check against known type names
     const char *valid_types[] = {
         "int", "float", "bool", "string", "void", "usize", "isize",
-        "u8", "i8", "u16", "i16", "u32", "i32", "u64", "i64", "f32", "f64"
+        "u8", "i8", "u16", "i16", "u32", "i32", "u64", "i64", "u128", "i128", "f32", "f64"
     };
     
     size_t type_count = sizeof(valid_types) / sizeof(valid_types[0]);
@@ -45,6 +45,7 @@ bool is_primitive_type(TokenType token_type) {
         case TOKEN_U16: case TOKEN_I16:
         case TOKEN_U32: case TOKEN_I32:
         case TOKEN_U64: case TOKEN_I64:
+        case TOKEN_U128: case TOKEN_I128:
         case TOKEN_F32: case TOKEN_F64:
             return true;
         default:

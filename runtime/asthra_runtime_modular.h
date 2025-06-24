@@ -66,6 +66,9 @@
 // Utility functions
 #include "utils/asthra_runtime_utils.h"
 
+// 128-bit integer support
+#include "asthra_int128.h"
+
 // =============================================================================
 // COMPATIBILITY VERIFICATION
 // =============================================================================
