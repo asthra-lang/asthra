@@ -164,13 +164,23 @@ DOT_CLEANUP            = YES
         @ONLY
     )
     
-    # Main documentation target
-    add_custom_target(doc
-        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-        COMMENT "Generating API documentation with Doxygen"
-        VERBATIM
-    )
+    # Main documentation target (only if not already defined)
+    if(NOT TARGET doc)
+        add_custom_target(doc
+            COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            COMMENT "Generating API documentation with Doxygen"
+            VERBATIM
+        )
+    else()
+        # Alternative name for Asthra documentation
+        add_custom_target(asthra-doc
+            COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            COMMENT "Generating Asthra API documentation with Doxygen"
+            VERBATIM
+        )
+    endif()
     
     # Documentation with automatic browser opening
     add_custom_target(doc-open
@@ -209,11 +219,13 @@ DOT_CLEANUP            = YES
     )
     
 else()
-    # Dummy targets when documentation is disabled
-    add_custom_target(doc
-        COMMAND ${CMAKE_COMMAND} -E echo "Documentation generation disabled. Install Doxygen and set -DBUILD_DOCUMENTATION=ON"
-        COMMENT "Documentation not available"
-    )
+    # Dummy targets when documentation is disabled (only if not already defined)
+    if(NOT TARGET doc)
+        add_custom_target(doc
+            COMMAND ${CMAKE_COMMAND} -E echo "Documentation generation disabled. Install Doxygen and set -DBUILD_DOCUMENTATION=ON"
+            COMMENT "Documentation not available"
+        )
+    endif()
     
     add_custom_target(doc-clean
         COMMAND ${CMAKE_COMMAND} -E echo "Documentation generation disabled"

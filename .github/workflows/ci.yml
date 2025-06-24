@@ -55,20 +55,20 @@ jobs:
     uses: ./.github/workflows/comprehensive-tests.yml
 
   # =============================================================================
-  # CROSS-PLATFORM COMPATIBILITY - Always run after build
+  # CROSS-PLATFORM COMPATIBILITY - Always run after build and BDD tests
   # =============================================================================
   cross-platform-check:
     name: Cross-Platform Compatibility Check
-    needs: build-and-test
+    needs: [build-and-test, bdd-tests]
     if: always()
     uses: ./.github/workflows/cross-platform-check.yml
 
   # =============================================================================
-  # RELEASE PREPARATION - Only on main branch pushes
+  # RELEASE PREPARATION - Only on main branch pushes, requires BDD tests to pass
   # =============================================================================
   release-prep:
     name: Release Preparation
-    needs: [build-and-test, cross-platform-check]
+    needs: [build-and-test, bdd-tests, cross-platform-check]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     uses: ./.github/workflows/release-prep.yml
 
