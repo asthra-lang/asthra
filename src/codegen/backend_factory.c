@@ -24,8 +24,6 @@ static BackendRegistryEntry backend_registry[16];
 static size_t registry_count = 0;
 
 // Forward declarations for built-in backends
-extern const AsthraBackendOps c_backend_ops;
-extern const AsthraBackendOps asm_backend_ops;
 extern const AsthraBackendOps llvm_backend_ops;
 
 // Initialize built-in backends
@@ -33,28 +31,14 @@ static void initialize_builtin_backends(void) {
     static bool initialized = false;
     if (initialized) return;
     
-    // Register C backend
+    // Register LLVM backend
     backend_registry[0] = (BackendRegistryEntry){
-        .type = ASTHRA_BACKEND_C,
-        .name = "C Transpiler",
-        .ops = &c_backend_ops
-    };
-    
-    // Register Assembly backend
-    backend_registry[1] = (BackendRegistryEntry){
-        .type = ASTHRA_BACKEND_ASSEMBLY,
-        .name = "Assembly Generator",
-        .ops = &asm_backend_ops
-    };
-    
-    // Register LLVM backend (stub for now)
-    backend_registry[2] = (BackendRegistryEntry){
         .type = ASTHRA_BACKEND_LLVM_IR,
         .name = "LLVM IR Generator",
         .ops = &llvm_backend_ops
     };
     
-    registry_count = 3;
+    registry_count = 1;
     initialized = true;
 }
 
@@ -62,16 +46,13 @@ static void initialize_builtin_backends(void) {
 AsthraBackend* asthra_backend_create(const AsthraCompilerOptions *options) {
     if (!options) return NULL;
     
-    // Determine backend type from options
-    AsthraBackendType type = ASTHRA_BACKEND_C; // Default
+    // LLVM is now the only backend
+    AsthraBackendType type = ASTHRA_BACKEND_LLVM_IR;
     
-    if (options->emit_llvm) {
+    if (options->backend_type != 0 && options->backend_type != ASTHRA_BACKEND_LLVM_IR) {
+        // For now, allow but warn about unsupported backend types
+        fprintf(stderr, "Warning: Backend type %d is no longer supported, using LLVM backend\n", options->backend_type);
         type = ASTHRA_BACKEND_LLVM_IR;
-    } else if (options->emit_asm) {
-        type = ASTHRA_BACKEND_ASSEMBLY;
-    } else if (options->backend_type != 0) {
-        // Use explicitly set backend type
-        type = options->backend_type;
     }
     
     AsthraBackend *backend = asthra_backend_create_by_type(type);
@@ -243,12 +224,12 @@ int asthra_backend_unregister(AsthraBackendType type) {
     initialize_builtin_backends();
     
     // Don't allow unregistering built-in backends
-    if (type <= ASTHRA_BACKEND_ASSEMBLY) {
+    if (type == ASTHRA_BACKEND_LLVM_IR) {
         return -1;
     }
     
     // Find and remove from registry
-    for (size_t i = 3; i < registry_count; i++) {
+    for (size_t i = 1; i < registry_count; i++) {
         if (backend_registry[i].type == type) {
             // Shift remaining entries
             for (size_t j = i; j < registry_count - 1; j++) {
@@ -315,12 +296,8 @@ bool asthra_backend_validate_options(AsthraBackendType type,
 // Get default file extension for backend
 const char* asthra_backend_get_file_extension(AsthraBackendType type) {
     switch (type) {
-        case ASTHRA_BACKEND_C:
-            return "c";
         case ASTHRA_BACKEND_LLVM_IR:
             return "ll";
-        case ASTHRA_BACKEND_ASSEMBLY:
-            return "s";
         default:
             return "out";
     }

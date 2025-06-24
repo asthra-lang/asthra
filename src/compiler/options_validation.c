@@ -127,21 +127,9 @@ const char *asthra_get_optimization_level_string(AsthraOptimizationLevel level) 
 }
 
 const char *asthra_get_backend_type_string(AsthraBackendType backend) {
-    // C17 compound literal for backend type mapping
-    static const struct {
-        AsthraBackendType type;
-        const char *string;
-    } backend_map[] = {
-        {ASTHRA_BACKEND_C, "C"},
-        {ASTHRA_BACKEND_LLVM_IR, "LLVM IR"},
-        {ASTHRA_BACKEND_ASSEMBLY, "Assembly"}
-    };
-
-    for (size_t i = 0; i < sizeof(backend_map) / sizeof(backend_map[0]); i++) {
-        if (backend_map[i].type == backend) {
-            return backend_map[i].string;
-        }
+    // Only LLVM backend is supported now
+    if (backend == ASTHRA_BACKEND_LLVM_IR) {
+        return "LLVM IR";
     }
-
     return "Unknown"; // Default fallback
 } 

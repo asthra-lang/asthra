@@ -161,16 +161,10 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
         // Provide specific suggestions based on backend type
         switch (ctx->options.backend_type) {
             case ASTHRA_BACKEND_LLVM_IR:
-                printf("Suggestion: LLVM backend requires LLVM to be installed and linked. Try --emit-asm or the default C backend.\n");
-                break;
-            case ASTHRA_BACKEND_ASSEMBLY:
-                printf("Suggestion: Assembly backend may not support your target architecture. Try the default C backend.\n");
-                break;
-            case ASTHRA_BACKEND_C:
-                printf("Suggestion: C backend should always work. Check system resources and permissions.\n");
+                printf("Suggestion: LLVM backend requires LLVM to be installed and linked.\n");
                 break;
             default:
-                printf("Suggestion: Try using the default C backend without additional flags.\n");
+                printf("Suggestion: Check system resources and permissions.\n");
                 break;
         }
         
@@ -185,7 +179,7 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
     
     // Determine output filename based on backend
     char *backend_output_file = NULL;
-    if (ctx->options.backend_type == ASTHRA_BACKEND_C) {
+    if (false) {
         // For C backend, generate temporary file for compilation
         backend_output_file = strdup("temp_asthra_output.c");
     } else {
@@ -206,14 +200,9 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
         switch (ctx->options.backend_type) {
             case ASTHRA_BACKEND_LLVM_IR:
                 printf("Troubleshooting: LLVM IR generation failed. Check that LLVM is properly installed.\n");
-                printf("  Try: --emit-asm or remove backend flags to use default C backend\n");
                 break;
-            case ASTHRA_BACKEND_ASSEMBLY:
-                printf("Troubleshooting: Assembly generation failed. This may be due to unsupported features.\n");
-                printf("  Try: Remove --emit-asm flag to use default C backend\n");
-                break;
-            case ASTHRA_BACKEND_C:
-                printf("Troubleshooting: C code generation failed. This may indicate an AST issue.\n");
+            default:
+                printf("Troubleshooting: Code generation failed. This may indicate an AST issue.\n");
                 printf("  Check: Input file syntax and semantic correctness\n");
                 break;
         }
@@ -240,25 +229,10 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
                asthra_backend_get_name(backend), asthra_backend_get_version(backend));
     }
 
-    // Phase 6: Linking (only for C backend)
+    // Phase 6: Linking (skipped for LLVM backend)
     int result = 0;
-    if (ctx->options.backend_type == ASTHRA_BACKEND_C) {
-        printf("  Phase 6: Linking\n");
-        
-        // Compile the generated C file
-        char compile_cmd[512];
-        // TODO: Link with runtime library once path resolution is implemented
-        // For now, just compile without runtime linking (will fail at runtime if args() is called)
-        snprintf(compile_cmd, sizeof(compile_cmd), "cc -o %s %s", output_file, backend_output_file);
-        result = system(compile_cmd);
-        
-        // Clean up temporary C file
-        remove(backend_output_file);
-    } else {
-        // For non-C backends, no linking phase needed
-        printf("  Phase 6: Linking (skipped for %s backend)\n", 
-               asthra_backend_get_name(backend));
-    }
+    printf("  Phase 6: Linking (skipped for %s backend)\n", 
+           asthra_backend_get_name(backend));
     
     // Clean up
     free(backend_output_file);

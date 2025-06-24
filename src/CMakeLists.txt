@@ -12,6 +12,12 @@ list(FILTER ASTHRA_COMPILER_SOURCES EXCLUDE REGEX "ai_server/.*\\.c$")
 # Exclude json_utils.c that also depends on json-c
 list(FILTER ASTHRA_COMPILER_SOURCES EXCLUDE REGEX "utils/json_utils\\.c$")
 
+# Temporarily exclude pipeline orchestrator files that depend on removed code generators
+list(FILTER ASTHRA_COMPILER_SOURCES EXCLUDE REGEX "compiler/pipeline_orchestrator\\.c$")
+list(FILTER ASTHRA_COMPILER_SOURCES EXCLUDE REGEX "compiler/pipeline_core\\.c$")
+list(FILTER ASTHRA_COMPILER_SOURCES EXCLUDE REGEX "compiler/pipeline_phases\\.c$")
+list(FILTER ASTHRA_COMPILER_SOURCES EXCLUDE REGEX "compiler/pipeline_utils\\.c$")
+
 # Platform-specific exclusions
 if(NOT APPLE)
     # Exclude macOS-specific Mach-O files on non-Apple platforms

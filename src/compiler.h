@@ -66,15 +66,13 @@ typedef enum {
 
 // Backend types for code generation
 typedef enum {
-    ASTHRA_BACKEND_C,        // Default: Transpile to C
-    ASTHRA_BACKEND_LLVM_IR,  // Emit LLVM IR
-    ASTHRA_BACKEND_ASSEMBLY  // Emit assembly
+    ASTHRA_BACKEND_LLVM_IR = 1  // LLVM IR is now the only backend
 } AsthraBackendType;
 
-// Assembly syntax styles
+// Assembly syntax styles (deprecated - kept for API compatibility)
 typedef enum {
-    ASTHRA_ASM_SYNTAX_ATT,    // AT&T syntax (default for Unix-like systems)
-    ASTHRA_ASM_SYNTAX_INTEL   // Intel syntax (default for Windows)
+    ASTHRA_ASM_SYNTAX_ATT,    // AT&T syntax (no longer used)
+    ASTHRA_ASM_SYNTAX_INTEL   // Intel syntax (no longer used)
 } AsthraAssemblySyntax;
 
 // C17 flexible array member for dynamic argument handling
@@ -95,11 +93,11 @@ struct AsthraCompilerOptions {
     AsthraOptimizationLevel opt_level;
     AsthraTargetArch target_arch;
     AsthraBackendType backend_type;  // Backend selection
-    AsthraAssemblySyntax asm_syntax; // Assembly syntax style
+    AsthraAssemblySyntax asm_syntax; // Deprecated - kept for API compatibility
     bool debug_info;
     bool verbose;
-    bool emit_llvm;
-    bool emit_asm;
+    bool emit_llvm;      // Deprecated - LLVM is now always used
+    bool emit_asm;       // Deprecated - assembly backend removed
     bool no_stdlib;
     
     // Dynamic path and library management using flexible arrays

@@ -10,12 +10,7 @@
 
 #include "pipeline_phases.h"
 #include "pipeline_utils.h"
-#include "../codegen/code_generator_core.h"
-#ifdef __APPLE__
-#include "../codegen/macho_writer.h"
-#else
-#include "../codegen/elf_writer.h"
-#endif
+#include "../codegen/backend_interface.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include "../platform.h"

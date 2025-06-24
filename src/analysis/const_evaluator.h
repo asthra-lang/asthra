@@ -15,7 +15,6 @@
 #include "semantic_analyzer_core.h"
 #include "../parser/ast.h"
 #include "../parser/ast_types.h"
-#include "../codegen/global_symbols.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -27,7 +26,14 @@ extern "C" {
 // CONST VALUE TYPES
 // =============================================================================
 
-// ConstValueType is defined in ../codegen/global_symbols.h
+// Define ConstValueType locally (previously in global_symbols.h)
+typedef enum ConstValueType {
+    CONST_VALUE_INTEGER,
+    CONST_VALUE_FLOAT,
+    CONST_VALUE_STRING,
+    CONST_VALUE_BOOLEAN,
+    CONST_VALUE_NULL
+} ConstValueType;
 
 typedef struct ConstValue {
     ConstValueType type;

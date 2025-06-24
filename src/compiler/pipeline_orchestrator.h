@@ -18,13 +18,7 @@
 #include "../parser/parser.h"
 #include "../parser/ast.h"
 #include "../analysis/semantic_analyzer.h"
-#include "../codegen/code_generator.h"
-#ifdef __APPLE__
-#include "../codegen/macho_writer.h"
-#else
-#include "../codegen/elf_writer.h"
-#endif
-#include "../codegen/ffi_assembly_generator.h"
+#include "../codegen/backend_interface.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -92,19 +86,12 @@ struct SemanticPhaseData {
  * Results from code generation phase
  */
 struct CodegenPhaseData {
-    CodeGenerator *generator;
-    FFIAssemblyGenerator *ffi_generator;
-#ifdef __APPLE__
-    MachoWriter *macho_writer;
-#else
-    ELFWriter *elf_writer;
-#endif
+    AsthraBackend *backend;
     bool success;
-    size_t instructions_generated;
-    size_t symbols_generated;
+    size_t lines_generated;
+    size_t functions_generated;
     double execution_time_ms;
-    char *c_code_output;
-    char *elf_output_path;
+    char *output_path;
     char *error_message;
 };
 
@@ -180,13 +167,7 @@ struct PipelineOrchestrator {
     Lexer **lexers;
     Parser **parsers;
     SemanticAnalyzer *global_analyzer;
-    CodeGenerator *global_generator;
-    FFIAssemblyGenerator *ffi_generator;
-#ifdef __APPLE__
-    MachoWriter *macho_writer;
-#else
-    ELFWriter *elf_writer;
-#endif
+    AsthraBackend *backend;
     
     // Output management
     char *output_executable_path;

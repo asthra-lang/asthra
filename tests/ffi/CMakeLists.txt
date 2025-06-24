@@ -73,7 +73,8 @@ list(REMOVE_ITEM INDIVIDUAL_FFI_TEST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/test_ffi
 
 # List of tests that should link directly to compiler without test framework
 set(FFI_ASSEMBLY_TESTS
-    test_ffi_assembly_calls.c
+    # Disabled - FFI assembly generator removed with C/Assembly backends
+    # test_ffi_assembly_calls.c
     # test_ffi_assembly_patterns.c - commented out due to outdated AST API
 )
 

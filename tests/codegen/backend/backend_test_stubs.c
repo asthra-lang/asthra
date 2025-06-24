@@ -9,8 +9,7 @@
 #include "../../../src/parser/ast.h"
 #include "../../../src/parser/ast_types.h"
 #include "../../../src/compiler.h"
-#include "../../../src/codegen/code_generator.h"
-#include "../../../src/codegen/code_generator_core.h"
+// Code generator headers removed - using LLVM backend only
 
 #ifdef MINIMAL_TEST_BUILD
 
