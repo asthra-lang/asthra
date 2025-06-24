@@ -121,8 +121,14 @@ static int llvm_backend_initialize(AsthraBackend *backend, const AsthraCompilerO
     // Unit type is represented as an empty struct
     data->unit_type = LLVMStructTypeInContext(data->context, NULL, 0, 0);
     
+    // Store options
+    backend->options.optimization_level = options->opt_level;
+    backend->options.debug_info = options->debug_info;
+    backend->options.verbose = options->verbose;
+    backend->options.target_arch = options->target_arch;
+    backend->options.asm_syntax = options->asm_syntax;
+    
     // Success
-    backend->stats.backend_initialized = true;
     return 0;
 #endif
 }

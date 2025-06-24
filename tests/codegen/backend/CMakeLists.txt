@@ -4,14 +4,6 @@
 add_executable(test_backend_simple
     test_backend_simple.c
     backend_test_stubs.c
-    # Backend implementation files
-    ${CMAKE_SOURCE_DIR}/src/codegen/backend_factory.c
-    ${CMAKE_SOURCE_DIR}/src/codegen/c_backend.c
-    ${CMAKE_SOURCE_DIR}/src/codegen/asm_backend.c
-    ${CMAKE_SOURCE_DIR}/src/codegen/llvm_backend.c
-    # Minimal compiler core files
-    ${CMAKE_SOURCE_DIR}/src/compiler/options_validation.c
-    ${CMAKE_SOURCE_DIR}/src/compiler/compiler_core.c
 )
 
 # Include directories for simple test
@@ -29,6 +21,7 @@ target_compile_definitions(test_backend_simple PRIVATE
 
 # Link libraries for simple test
 target_link_libraries(test_backend_simple PRIVATE
+    asthra_compiler
     ${COMMON_LIBRARIES}
 )
 
@@ -98,14 +91,6 @@ set_tests_properties(test_backend_simple PROPERTIES
 add_executable(test_llvm_backend
     test_llvm_backend.c
     backend_test_stubs.c
-    # Backend implementation files
-    ${CMAKE_SOURCE_DIR}/src/codegen/backend_factory.c
-    ${CMAKE_SOURCE_DIR}/src/codegen/c_backend.c
-    ${CMAKE_SOURCE_DIR}/src/codegen/asm_backend.c
-    ${CMAKE_SOURCE_DIR}/src/codegen/llvm_backend.c
-    # Minimal compiler core files
-    ${CMAKE_SOURCE_DIR}/src/compiler/options_validation.c
-    ${CMAKE_SOURCE_DIR}/src/compiler/compiler_core.c
 )
 
 # Include directories for LLVM test
@@ -123,6 +108,7 @@ target_compile_definitions(test_llvm_backend PRIVATE
 
 # Link libraries for LLVM test
 target_link_libraries(test_llvm_backend PRIVATE
+    asthra_compiler
     ${COMMON_LIBRARIES}
 )
 

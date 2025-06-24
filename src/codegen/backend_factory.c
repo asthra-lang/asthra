@@ -74,7 +74,12 @@ AsthraBackend* asthra_backend_create(const AsthraCompilerOptions *options) {
         type = options->backend_type;
     }
     
-    return asthra_backend_create_by_type(type);
+    AsthraBackend *backend = asthra_backend_create_by_type(type);
+    if (backend && asthra_backend_initialize(backend, options) != 0) {
+        asthra_backend_destroy(backend);
+        return NULL;
+    }
+    return backend;
 }
 
 // Create a specific backend
