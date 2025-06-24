@@ -37,7 +37,6 @@ Before writing BDD tests, ensure you have:
 
 2. **Optional Dependencies**
    - Ruby and Cucumber (for Gherkin feature files)
-   - Cgreen testing framework (for enhanced assertions)
 
 ### Setting Up Your Environment
 

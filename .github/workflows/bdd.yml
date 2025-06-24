@@ -67,21 +67,7 @@ jobs:
         # Install Cucumber for BDD
         sudo gem install cucumber --no-document
         
-        # Install CppUTest for unit testing
-        sudo apt-get install -y cpputest || echo "CppUTest not available in apt"
-        
-        # Install Cgreen testing framework
-        sudo apt-get install -y libcgreen1-dev || {
-          echo "Installing Cgreen from source..."
-          wget https://github.com/cgreen-devs/cgreen/archive/refs/tags/1.6.3.tar.gz
-          tar xzf 1.6.3.tar.gz
-          cd cgreen-1.6.3
-          mkdir build && cd build
-          cmake .. && make
-          sudo make install
-          sudo ldconfig
-          cd ../..
-        }
+        # Note: BDD tests use custom C-based framework, no external testing libraries needed
         
         echo "✓ Linux BDD dependencies installed successfully"
         
@@ -103,17 +89,7 @@ jobs:
         export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
         gem install cucumber --no-document
         
-        # Install Cgreen
-        brew install cgreen || {
-          echo "Installing Cgreen from source..."
-          wget https://github.com/cgreen-devs/cgreen/archive/refs/tags/1.6.3.tar.gz
-          tar xzf 1.6.3.tar.gz
-          cd cgreen-1.6.3
-          mkdir build && cd build
-          cmake .. && make
-          sudo make install
-          cd ../..
-        }
+        # Note: BDD tests use custom C-based framework, no external testing libraries needed
         
         echo "✓ macOS BDD dependencies installed successfully"
 
