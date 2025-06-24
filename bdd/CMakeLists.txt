@@ -5,7 +5,6 @@ message(STATUS "Configuring BDD testing infrastructure")
 
 # Check for BDD testing frameworks
 find_program(CUCUMBER cucumber)
-find_library(CGREEN_LIB cgreen)
 
 # BDD test output directory
 set(BDD_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/bin)
@@ -237,7 +236,6 @@ add_bdd_test(ffi_integration integration)
 message(STATUS "BDD testing infrastructure configured")
 message(STATUS "  BDD output directory: ${BDD_OUTPUT_DIR}")
 message(STATUS "  Cucumber found: ${CUCUMBER}")
-message(STATUS "  Cgreen library: ${CGREEN_LIB}")
 message(STATUS "  Test categories: ${BDD_TEST_CATEGORIES}")
 message(STATUS "")
 message(STATUS "BDD test targets available:")
