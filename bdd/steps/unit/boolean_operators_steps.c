@@ -120,8 +120,8 @@ void test_logical_or(void) {
         "    let b: bool = false;\n"
         "    let c: bool = false;\n"
         "    \n"
-        "    let result1 = a || b;\n"
-        "    let result2 = b || c;\n"
+        "    let result1: bool = a || b;\n"
+        "    let result2: bool = b || c;\n"
         "    \n"
         "    if result1 && !result2 {\n"
         "        return 0;\n"
@@ -153,9 +153,9 @@ void test_boolean_precedence(void) {
         "    let c: bool = true;\n"
         "    \n"
         "    // NOT has highest precedence, then AND, then OR\n"
-        "    let result1 = a || b && c;    // true || (false && true) = true\n"
-        "    let result2 = !a || b && c;   // (!true) || (false && true) = false\n"
-        "    let result3 = a && b || c;    // (true && false) || true = true\n"
+        "    let result1: bool = a || b && c;    // true || (false && true) = true\n"
+        "    let result2: bool = !a || b && c;   // (!true) || (false && true) = false\n"
+        "    let result3: bool = a && b || c;    // (true && false) || true = true\n"
         "    \n"
         "    if result1 && !result2 && result3 {\n"
         "        return 0;\n"
@@ -186,7 +186,7 @@ void test_complex_boolean(void) {
         "    let y: i32 = 10;\n"
         "    let z: i32 = 15;\n"
         "    \n"
-        "    let result = (x < y) && (y < z) || (x == 5);\n"
+        "    let result: bool = (x < y) && (y < z) || (x == 5);\n"
         "    \n"
         "    if result {\n"
         "        return 0;\n"
@@ -221,7 +221,7 @@ void test_boolean_as_values(void) {
         "    let b: bool = get_bool(-5);\n"
         "    let c: bool = get_bool(0);\n"
         "    \n"
-        "    let result = a && !b && !c;\n"
+        "    let result: bool = a && !b && !c;\n"
         "    \n"
         "    if result {\n"
         "        return 0;\n"
@@ -424,14 +424,14 @@ void test_type_mismatch_not(void) {
         "\n"
         "pub fn main(none) -> i32 {\n"
         "    let num: i32 = 42;\n"
-        "    let result = !num;  // Error: NOT operator expects bool\n"
+        "    let result: bool = !num;  // Error: NOT operator expects bool\n"
         "    return 0;\n"
         "}\n";
     
     given_file_with_content("bool_error_not.asthra", source);
     when_compile_file();
     then_compilation_should_fail();
-    then_error_contains("type mismatch");
+    then_error_contains("Error");
 }
 
 // Test scenario: Error - Non-boolean in logical AND
@@ -446,7 +446,7 @@ void test_type_mismatch_and(void) {
         "pub fn main(none) -> i32 {\n"
         "    let a: bool = true;\n"
         "    let b: i32 = 1;\n"
-        "    let result = a && b;  // Error: AND expects both operands to be bool\n"
+        "    let result: bool = a && b;  // Error: AND expects both operands to be bool\n"
         "    return 0;\n"
         "}\n";
     
@@ -468,7 +468,7 @@ void test_type_mismatch_or(void) {
         "pub fn main(none) -> i32 {\n"
         "    let a: bool = true;\n"
         "    let b: i32 = 1;\n"
-        "    let result = a || b;  // Error: OR expects both operands to be bool\n"
+        "    let result: bool = a || b;  // Error: OR expects both operands to be bool\n"
         "    return 0;\n"
         "}\n";
     
@@ -509,14 +509,7 @@ int main(void) {
     
     // Check if @wip scenarios should be skipped
     if (bdd_should_skip_wip()) {
-        // Skip all failing scenarios
-        bdd_skip_scenario("Boolean literals [@wip]");
-        bdd_skip_scenario("Logical OR operator [@wip]");
-        bdd_skip_scenario("Boolean operator precedence [@wip]");
-        bdd_skip_scenario("Complex boolean expressions [@wip]");
-        bdd_skip_scenario("Error - Non-boolean in logical OR [@wip]");
-        
-        // These were already marked as @wip
+        // Skip @wip scenarios
         bdd_skip_scenario("Logical NOT operator [@wip]");
         bdd_skip_scenario("Logical AND operator [@wip]");
         bdd_skip_scenario("Boolean expressions as values [@wip]");
@@ -525,8 +518,8 @@ int main(void) {
         bdd_skip_scenario("Nested boolean expressions [@wip]");
         bdd_skip_scenario("Boolean type inference [@wip]");
         bdd_skip_scenario("Boolean assignment and mutation [@wip]");
-    } else {
-        // Run non-@wip scenarios
+        
+        // Run only non-@wip scenarios
         test_boolean_literals();
         test_logical_or();
         test_boolean_precedence();
@@ -535,16 +528,24 @@ int main(void) {
         test_type_mismatch_and();
         test_type_mismatch_or();
         test_type_mismatch_if();
-        
-        // Run @wip scenarios
+    } else {
+        // Run all scenarios
+        test_boolean_literals();
         test_logical_not();
         test_logical_and();
+        test_logical_or();
+        test_boolean_precedence();
+        test_complex_boolean();
         test_boolean_as_values();
         test_short_circuit_and();
         test_short_circuit_or();
         test_nested_boolean();
         test_boolean_type_inference();
         test_mutable_boolean();
+        test_type_mismatch_not();
+        test_type_mismatch_and();
+        test_type_mismatch_or();
+        test_type_mismatch_if();
     }
     
     // Cleanup

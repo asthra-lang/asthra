@@ -143,8 +143,30 @@ TypeInfo *type_info_from_descriptor(TypeDescriptor *descriptor) {
     
     // Map TypeDescriptor category to TypeInfo category
     switch (descriptor->category) {
+        case TYPE_PRIMITIVE:
         case TYPE_BUILTIN:
+        case TYPE_INTEGER:
+        case TYPE_FLOAT:
+        case TYPE_BOOL:
             type_info->category = TYPE_INFO_PRIMITIVE;
+            // Set primitive kind based on name
+            if (descriptor->name) {
+                if (strcmp(descriptor->name, "i32") == 0) {
+                    type_info->data.primitive.kind = PRIMITIVE_INFO_I32;
+                } else if (strcmp(descriptor->name, "i64") == 0) {
+                    type_info->data.primitive.kind = PRIMITIVE_INFO_I64;
+                } else if (strcmp(descriptor->name, "f32") == 0) {
+                    type_info->data.primitive.kind = PRIMITIVE_INFO_F32;
+                } else if (strcmp(descriptor->name, "f64") == 0) {
+                    type_info->data.primitive.kind = PRIMITIVE_INFO_F64;
+                } else if (strcmp(descriptor->name, "bool") == 0) {
+                    type_info->data.primitive.kind = PRIMITIVE_INFO_BOOL;
+                } else if (strcmp(descriptor->name, "string") == 0) {
+                    type_info->data.primitive.kind = PRIMITIVE_INFO_STRING;
+                } else if (strcmp(descriptor->name, "void") == 0) {
+                    type_info->data.primitive.kind = PRIMITIVE_INFO_VOID;
+                }
+            }
             break;
         case TYPE_STRUCT:
             type_info->category = TYPE_INFO_STRUCT;
@@ -165,6 +187,17 @@ TypeInfo *type_info_from_descriptor(TypeDescriptor *descriptor) {
             break;
         case TYPE_FUNCTION:
             type_info->category = TYPE_INFO_FUNCTION;
+            // Populate function-specific data
+            if (descriptor->data.function.return_type) {
+                type_info->data.function.return_type = type_info_from_descriptor(descriptor->data.function.return_type);
+            }
+            type_info->data.function.param_count = descriptor->data.function.param_count;
+            if (descriptor->data.function.param_count > 0 && descriptor->data.function.param_types) {
+                type_info->data.function.param_types = malloc(descriptor->data.function.param_count * sizeof(TypeInfo*));
+                for (size_t i = 0; i < descriptor->data.function.param_count; i++) {
+                    type_info->data.function.param_types[i] = type_info_from_descriptor(descriptor->data.function.param_types[i]);
+                }
+            }
             break;
         case TYPE_GENERIC_INSTANCE:
             // Generic instances should map to their base type category

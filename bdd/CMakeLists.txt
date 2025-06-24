@@ -59,16 +59,21 @@ function(add_bdd_test name category)
         ${CMAKE_CURRENT_SOURCE_DIR}/support/*.c
     )
     
+    # Always include the new BDD utility files
+    list(APPEND step_sources 
+        ${CMAKE_CURRENT_SOURCE_DIR}/steps/bdd_utilities.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/steps/bdd_test_framework.c
+    )
+    
     # Create test executable
     add_executable(${test_target} 
         ${step_sources}
         ${support_sources}
     )
     
-    # Link with Asthra runtime and test framework
+    # Link with Asthra runtime only (BDD has its own test framework)
     target_link_libraries(${test_target}
         asthra_runtime
-        asthra_test_framework
     )
     
     # Platform-specific configurations
@@ -234,6 +239,23 @@ add_bdd_test(ffi_integration integration)
 
 # Tests with step files in root steps/ directory
 add_bdd_test(if_conditions unit)  # uses steps/if_conditions_steps.c
+add_bdd_test(parser unit)         # uses steps/parser_steps.c
+add_bdd_test(semantic unit)       # uses steps/semantic_steps.c
+add_bdd_test(cli unit)            # uses steps/cli_steps.c
+add_bdd_test(compilation unit)    # uses steps/compilation_steps.c
+
+# Phase 1 BDD Tests - Core Language Structure
+add_bdd_test(package_declaration unit)
+add_bdd_test(import_system unit)
+add_bdd_test(visibility_modifiers unit)
+add_bdd_test(annotations unit)
+
+# Phase 1 BDD Tests - Type System
+add_bdd_test(primitive_types unit)
+add_bdd_test(composite_types unit)
+add_bdd_test(user_defined_types unit)
+add_bdd_test(generic_types unit)
+add_bdd_test(special_types unit)
 
 # Configuration summary
 message(STATUS "BDD testing infrastructure configured")

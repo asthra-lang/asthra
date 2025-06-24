@@ -3,8 +3,6 @@ include(FetchContent)
 
 # Option to use system libraries
 option(USE_SYSTEM_JSON_C "Use system-installed json-c library" ON)
-option(USE_SYSTEM_LLVM "Use system-installed LLVM library" ON)
-option(ENABLE_LLVM_BACKEND "Enable LLVM backend support" OFF)
 
 if(USE_SYSTEM_JSON_C)
     find_package(PkgConfig QUIET)
@@ -103,72 +101,87 @@ if(JSON_C_FOUND)
     message(STATUS "  Libraries: ${JSON_C_LIBRARIES}")
 endif()
 
-# LLVM Configuration
-if(ENABLE_LLVM_BACKEND)
-    if(USE_SYSTEM_LLVM)
-        # Try to find LLVM using llvm-config
-        find_package(LLVM QUIET CONFIG)
+# LLVM Configuration (Required)
+message(STATUS "Configuring LLVM...")
+
+# Try to find LLVM using llvm-config
+find_package(LLVM QUIET CONFIG)
+
+if(NOT LLVM_FOUND)
+    # Fall back to manual search
+    find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config llvm-config-19 llvm-config-18 llvm-config-17 llvm-config-16 llvm-config-15)
+    
+    if(LLVM_CONFIG_EXECUTABLE)
+        execute_process(
+            COMMAND ${LLVM_CONFIG_EXECUTABLE} --version
+            OUTPUT_VARIABLE LLVM_VERSION
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
         
-        if(NOT LLVM_FOUND)
-            # Fall back to manual search
-            find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config llvm-config-19 llvm-config-18 llvm-config-17 llvm-config-16 llvm-config-15)
-            
-            if(LLVM_CONFIG_EXECUTABLE)
-                execute_process(
-                    COMMAND ${LLVM_CONFIG_EXECUTABLE} --version
-                    OUTPUT_VARIABLE LLVM_VERSION
-                    OUTPUT_STRIP_TRAILING_WHITESPACE
-                )
-                
-                execute_process(
-                    COMMAND ${LLVM_CONFIG_EXECUTABLE} --cflags
-                    OUTPUT_VARIABLE LLVM_CFLAGS
-                    OUTPUT_STRIP_TRAILING_WHITESPACE
-                )
-                
-                execute_process(
-                    COMMAND ${LLVM_CONFIG_EXECUTABLE} --ldflags
-                    OUTPUT_VARIABLE LLVM_LDFLAGS
-                    OUTPUT_STRIP_TRAILING_WHITESPACE
-                )
-                
-                execute_process(
-                    COMMAND ${LLVM_CONFIG_EXECUTABLE} --libs core support native bitwriter passes target
-                    OUTPUT_VARIABLE LLVM_LIBS
-                    OUTPUT_STRIP_TRAILING_WHITESPACE
-                )
-                
-                set(LLVM_FOUND TRUE)
-            endif()
+        execute_process(
+            COMMAND ${LLVM_CONFIG_EXECUTABLE} --cflags
+            OUTPUT_VARIABLE LLVM_CFLAGS
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        
+        execute_process(
+            COMMAND ${LLVM_CONFIG_EXECUTABLE} --ldflags
+            OUTPUT_VARIABLE LLVM_LDFLAGS
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        
+        execute_process(
+            COMMAND ${LLVM_CONFIG_EXECUTABLE} --libs core support native bitwriter passes target asmparser asmprinter mc mcparser
+            OUTPUT_VARIABLE LLVM_LIBS
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        
+        set(LLVM_FOUND TRUE)
+    endif()
+endif()
+
+if(NOT LLVM_FOUND)
+    message(FATAL_ERROR "LLVM not found. Please install LLVM 15.0 or later.\n"
+                        "On macOS: brew install llvm\n"
+                        "On Ubuntu: apt install llvm-dev\n"
+                        "You may need to set LLVM_DIR or ensure llvm-config is in your PATH.")
+else()
+    message(STATUS "Found LLVM ${LLVM_VERSION}")
+    
+    # Create LLVM interface library
+    add_library(llvm::llvm INTERFACE IMPORTED)
+    
+    if(LLVM_CONFIG_EXECUTABLE)
+        # Using llvm-config
+        separate_arguments(LLVM_CFLAGS_LIST UNIX_COMMAND "${LLVM_CFLAGS}")
+        separate_arguments(LLVM_LDFLAGS_LIST UNIX_COMMAND "${LLVM_LDFLAGS}")
+        separate_arguments(LLVM_LIBS_LIST UNIX_COMMAND "${LLVM_LIBS}")
+        
+        target_compile_options(llvm::llvm INTERFACE ${LLVM_CFLAGS_LIST})
+        target_link_options(llvm::llvm INTERFACE ${LLVM_LDFLAGS_LIST})
+        target_link_libraries(llvm::llvm INTERFACE ${LLVM_LIBS_LIST})
+        
+        # Link with C++ standard library for LLVM
+        if(APPLE)
+            target_link_libraries(llvm::llvm INTERFACE "-lc++")
+        else()
+            target_link_libraries(llvm::llvm INTERFACE "-lstdc++")
+        endif()
+    else()
+        # Using CMake package
+        llvm_map_components_to_libnames(llvm_libs support core irreader bitwriter asmparser asmprinter mc mcparser native)
+        target_link_libraries(llvm::llvm INTERFACE ${llvm_libs})
+        target_include_directories(llvm::llvm INTERFACE ${LLVM_INCLUDE_DIRS})
+        target_compile_definitions(llvm::llvm INTERFACE ${LLVM_DEFINITIONS})
+        
+        # Link with C++ standard library for LLVM
+        if(APPLE)
+            target_link_libraries(llvm::llvm INTERFACE "-lc++")
+        else()
+            target_link_libraries(llvm::llvm INTERFACE "-lstdc++")
         endif()
     endif()
     
-    if(NOT LLVM_FOUND)
-        message(FATAL_ERROR "LLVM not found. Please install LLVM or disable LLVM backend with -DENABLE_LLVM_BACKEND=OFF")
-    else()
-        message(STATUS "Found LLVM ${LLVM_VERSION}")
-        
-        # Create LLVM interface library
-        add_library(llvm::llvm INTERFACE IMPORTED)
-        
-        if(LLVM_CONFIG_EXECUTABLE)
-            # Using llvm-config
-            separate_arguments(LLVM_CFLAGS_LIST UNIX_COMMAND "${LLVM_CFLAGS}")
-            separate_arguments(LLVM_LDFLAGS_LIST UNIX_COMMAND "${LLVM_LDFLAGS}")
-            separate_arguments(LLVM_LIBS_LIST UNIX_COMMAND "${LLVM_LIBS}")
-            
-            target_compile_options(llvm::llvm INTERFACE ${LLVM_CFLAGS_LIST})
-            target_link_options(llvm::llvm INTERFACE ${LLVM_LDFLAGS_LIST})
-            target_link_libraries(llvm::llvm INTERFACE ${LLVM_LIBS_LIST})
-        else()
-            # Using CMake package
-            llvm_map_components_to_libnames(llvm_libs support core irreader bitwriter)
-            target_link_libraries(llvm::llvm INTERFACE ${llvm_libs})
-            target_include_directories(llvm::llvm INTERFACE ${LLVM_INCLUDE_DIRS})
-            target_compile_definitions(llvm::llvm INTERFACE ${LLVM_DEFINITIONS})
-        endif()
-        
-        # Define LLVM backend enabled
-        add_compile_definitions(ASTHRA_ENABLE_LLVM_BACKEND)
-    endif()
+    # Always define LLVM backend enabled
+    add_compile_definitions(ASTHRA_LLVM_BACKEND)
 endif() 

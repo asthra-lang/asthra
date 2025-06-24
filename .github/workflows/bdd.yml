@@ -236,6 +236,62 @@ jobs:
           ./bdd/bin/bdd_unit_if_conditions --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
         fi
         
+        # Phase 1 BDD Tests - Core Language Structure
+        if [ -f "bdd/bin/bdd_unit_package_declaration" ]; then
+          echo "Running package declaration unit tests..."
+          TESTS_RUN=$((TESTS_RUN + 1))
+          ./bdd/bin/bdd_unit_package_declaration --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+        fi
+        
+        if [ -f "bdd/bin/bdd_unit_import_system" ]; then
+          echo "Running import system unit tests..."
+          TESTS_RUN=$((TESTS_RUN + 1))
+          ./bdd/bin/bdd_unit_import_system --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+        fi
+        
+        if [ -f "bdd/bin/bdd_unit_visibility_modifiers" ]; then
+          echo "Running visibility modifiers unit tests..."
+          TESTS_RUN=$((TESTS_RUN + 1))
+          ./bdd/bin/bdd_unit_visibility_modifiers --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+        fi
+        
+        if [ -f "bdd/bin/bdd_unit_annotations" ]; then
+          echo "Running annotations unit tests..."
+          TESTS_RUN=$((TESTS_RUN + 1))
+          ./bdd/bin/bdd_unit_annotations --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+        fi
+        
+        # Phase 1 BDD Tests - Type System
+        if [ -f "bdd/bin/bdd_unit_primitive_types" ]; then
+          echo "Running primitive types unit tests..."
+          TESTS_RUN=$((TESTS_RUN + 1))
+          ./bdd/bin/bdd_unit_primitive_types --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+        fi
+        
+        if [ -f "bdd/bin/bdd_unit_composite_types" ]; then
+          echo "Running composite types unit tests..."
+          TESTS_RUN=$((TESTS_RUN + 1))
+          ./bdd/bin/bdd_unit_composite_types --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+        fi
+        
+        if [ -f "bdd/bin/bdd_unit_user_defined_types" ]; then
+          echo "Running user-defined types unit tests..."
+          TESTS_RUN=$((TESTS_RUN + 1))
+          ./bdd/bin/bdd_unit_user_defined_types --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+        fi
+        
+        if [ -f "bdd/bin/bdd_unit_generic_types" ]; then
+          echo "Running generic types unit tests..."
+          TESTS_RUN=$((TESTS_RUN + 1))
+          ./bdd/bin/bdd_unit_generic_types --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+        fi
+        
+        if [ -f "bdd/bin/bdd_unit_special_types" ]; then
+          echo "Running special types unit tests..."
+          TESTS_RUN=$((TESTS_RUN + 1))
+          ./bdd/bin/bdd_unit_special_types --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+        fi
+        
         # Report results and fail if any tests failed
         echo "BDD Unit Tests Summary: $TESTS_RUN tests run, $TESTS_FAILED failed"
         if [ $TESTS_FAILED -gt 0 ]; then
@@ -290,9 +346,17 @@ jobs:
         # Check if cucumber is available
         if command -v cucumber &> /dev/null; then
           echo "Running Cucumber tests..."
-          # Run tests and capture results (non-zero exit code will fail the step)
+          # Run all feature tests including Phase 1 tests
           cucumber features/*.feature --format html --out ../build/cucumber-report.html
           cucumber features/*.feature --format json --out ../build/cucumber-report.json
+          
+          # Also run Phase 1 tests explicitly to ensure they're executed
+          echo "Running Phase 1 Core Language Structure tests..."
+          cucumber features/package_declaration.feature features/import_system.feature features/visibility_modifiers.feature features/annotations.feature --format progress
+          
+          echo "Running Phase 1 Type System tests..."
+          cucumber features/primitive_types.feature features/composite_types.feature features/user_defined_types.feature features/generic_types.feature features/special_types.feature --format progress
+          
           echo "✅ Cucumber feature tests completed successfully"
         else
           echo "⚠️ Cucumber not found, skipping feature tests (not mandatory)"
