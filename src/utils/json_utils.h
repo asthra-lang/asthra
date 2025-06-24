@@ -2,7 +2,7 @@
 #define ASTHRA_JSON_UTILS_H
 
 // Integration with json-c library
-#include <json-c/json.h>
+#include <json.h>
 #include <stdbool.h>
 #include <stddef.h>
 
