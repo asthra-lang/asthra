@@ -93,3 +93,53 @@ set_tests_properties(test_backend_simple PROPERTIES
 #     LABELS "codegen;backend"
 #     TIMEOUT 30
 # )
+
+# LLVM backend test
+add_executable(test_llvm_backend
+    test_llvm_backend.c
+    backend_test_stubs.c
+    # Backend implementation files
+    ${CMAKE_SOURCE_DIR}/src/codegen/backend_factory.c
+    ${CMAKE_SOURCE_DIR}/src/codegen/c_backend.c
+    ${CMAKE_SOURCE_DIR}/src/codegen/asm_backend.c
+    ${CMAKE_SOURCE_DIR}/src/codegen/llvm_backend.c
+    # Minimal compiler core files
+    ${CMAKE_SOURCE_DIR}/src/compiler/options_validation.c
+    ${CMAKE_SOURCE_DIR}/src/compiler/compiler_core.c
+)
+
+# Include directories for LLVM test
+target_include_directories(test_llvm_backend PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/parser
+    ${CMAKE_SOURCE_DIR}/src/analysis
+    ${CMAKE_SOURCE_DIR}/src/codegen
+)
+
+# Define minimal stubs to avoid linking issues
+target_compile_definitions(test_llvm_backend PRIVATE
+    MINIMAL_TEST_BUILD=1
+)
+
+# Link libraries for LLVM test
+target_link_libraries(test_llvm_backend PRIVATE
+    ${COMMON_LIBRARIES}
+)
+
+# Conditionally link LLVM if enabled
+if(ENABLE_LLVM_BACKEND)
+    target_link_libraries(test_llvm_backend PRIVATE llvm::llvm)
+endif()
+
+# Set output directory for LLVM test
+set_target_properties(test_llvm_backend PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+# Register LLVM test
+add_test(NAME test_llvm_backend 
+         COMMAND test_llvm_backend)
+set_tests_properties(test_llvm_backend PROPERTIES
+    LABELS "codegen;backend;llvm"
+    TIMEOUT 30
+)
