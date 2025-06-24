@@ -15,6 +15,11 @@
 // =============================================================================
 
 CodeGenerator *code_generator_create(TargetArchitecture arch, CallingConvention conv) {
+    // Default to AT&T syntax
+    return code_generator_create_with_syntax(arch, conv, ASTHRA_ASM_SYNTAX_ATT);
+}
+
+CodeGenerator *code_generator_create_with_syntax(TargetArchitecture arch, CallingConvention conv, AsthraAssemblySyntax syntax) {
     CodeGenerator *generator = calloc(1, sizeof(CodeGenerator));
     if (!generator) {
         return NULL;
@@ -24,6 +29,7 @@ CodeGenerator *code_generator_create(TargetArchitecture arch, CallingConvention 
     *generator = (CodeGenerator) {
         .target_arch = arch,
         .calling_conv = conv,
+        .asm_syntax = syntax,
         .generate_debug_info = false,
         .optimize_code = true,
         .config = {

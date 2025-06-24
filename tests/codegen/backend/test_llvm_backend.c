@@ -79,10 +79,9 @@ static void test_llvm_backend_creation(void) {
     
     asthra_backend_destroy(backend);
 #else
-    // When LLVM is not enabled, backend creation should still succeed but initialization will fail
-    assert(backend != NULL);
-    assert(strcmp(asthra_backend_get_name(backend), "Asthra LLVM IR Generator Backend (Not Compiled)") == 0);
-    asthra_backend_destroy(backend);
+    // When LLVM is not enabled, backend creation should fail because initialization fails
+    assert(backend == NULL);
+    printf("   (LLVM backend creation failed as expected - LLVM not compiled in)\n");
 #endif
     
     printf("✓ LLVM backend creation test passed\n");
@@ -92,6 +91,7 @@ static void test_llvm_backend_creation(void) {
 static void test_llvm_backend_initialization(void) {
     printf("Testing LLVM backend initialization...\n");
     
+#ifdef ASTHRA_ENABLE_LLVM_BACKEND
     AsthraCompilerOptions options = {0};
     options.backend_type = ASTHRA_BACKEND_LLVM_IR;
     options.input_file = "test.as";
@@ -99,20 +99,31 @@ static void test_llvm_backend_initialization(void) {
     AsthraBackend *backend = asthra_backend_create(&options);
     assert(backend != NULL);
     
+    // Should initialize successfully
+    printf("   LLVM backend initialized successfully\n");
+    
+    asthra_backend_destroy(backend);
+#else
+    // When LLVM is not enabled, we test by creating the backend directly
+    // (bypassing the initialization in asthra_backend_create)
+    AsthraBackend *backend = asthra_backend_create_by_type(ASTHRA_BACKEND_LLVM_IR);
+    assert(backend != NULL);
+    
+    AsthraCompilerOptions options = {0};
+    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    options.input_file = "test.as";
+    
     int result = backend->ops->initialize(backend, &options);
     
-#ifdef ASTHRA_ENABLE_LLVM_BACKEND
-    // Should initialize successfully
-    assert(result == 0);
-    assert(backend->stats.backend_initialized == true);
-#else
     // Should fail with appropriate error message
     assert(result == -1);
     assert(backend->last_error != NULL);
     assert(strstr(backend->last_error, "not compiled in") != NULL);
-#endif
     
     asthra_backend_destroy(backend);
+    printf("   LLVM backend initialization failed as expected (not compiled in)\n");
+#endif
+    
     printf("✓ LLVM backend initialization test passed\n");
 }
 
@@ -120,13 +131,13 @@ static void test_llvm_backend_initialization(void) {
 static void test_llvm_backend_features(void) {
     printf("Testing LLVM backend feature support...\n");
     
+#ifdef ASTHRA_ENABLE_LLVM_BACKEND
     AsthraCompilerOptions options = {0};
     options.backend_type = ASTHRA_BACKEND_LLVM_IR;
     
     AsthraBackend *backend = asthra_backend_create(&options);
     assert(backend != NULL);
     
-#ifdef ASTHRA_ENABLE_LLVM_BACKEND
     // Test supported features
     assert(backend->ops->supports_feature(backend, "optimization") == true);
     assert(backend->ops->supports_feature(backend, "debug-info") == true);
@@ -137,12 +148,22 @@ static void test_llvm_backend_features(void) {
     
     // Test unsupported features
     assert(backend->ops->supports_feature(backend, "unknown-feature") == false);
-#else
-    // All features should be unsupported when not compiled in
-    assert(backend->ops->supports_feature(backend, "optimization") == false);
-#endif
     
     asthra_backend_destroy(backend);
+#else
+    // When LLVM is not enabled, test with direct backend creation
+    AsthraBackend *backend = asthra_backend_create_by_type(ASTHRA_BACKEND_LLVM_IR);
+    assert(backend != NULL);
+    
+    // All features should be unsupported when not compiled in
+    assert(backend->ops->supports_feature(backend, "optimization") == false);
+    assert(backend->ops->supports_feature(backend, "debug-info") == false);
+    assert(backend->ops->supports_feature(backend, "unknown-feature") == false);
+    
+    asthra_backend_destroy(backend);
+    printf("   LLVM features unavailable as expected (not compiled in)\n");
+#endif
+    
     printf("✓ LLVM backend feature support test passed\n");
 }
 

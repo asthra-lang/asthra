@@ -17,6 +17,7 @@
 #include "code_generator_abi.h"
 #include "code_generator_optimization.h"
 #include "generic_instantiation.h"
+#include "../compiler.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -33,6 +34,7 @@ struct CodeGenerator {
     // Target configuration
     TargetArchitecture target_arch;
     CallingConvention calling_conv;
+    AsthraAssemblySyntax asm_syntax;
     bool generate_debug_info;
     bool optimize_code;
     
@@ -77,6 +79,7 @@ struct CodeGenerator {
 
 // Creation and destruction
 CodeGenerator *code_generator_create(TargetArchitecture arch, CallingConvention conv);
+CodeGenerator *code_generator_create_with_syntax(TargetArchitecture arch, CallingConvention conv, AsthraAssemblySyntax syntax);
 void code_generator_destroy(CodeGenerator *generator);
 void code_generator_reset(CodeGenerator *generator);
 
@@ -119,14 +122,6 @@ bool code_generator_write_assembly_file(CodeGenerator *generator,
 int code_generator_format_instruction(const CodeGenerator *generator, 
                                      const AssemblyInstruction *inst,
                                      char *buffer, size_t buffer_size);
-static int format_x86_64_instruction(const AssemblyInstruction *inst, 
-                                    char *buffer, size_t buffer_size);
-static int format_aarch64_instruction(const AssemblyInstruction *inst, 
-                                     char *buffer, size_t buffer_size);
-static const char* format_x86_64_operand(const AssemblyOperand *operand);
-static const char* format_aarch64_operand(const AssemblyOperand *operand);
-static const char* get_x86_64_register_name(Register reg);
-static const char* get_aarch64_register_name(Register reg);
 
 // New function declarations
 bool code_generate_lvalue_address(CodeGenerator *generator, ASTNode *lvalue, Register addr_reg);

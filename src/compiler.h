@@ -71,6 +71,12 @@ typedef enum {
     ASTHRA_BACKEND_ASSEMBLY  // Emit assembly
 } AsthraBackendType;
 
+// Assembly syntax styles
+typedef enum {
+    ASTHRA_ASM_SYNTAX_ATT,    // AT&T syntax (default for Unix-like systems)
+    ASTHRA_ASM_SYNTAX_INTEL   // Intel syntax (default for Windows)
+} AsthraAssemblySyntax;
+
 // C17 flexible array member for dynamic argument handling
 struct AsthraArgumentList {
     size_t count;
@@ -89,6 +95,7 @@ struct AsthraCompilerOptions {
     AsthraOptimizationLevel opt_level;
     AsthraTargetArch target_arch;
     AsthraBackendType backend_type;  // Backend selection
+    AsthraAssemblySyntax asm_syntax; // Assembly syntax style
     bool debug_info;
     bool verbose;
     bool emit_llvm;
