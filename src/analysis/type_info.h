@@ -85,7 +85,8 @@ typedef struct TypeInfo {
                 PRIMITIVE_INFO_U8, PRIMITIVE_INFO_U16, PRIMITIVE_INFO_U32, PRIMITIVE_INFO_U64, PRIMITIVE_INFO_U128,
                 PRIMITIVE_INFO_F32, PRIMITIVE_INFO_F64,
                 PRIMITIVE_INFO_BOOL, PRIMITIVE_INFO_CHAR, PRIMITIVE_INFO_STRING,
-                PRIMITIVE_INFO_VOID, PRIMITIVE_INFO_USIZE, PRIMITIVE_INFO_ISIZE
+                PRIMITIVE_INFO_VOID, PRIMITIVE_INFO_USIZE, PRIMITIVE_INFO_ISIZE,
+                PRIMITIVE_INFO_NEVER
             } kind;
             bool is_signed;              // For numeric types
             bool is_integer;             // Integer vs floating point

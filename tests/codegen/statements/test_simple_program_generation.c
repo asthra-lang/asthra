@@ -62,6 +62,7 @@ AsthraTestResult test_generate_minimal_program(AsthraTestContext* context) {
     // Create compiler context for backend
     AsthraCompilerOptions opts = asthra_compiler_default_options();
     opts.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    opts.output_file = "test_output.ll";
     AsthraCompilerContext ctx = {
         .options = opts,
         .error_count = 0,
@@ -70,7 +71,7 @@ AsthraTestResult test_generate_minimal_program(AsthraTestContext* context) {
     };
     
     // Generate code
-    bool success = (asthra_backend_generate(fixture->backend, &ctx, program, NULL) == 0);
+    bool success = (asthra_backend_generate(fixture->backend, &ctx, program, opts.output_file) == 0);
     
     ast_free_node(program);
     
@@ -127,6 +128,7 @@ AsthraTestResult test_generate_program_with_variables(AsthraTestContext* context
     // Create compiler context for backend
     AsthraCompilerOptions opts = asthra_compiler_default_options();
     opts.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    opts.output_file = "test_output.ll";
     AsthraCompilerContext ctx = {
         .options = opts,
         .error_count = 0,
@@ -135,7 +137,7 @@ AsthraTestResult test_generate_program_with_variables(AsthraTestContext* context
     };
     
     // Generate code
-    bool success = (asthra_backend_generate(fixture->backend, &ctx, program, NULL) == 0);
+    bool success = (asthra_backend_generate(fixture->backend, &ctx, program, opts.output_file) == 0);
     
     ast_free_node(program);
     cleanup_codegen_fixture(fixture);
@@ -190,6 +192,7 @@ AsthraTestResult test_generate_program_with_control_flow(AsthraTestContext* cont
     // Create compiler context for backend
     AsthraCompilerOptions opts = asthra_compiler_default_options();
     opts.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    opts.output_file = "test_output.ll";
     AsthraCompilerContext ctx = {
         .options = opts,
         .error_count = 0,
@@ -198,7 +201,7 @@ AsthraTestResult test_generate_program_with_control_flow(AsthraTestContext* cont
     };
     
     // Generate code
-    bool success = (asthra_backend_generate(fixture->backend, &ctx, program, NULL) == 0);
+    bool success = (asthra_backend_generate(fixture->backend, &ctx, program, opts.output_file) == 0);
     
     ast_free_node(program);
     cleanup_codegen_fixture(fixture);

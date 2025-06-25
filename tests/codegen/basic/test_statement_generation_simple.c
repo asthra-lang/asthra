@@ -122,7 +122,7 @@ bool test_variable_declaration(void) {
     ctx.type_checker = analyzer;
     
     // Generate code
-    bool gen_ok = asthra_backend_generate(backend, &ctx, ast, NULL) == 0;
+    bool gen_ok = asthra_backend_generate(backend, &ctx, ast, options.output_file) == 0;
     if (!gen_ok) {
         printf("  FAIL: Code generation failed\n");
         asthra_backend_destroy(backend);
@@ -246,7 +246,7 @@ bool test_control_flow_statements(void) {
     ctx.type_checker = analyzer;
     
     // Generate code
-    bool gen_ok = asthra_backend_generate(backend, &ctx, ast, NULL) == 0;
+    bool gen_ok = asthra_backend_generate(backend, &ctx, ast, options.output_file) == 0;
     if (!gen_ok) {
         printf("  FAIL: Code generation failed\n");
         asthra_backend_destroy(backend);

@@ -148,14 +148,22 @@ configure_build() {
 
 # Function to build project
 build_project() {
+    local timestamp=$(date '+%Y%m%d_%H%M%S')
+    local build_log="${LOGS_DIR}/build_${timestamp}.log"
+    
     print_status "info" "Building compiler and test executables (using $JOBS jobs)..."
+    print_status "info" "Build log: ${build_log}"
     
     # Build main project
-    if ! cmake --build "${BUILD_DIR}" -j"${JOBS}"; then
+    echo "=== Main Build Started at $(date) ===" > "${build_log}"
+    if ! cmake --build "${BUILD_DIR}" -j"${JOBS}" >> "${build_log}" 2>&1; then
         print_status "error" "Main build failed"
         echo ""
+        print_status "warning" "Last 30 lines of build errors:"
+        tail -30 "${build_log}"
+        echo ""
         echo "Debug steps:"
-        echo "  1. Check compilation errors above"
+        echo "  1. Check full build log: less ${build_log}"
         echo "  2. Try cleaning: cmake --build ${BUILD_DIR} --target clean"
         echo "  3. Remove build directory: rm -rf ${BUILD_DIR}"
         echo "  4. Re-run this script"
@@ -164,20 +172,30 @@ build_project() {
     fi
     
     # Build test executables
-    if ! cmake --build "${BUILD_DIR}" --target build-tests; then
+    echo "" >> "${build_log}"
+    echo "=== Test Build Started at $(date) ===" >> "${build_log}"
+    if ! cmake --build "${BUILD_DIR}" --target build-tests >> "${build_log}" 2>&1; then
         print_status "error" "Test executable build failed"
+        echo ""
+        print_status "warning" "Last 30 lines of build errors:"
+        tail -30 "${build_log}"
         echo ""
         echo "This usually happens when:"
         echo "  1. Test source files have compilation errors"
         echo "  2. Test CMakeLists.txt has configuration issues"
         echo "  3. Dependencies for tests are missing"
         echo ""
-        echo "Try running: cmake --build ${BUILD_DIR} --target build-tests --verbose"
+        echo "Debug steps:"
+        echo "  1. Check full build log: less ${build_log}"
+        echo "  2. Try verbose build: cmake --build ${BUILD_DIR} --target build-tests --verbose"
         echo ""
         return 1
     fi
     
     print_status "success" "Build completed successfully"
+    if [ "$VERBOSE" = true ]; then
+        print_status "info" "Full build log: ${build_log}"
+    fi
     return 0
 }
 

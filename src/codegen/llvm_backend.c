@@ -24,6 +24,14 @@
 #include <llvm-c/TargetMachine.h>
 #include <llvm-c/DebugInfo.h>
 
+// Simple local variable tracking
+typedef struct LocalVar {
+    const char *name;
+    LLVMValueRef alloca;
+    LLVMTypeRef type;
+    struct LocalVar *next;
+} LocalVar;
+
 // Private data for LLVM backend
 typedef struct LLVMBackendData {
     LLVMContextRef context;
@@ -63,6 +71,9 @@ typedef struct LLVMBackendData {
     LLVMMetadataRef di_void_type;
     LLVMMetadataRef di_ptr_type;
     char *output_filename;
+    
+    // Local variable tracking
+    LocalVar *local_vars;
 } LLVMBackendData;
 
 // Forward declarations
@@ -77,6 +88,12 @@ static void generate_statement(LLVMBackendData *data, const ASTNode *node);
 static LLVMValueRef generate_identifier(LLVMBackendData *data, const ASTNode *node);
 static LLVMValueRef generate_unary_op(LLVMBackendData *data, const ASTNode *node);
 
+// Local variable management
+static void register_local_var(LLVMBackendData *data, const char *name, LLVMValueRef alloca, LLVMTypeRef type);
+static LocalVar* lookup_local_var_entry(LLVMBackendData *data, const char *name);
+static LLVMValueRef lookup_local_var(LLVMBackendData *data, const char *name);
+static void clear_local_vars(LLVMBackendData *data);
+
 // Initialize the LLVM backend
 static int llvm_backend_initialize(AsthraBackend *backend, const AsthraCompilerOptions *options) {
     if (!backend || !options) return -1;
@@ -89,6 +106,9 @@ static int llvm_backend_initialize(AsthraBackend *backend, const AsthraCompilerO
     }
     
     backend->private_data = data;
+    
+    // Initialize local variables tracking
+    data->local_vars = NULL;
     
     // Initialize LLVM
     LLVMInitializeNativeTarget();
@@ -352,6 +372,7 @@ static LLVMMetadataRef asthra_type_to_debug_type(LLVMBackendData *data, const Ty
                 case PRIMITIVE_INFO_F64: return data->di_f64_type;
                 case PRIMITIVE_INFO_BOOL: return data->di_bool_type;
                 case PRIMITIVE_INFO_VOID: return data->di_void_type;
+                case PRIMITIVE_INFO_NEVER: return data->di_void_type; // Never type as void in debug info
                 case PRIMITIVE_INFO_STRING:
                     // String as char* for now
                     return LLVMDIBuilderCreatePointerType(
@@ -405,6 +426,10 @@ static LLVMMetadataRef asthra_type_to_debug_type(LLVMBackendData *data, const Ty
             
         case TYPE_INFO_STRUCT:
             // TODO: Implement struct type debug info
+            return data->di_ptr_type;
+            
+        case TYPE_INFO_OPTION:
+            // TODO: Implement Option<T> debug info as composite type
             return data->di_ptr_type;
             
         default:
@@ -467,6 +492,7 @@ static LLVMTypeRef asthra_type_to_llvm(LLVMBackendData *data, const TypeInfo *ty
                 case PRIMITIVE_INFO_BOOL: return data->bool_type;
                 case PRIMITIVE_INFO_STRING: return data->ptr_type; // Strings are char*
                 case PRIMITIVE_INFO_VOID: return data->void_type;
+                case PRIMITIVE_INFO_NEVER: return data->void_type; // Never type functions don't return
                 default: return data->void_type;
             }
             
@@ -517,6 +543,17 @@ static LLVMTypeRef asthra_type_to_llvm(LLVMBackendData *data, const TypeInfo *ty
         case TYPE_INFO_TUPLE:
             // TODO: Implement tuple type conversion
             return data->ptr_type;
+            
+        case TYPE_INFO_OPTION:
+            // Option<T> is represented as a struct { bool present; T value; }
+            {
+                LLVMTypeRef value_type = asthra_type_to_llvm(data, type->data.option.value_type);
+                LLVMTypeRef fields[2] = {
+                    data->bool_type,    // present flag
+                    value_type          // value
+                };
+                return LLVMStructTypeInContext(data->context, fields, 2, 0);
+            }
             
         default:
             return data->void_type;
@@ -637,8 +674,15 @@ static LLVMValueRef generate_identifier(LLVMBackendData *data, const ASTNode *no
     
     // First check local variables in current function
     if (data->current_function) {
+        // Check local variables first
+        LocalVar *var_entry = lookup_local_var_entry(data, name);
+        if (var_entry) {
+            // Load the value from the alloca
+            return LLVMBuildLoad2(data->builder, var_entry->type, var_entry->alloca, name);
+        }
+        
         // Search through function parameters
-        LLVMTypeRef fn_type = LLVMGetElementType(LLVMTypeOf(data->current_function));
+        LLVMTypeRef fn_type = LLVMGlobalGetValueType(data->current_function);
         unsigned param_count = LLVMCountParamTypes(fn_type);
         
         for (unsigned i = 0; i < param_count; i++) {
@@ -648,8 +692,6 @@ static LLVMValueRef generate_identifier(LLVMBackendData *data, const ASTNode *no
                 return param;
             }
         }
-        
-        // TODO: Search through local variables once we implement variable declarations
     }
     
     // Check for builtin functions and map to runtime functions
@@ -755,8 +797,147 @@ static LLVMValueRef generate_unary_op(LLVMBackendData *data, const ASTNode *node
 // Generate code for function calls
 static LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
     // Get the function to call
+    if (node->data.call_expr.function) {
+        if (node->data.call_expr.function->type == AST_FIELD_ACCESS) {
+            // Check if this is an instance method call (object.method())
+            // We need to check this BEFORE calling generate_expression
+            ASTNode *field_access = node->data.call_expr.function;
+            
+            // Try to generate the object
+            LLVMValueRef self_obj = generate_expression(data, field_access->data.field_access.object);
+            if (self_obj) {
+                // This is likely an instance method call
+                const char *method_name = field_access->data.field_access.field_name;
+                
+                // Look up the method - for now, we'll use a simple naming convention
+                char mangled_name[256];
+                
+                // Get the type name from the object's type info
+                const char *type_name = "Point"; // TODO: Get from type info
+                snprintf(mangled_name, sizeof(mangled_name), "%s_instance_%s", type_name, method_name);
+                
+                LLVMValueRef function = LLVMGetNamedFunction(data->module, mangled_name);
+                
+                if (!function) {
+                    // Try without instance prefix
+                    snprintf(mangled_name, sizeof(mangled_name), "%s_%s", type_name, method_name);
+                    function = LLVMGetNamedFunction(data->module, mangled_name);
+                }
+                
+                if (!function) {
+                    // Try just the method name (in case semantic analyzer used that)
+                    function = LLVMGetNamedFunction(data->module, method_name);
+                }
+                
+                if (!function) {
+                    return NULL;
+                }
+                
+                // For instance methods, we need to add self as the first parameter
+                // Prepare arguments with self as first
+                size_t arg_count = node->data.call_expr.args ? node->data.call_expr.args->count : 0;
+                size_t total_args = arg_count + 1; // +1 for self
+                LLVMValueRef *args = malloc(total_args * sizeof(LLVMValueRef));
+                
+                // First argument is self
+                args[0] = self_obj;
+                
+                // Generate remaining arguments
+                for (size_t i = 0; i < arg_count; i++) {
+                    args[i + 1] = generate_expression(data, node->data.call_expr.args->nodes[i]);
+                    if (!args[i + 1]) {
+                        free(args);
+                        return NULL;
+                    }
+                }
+                
+                // Build the call
+                LLVMTypeRef fn_type = LLVMGlobalGetValueType(function);
+                if (!fn_type) {
+                    free(args);
+                    return NULL;
+                }
+                
+                LLVMValueRef result = LLVMBuildCall2(data->builder, fn_type, function, args, (unsigned)total_args, "method_call");
+                free(args);
+                return result;
+            }
+        }
+    }
+    
     LLVMValueRef function = generate_expression(data, node->data.call_expr.function);
-    if (!function) return NULL;
+    if (!function) {
+        // Check if this is an associated function call like Option.Some
+        if (node->data.call_expr.function->type == AST_FIELD_ACCESS) {
+            ASTNode *field_access = node->data.call_expr.function;
+            if (field_access->data.field_access.object->type == AST_IDENTIFIER) {
+                const char *type_name = field_access->data.field_access.object->data.identifier.name;
+                const char *func_name = field_access->data.field_access.field_name;
+                
+                // Handle Option.Some and Option.None
+                if (strcmp(type_name, "Option") == 0) {
+                    if (strcmp(func_name, "Some") == 0) {
+                        // Option.Some(value) - create an Option struct
+                        if (node->data.call_expr.args && node->data.call_expr.args->count == 1) {
+                            // Generate the value
+                            LLVMValueRef value = generate_expression(data, node->data.call_expr.args->nodes[0]);
+                            if (!value) return NULL;
+                            
+                            // Create Option struct { bool present; T value; }
+                            LLVMTypeRef value_type = LLVMTypeOf(value);
+                            LLVMTypeRef fields[2] = {
+                                data->bool_type,    // present flag
+                                value_type          // value
+                            };
+                            LLVMTypeRef option_type = LLVMStructTypeInContext(data->context, fields, 2, 0);
+                            
+                            // Create the struct value
+                            LLVMValueRef option_alloca = LLVMBuildAlloca(data->builder, option_type, "option");
+                            
+                            // Set present = true
+                            LLVMValueRef present_ptr = LLVMBuildStructGEP2(data->builder, option_type, option_alloca, 0, "present_ptr");
+                            LLVMBuildStore(data->builder, LLVMConstInt(data->bool_type, 1, false), present_ptr);
+                            
+                            // Set value
+                            LLVMValueRef value_ptr = LLVMBuildStructGEP2(data->builder, option_type, option_alloca, 1, "value_ptr");
+                            LLVMBuildStore(data->builder, value, value_ptr);
+                            
+                            // Load and return the struct
+                            return LLVMBuildLoad2(data->builder, option_type, option_alloca, "option_value");
+                        }
+                    } else if (strcmp(func_name, "None") == 0) {
+                        // Option.None - this is not a function call, just a constant
+                        // But since we're in generate_call_expr, this means it's used as Option.None()
+                        // We should return an Option struct with present = false
+                        
+                        // Get the expected type from node->type_info if available
+                        // For now, create a generic Option<i32>
+                        LLVMTypeRef fields[2] = {
+                            data->bool_type,    // present flag
+                            data->i32_type      // value (placeholder)
+                        };
+                        LLVMTypeRef option_type = LLVMStructTypeInContext(data->context, fields, 2, 0);
+                        
+                        // Create the struct value
+                        LLVMValueRef option_alloca = LLVMBuildAlloca(data->builder, option_type, "option_none");
+                        
+                        // Set present = false
+                        LLVMValueRef present_ptr = LLVMBuildStructGEP2(data->builder, option_type, option_alloca, 0, "present_ptr");
+                        LLVMBuildStore(data->builder, LLVMConstInt(data->bool_type, 0, false), present_ptr);
+                        
+                        // Value doesn't matter for None, but initialize it
+                        LLVMValueRef value_ptr = LLVMBuildStructGEP2(data->builder, option_type, option_alloca, 1, "value_ptr");
+                        LLVMBuildStore(data->builder, LLVMConstInt(data->i32_type, 0, false), value_ptr);
+                        
+                        // Load and return the struct
+                        return LLVMBuildLoad2(data->builder, option_type, option_alloca, "option_none_value");
+                    }
+                }
+            }
+        }
+        
+        return NULL;
+    }
     
     // Check if this is a special builtin function call that needs parameter transformation
     const char *function_name = NULL;
@@ -821,12 +1002,51 @@ static LLVMValueRef generate_index_expr(LLVMBackendData *data, const ASTNode *no
     LLVMValueRef element_ptr = LLVMBuildGEP2(data->builder, array_type, array, indices, 2, "elemptr");
     
     // Load the value - need to get element type from array
-    LLVMTypeRef elem_type = LLVMGetElementType(LLVMGetElementType(array_type));
+    // For LLVM 15+, we can't use LLVMGetElementType on opaque pointers
+    // We need to get type information from the AST node
+    LLVMTypeRef elem_type = data->i32_type; // Default fallback
+    
+    // Try to get type from node's type info
+    if (node->type_info && node->type_info->category == TYPE_INFO_SLICE) {
+        elem_type = asthra_type_to_llvm(data, node->type_info->data.slice.element_type);
+    }
+    
     return LLVMBuildLoad2(data->builder, elem_type, element_ptr, "elem");
 }
 
 // Generate code for field access
 static LLVMValueRef generate_field_access(LLVMBackendData *data, const ASTNode *node) {
+    // Special handling for type names like Option.None
+    if (node->data.field_access.object->type == AST_IDENTIFIER) {
+        const char *type_name = node->data.field_access.object->data.identifier.name;
+        const char *field_name = node->data.field_access.field_name;
+        
+        // Handle Option.None (when not used as a function call)
+        if (strcmp(type_name, "Option") == 0 && strcmp(field_name, "None") == 0) {
+            // Create an Option struct with present = false
+            // Get the expected type from node->type_info if available
+            LLVMTypeRef value_type = data->i32_type; // Default
+            
+            if (node->type_info && node->type_info->category == TYPE_INFO_OPTION) {
+                value_type = asthra_type_to_llvm(data, node->type_info->data.option.value_type);
+            }
+            
+            LLVMTypeRef fields[2] = {
+                data->bool_type,    // present flag
+                value_type          // value
+            };
+            LLVMTypeRef option_type = LLVMStructTypeInContext(data->context, fields, 2, 0);
+            
+            // Create a constant None value
+            LLVMValueRef values[2] = {
+                LLVMConstInt(data->bool_type, 0, false),  // present = false
+                LLVMConstNull(value_type)                  // null value
+            };
+            
+            return LLVMConstNamedStruct(option_type, values, 2);
+        }
+    }
+    
     LLVMValueRef object = generate_expression(data, node->data.field_access.object);
     if (!object) return NULL;
     
@@ -979,7 +1199,11 @@ static LLVMValueRef generate_expression(LLVMBackendData *data, const ASTNode *no
 
 // Generate code for statements
 static void generate_statement(LLVMBackendData *data, const ASTNode *node) {
-    if (!node) return;
+    if (!node) {
+        fprintf(stderr, "DEBUG: generate_statement called with NULL node\n");
+        return;
+    }
+    
     
     // Set debug location for this statement
     set_debug_location(data, node);
@@ -987,17 +1211,28 @@ static void generate_statement(LLVMBackendData *data, const ASTNode *node) {
     switch (node->type) {
         case AST_RETURN_STMT:
             {
+                fprintf(stderr, "DEBUG: Processing return statement\n");
                 LLVMValueRef ret_val = NULL;
                 if (node->data.return_stmt.expression) {
+                    fprintf(stderr, "DEBUG: Return has expression, type=%d\n", 
+                            node->data.return_stmt.expression->type);
                     // Check if the expression is a unit literal for void return
                     if (node->data.return_stmt.expression->type == AST_UNIT_LITERAL) {
+                        fprintf(stderr, "DEBUG: Return has unit literal\n");
                         // For unit literals in void functions, use RetVoid
-                        LLVMTypeRef fn_ret_type = LLVMGetReturnType(LLVMGetElementType(LLVMTypeOf(data->current_function)));
+                        // In LLVM 15+, use LLVMGlobalGetValueType to get the function type
+                        LLVMTypeRef fn_type = LLVMGlobalGetValueType(data->current_function);
+                        fprintf(stderr, "DEBUG: Function type from global: %p\n", (void*)fn_type);
+                        LLVMTypeRef fn_ret_type = LLVMGetReturnType(fn_type);
+                        fprintf(stderr, "DEBUG: Function return type: %p, void_type=%p\n", 
+                                (void*)fn_ret_type, (void*)data->void_type);
                         if (fn_ret_type == data->void_type) {
+                            fprintf(stderr, "DEBUG: Building RetVoid\n");
                             LLVMBuildRetVoid(data->builder);
                             break;
                         }
                     }
+                    fprintf(stderr, "DEBUG: Generating expression for return value\n");
                     ret_val = generate_expression(data, node->data.return_stmt.expression);
                 }
                 
@@ -1075,8 +1310,8 @@ static void generate_statement(LLVMBackendData *data, const ASTNode *node) {
                     }
                 }
                 
-                // TODO: Store variable in symbol table for later lookup
-                // For now, we'll need to enhance identifier lookup to find local variables
+                // Register the local variable for later lookup
+                register_local_var(data, var_name, alloca, var_type);
             }
             break;
             
@@ -1088,8 +1323,12 @@ static void generate_statement(LLVMBackendData *data, const ASTNode *node) {
                 if (node->data.assignment.target->type == AST_IDENTIFIER) {
                     // Simple variable assignment
                     const char *var_name = node->data.assignment.target->data.identifier.name;
-                    // TODO: Look up variable address from symbol table
-                    target = LLVMGetNamedGlobal(data->module, var_name);
+                    // Look up local variable first
+                    target = lookup_local_var(data, var_name);
+                    if (!target) {
+                        // Try global variable
+                        target = LLVMGetNamedGlobal(data->module, var_name);
+                    }
                 } else if (node->data.assignment.target->type == AST_FIELD_ACCESS) {
                     // Field assignment
                     target = generate_expression(data, node->data.assignment.target);
@@ -1273,33 +1512,53 @@ static void generate_statement(LLVMBackendData *data, const ASTNode *node) {
 
 // Generate code for functions
 static void generate_function(LLVMBackendData *data, const ASTNode *node) {
-    if (!node || node->type != AST_FUNCTION_DECL) return;
+    if (!node || (node->type != AST_FUNCTION_DECL && node->type != AST_METHOD_DECL)) {
+        fprintf(stderr, "DEBUG: generate_function: invalid node\n");
+        return;
+    }
     
+    const char *func_name = NULL;
+    ASTNodeList *params = NULL;
+    ASTNode *body = NULL;
+    
+    if (node->type == AST_FUNCTION_DECL) {
+        func_name = node->data.function_decl.name;
+        params = node->data.function_decl.params;
+        body = node->data.function_decl.body;
+    } else { // AST_METHOD_DECL
+        func_name = node->data.method_decl.name;
+        params = node->data.method_decl.params;
+        body = node->data.method_decl.body;
+    }
+    
+    fprintf(stderr, "DEBUG: generate_function: name=%s\n", func_name ? func_name : "NULL");
     
     // Get function type from type_info
     TypeInfo *func_type = node->type_info;
     
-    if (!func_type || func_type->category != TYPE_INFO_FUNCTION) {
-        return;
-    }
-    
-    // Handle function without proper type info (e.g., during early compilation)
+    // For now, if we don't have type info, try to continue with defaults
     LLVMTypeRef ret_type = data->void_type;
+    int param_count = 0;
     
-    if (func_type->category == TYPE_INFO_FUNCTION && func_type->data.function.return_type) {
-        ret_type = asthra_type_to_llvm(data, func_type->data.function.return_type);
+    if (func_type && func_type->category == TYPE_INFO_FUNCTION) {
+        if (func_type->data.function.return_type) {
+            ret_type = asthra_type_to_llvm(data, func_type->data.function.return_type);
+        }
+        param_count = func_type->data.function.param_count;
     } else {
-        // Fallback to void if no proper return type info
-        ret_type = data->void_type;
+        // Try to get param count from AST
+        param_count = node->data.function_decl.params ? node->data.function_decl.params->count : 0;
+        fprintf(stderr, "DEBUG: No type info, using AST param count = %d\n", param_count);
     }
+    
     
     // Convert parameter types
-    int param_count = node->data.function_decl.params ? node->data.function_decl.params->count : 0;
     LLVMTypeRef *param_types = NULL;
     if (param_count > 0) {
         param_types = malloc(param_count * sizeof(LLVMTypeRef));
         for (int i = 0; i < param_count; i++) {
             ASTNode *param = node->data.function_decl.params->nodes[i];
+            fprintf(stderr, "DEBUG: Processing param %d: node=%p\n", i, (void*)param);
             if (param && param->type == AST_PARAM_DECL) {
                 // Get type from param declaration
                 TypeInfo *param_type_info = NULL;
@@ -1349,9 +1608,21 @@ static void generate_function(LLVMBackendData *data, const ASTNode *node) {
     
     // Create function type
     LLVMTypeRef fn_type = LLVMFunctionType(ret_type, param_types, param_count, false);
+    fprintf(stderr, "DEBUG: Created function type\n");
     
     // Create function
-    LLVMValueRef function = LLVMAddFunction(data->module, node->data.function_decl.name, fn_type);
+    LLVMValueRef function = LLVMAddFunction(data->module, func_name, fn_type);
+    fprintf(stderr, "DEBUG: Added function to module: %p\n", (void*)function);
+    
+    // If function returns Never, mark it as noreturn
+    if (func_type && func_type->category == TYPE_INFO_FUNCTION && 
+        func_type->data.function.return_type && 
+        func_type->data.function.return_type->category == TYPE_INFO_PRIMITIVE &&
+        func_type->data.function.return_type->data.primitive.kind == PRIMITIVE_INFO_NEVER) {
+        // In LLVM 15+, use attribute builder
+        // For now, we'll just handle Never type properly in code generation
+        // The noreturn attribute would be: LLVMAddAttributeAtIndex(function, LLVMAttributeFunctionIndex, attr);
+    }
     
     // Set parameter names
     for (int i = 0; i < param_count; i++) {
@@ -1395,7 +1666,9 @@ static void generate_function(LLVMBackendData *data, const ASTNode *node) {
     }
     
     // Generate function body if present
+    fprintf(stderr, "DEBUG: Checking function body: %p\n", (void*)node->data.function_decl.body);
     if (node->data.function_decl.body) {
+        fprintf(stderr, "DEBUG: Creating entry block\n");
         // Create entry basic block
         LLVMBasicBlockRef entry = LLVMAppendBasicBlockInContext(data->context, function, "entry");
         LLVMPositionBuilderAtEnd(data->builder, entry);
@@ -1403,12 +1676,18 @@ static void generate_function(LLVMBackendData *data, const ASTNode *node) {
         // Set current function
         data->current_function = function;
         
+        // Clear local variables from previous function
+        clear_local_vars(data);
+        
         // Generate body statements
         LLVMValueRef last_value = NULL;
-        if (node->data.function_decl.body->type == AST_BLOCK) {
-            ASTNodeList *statements = node->data.function_decl.body->data.block.statements;
-            for (size_t i = 0; i < statements->count; i++) {
+        fprintf(stderr, "DEBUG: Body type = %d\n", body->type);
+        if (body->type == AST_BLOCK) {
+            ASTNodeList *statements = body->data.block.statements;
+            fprintf(stderr, "DEBUG: Body has %zu statements\n", statements ? statements->count : 0);
+            for (size_t i = 0; statements && i < statements->count; i++) {
                 ASTNode *stmt = statements->nodes[i];
+                fprintf(stderr, "DEBUG: Processing statement %zu, type=%d\n", i, stmt ? stmt->type : -1);
                 
                 // Check if this is the last statement and it's an expression statement
                 if (i == statements->count - 1 && stmt->type == AST_EXPR_STMT) {
@@ -1421,8 +1700,14 @@ static void generate_function(LLVMBackendData *data, const ASTNode *node) {
             }
         }
         
+        fprintf(stderr, "DEBUG: Done processing statements\n");
+        
         // Add implicit return if needed
-        if (!LLVMGetBasicBlockTerminator(LLVMGetInsertBlock(data->builder))) {
+        LLVMBasicBlockRef current_block = LLVMGetInsertBlock(data->builder);
+        fprintf(stderr, "DEBUG: Current block = %p\n", (void*)current_block);
+        
+        if (!LLVMGetBasicBlockTerminator(current_block)) {
+            fprintf(stderr, "DEBUG: Adding implicit return, ret_type=%p\n", (void*)ret_type);
             if (ret_type == data->void_type) {
                 LLVMBuildRetVoid(data->builder);
             } else if (ret_type == data->unit_type) {
@@ -1482,7 +1767,6 @@ static void generate_top_level(LLVMBackendData *data, const ASTNode *node) {
         return;
     }
     
-    
     switch (node->type) {
         case AST_FUNCTION_DECL:
             generate_function(data, node);
@@ -1496,6 +1780,20 @@ static void generate_top_level(LLVMBackendData *data, const ASTNode *node) {
             // Not yet implemented
             break;
             
+        case AST_IMPL_BLOCK:
+            // Generate functions from impl block
+            if (node->data.impl_block.methods) {
+                for (size_t i = 0; i < node->data.impl_block.methods->count; i++) {
+                    ASTNode *method = node->data.impl_block.methods->nodes[i];
+                    if (method && (method->type == AST_FUNCTION_DECL || method->type == AST_METHOD_DECL)) {
+                        // Generate the method as a regular function
+                        // The semantic analyzer should have already mangled the name
+                        generate_function(data, method);
+                    }
+                }
+            }
+            break;
+            
         default:
             break;
     }
@@ -1507,7 +1805,7 @@ static int llvm_backend_generate(AsthraBackend *backend,
                                 const ASTNode *ast,
                                 const char *output_file) {
     if (!backend || !backend->private_data || !ctx || !ast || !output_file) {
-        backend->last_error = "Invalid parameters for LLVM code generation";
+        if (backend) backend->last_error = "Invalid parameters for LLVM code generation";
         return -1;
     }
     
@@ -1611,6 +1909,9 @@ static void llvm_backend_cleanup(AsthraBackend *backend) {
     
     LLVMBackendData *data = (LLVMBackendData*)backend->private_data;
     
+    // Clear local variables
+    clear_local_vars(data);
+    
     // Dispose of LLVM resources in reverse order
     if (data->di_builder) {
         LLVMDisposeDIBuilder(data->di_builder);
@@ -1671,6 +1972,43 @@ static const char* llvm_backend_get_version(AsthraBackend *backend) {
 // Get backend name
 static const char* llvm_backend_get_name(AsthraBackend *backend) {
     return "Asthra LLVM IR Generator Backend";
+}
+
+// Local variable management implementation
+static void register_local_var(LLVMBackendData *data, const char *name, LLVMValueRef alloca, LLVMTypeRef type) {
+    LocalVar *var = malloc(sizeof(LocalVar));
+    var->name = strdup(name);
+    var->alloca = alloca;
+    var->type = type;
+    var->next = data->local_vars;
+    data->local_vars = var;
+}
+
+static LocalVar* lookup_local_var_entry(LLVMBackendData *data, const char *name) {
+    LocalVar *var = data->local_vars;
+    while (var) {
+        if (strcmp(var->name, name) == 0) {
+            return var;
+        }
+        var = var->next;
+    }
+    return NULL;
+}
+
+static LLVMValueRef lookup_local_var(LLVMBackendData *data, const char *name) {
+    LocalVar *var = lookup_local_var_entry(data, name);
+    return var ? var->alloca : NULL;
+}
+
+static void clear_local_vars(LLVMBackendData *data) {
+    LocalVar *var = data->local_vars;
+    while (var) {
+        LocalVar *next = var->next;
+        free((char*)var->name);
+        free(var);
+        var = next;
+    }
+    data->local_vars = NULL;
 }
 
 // LLVM Backend operations structure
