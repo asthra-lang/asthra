@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "llvm_backend_internal.h"
 #include "../parser/ast_types.h"
+#include "llvm_backend_internal.h"
 #include <llvm-c/Core.h>
 
 #ifdef __cplusplus

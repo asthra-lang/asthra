@@ -13,12 +13,12 @@
 #include "llvm_backend_internal.h"
 
 // Include specialized expression generators
-#include "llvm_binary_ops.h"
-#include "llvm_unary_ops.h"
-#include "llvm_literals.h"
-#include "llvm_call_expr.h"
 #include "llvm_access_expr.h"
+#include "llvm_binary_ops.h"
+#include "llvm_call_expr.h"
 #include "llvm_cast_expr.h"
+#include "llvm_literals.h"
+#include "llvm_unary_ops.h"
 
 #ifdef __cplusplus
 extern "C" {

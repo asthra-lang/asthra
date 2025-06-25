@@ -7,14 +7,13 @@
  */
 
 #include "llvm_stmt_gen.h"
-#include "llvm_debug.h"
 #include "llvm_basic_stmts.h"
+#include "llvm_debug.h"
 #include "llvm_for_loops.h"
 #include "llvm_pattern_matching.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 
 // Generate code for statements
 void generate_statement(LLVMBackendData *data, const ASTNode *node) {

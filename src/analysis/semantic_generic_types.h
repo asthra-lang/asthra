@@ -29,13 +29,13 @@ void semantic_init_builtin_generic_types(SemanticAnalyzer *analyzer);
 /**
  * Create Option<T> type instance with specific type parameter
  */
-TypeDescriptor *semantic_create_option_instance(SemanticAnalyzer *analyzer, TypeDescriptor *element_type);
+TypeDescriptor *semantic_create_option_instance(SemanticAnalyzer *analyzer,
+                                                TypeDescriptor *element_type);
 
 /**
  * Create Result<T, E> type instance with specific type parameters
  */
-TypeDescriptor *semantic_create_result_instance(SemanticAnalyzer *analyzer, 
-                                                TypeDescriptor *ok_type, 
+TypeDescriptor *semantic_create_result_instance(SemanticAnalyzer *analyzer, TypeDescriptor *ok_type,
                                                 TypeDescriptor *err_type);
 
 #ifdef __cplusplus

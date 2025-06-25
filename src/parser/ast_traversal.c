@@ -10,6 +10,7 @@
  */
 
 #include "ast.h"
+#include "ast_node_refcount.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

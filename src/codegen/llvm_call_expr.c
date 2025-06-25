@@ -150,13 +150,13 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
 }
 
 // Generate code for Option.Some and Option.None function calls
-LLVMValueRef generate_option_function_call(LLVMBackendData *data, const ASTNode *node, const char *func_name) {
+LLVMValueRef generate_option_function_call(LLVMBackendData *data, const ASTNode *node,
+                                           const char *func_name) {
     if (strcmp(func_name, "Some") == 0) {
         // Option.Some(value) - create an Option struct
         if (node->data.call_expr.args && node->data.call_expr.args->count == 1) {
             // Generate the value
-            LLVMValueRef value =
-                generate_expression(data, node->data.call_expr.args->nodes[0]);
+            LLVMValueRef value = generate_expression(data, node->data.call_expr.args->nodes[0]);
             if (!value)
                 return NULL;
 
@@ -166,27 +166,23 @@ LLVMValueRef generate_option_function_call(LLVMBackendData *data, const ASTNode 
                 data->bool_type, // present flag
                 value_type       // value
             };
-            LLVMTypeRef option_type =
-                LLVMStructTypeInContext(data->context, fields, 2, 0);
+            LLVMTypeRef option_type = LLVMStructTypeInContext(data->context, fields, 2, 0);
 
             // Create the struct value
-            LLVMValueRef option_alloca =
-                LLVMBuildAlloca(data->builder, option_type, "option");
+            LLVMValueRef option_alloca = LLVMBuildAlloca(data->builder, option_type, "option");
 
             // Set present = true
-            LLVMValueRef present_ptr = LLVMBuildStructGEP2(
-                data->builder, option_type, option_alloca, 0, "present_ptr");
-            LLVMBuildStore(data->builder, LLVMConstInt(data->bool_type, 1, false),
-                           present_ptr);
+            LLVMValueRef present_ptr =
+                LLVMBuildStructGEP2(data->builder, option_type, option_alloca, 0, "present_ptr");
+            LLVMBuildStore(data->builder, LLVMConstInt(data->bool_type, 1, false), present_ptr);
 
             // Set value
-            LLVMValueRef value_ptr = LLVMBuildStructGEP2(
-                data->builder, option_type, option_alloca, 1, "value_ptr");
+            LLVMValueRef value_ptr =
+                LLVMBuildStructGEP2(data->builder, option_type, option_alloca, 1, "value_ptr");
             LLVMBuildStore(data->builder, value, value_ptr);
 
             // Load and return the struct
-            return LLVMBuildLoad2(data->builder, option_type, option_alloca,
-                                  "option_value");
+            return LLVMBuildLoad2(data->builder, option_type, option_alloca, "option_value");
         }
     } else if (strcmp(func_name, "None") == 0) {
         // Option.None - this is not a function call, just a constant
@@ -199,28 +195,23 @@ LLVMValueRef generate_option_function_call(LLVMBackendData *data, const ASTNode 
             data->bool_type, // present flag
             data->i32_type   // value (placeholder)
         };
-        LLVMTypeRef option_type =
-            LLVMStructTypeInContext(data->context, fields, 2, 0);
+        LLVMTypeRef option_type = LLVMStructTypeInContext(data->context, fields, 2, 0);
 
         // Create the struct value
-        LLVMValueRef option_alloca =
-            LLVMBuildAlloca(data->builder, option_type, "option_none");
+        LLVMValueRef option_alloca = LLVMBuildAlloca(data->builder, option_type, "option_none");
 
         // Set present = false
-        LLVMValueRef present_ptr = LLVMBuildStructGEP2(
-            data->builder, option_type, option_alloca, 0, "present_ptr");
-        LLVMBuildStore(data->builder, LLVMConstInt(data->bool_type, 0, false),
-                       present_ptr);
+        LLVMValueRef present_ptr =
+            LLVMBuildStructGEP2(data->builder, option_type, option_alloca, 0, "present_ptr");
+        LLVMBuildStore(data->builder, LLVMConstInt(data->bool_type, 0, false), present_ptr);
 
         // Value doesn't matter for None, but initialize it
-        LLVMValueRef value_ptr = LLVMBuildStructGEP2(data->builder, option_type,
-                                                     option_alloca, 1, "value_ptr");
-        LLVMBuildStore(data->builder, LLVMConstInt(data->i32_type, 0, false),
-                       value_ptr);
+        LLVMValueRef value_ptr =
+            LLVMBuildStructGEP2(data->builder, option_type, option_alloca, 1, "value_ptr");
+        LLVMBuildStore(data->builder, LLVMConstInt(data->i32_type, 0, false), value_ptr);
 
         // Load and return the struct
-        return LLVMBuildLoad2(data->builder, option_type, option_alloca,
-                              "option_none_value");
+        return LLVMBuildLoad2(data->builder, option_type, option_alloca, "option_none_value");
     }
 
     return NULL;

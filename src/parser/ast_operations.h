@@ -25,8 +25,7 @@ extern "C" {
 // AST visitor function type
 typedef void (*ASTVisitor)(ASTNode *node, void *context);
 
-// Create and destroy AST nodes
-ASTNode *ast_create_node(ASTNodeType type, SourceLocation location);
+// Destroy AST nodes
 void ast_free_node(ASTNode *node);
 
 // Alias for compatibility
@@ -48,9 +47,7 @@ const char *ast_node_type_name(ASTNodeType type);
 const char *binary_operator_name(BinaryOperator op);
 const char *unary_operator_name(UnaryOperator op);
 
-// Reference counting
-void ast_node_ref(ASTNode *node);
-void ast_node_unref(ASTNode *node);
+// Reference counting - moved to ast_node_refcount.h
 
 #ifdef __cplusplus
 }

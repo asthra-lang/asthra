@@ -14,9 +14,9 @@
 #include "semantic_analyzer_core.h"
 
 // Include modular components
-#include "semantic_primitive_types.h"
-#include "semantic_predeclared_functions.h"
 #include "semantic_generic_types.h"
+#include "semantic_predeclared_functions.h"
+#include "semantic_primitive_types.h"
 
 #ifdef __cplusplus
 extern "C" {

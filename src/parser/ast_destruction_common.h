@@ -13,6 +13,7 @@
 #define AST_DESTRUCTION_COMMON_H
 
 #include "ast.h"
+#include "ast_node_refcount.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>

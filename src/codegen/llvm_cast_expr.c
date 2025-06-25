@@ -84,8 +84,9 @@ LLVMValueRef generate_cast_expr(LLVMBackendData *data, const ASTNode *node) {
 }
 
 // Cast from integer types
-LLVMValueRef cast_from_integer(LLVMBackendData *data, const ASTNode *node, LLVMValueRef source_value,
-                              LLVMTypeRef source_type, LLVMTypeRef target_type, LLVMTypeKind target_kind) {
+LLVMValueRef cast_from_integer(LLVMBackendData *data, const ASTNode *node,
+                               LLVMValueRef source_value, LLVMTypeRef source_type,
+                               LLVMTypeRef target_type, LLVMTypeKind target_kind) {
     switch (target_kind) {
     case LLVMIntegerTypeKind: {
         unsigned source_width = LLVMGetIntTypeWidth(source_type);
@@ -121,7 +122,8 @@ LLVMValueRef cast_from_integer(LLVMBackendData *data, const ASTNode *node, LLVMV
 
 // Cast from floating point types
 LLVMValueRef cast_from_float(LLVMBackendData *data, const ASTNode *node, LLVMValueRef source_value,
-                            LLVMTypeRef source_type, LLVMTypeRef target_type, LLVMTypeKind target_kind) {
+                             LLVMTypeRef source_type, LLVMTypeRef target_type,
+                             LLVMTypeKind target_kind) {
     switch (target_kind) {
     case LLVMIntegerTypeKind:
         // Floating point to integer
@@ -144,14 +146,14 @@ LLVMValueRef cast_from_float(LLVMBackendData *data, const ASTNode *node, LLVMVal
         }
 
     default:
-        LLVM_REPORT_ERROR_PRINTF(data, node, "Unsupported cast from float to type %d",
-                                 target_kind);
+        LLVM_REPORT_ERROR_PRINTF(data, node, "Unsupported cast from float to type %d", target_kind);
     }
 }
 
 // Cast from pointer types
-LLVMValueRef cast_from_pointer(LLVMBackendData *data, const ASTNode *node, LLVMValueRef source_value,
-                              LLVMTypeRef source_type, LLVMTypeRef target_type, LLVMTypeKind target_kind) {
+LLVMValueRef cast_from_pointer(LLVMBackendData *data, const ASTNode *node,
+                               LLVMValueRef source_value, LLVMTypeRef source_type,
+                               LLVMTypeRef target_type, LLVMTypeKind target_kind) {
     switch (target_kind) {
     case LLVMPointerTypeKind:
         // Pointer to pointer (bitcast)
@@ -169,7 +171,8 @@ LLVMValueRef cast_from_pointer(LLVMBackendData *data, const ASTNode *node, LLVMV
 
 // Cast from struct types
 LLVMValueRef cast_from_struct(LLVMBackendData *data, const ASTNode *node, LLVMValueRef source_value,
-                             LLVMTypeRef source_type, LLVMTypeRef target_type, LLVMTypeKind target_kind) {
+                              LLVMTypeRef source_type, LLVMTypeRef target_type,
+                              LLVMTypeKind target_kind) {
     switch (target_kind) {
     case LLVMStructTypeKind:
         // Struct to struct - only allow if they have the same layout
@@ -184,7 +187,8 @@ LLVMValueRef cast_from_struct(LLVMBackendData *data, const ASTNode *node, LLVMVa
 
 // Cast from array types
 LLVMValueRef cast_from_array(LLVMBackendData *data, const ASTNode *node, LLVMValueRef source_value,
-                            LLVMTypeRef source_type, LLVMTypeRef target_type, LLVMTypeKind target_kind) {
+                             LLVMTypeRef source_type, LLVMTypeRef target_type,
+                             LLVMTypeKind target_kind) {
     switch (target_kind) {
     case LLVMPointerTypeKind:
         // Array to pointer (decay)
@@ -196,7 +200,6 @@ LLVMValueRef cast_from_array(LLVMBackendData *data, const ASTNode *node, LLVMVal
         }
 
     default:
-        LLVM_REPORT_ERROR_PRINTF(data, node, "Unsupported cast from array to type %d",
-                                 target_kind);
+        LLVM_REPORT_ERROR_PRINTF(data, node, "Unsupported cast from array to type %d", target_kind);
     }
 }

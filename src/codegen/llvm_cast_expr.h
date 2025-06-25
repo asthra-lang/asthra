@@ -20,20 +20,25 @@ extern "C" {
 LLVMValueRef generate_cast_expr(LLVMBackendData *data, const ASTNode *node);
 
 // Helper functions for specific cast types
-LLVMValueRef cast_from_integer(LLVMBackendData *data, const ASTNode *node, LLVMValueRef source_value,
-                              LLVMTypeRef source_type, LLVMTypeRef target_type, LLVMTypeKind target_kind);
+LLVMValueRef cast_from_integer(LLVMBackendData *data, const ASTNode *node,
+                               LLVMValueRef source_value, LLVMTypeRef source_type,
+                               LLVMTypeRef target_type, LLVMTypeKind target_kind);
 
 LLVMValueRef cast_from_float(LLVMBackendData *data, const ASTNode *node, LLVMValueRef source_value,
-                            LLVMTypeRef source_type, LLVMTypeRef target_type, LLVMTypeKind target_kind);
+                             LLVMTypeRef source_type, LLVMTypeRef target_type,
+                             LLVMTypeKind target_kind);
 
-LLVMValueRef cast_from_pointer(LLVMBackendData *data, const ASTNode *node, LLVMValueRef source_value,
-                              LLVMTypeRef source_type, LLVMTypeRef target_type, LLVMTypeKind target_kind);
+LLVMValueRef cast_from_pointer(LLVMBackendData *data, const ASTNode *node,
+                               LLVMValueRef source_value, LLVMTypeRef source_type,
+                               LLVMTypeRef target_type, LLVMTypeKind target_kind);
 
 LLVMValueRef cast_from_struct(LLVMBackendData *data, const ASTNode *node, LLVMValueRef source_value,
-                             LLVMTypeRef source_type, LLVMTypeRef target_type, LLVMTypeKind target_kind);
+                              LLVMTypeRef source_type, LLVMTypeRef target_type,
+                              LLVMTypeKind target_kind);
 
 LLVMValueRef cast_from_array(LLVMBackendData *data, const ASTNode *node, LLVMValueRef source_value,
-                            LLVMTypeRef source_type, LLVMTypeRef target_type, LLVMTypeKind target_kind);
+                             LLVMTypeRef source_type, LLVMTypeRef target_type,
+                             LLVMTypeKind target_kind);
 
 #ifdef __cplusplus
 }

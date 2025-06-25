@@ -21,7 +21,8 @@ ConcurrencyIntegrationTestContext *g_concurrency_context = NULL;
  * Create concurrency test context
  */
 ConcurrencyIntegrationTestContext *concurrency_test_context_create(size_t max_threads) {
-    ConcurrencyIntegrationTestContext *context = calloc(1, sizeof(ConcurrencyIntegrationTestContext));
+    ConcurrencyIntegrationTestContext *context =
+        calloc(1, sizeof(ConcurrencyIntegrationTestContext));
     if (!context)
         return NULL;
 

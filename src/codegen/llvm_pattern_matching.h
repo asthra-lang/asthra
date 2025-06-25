@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "llvm_backend_internal.h"
 #include "../parser/ast_types.h"
+#include "llvm_backend_internal.h"
 #include <llvm-c/Core.h>
 
 #ifdef __cplusplus
@@ -25,9 +25,8 @@ extern "C" {
  * @param next_block Basic block to jump to on no match
  * @return true if pattern check was generated successfully
  */
-bool generate_pattern_check(LLVMBackendData *data, const ASTNode *pattern,
-                           LLVMValueRef value, LLVMBasicBlockRef match_block,
-                           LLVMBasicBlockRef next_block);
+bool generate_pattern_check(LLVMBackendData *data, const ASTNode *pattern, LLVMValueRef value,
+                            LLVMBasicBlockRef match_block, LLVMBasicBlockRef next_block);
 
 /**
  * Generate identifier pattern binding for matched values
@@ -37,7 +36,7 @@ bool generate_pattern_check(LLVMBackendData *data, const ASTNode *pattern,
  * @return true if binding was successful
  */
 bool generate_identifier_pattern_binding(LLVMBackendData *data, const ASTNode *pattern,
-                                        LLVMValueRef value);
+                                         LLVMValueRef value);
 
 #ifdef __cplusplus
 }

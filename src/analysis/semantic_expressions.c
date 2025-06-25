@@ -12,6 +12,7 @@
 #include "semantic_arrays.h"
 #include "semantic_binary_unary.h"
 #include "semantic_calls.h"
+#include "semantic_expression_analysis.h"
 #include "semantic_expression_utils.h"
 #include "semantic_field_access.h"
 #include "semantic_literals.h"

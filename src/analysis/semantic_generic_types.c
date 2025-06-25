@@ -230,7 +230,8 @@ void semantic_init_builtin_generic_types(SemanticAnalyzer *analyzer) {
 // TYPE INSTANTIATION
 // =============================================================================
 
-TypeDescriptor *semantic_create_option_instance(SemanticAnalyzer *analyzer, TypeDescriptor *element_type) {
+TypeDescriptor *semantic_create_option_instance(SemanticAnalyzer *analyzer,
+                                                TypeDescriptor *element_type) {
     if (!analyzer || !element_type)
         return NULL;
 
@@ -243,18 +244,18 @@ TypeDescriptor *semantic_create_option_instance(SemanticAnalyzer *analyzer, Type
     option_instance->category = TYPE_ENUM;
     option_instance->flags = (TypeFlags){0};
     option_instance->flags.is_ffi_compatible = true;
-    
+
     // Size depends on the variant and element type
     // For now, use a simple tagged union representation
     option_instance->size = sizeof(int) + element_type->size;
-    option_instance->alignment = element_type->alignment > _Alignof(int) ? 
-                                element_type->alignment : _Alignof(int);
-    
+    option_instance->alignment =
+        element_type->alignment > _Alignof(int) ? element_type->alignment : _Alignof(int);
+
     // Create name like "Option<i32>"
     char *name = malloc(strlen("Option<>") + strlen(element_type->name) + 1);
     sprintf(name, "Option<%s>", element_type->name);
     option_instance->name = name;
-    
+
     atomic_init(&option_instance->ref_count, 1);
 
     // Create variant symbol table
@@ -266,8 +267,7 @@ TypeDescriptor *semantic_create_option_instance(SemanticAnalyzer *analyzer, Type
     return option_instance;
 }
 
-TypeDescriptor *semantic_create_result_instance(SemanticAnalyzer *analyzer, 
-                                                TypeDescriptor *ok_type, 
+TypeDescriptor *semantic_create_result_instance(SemanticAnalyzer *analyzer, TypeDescriptor *ok_type,
                                                 TypeDescriptor *err_type) {
     if (!analyzer || !ok_type || !err_type)
         return NULL;
@@ -281,20 +281,20 @@ TypeDescriptor *semantic_create_result_instance(SemanticAnalyzer *analyzer,
     result_instance->category = TYPE_ENUM;
     result_instance->flags = (TypeFlags){0};
     result_instance->flags.is_ffi_compatible = true;
-    
+
     // Size depends on the larger of ok_type and err_type
     size_t max_size = ok_type->size > err_type->size ? ok_type->size : err_type->size;
     result_instance->size = sizeof(int) + max_size;
-    
-    size_t max_align = ok_type->alignment > err_type->alignment ? 
-                       ok_type->alignment : err_type->alignment;
+
+    size_t max_align =
+        ok_type->alignment > err_type->alignment ? ok_type->alignment : err_type->alignment;
     result_instance->alignment = max_align > _Alignof(int) ? max_align : _Alignof(int);
-    
+
     // Create name like "Result<i32, string>"
     char *name = malloc(strlen("Result<, >") + strlen(ok_type->name) + strlen(err_type->name) + 1);
     sprintf(name, "Result<%s, %s>", ok_type->name, err_type->name);
     result_instance->name = name;
-    
+
     atomic_init(&result_instance->ref_count, 1);
 
     // Create variant symbol table

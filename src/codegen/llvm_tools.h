@@ -66,14 +66,14 @@ typedef struct {
 // =============================================================================
 
 // Include all LLVM tool component headers
-#include "llvm_tool_detection.h"
-#include "llvm_process_execution.h"
-#include "llvm_optimization.h"
 #include "llvm_compilation.h"
-#include "llvm_linking.h"
-#include "llvm_utilities.h"
-#include "llvm_pipeline.h"
 #include "llvm_coverage.h"
+#include "llvm_linking.h"
+#include "llvm_optimization.h"
+#include "llvm_pipeline.h"
+#include "llvm_process_execution.h"
+#include "llvm_tool_detection.h"
+#include "llvm_utilities.h"
 
 #ifdef __cplusplus
 }

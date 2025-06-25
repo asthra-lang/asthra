@@ -117,9 +117,7 @@ ASTNode *ast_create_node_with_data(ASTNodeType type, SourceLocation location, AS
         const ASTNode *: ast_is_declaration_impl)(node)
 
 // Phase 2.1: Atomic reference counting operations
-ASTNode *ast_retain_node(ASTNode *node);
-void ast_release_node(ASTNode *node);
-uint32_t ast_get_ref_count(const ASTNode *node);
+// These are now in ast_node_refcount.h
 
 // =============================================================================
 // IMPLEMENTATION FUNCTIONS FOR _Generic MACROS - PHASE 2.1

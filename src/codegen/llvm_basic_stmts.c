@@ -10,8 +10,8 @@
 #include "llvm_debug.h"
 #include "llvm_expr_gen.h"
 #include "llvm_locals.h"
-#include "llvm_types.h"
 #include "llvm_pattern_matching.h"
+#include "llvm_types.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -78,10 +78,9 @@ void generate_let_statement(LLVMBackendData *data, const ASTNode *node) {
     // Generate debug info for local variable
     if (data->di_builder && data->current_debug_scope && node->location.line > 0) {
         LLVMMetadataRef di_var_type = asthra_type_to_debug_type(
-            data,
-            node->type_info
-                ? node->type_info
-                : (node->data.let_stmt.type ? node->data.let_stmt.type->type_info : NULL));
+            data, node->type_info
+                      ? node->type_info
+                      : (node->data.let_stmt.type ? node->data.let_stmt.type->type_info : NULL));
 
         if (di_var_type) {
             LLVMMetadataRef di_var = LLVMDIBuilderCreateAutoVariable(
@@ -181,8 +180,7 @@ void generate_if_statement(LLVMBackendData *data, const ASTNode *node) {
     LLVMValueRef function = data->current_function;
     LLVMBasicBlockRef then_bb = LLVMAppendBasicBlockInContext(data->context, function, "then");
     LLVMBasicBlockRef else_bb = NULL;
-    LLVMBasicBlockRef merge_bb =
-        LLVMAppendBasicBlockInContext(data->context, function, "ifcont");
+    LLVMBasicBlockRef merge_bb = LLVMAppendBasicBlockInContext(data->context, function, "ifcont");
 
     if (node->data.if_stmt.else_block) {
         else_bb = LLVMAppendBasicBlockInContext(data->context, function, "else");
@@ -324,9 +322,8 @@ void generate_match_statement(LLVMBackendData *data, const ASTNode *node) {
                 // Convert guard to boolean if needed
                 if (LLVMGetTypeKind(LLVMTypeOf(guard_value)) != LLVMIntegerTypeKind ||
                     LLVMGetIntTypeWidth(LLVMTypeOf(guard_value)) != 1) {
-                    guard_value =
-                        LLVMBuildICmp(data->builder, LLVMIntNE, guard_value,
-                                      LLVMConstNull(LLVMTypeOf(guard_value)), "guard");
+                    guard_value = LLVMBuildICmp(data->builder, LLVMIntNE, guard_value,
+                                                LLVMConstNull(LLVMTypeOf(guard_value)), "guard");
                 }
 
                 // Create blocks for guard check

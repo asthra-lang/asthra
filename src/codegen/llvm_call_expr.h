@@ -20,7 +20,8 @@ extern "C" {
 LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node);
 
 // Helper for Option.Some/None function calls
-LLVMValueRef generate_option_function_call(LLVMBackendData *data, const ASTNode *node, const char *func_name);
+LLVMValueRef generate_option_function_call(LLVMBackendData *data, const ASTNode *node,
+                                           const char *func_name);
 
 #ifdef __cplusplus
 }

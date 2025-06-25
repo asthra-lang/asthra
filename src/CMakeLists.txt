@@ -12,6 +12,8 @@ list(FILTER ASTHRA_COMPILER_SOURCES EXCLUDE REGEX "ai_server/.*\\.c$")
 # Exclude json_utils.c that also depends on json-c
 list(FILTER ASTHRA_COMPILER_SOURCES EXCLUDE REGEX "utils/json_utils\\.c$")
 
+# All semantic analysis files are now compiled separately - no exclusions needed
+
 # Platform-specific exclusions
 if(NOT APPLE)
     # Exclude macOS-specific Mach-O files on non-Apple platforms

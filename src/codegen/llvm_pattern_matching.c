@@ -26,9 +26,8 @@ static bool generate_wildcard_pattern_check(LLVMBackendData *data, const ASTNode
                                             LLVMBasicBlockRef next_block);
 
 // Generate pattern check - returns true if pattern check was generated successfully
-bool generate_pattern_check(LLVMBackendData *data, const ASTNode *pattern,
-                           LLVMValueRef value, LLVMBasicBlockRef match_block,
-                           LLVMBasicBlockRef next_block) {
+bool generate_pattern_check(LLVMBackendData *data, const ASTNode *pattern, LLVMValueRef value,
+                            LLVMBasicBlockRef match_block, LLVMBasicBlockRef next_block) {
     if (!data || !pattern || !value || !match_block || !next_block) {
         return false;
     }
@@ -152,7 +151,7 @@ static bool generate_wildcard_pattern_check(LLVMBackendData *data, const ASTNode
 
 // Generate identifier pattern binding
 bool generate_identifier_pattern_binding(LLVMBackendData *data, const ASTNode *pattern,
-                                        LLVMValueRef value) {
+                                         LLVMValueRef value) {
     if (!data || !pattern || !value) {
         return false;
     }
