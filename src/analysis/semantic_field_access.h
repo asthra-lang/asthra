@@ -1,8 +1,8 @@
 #ifndef SEMANTIC_FIELD_ACCESS_H
 #define SEMANTIC_FIELD_ACCESS_H
 
-#include "semantic_analyzer_core.h"
 #include "../parser/ast_types.h"
+#include "semantic_analyzer_core.h"
 
 // Field and module access analysis functions
 bool analyze_field_access(SemanticAnalyzer *analyzer, ASTNode *node);

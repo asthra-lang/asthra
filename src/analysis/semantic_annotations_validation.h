@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Annotations Validation Module
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Core validation functions for semantic annotations
  * Split from semantic_annotations.c for better modularity
  */
@@ -12,10 +12,10 @@
 #ifndef ASTHRA_SEMANTIC_ANNOTATIONS_VALIDATION_H
 #define ASTHRA_SEMANTIC_ANNOTATIONS_VALIDATION_H
 
-#include "semantic_annotations_registry.h"
-#include "semantic_core.h"
 #include "../parser/ast.h"
 #include "../parser/ast_node_list.h"
+#include "semantic_annotations_registry.h"
+#include "semantic_core.h"
 #include <stdbool.h>
 
 #ifdef __cplusplus
@@ -41,7 +41,8 @@ bool analyze_semantic_tag(SemanticAnalyzer *analyzer, ASTNode *tag_node);
  * @param target_node The node being annotated
  * @return true if context is appropriate, false otherwise
  */
-bool validate_annotation_context(SemanticAnalyzer *analyzer, const char *annotation_name, ASTNode *target_node);
+bool validate_annotation_context(SemanticAnalyzer *analyzer, const char *annotation_name,
+                                 ASTNode *target_node);
 
 /**
  * Validate annotation context with inheritance support
@@ -51,8 +52,9 @@ bool validate_annotation_context(SemanticAnalyzer *analyzer, const char *annotat
  * @param allow_inheritance Whether to allow relaxed context checking
  * @return true if context is appropriate, false otherwise
  */
-bool validate_annotation_context_with_inheritance(SemanticAnalyzer *analyzer, const char *annotation_name, 
-                                                ASTNode *target_node, bool allow_inheritance);
+bool validate_annotation_context_with_inheritance(SemanticAnalyzer *analyzer,
+                                                  const char *annotation_name, ASTNode *target_node,
+                                                  bool allow_inheritance);
 
 /**
  * Check if a node has non-deterministic annotation
@@ -93,4 +95,4 @@ bool analyze_expression_annotations(SemanticAnalyzer *analyzer, ASTNode *expr);
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_ANNOTATIONS_VALIDATION_H 
+#endif // ASTHRA_SEMANTIC_ANNOTATIONS_VALIDATION_H

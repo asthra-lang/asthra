@@ -1,17 +1,17 @@
 /**
  * Asthra Programming Language - Memory Benchmarks Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Header for comprehensive memory usage benchmarking
  */
 
 #ifndef ASTHRA_MEMORY_BENCHMARKS_H
 #define ASTHRA_MEMORY_BENCHMARKS_H
 
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {

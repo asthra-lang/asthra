@@ -31,7 +31,8 @@ extern "C" {
  * @param ... Variable arguments for message formatting
  * @return true if value is within range
  */
-bool asthra_test_assert_int_range(AsthraTestContext *context, int value, int min, int max, const char *message, ...);
+bool asthra_test_assert_int_range(AsthraTestContext *context, int value, int min, int max,
+                                  const char *message, ...);
 
 /**
  * Assert that a long value is within a specified range
@@ -43,7 +44,8 @@ bool asthra_test_assert_int_range(AsthraTestContext *context, int value, int min
  * @param ... Variable arguments for message formatting
  * @return true if value is within range
  */
-bool asthra_test_assert_long_range(AsthraTestContext *context, long value, long min, long max, const char *message, ...);
+bool asthra_test_assert_long_range(AsthraTestContext *context, long value, long min, long max,
+                                   const char *message, ...);
 
 /**
  * Assert that a size_t value is within a specified range
@@ -55,7 +57,8 @@ bool asthra_test_assert_long_range(AsthraTestContext *context, long value, long 
  * @param ... Variable arguments for message formatting
  * @return true if value is within range
  */
-bool asthra_test_assert_size_range(AsthraTestContext *context, size_t value, size_t min, size_t max, const char *message, ...);
+bool asthra_test_assert_size_range(AsthraTestContext *context, size_t value, size_t min, size_t max,
+                                   const char *message, ...);
 
 /**
  * Assert that a double value is within a specified range
@@ -67,7 +70,8 @@ bool asthra_test_assert_size_range(AsthraTestContext *context, size_t value, siz
  * @param ... Variable arguments for message formatting
  * @return true if value is within range
  */
-bool asthra_test_assert_double_range(AsthraTestContext *context, double value, double min, double max, const char *message, ...);
+bool asthra_test_assert_double_range(AsthraTestContext *context, double value, double min,
+                                     double max, const char *message, ...);
 
 /**
  * Assert that a generic value is within a specified range (pointer comparison)
@@ -79,7 +83,8 @@ bool asthra_test_assert_double_range(AsthraTestContext *context, double value, d
  * @param ... Variable arguments for message formatting
  * @return true if value is within range
  */
-bool asthra_test_assert_generic_range(AsthraTestContext *context, void *value, void *min, void *max, const char *message, ...);
+bool asthra_test_assert_generic_range(AsthraTestContext *context, void *value, void *min, void *max,
+                                      const char *message, ...);
 
 /**
  * Assert that an integer value is greater than a minimum value
@@ -90,10 +95,11 @@ bool asthra_test_assert_generic_range(AsthraTestContext *context, void *value, v
  * @param ... Variable arguments for message formatting
  * @return true if actual > min
  */
-bool asthra_test_assert_int_gt(AsthraTestContext *context, int actual, int min, const char *message, ...);
+bool asthra_test_assert_int_gt(AsthraTestContext *context, int actual, int min, const char *message,
+                               ...);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ASTHRA_TEST_ASSERTIONS_RANGE_H 
+#endif // ASTHRA_TEST_ASSERTIONS_RANGE_H

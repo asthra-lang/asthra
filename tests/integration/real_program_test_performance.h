@@ -1,9 +1,9 @@
 /**
  * Real Program Test Performance Header
- * 
+ *
  * Contains functions for performance testing, benchmarking, and
  * performance threshold validation.
- * 
+ *
  * Copyright (c) 2025 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -11,11 +11,11 @@
 #ifndef REAL_PROGRAM_TEST_PERFORMANCE_H
 #define REAL_PROGRAM_TEST_PERFORMANCE_H
 
+#include "real_program_test_data.h"
+#include "real_program_test_suite.h"
+#include "real_program_test_utils.h"
 #include <stdbool.h>
 #include <stddef.h>
-#include "real_program_test_utils.h"
-#include "real_program_test_suite.h"
-#include "real_program_test_data.h"
 
 // =============================================================================
 // PERFORMANCE STRUCTURES
@@ -39,7 +39,7 @@ typedef struct {
  * @param config Test configuration
  * @return Performance metrics
  */
-PerformanceMetrics test_large_program_parsing(size_t line_count, const TestSuiteConfig* config);
+PerformanceMetrics test_large_program_parsing(size_t line_count, const TestSuiteConfig *config);
 
 /**
  * Test parsing performance with deeply nested structures
@@ -47,7 +47,7 @@ PerformanceMetrics test_large_program_parsing(size_t line_count, const TestSuite
  * @param config Test configuration
  * @return Performance metrics
  */
-PerformanceMetrics test_deeply_nested_structures(size_t depth, const TestSuiteConfig* config);
+PerformanceMetrics test_deeply_nested_structures(size_t depth, const TestSuiteConfig *config);
 
 /**
  * Validate that a program meets performance thresholds
@@ -55,7 +55,7 @@ PerformanceMetrics test_deeply_nested_structures(size_t depth, const TestSuiteCo
  * @param threshold Performance requirements
  * @return true if thresholds are met
  */
-bool validate_performance_thresholds(const char* program, PerformanceThreshold threshold);
+bool validate_performance_thresholds(const char *program, PerformanceThreshold threshold);
 
 /**
  * Benchmark parsing speed over multiple iterations
@@ -64,7 +64,8 @@ bool validate_performance_thresholds(const char* program, PerformanceThreshold t
  * @param config Test configuration
  * @return Average performance metrics
  */
-PerformanceMetrics benchmark_parsing_speed(const char* source, size_t iterations, const TestSuiteConfig* config);
+PerformanceMetrics benchmark_parsing_speed(const char *source, size_t iterations,
+                                           const TestSuiteConfig *config);
 
 /**
  * Run a suite of performance benchmarks
@@ -73,8 +74,7 @@ PerformanceMetrics benchmark_parsing_speed(const char* source, size_t iterations
  * @param config Test configuration
  * @return true if all required benchmarks pass
  */
-bool run_performance_benchmark_suite(const PerformanceBenchmark* benchmarks, 
-                                   size_t benchmark_count, 
-                                   const TestSuiteConfig* config);
+bool run_performance_benchmark_suite(const PerformanceBenchmark *benchmarks, size_t benchmark_count,
+                                     const TestSuiteConfig *config);
 
 #endif // REAL_PROGRAM_TEST_PERFORMANCE_H

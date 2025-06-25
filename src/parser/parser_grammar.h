@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Parser grammar production function declarations
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -86,7 +86,6 @@ ASTNode *parse_postfix_suffix(Parser *parser);
 ASTNode *parse_primary(Parser *parser);
 ASTNode *parse_sizeof(Parser *parser);
 
-
 // Function calls and L-values
 ASTNode *parse_arg_list(Parser *parser);
 ASTNode *parse_lvalue(Parser *parser);
@@ -107,4 +106,4 @@ ASTNode *parse_visibility_modifier(Parser *parser);
 }
 #endif
 
-#endif // ASTHRA_PARSER_GRAMMAR_H 
+#endif // ASTHRA_PARSER_GRAMMAR_H

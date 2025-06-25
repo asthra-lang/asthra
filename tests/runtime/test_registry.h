@@ -1,9 +1,9 @@
 /**
  * Asthra Programming Language v1.2 Test Registry
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Test registry and data structures for the comprehensive test runner
  */
 
@@ -53,7 +53,7 @@ typedef struct {
  * Get the test registry array
  * @return Pointer to the test registry array
  */
-const TestRegistryEntry* get_test_registry(void);
+const TestRegistryEntry *get_test_registry(void);
 
 /**
  * Get the size of the test registry
@@ -85,4 +85,4 @@ void test_summary_add_failure(TestSummary *summary, const char *test_name, const
 }
 #endif
 
-#endif // ASTHRA_TEST_REGISTRY_H 
+#endif // ASTHRA_TEST_REGISTRY_H

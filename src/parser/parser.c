@@ -1,25 +1,25 @@
 /**
  * Asthra Programming Language Compiler
  * Main parser file - includes all parser modules
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
 
 #include "parser.h"
-#include "grammar_toplevel.h"
-#include "grammar_expressions.h"
-#include "grammar_statements.h"
-#include "grammar_patterns.h"
 #include "grammar_annotations.h"
+#include "grammar_expressions.h"
+#include "grammar_patterns.h"
+#include "grammar_statements.h"
+#include "grammar_toplevel.h"
+#include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
-#include <stdarg.h>
 
 // Forward declarations for concurrency parsing functions
-ASTNode* parse_spawn_with_handle_stmt(Parser* parser);
-ASTNode* parse_await_expr(Parser* parser);
+ASTNode *parse_spawn_with_handle_stmt(Parser *parser);
+ASTNode *parse_await_expr(Parser *parser);
 // Note: Tier 3 parser functions moved to stdlib:
 // parse_channel_decl, parse_send_stmt, parse_recv_expr, parse_select_stmt,
 // parse_select_case, parse_channel_type, parse_task_handle_type,
@@ -34,4 +34,3 @@ ASTNode* parse_await_expr(Parser* parser);
 // - parser_context.c: Context management and symbol tables
 
 // This file now serves as the main entry point and includes all modules
-

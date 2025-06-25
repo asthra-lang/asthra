@@ -1,11 +1,13 @@
 #ifndef ASTHRA_CRYPTO_H
 #define ASTHRA_CRYPTO_H
 
+#include "collections/asthra_runtime_slices.h"
+#include "core/asthra_runtime_core.h"
+#include "strings/asthra_runtime_strings.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdio.h>
-#include "core/asthra_runtime_core.h"
 
 #ifdef __cplusplus
 extern "C" {

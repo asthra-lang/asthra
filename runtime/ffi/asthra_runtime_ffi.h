@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Runtime v1.2 - FFI Module
  * Foreign Function Interface
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This module provides FFI functionality for interoperating
  * with C code and external libraries.
  */
@@ -31,4 +31,4 @@ void asthra_ffi_unregister_external(void *ptr);
 }
 #endif
 
-#endif // ASTHRA_RUNTIME_FFI_H 
+#endif // ASTHRA_RUNTIME_FFI_H

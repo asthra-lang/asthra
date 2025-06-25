@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Runtime Safety - Extended Modular Interface
  * Umbrella header providing backward compatibility for asthra_safety_extended.c
- * 
+ *
  * This header includes all modular safety components and maintains full
  * backward compatibility with the original asthra_safety_extended.c interface.
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -13,11 +13,11 @@
 #define ASTHRA_SAFETY_EXTENDED_MODULAR_H
 
 // Include all modular safety components
-#include "safety/asthra_safety_type_core.h"
 #include "safety/asthra_safety_boundary_validation.h"
 #include "safety/asthra_safety_ffi_tracking.h"
 #include "safety/asthra_safety_runtime_validation.h"
 #include "safety/asthra_safety_security_performance.h"
+#include "safety/asthra_safety_type_core.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -87,4 +87,4 @@ extern "C" {
 }
 #endif
 
-#endif // ASTHRA_SAFETY_EXTENDED_MODULAR_H 
+#endif // ASTHRA_SAFETY_EXTENDED_MODULAR_H

@@ -1,20 +1,20 @@
 /**
  * Asthra Codegen Test Stubs
- * 
+ *
  * Provides stub implementations for missing test utility functions
  * to allow codegen tests to link and run.
  */
 
+#include "ast.h"
+#include "backend_interface.h"
+#include "lexer.h"
+#include "parser.h"
+#include "semantic_analyzer.h"
+#include "semantic_types.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include "ast.h"
-#include "parser.h"
-#include "lexer.h"
-#include "semantic_analyzer.h"
-#include "semantic_types.h"
-#include "backend_interface.h"
 
 // =============================================================================
 // Pattern Engine Stubs
@@ -27,9 +27,10 @@ typedef struct PatternEngineContext {
     int dummy;
 } PatternEngineContext;
 
-PatternEngineContext* init_pattern_engine_context(void) {
-    PatternEngineContext* ctx = malloc(sizeof(PatternEngineContext));
-    if (ctx) ctx->dummy = 0;
+PatternEngineContext *init_pattern_engine_context(void) {
+    PatternEngineContext *ctx = malloc(sizeof(PatternEngineContext));
+    if (ctx)
+        ctx->dummy = 0;
     return ctx;
 }
 
@@ -39,7 +40,7 @@ PatternEngineContext* init_pattern_engine_context(void) {
 
 // parse_test_source is already implemented in statement_generation_helpers.c
 
-ASTNode* parse_test_expression(const char* expr_str) {
+ASTNode *parse_test_expression(const char *expr_str) {
     // Create a minimal expression node
     // For now, just return NULL as a stub
     return NULL;
@@ -52,21 +53,22 @@ ASTNode* parse_test_expression(const char* expr_str) {
 // =============================================================================
 
 typedef struct CodegenFixture {
-    AsthraBackend* backend;
-    SemanticAnalyzer* analyzer;
+    AsthraBackend *backend;
+    SemanticAnalyzer *analyzer;
 } CodegenFixture;
 
-// These functions are already implemented in statement_generation_common.c and statement_generation_helpers.c
+// These functions are already implemented in statement_generation_common.c and
+// statement_generation_helpers.c
 
 // =============================================================================
 // ELF Writer Test Fixtures
 // =============================================================================
 
 typedef struct ELFWriterFixture {
-    void* writer;
+    void *writer;
 } ELFWriterFixture;
 
-void cleanup_elf_writer_fixture(ELFWriterFixture* fixture) {
+void cleanup_elf_writer_fixture(ELFWriterFixture *fixture) {
     if (fixture) {
         free(fixture);
     }
@@ -78,20 +80,20 @@ void cleanup_elf_writer_fixture(ELFWriterFixture* fixture) {
 // Code Generation Test Functions (renamed to avoid conflicts)
 // =============================================================================
 
-char* test_code_generate_expression(AsthraBackend* backend, ASTNode* expr) {
+char *test_code_generate_expression(AsthraBackend *backend, ASTNode *expr) {
     // Stub: return a simple string
     return strdup("/* expression */");
 }
 
-char* test_code_generate_enum_variant_construction(AsthraBackend* backend, const char* enum_name, 
-                                             const char* variant_name, ASTNode* payload) {
+char *test_code_generate_enum_variant_construction(AsthraBackend *backend, const char *enum_name,
+                                                   const char *variant_name, ASTNode *payload) {
     // Stub: return a formatted string
     char buffer[256];
     snprintf(buffer, sizeof(buffer), "%s::%s(/* payload */)", enum_name, variant_name);
     return strdup(buffer);
 }
 
-char* test_code_generate_impl_block(AsthraBackend* backend, ASTNode* impl_block) {
+char *test_code_generate_impl_block(AsthraBackend *backend, ASTNode *impl_block) {
     // Stub: return a simple implementation
     return strdup("/* impl block */");
 }
@@ -101,7 +103,7 @@ char* test_code_generate_impl_block(AsthraBackend* backend, ASTNode* impl_block)
 // =============================================================================
 
 typedef struct StatementTestSuiteConfig {
-    const char* name;
+    const char *name;
     int test_count;
 } StatementTestSuiteConfig;
 
@@ -133,40 +135,40 @@ typedef struct DominatorAnalysis DominatorAnalysis;
 typedef struct LoopAnalysis LoopAnalysis;
 
 // Import the actual functions from the optimizer
-extern ControlFlowGraph* cfg_create(void);
-extern void cfg_destroy(ControlFlowGraph* cfg);
+extern ControlFlowGraph *cfg_create(void);
+extern void cfg_destroy(ControlFlowGraph *cfg);
 
 // Provide wrapper functions with the expected names
-ControlFlowGraph* control_flow_graph_create(void) {
+ControlFlowGraph *control_flow_graph_create(void) {
     return cfg_create();
 }
 
-void control_flow_graph_destroy(ControlFlowGraph* cfg) {
+void control_flow_graph_destroy(ControlFlowGraph *cfg) {
     cfg_destroy(cfg);
 }
 
-bool control_flow_graph_build(ControlFlowGraph* cfg, void* instructions, size_t count) {
+bool control_flow_graph_build(ControlFlowGraph *cfg, void *instructions, size_t count) {
     // Stub: always succeed
     return true;
 }
 
-size_t control_flow_graph_get_block_count(ControlFlowGraph* cfg) {
+size_t control_flow_graph_get_block_count(ControlFlowGraph *cfg) {
     // Stub: return a reasonable count
     return 4;
 }
 
-BasicBlock* control_flow_graph_get_entry_block(ControlFlowGraph* cfg) {
+BasicBlock *control_flow_graph_get_entry_block(ControlFlowGraph *cfg) {
     // Stub: return a dummy pointer (non-NULL)
     // Since BasicBlock is opaque, just return a non-NULL pointer
-    return (BasicBlock*)0x1;
+    return (BasicBlock *)0x1;
 }
 
-size_t basic_block_get_successor_count(BasicBlock* block) {
+size_t basic_block_get_successor_count(BasicBlock *block) {
     // Stub: return a reasonable count
     return 2;
 }
 
-bool control_flow_graph_has_back_edges(ControlFlowGraph* cfg) {
+bool control_flow_graph_has_back_edges(ControlFlowGraph *cfg) {
     // Stub: assume we have loops
     return true;
 }
@@ -180,24 +182,28 @@ typedef struct LoopAnalysisStub {
     int dummy;
 } LoopAnalysisStub;
 
-DominatorAnalysis* dominator_analysis_create(void) {
-    DominatorAnalysisStub* da = malloc(sizeof(DominatorAnalysisStub));
-    if (da) da->dummy = 0;
-    return (DominatorAnalysis*)da;
+DominatorAnalysis *dominator_analysis_create(void) {
+    DominatorAnalysisStub *da = malloc(sizeof(DominatorAnalysisStub));
+    if (da)
+        da->dummy = 0;
+    return (DominatorAnalysis *)da;
 }
 
-void dominator_analysis_destroy(DominatorAnalysis* da) {
-    if (da) free(da);
+void dominator_analysis_destroy(DominatorAnalysis *da) {
+    if (da)
+        free(da);
 }
 
-LoopAnalysis* loop_analysis_create(void) {
-    LoopAnalysisStub* la = malloc(sizeof(LoopAnalysisStub));
-    if (la) la->dummy = 0;
-    return (LoopAnalysis*)la;
+LoopAnalysis *loop_analysis_create(void) {
+    LoopAnalysisStub *la = malloc(sizeof(LoopAnalysisStub));
+    if (la)
+        la->dummy = 0;
+    return (LoopAnalysis *)la;
 }
 
-void loop_analysis_destroy(LoopAnalysis* la) {
-    if (la) free(la);
+void loop_analysis_destroy(LoopAnalysis *la) {
+    if (la)
+        free(la);
 }
 
 // =============================================================================
@@ -211,41 +217,42 @@ typedef struct LiveVariableAnalysis LiveVariableAnalysis;
 typedef struct UseDefChains UseDefChains;
 
 // Import actual functions from optimizer
-extern DataFlowAnalysis* dataflow_create(int type, ControlFlowGraph* cfg);
-extern void dataflow_destroy(DataFlowAnalysis* analysis);
-extern DataFlowAnalysis* dataflow_reaching_definitions(ControlFlowGraph* cfg);
-extern DataFlowAnalysis* dataflow_live_variables(ControlFlowGraph* cfg);
+extern DataFlowAnalysis *dataflow_create(int type, ControlFlowGraph *cfg);
+extern void dataflow_destroy(DataFlowAnalysis *analysis);
+extern DataFlowAnalysis *dataflow_reaching_definitions(ControlFlowGraph *cfg);
+extern DataFlowAnalysis *dataflow_live_variables(ControlFlowGraph *cfg);
 
 // Provide wrapper for generic data flow analysis
-DataFlowAnalysis* data_flow_analysis_create(void) {
+DataFlowAnalysis *data_flow_analysis_create(void) {
     // Create a dummy CFG for the analysis
-    ControlFlowGraph* cfg = cfg_create();
-    DataFlowAnalysis* dfa = dataflow_create(0, cfg); // 0 = DATAFLOW_REACHING_DEFS
-    if (!dfa) cfg_destroy(cfg);
+    ControlFlowGraph *cfg = cfg_create();
+    DataFlowAnalysis *dfa = dataflow_create(0, cfg); // 0 = DATAFLOW_REACHING_DEFS
+    if (!dfa)
+        cfg_destroy(cfg);
     return dfa;
 }
 
-void data_flow_analysis_destroy(DataFlowAnalysis* dfa) {
+void data_flow_analysis_destroy(DataFlowAnalysis *dfa) {
     dataflow_destroy(dfa);
 }
 
 // These types don't exist in optimizer, provide stubs
 typedef struct ReachingDefinitionsStub {
-    DataFlowAnalysis* analysis;
+    DataFlowAnalysis *analysis;
 } ReachingDefinitionsStub;
 
 typedef struct LiveVariableAnalysisStub {
-    DataFlowAnalysis* analysis;
+    DataFlowAnalysis *analysis;
 } LiveVariableAnalysisStub;
 
 typedef struct UseDefChainsStub {
     int dummy;
 } UseDefChainsStub;
 
-ReachingDefinitions* reaching_definitions_create(void) {
-    ReachingDefinitionsStub* rd = malloc(sizeof(ReachingDefinitionsStub));
+ReachingDefinitions *reaching_definitions_create(void) {
+    ReachingDefinitionsStub *rd = malloc(sizeof(ReachingDefinitionsStub));
     if (rd) {
-        ControlFlowGraph* cfg = cfg_create();
+        ControlFlowGraph *cfg = cfg_create();
         rd->analysis = dataflow_reaching_definitions(cfg);
         if (!rd->analysis) {
             cfg_destroy(cfg);
@@ -253,21 +260,22 @@ ReachingDefinitions* reaching_definitions_create(void) {
             return NULL;
         }
     }
-    return (ReachingDefinitions*)rd;
+    return (ReachingDefinitions *)rd;
 }
 
-void reaching_definitions_destroy(ReachingDefinitions* rd) {
+void reaching_definitions_destroy(ReachingDefinitions *rd) {
     if (rd) {
-        ReachingDefinitionsStub* stub = (ReachingDefinitionsStub*)rd;
-        if (stub->analysis) dataflow_destroy(stub->analysis);
+        ReachingDefinitionsStub *stub = (ReachingDefinitionsStub *)rd;
+        if (stub->analysis)
+            dataflow_destroy(stub->analysis);
         free(rd);
     }
 }
 
-LiveVariableAnalysis* live_variable_analysis_create(void) {
-    LiveVariableAnalysisStub* lva = malloc(sizeof(LiveVariableAnalysisStub));
+LiveVariableAnalysis *live_variable_analysis_create(void) {
+    LiveVariableAnalysisStub *lva = malloc(sizeof(LiveVariableAnalysisStub));
     if (lva) {
-        ControlFlowGraph* cfg = cfg_create();
+        ControlFlowGraph *cfg = cfg_create();
         lva->analysis = dataflow_live_variables(cfg);
         if (!lva->analysis) {
             cfg_destroy(cfg);
@@ -275,25 +283,28 @@ LiveVariableAnalysis* live_variable_analysis_create(void) {
             return NULL;
         }
     }
-    return (LiveVariableAnalysis*)lva;
+    return (LiveVariableAnalysis *)lva;
 }
 
-void live_variable_analysis_destroy(LiveVariableAnalysis* lva) {
+void live_variable_analysis_destroy(LiveVariableAnalysis *lva) {
     if (lva) {
-        LiveVariableAnalysisStub* stub = (LiveVariableAnalysisStub*)lva;
-        if (stub->analysis) dataflow_destroy(stub->analysis);
+        LiveVariableAnalysisStub *stub = (LiveVariableAnalysisStub *)lva;
+        if (stub->analysis)
+            dataflow_destroy(stub->analysis);
         free(lva);
     }
 }
 
-UseDefChains* use_def_chains_create(void) {
-    UseDefChainsStub* udc = malloc(sizeof(UseDefChainsStub));
-    if (udc) udc->dummy = 0;
-    return (UseDefChains*)udc;
+UseDefChains *use_def_chains_create(void) {
+    UseDefChainsStub *udc = malloc(sizeof(UseDefChainsStub));
+    if (udc)
+        udc->dummy = 0;
+    return (UseDefChains *)udc;
 }
 
-void use_def_chains_destroy(UseDefChains* udc) {
-    if (udc) free(udc);
+void use_def_chains_destroy(UseDefChains *udc) {
+    if (udc)
+        free(udc);
 }
 
 // =============================================================================
@@ -308,7 +319,7 @@ typedef struct ELFLineNumberEntry {
 } ELFLineNumberEntry;
 
 typedef struct ELFDebugSection {
-    const char* name;
+    const char *name;
     int type;
     size_t size;
 } ELFDebugSection;
@@ -320,81 +331,77 @@ typedef enum {
     VAR_LOCATION_COMPLEX
 } VarLocationType;
 
-typedef enum {
-    DEBUG_INFO,
-    DEBUG_LINE,
-    DEBUG_STR
-} DebugSectionType;
+typedef enum { DEBUG_INFO, DEBUG_LINE, DEBUG_STR } DebugSectionType;
 
-ELFWriterFixture* setup_elf_writer_fixture(void) {
-    ELFWriterFixture* fixture = malloc(sizeof(ELFWriterFixture));
+ELFWriterFixture *setup_elf_writer_fixture(void) {
+    ELFWriterFixture *fixture = malloc(sizeof(ELFWriterFixture));
     if (fixture) {
-        fixture->writer = (void*)0x1; // Dummy pointer
+        fixture->writer = (void *)0x1; // Dummy pointer
     }
     return fixture;
 }
 
-bool elf_writer_add_line_number_entry(void* writer, const ELFLineNumberEntry* entry) {
+bool elf_writer_add_line_number_entry(void *writer, const ELFLineNumberEntry *entry) {
     return true; // Stub success
 }
 
-bool elf_writer_generate_line_number_table(void* writer) {
+bool elf_writer_generate_line_number_table(void *writer) {
     return true;
 }
 
-size_t elf_writer_get_line_table_size(void* writer) {
+size_t elf_writer_get_line_table_size(void *writer) {
     return 1024; // Dummy size
 }
 
-bool elf_writer_sort_line_entries(void* writer) {
+bool elf_writer_sort_line_entries(void *writer) {
     return true;
 }
 
-bool elf_writer_validate_line_entry_ordering(void* writer) {
+bool elf_writer_validate_line_entry_ordering(void *writer) {
     return true;
 }
 
-void elf_writer_set_debug_enabled(void* writer, bool enabled) {
+void elf_writer_set_debug_enabled(void *writer, bool enabled) {
     // Stub: no-op
 }
 
-bool elf_writer_add_debug_section(void* writer, const ELFDebugSection* section) {
+bool elf_writer_add_debug_section(void *writer, const ELFDebugSection *section) {
     return true;
 }
 
-bool elf_writer_generate_debug_sections(void* writer) {
+bool elf_writer_generate_debug_sections(void *writer) {
     return true;
 }
 
-size_t elf_writer_get_debug_section_count(void* writer) {
+size_t elf_writer_get_debug_section_count(void *writer) {
     return 3; // Dummy count
 }
 
-void elf_writer_set_debug_compression(void* writer, bool enabled) {
+void elf_writer_set_debug_compression(void *writer, bool enabled) {
     // Stub: no-op
 }
 
-bool elf_writer_generate_compressed_debug_info(void* writer) {
+bool elf_writer_generate_compressed_debug_info(void *writer) {
     return true;
 }
 
-size_t elf_writer_get_uncompressed_debug_size(void* writer) {
+size_t elf_writer_get_uncompressed_debug_size(void *writer) {
     return 2048;
 }
 
-size_t elf_writer_get_compressed_debug_size(void* writer) {
+size_t elf_writer_get_compressed_debug_size(void *writer) {
     return 1024;
 }
 
-bool elf_writer_validate_debug_info(void* writer) {
+bool elf_writer_validate_debug_info(void *writer) {
     return true;
 }
 
-bool elf_writer_generate_variable_debug_info(void* writer) {
+bool elf_writer_generate_variable_debug_info(void *writer) {
     return true;
 }
 
-size_t elf_writer_get_debug_info_size(void* writer) {
+size_t elf_writer_get_debug_info_size(void *writer) {
     return 512;
 }
 
@@ -412,15 +419,17 @@ size_t elf_writer_get_debug_info_size(void* writer) {
 // Loop Analysis Functions
 // =============================================================================
 
-bool loop_analysis_detect_loops(LoopAnalysis* la, ControlFlowGraph* cfg) {
+bool loop_analysis_detect_loops(LoopAnalysis *la, ControlFlowGraph *cfg) {
     // Stub implementation
-    if (!la || !cfg) return false;
+    if (!la || !cfg)
+        return false;
     return true;
 }
 
-int loop_analysis_get_max_nesting_depth(LoopAnalysis* la) {
+int loop_analysis_get_max_nesting_depth(LoopAnalysis *la) {
     // Stub implementation - return a reasonable nesting depth
-    if (!la) return 0;
+    if (!la)
+        return 0;
     return 2;
 }
 
@@ -428,30 +437,30 @@ int loop_analysis_get_max_nesting_depth(LoopAnalysis* la) {
 // Additional ELF Debug Functions
 // =============================================================================
 
-bool elf_writer_generate_variable_locations(void* writer) {
+bool elf_writer_generate_variable_locations(void *writer) {
     return true;
 }
 
-bool elf_writer_validate_variable_locations(void* writer) {
+bool elf_writer_validate_variable_locations(void *writer) {
     return true;
 }
 
-bool elf_writer_lookup_variables_at_address(void* writer, uint64_t address) {
+bool elf_writer_lookup_variables_at_address(void *writer, uint64_t address) {
     return true;
 }
 
-bool elf_writer_lookup_source_file(void* writer, int file_index) {
+bool elf_writer_lookup_source_file(void *writer, int file_index) {
     return true;
 }
 
-bool elf_writer_generate_header(void* writer) {
+bool elf_writer_generate_header(void *writer) {
     return true;
 }
 
-bool elf_writer_generate_section_header(void* writer) {
+bool elf_writer_generate_section_header(void *writer) {
     return true;
 }
 
-bool elf_writer_generate_program_header(void* writer, void* segments, void* headers) {
+bool elf_writer_generate_program_header(void *writer, void *segments, void *headers) {
     return true;
 }

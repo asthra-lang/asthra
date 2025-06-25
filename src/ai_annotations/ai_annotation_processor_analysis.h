@@ -8,11 +8,16 @@ extern "C" {
 #endif
 
 // Analysis functions
-void ai_annotation_calculate_overall_confidence(AICompilationReport *report, AIAnnotationAnalysisResult *analysis);
-void ai_annotation_extract_improvement_suggestions(AICompilationReport *report, AIAnnotationAnalysisResult *analysis);
-void ai_annotation_extract_security_concerns(AICompilationReport *report, AIAnnotationAnalysisResult *analysis);
-void ai_annotation_extract_todo_items(AICompilationReport *report, AIAnnotationAnalysisResult *analysis);
-void ai_annotation_calculate_quality_scores(AICompilationReport *report, AIAnnotationAnalysisResult *analysis);
+void ai_annotation_calculate_overall_confidence(AICompilationReport *report,
+                                                AIAnnotationAnalysisResult *analysis);
+void ai_annotation_extract_improvement_suggestions(AICompilationReport *report,
+                                                   AIAnnotationAnalysisResult *analysis);
+void ai_annotation_extract_security_concerns(AICompilationReport *report,
+                                             AIAnnotationAnalysisResult *analysis);
+void ai_annotation_extract_todo_items(AICompilationReport *report,
+                                      AIAnnotationAnalysisResult *analysis);
+void ai_annotation_calculate_quality_scores(AICompilationReport *report,
+                                            AIAnnotationAnalysisResult *analysis);
 AIAnnotationMetadata *ai_annotation_generate_learning_data(AIAnnotationAnalysisResult *analysis);
 
 #ifdef __cplusplus

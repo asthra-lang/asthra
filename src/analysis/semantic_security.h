@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Security Annotation Module Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Security annotation validation (constant-time, volatile memory)
  */
 
@@ -29,7 +29,8 @@ bool semantic_check_security_annotations(SemanticAnalyzer *analyzer, ASTNodeList
 /**
  * Validate security annotation context
  */
-bool semantic_validate_security_annotation_context(SemanticAnalyzer *analyzer, ASTNode *node, SecurityType security_type);
+bool semantic_validate_security_annotation_context(SemanticAnalyzer *analyzer, ASTNode *node,
+                                                   SecurityType security_type);
 
 // =============================================================================
 // CONSTANT-TIME VALIDATION
@@ -107,4 +108,4 @@ bool semantic_has_constant_time_annotation(ASTNode *declaration);
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_SECURITY_H 
+#endif // ASTHRA_SEMANTIC_SECURITY_H

@@ -2,12 +2,12 @@
  * =============================================================================
  * GUARD EXPRESSION TEST COMMON UTILITIES
  * =============================================================================
- * 
+ *
  * This header contains shared types, macros, and utility functions used
  * across all guard expression test files.
- * 
+ *
  * Part of Phase 3.2: Advanced Pattern Matching
- * 
+ *
  * =============================================================================
  */
 
@@ -36,12 +36,12 @@ extern void init_guard_expression_compiler(void);
 extern void cleanup_guard_expression_compiler(void);
 
 // Guard compilation
-extern PatternCompilationResult* compile_patterns_with_guards(ASTNode* ast);
+extern PatternCompilationResult *compile_patterns_with_guards(ASTNode *ast);
 
 // Value creation functions (using base implementations from test_pattern_common.h)
-extern String create_string(const char* str);
-extern TupleValue create_tuple_value_extended(Value* values, size_t count);
+extern String create_string(const char *str);
+extern TupleValue create_tuple_value_extended(Value *values, size_t count);
 
 // Pattern execution with guards (using base implementation from test_pattern_common.h)
 
-#endif // TEST_GUARD_COMMON_H 
+#endif // TEST_GUARD_COMMON_H

@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * FFI Assembly Generator Test Suite - Master Runner v2.0
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Master test runner that coordinates all FFI assembly generator test modules
  */
 
@@ -26,32 +26,16 @@ typedef struct {
 } TestSuite;
 
 static TestSuite test_suites[] = {
-    {
-        "Core FFI",
-        "Core FFI call generation, parameter marshaling, and struct layouts",
-        run_ffi_core_tests
-    },
-    {
-        "Pattern Matching",
-        "Pattern matching, Result<T,E> types, and destructuring",
-        run_ffi_pattern_matching_tests
-    },
-    {
-        "String & Slice",
-        "String operations, slice operations, and conversions",
-        run_ffi_string_slice_tests
-    },
-    {
-        "Security & Concurrency",
-        "Security features, concurrency operations, and unsafe blocks",
-        run_ffi_security_concurrency_tests
-    },
-    {
-        "Optimization & Validation",
-        "Code optimization, validation, and assembly output",
-        run_ffi_optimization_tests
-    }
-};
+    {"Core FFI", "Core FFI call generation, parameter marshaling, and struct layouts",
+     run_ffi_core_tests},
+    {"Pattern Matching", "Pattern matching, Result<T,E> types, and destructuring",
+     run_ffi_pattern_matching_tests},
+    {"String & Slice", "String operations, slice operations, and conversions",
+     run_ffi_string_slice_tests},
+    {"Security & Concurrency", "Security features, concurrency operations, and unsafe blocks",
+     run_ffi_security_concurrency_tests},
+    {"Optimization & Validation", "Code optimization, validation, and assembly output",
+     run_ffi_optimization_tests}};
 
 static const size_t num_test_suites = sizeof(test_suites) / sizeof(test_suites[0]);
 
@@ -90,12 +74,8 @@ static void print_test_suites(void) {
 
 static TestOptions parse_arguments(int argc, char *argv[]) {
     TestOptions options = {
-        .run_all = true,
-        .verbose = false,
-        .stop_on_failure = false,
-        .suite_index = 0
-    };
-    
+        .run_all = true, .verbose = false, .stop_on_failure = false, .suite_index = 0};
+
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-a") == 0 || strcmp(argv[i], "--all") == 0) {
             options.run_all = true;
@@ -131,7 +111,7 @@ static TestOptions parse_arguments(int argc, char *argv[]) {
             exit(1);
         }
     }
-    
+
     return options;
 }
 
@@ -153,7 +133,7 @@ static void print_suite_header(const TestSuite *suite, size_t index) {
 static void print_suite_result(const TestSuite *suite, size_t index, int result, double duration) {
     const char *status = (result == 0) ? "PASSED" : "FAILED";
     const char *icon = (result == 0) ? "✅" : "❌";
-    
+
     printf("\n");
     printf("┌─────────────────────────────────────────────────────────────────────────────────┐\n");
     printf("│ %s Suite %zu (%s): %-53s │\n", icon, index, suite->name, status);
@@ -168,20 +148,20 @@ static int run_single_suite(const TestSuite *suite, size_t index, const TestOpti
     } else {
         printf("Running Test Suite %zu: %s...\n", index, suite->name);
     }
-    
+
     clock_t start_time = clock();
     int result = suite->run_tests();
     clock_t end_time = clock();
-    
+
     double duration = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
-    
+
     if (options->verbose) {
         print_suite_result(suite, index, result, duration);
     } else {
         const char *status = (result == 0) ? "PASSED" : "FAILED";
         printf("Test Suite %zu (%s): %s (%.3fs)\n", index, suite->name, status, duration);
     }
-    
+
     return result;
 }
 
@@ -197,32 +177,32 @@ static void print_summary(size_t suites_run, size_t suites_passed, double total_
     printf("  Success rate:  %.1f%%\n", (double)suites_passed / suites_run * 100.0);
     printf("  Total time:    %.3f seconds\n", total_duration);
     printf("\n");
-    
+
     if (suites_passed == suites_run) {
         printf("🎉 All test suites passed successfully!\n");
     } else {
         printf("❌ Some test suites failed. Please check the output above.\n");
     }
-    
+
     printf("\n");
 }
 
 int main(int argc, char *argv[]) {
     TestOptions options = parse_arguments(argc, argv);
-    
+
     print_banner();
-    
+
     size_t suites_run = 0;
     size_t suites_passed = 0;
     clock_t total_start_time = clock();
-    
+
     if (options.run_all) {
         printf("Running all %zu test suites...\n\n", num_test_suites);
-        
+
         for (size_t i = 0; i < num_test_suites; i++) {
             int result = run_single_suite(&test_suites[i], i, &options);
             suites_run++;
-            
+
             if (result == 0) {
                 suites_passed++;
             } else if (options.stop_on_failure) {
@@ -232,18 +212,19 @@ int main(int argc, char *argv[]) {
         }
     } else {
         printf("Running single test suite %zu...\n\n", options.suite_index);
-        
-        int result = run_single_suite(&test_suites[options.suite_index], options.suite_index, &options);
+
+        int result =
+            run_single_suite(&test_suites[options.suite_index], options.suite_index, &options);
         suites_run = 1;
         if (result == 0) {
             suites_passed = 1;
         }
     }
-    
+
     clock_t total_end_time = clock();
     double total_duration = ((double)(total_end_time - total_start_time)) / CLOCKS_PER_SEC;
-    
+
     print_summary(suites_run, suites_passed, total_duration);
-    
+
     return (suites_passed == suites_run) ? 0 : 1;
-} 
+}

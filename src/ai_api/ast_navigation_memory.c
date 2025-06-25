@@ -6,8 +6,9 @@
 // =============================================================================
 
 void asthra_ai_free_code_location_array(AICodeLocation **locations, size_t count) {
-    if (!locations) return;
-    
+    if (!locations)
+        return;
+
     for (size_t i = 0; i < count; i++) {
         asthra_ai_free_code_location(locations[i]);
     }
@@ -15,8 +16,9 @@ void asthra_ai_free_code_location_array(AICodeLocation **locations, size_t count
 }
 
 void asthra_ai_free_symbol_usage_array(AISymbolUsage **usages, size_t count) {
-    if (!usages) return;
-    
+    if (!usages)
+        return;
+
     for (size_t i = 0; i < count; i++) {
         asthra_ai_free_symbol_usage(usages[i]);
     }
@@ -24,23 +26,25 @@ void asthra_ai_free_symbol_usage_array(AISymbolUsage **usages, size_t count) {
 }
 
 void asthra_ai_free_code_location(AICodeLocation *location) {
-    if (!location) return;
-    
+    if (!location)
+        return;
+
     free(location->file_path);
     free(location->context_code);
     free(location);
 }
 
 void asthra_ai_free_symbol_usage(AISymbolUsage *usage) {
-    if (!usage) return;
-    
+    if (!usage)
+        return;
+
     free(usage->symbol_name);
     free(usage->usage_type);
     free(usage->scope_name);
-    
+
     // Free the embedded location fields (not the struct itself)
     free(usage->location.file_path);
     free(usage->location.context_code);
-    
+
     free(usage);
 }

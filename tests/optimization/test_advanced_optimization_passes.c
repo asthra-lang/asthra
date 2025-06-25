@@ -1,9 +1,9 @@
 /**
  * Asthra Programming Language - Advanced Optimization Passes Test
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Placeholder test for advanced optimization passes.
  */
 

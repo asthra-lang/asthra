@@ -13,9 +13,9 @@
 #ifndef ASTHRA_STATISTICS_H
 #define ASTHRA_STATISTICS_H
 
-#include <stdint.h>
 #include <stdatomic.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <time.h>
 
@@ -91,7 +91,7 @@ typedef struct {
     AsthraGCStatistics gc;
     AsthraPerformanceStatistics performance;
     AsthraConcurrencyStatistics concurrency;
-    
+
     // System-wide counters
     atomic_uint_fast64_t system_start_time_ns;
     atomic_uint_fast64_t last_update_time_ns;
@@ -260,17 +260,17 @@ uint64_t asthra_statistics_get_time_ns(void);
 /**
  * Print formatted statistics report
  */
-void asthra_statistics_print_report(FILE* output, bool json_format);
+void asthra_statistics_print_report(FILE *output, bool json_format);
 
 /**
  * Export statistics to JSON string (caller must free)
  */
-char* asthra_statistics_export_json(void);
+char *asthra_statistics_export_json(void);
 
 /**
  * Save statistics to file
  */
-bool asthra_statistics_save_to_file(const char* filename, bool json_format);
+bool asthra_statistics_save_to_file(const char *filename, bool json_format);
 
 #ifdef __cplusplus
 }

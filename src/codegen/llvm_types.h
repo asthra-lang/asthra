@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language LLVM Type Conversion
  * Functions for converting Asthra types to LLVM types and debug types
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -9,8 +9,8 @@
 #ifndef ASTHRA_LLVM_TYPES_H
 #define ASTHRA_LLVM_TYPES_H
 
-#include "llvm_backend_internal.h"
 #include "../analysis/type_info.h"
+#include "llvm_backend_internal.h"
 
 #ifdef __cplusplus
 extern "C" {

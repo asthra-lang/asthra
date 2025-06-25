@@ -3,22 +3,23 @@
 #ifdef FAST_CHECK_USE_STUBS
 
 #include "fast_check_engine.h"
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 // =============================================================================
 // CONFIGURATION
 // =============================================================================
 
-FastCheckConfig* fast_check_config_create_default(void) {
+FastCheckConfig *fast_check_config_create_default(void) {
     FastCheckConfig *config = calloc(1, sizeof(FastCheckConfig));
-    if (!config) return NULL;
-    
+    if (!config)
+        return NULL;
+
     config->max_cache_memory_mb = 256;
     config->cache_ttl_seconds = 300;
     config->enable_dependency_tracking = true;
     config->enable_incremental_parsing = true;
-    
+
     return config;
 }
 
@@ -26,7 +27,7 @@ void fast_check_config_destroy(FastCheckConfig *config) {
     free(config);
 }
 
-FastCheckConfig* fast_check_config_create(void) {
+FastCheckConfig *fast_check_config_create(void) {
     return fast_check_config_create_default();
 }
 

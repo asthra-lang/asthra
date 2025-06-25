@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * FFI Assembly Generator Tests - Master Test Suite
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Master test suite that runs all FFI assembly generator test suites:
  * - FFI calls
  * - Pattern matching
@@ -14,14 +14,14 @@
  * - Concurrency operations
  */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <time.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <sys/wait.h>
+#include <time.h>
+#include <unistd.h>
 
 // Define test categories
 typedef enum {
@@ -41,27 +41,22 @@ typedef struct {
 
 // Global test info
 static TestInfo g_tests[TEST_COUNT] = {
-    {
-        .name = "FFI Calls",
-        .executable = "../../bin/ffi_test_ffi_assembly_calls",
-        .run = true
-    },
+    {.name = "FFI Calls", .executable = "../../bin/ffi_test_ffi_assembly_calls", .run = true},
     {
         .name = "Pattern Matching",
         .executable = "../../bin/test_ffi_assembly_patterns",
-        .run = false  // Binary doesn't exist yet
+        .run = false // Binary doesn't exist yet
     },
     {
         .name = "Strings and Slices",
         .executable = "../../bin/test_ffi_assembly_strings_slices",
-        .run = false  // Binary doesn't exist yet
+        .run = false // Binary doesn't exist yet
     },
     {
         .name = "Security and Concurrency",
         .executable = "../../bin/test_ffi_assembly_security_concurrency",
-        .run = false  // Binary doesn't exist yet
-    }
-};
+        .run = false // Binary doesn't exist yet
+    }};
 
 // Test statistics
 static int g_total_tests = 0;
@@ -72,9 +67,9 @@ static bool run_test_suite(const TestInfo *test) {
     printf("\n========================================================\n");
     printf("Running Test Suite: %s\n", test->name);
     printf("========================================================\n");
-    
+
     pid_t pid = fork();
-    
+
     if (pid < 0) {
         // Fork failed
         fprintf(stderr, "ERROR: Failed to fork process for test suite '%s'\n", test->name);
@@ -82,7 +77,7 @@ static bool run_test_suite(const TestInfo *test) {
     } else if (pid == 0) {
         // Child process
         execl(test->executable, test->executable, NULL);
-        
+
         // If we reach here, exec failed
         fprintf(stderr, "ERROR: Failed to execute '%s'\n", test->executable);
         exit(EXIT_FAILURE);
@@ -90,10 +85,10 @@ static bool run_test_suite(const TestInfo *test) {
         // Parent process
         int status;
         waitpid(pid, &status, 0);
-        
+
         if (WIFEXITED(status)) {
             int exit_code = WEXITSTATUS(status);
-            
+
             if (exit_code == 0) {
                 printf("\n✅ Test Suite '%s' PASSED\n", test->name);
                 return true;
@@ -102,8 +97,8 @@ static bool run_test_suite(const TestInfo *test) {
                 return false;
             }
         } else if (WIFSIGNALED(status)) {
-            fprintf(stderr, "ERROR: Test suite '%s' terminated by signal %d\n", 
-                    test->name, WTERMSIG(status));
+            fprintf(stderr, "ERROR: Test suite '%s' terminated by signal %d\n", test->name,
+                    WTERMSIG(status));
             return false;
         } else {
             fprintf(stderr, "ERROR: Test suite '%s' terminated abnormally\n", test->name);
@@ -115,26 +110,26 @@ static bool run_test_suite(const TestInfo *test) {
 // Run all test suites and report results
 static void run_all_tests(void) {
     clock_t start_time = clock();
-    
+
     printf("========================================================\n");
     printf("FFI Assembly Generator - Complete Test Suite\n");
     printf("========================================================\n");
-    
+
     g_total_tests = 0;
     g_passed_tests = 0;
-    
+
     // First, check which tests can actually be run
     for (int i = 0; i < TEST_COUNT; i++) {
         if (g_tests[i].run) {
             // Check if the executable exists
             if (access(g_tests[i].executable, X_OK) != 0) {
-                printf("\n⚠️  Skipping Test Suite '%s' (executable not found: %s)\n", 
+                printf("\n⚠️  Skipping Test Suite '%s' (executable not found: %s)\n",
                        g_tests[i].name, g_tests[i].executable);
                 g_tests[i].run = false;
             }
         }
     }
-    
+
     for (int i = 0; i < TEST_COUNT; i++) {
         if (g_tests[i].run) {
             g_total_tests++;
@@ -143,18 +138,17 @@ static void run_all_tests(void) {
             }
         }
     }
-    
+
     clock_t end_time = clock();
     double elapsed_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
-    
+
     printf("\n========================================================\n");
     printf("Test Summary\n");
     printf("========================================================\n");
-    printf("Test Suites: %d/%d passed (%.1f%%)\n", 
-           g_passed_tests, g_total_tests, 
+    printf("Test Suites: %d/%d passed (%.1f%%)\n", g_passed_tests, g_total_tests,
            (g_total_tests > 0) ? ((float)g_passed_tests / g_total_tests * 100.0f) : 0.0f);
     printf("Total Execution Time: %.2f seconds\n", elapsed_time);
-    
+
     if (g_passed_tests == g_total_tests) {
         printf("\n🎉 ALL TEST SUITES PASSED!\n");
     } else {
@@ -179,7 +173,7 @@ static void parse_args(int argc, char *argv[]) {
     for (int i = 0; i < TEST_COUNT; i++) {
         g_tests[i].run = true;
     }
-    
+
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--help") == 0) {
             print_usage(argv[0]);
@@ -189,10 +183,10 @@ static void parse_args(int argc, char *argv[]) {
             for (int j = 0; j < TEST_COUNT; j++) {
                 g_tests[j].run = false;
             }
-            
+
             // Enable only the specified test
             const char *category = argv[i] + 7;
-            
+
             if (strcmp(category, "calls") == 0) {
                 g_tests[TEST_CALLS].run = true;
             } else if (strcmp(category, "patterns") == 0) {
@@ -209,7 +203,7 @@ static void parse_args(int argc, char *argv[]) {
         } else if (strncmp(argv[i], "--skip=", 7) == 0) {
             // Disable the specified test
             const char *category = argv[i] + 7;
-            
+
             if (strcmp(category, "calls") == 0) {
                 g_tests[TEST_CALLS].run = false;
             } else if (strcmp(category, "patterns") == 0) {
@@ -239,10 +233,10 @@ static void parse_args(int argc, char *argv[]) {
 int main(int argc, char *argv[]) {
     // Parse command line arguments
     parse_args(argc, argv);
-    
+
     // Run tests
     run_all_tests();
-    
+
     // Return success if all tests passed
     return (g_passed_tests == g_total_tests) ? EXIT_SUCCESS : EXIT_FAILURE;
-} 
+}

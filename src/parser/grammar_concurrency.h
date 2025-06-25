@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler - Concurrency Grammar Productions
  * Advanced concurrency parsing including channels, select, and worker pools
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -31,4 +31,4 @@ ASTNode *parse_spawn_with_handle_stmt(Parser *parser);
 }
 #endif
 
-#endif // ASTHRA_GRAMMAR_CONCURRENCY_H 
+#endif // ASTHRA_GRAMMAR_CONCURRENCY_H

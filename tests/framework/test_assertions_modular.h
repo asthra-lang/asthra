@@ -13,11 +13,11 @@
 #define ASTHRA_TEST_ASSERTIONS_MODULAR_H
 
 // Include all modular assertion components
-#include "test_assertions_common.h"
 #include "test_assertions_basic.h"
+#include "test_assertions_common.h"
+#include "test_assertions_compiler.h"
 #include "test_assertions_equality.h"
 #include "test_assertions_range.h"
-#include "test_assertions_compiler.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,15 +30,15 @@ extern "C" {
 /*
  * This header provides complete backward compatibility with the original
  * test_assertions.h interface while using the new modular architecture.
- * 
+ *
  * The modular system provides:
- * 
+ *
  * 1. test_assertions_common.{h,c} - Core assertion function and utilities
  * 2. test_assertions_basic.{h,c} - Basic type assertions (int, string, pointer)
  * 3. test_assertions_equality.{h,c} - Equality assertions with detailed error messages
  * 4. test_assertions_range.{h,c} - Range and comparison assertions
  * 5. test_assertions_compiler.{h,c} - Compiler-specific assertions (tokens, AST)
- * 
+ *
  * Benefits:
  * - Enhanced maintainability through focused modules
  * - Superior debugging with isolated functionality
@@ -53,7 +53,7 @@ extern "C" {
 
 /*
  * All functions from the original test_assertions.h are available:
- * 
+ *
  * Basic Assertions:
  * - asthra_test_assert_bool()
  * - asthra_test_assert_int()
@@ -63,7 +63,7 @@ extern "C" {
  * - asthra_test_assert_pointer()
  * - asthra_test_assert_not_null()
  * - asthra_test_assert_generic()
- * 
+ *
  * Equality Assertions:
  * - asthra_test_assert_bool_eq()
  * - asthra_test_assert_int_eq()
@@ -75,7 +75,7 @@ extern "C" {
  * - asthra_test_assert_str_eq()
  * - asthra_test_assert_ptr_eq()
  * - asthra_test_assert_ptr_ne()
- * 
+ *
  * Range Assertions:
  * - asthra_test_assert_int_range()
  * - asthra_test_assert_long_range()
@@ -83,16 +83,16 @@ extern "C" {
  * - asthra_test_assert_double_range()
  * - asthra_test_assert_generic_range()
  * - asthra_test_assert_int_gt()
- * 
+ *
  * Compiler Assertions:
  * - assert_token_equals()
  * - assert_ast_structure()
  * - tokens_equal()
  * - ast_has_structure()
- * 
+ *
  * Utilities:
  * - asthra_test_log()
- * 
+ *
  * All macros from the original header are also available:
  * - ASSERT_TOKEN_EQUALS()
  * - ASSERT_TOKEN_TYPE()
@@ -108,4 +108,4 @@ extern "C" {
 }
 #endif
 
-#endif // ASTHRA_TEST_ASSERTIONS_MODULAR_H 
+#endif // ASTHRA_TEST_ASSERTIONS_MODULAR_H

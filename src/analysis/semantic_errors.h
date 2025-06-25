@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Error Handling Module Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Error reporting, management, and utilities
  */
 
@@ -24,10 +24,8 @@ extern "C" {
 /**
  * Report a semantic error
  */
-void semantic_report_error(SemanticAnalyzer *analyzer, 
-                          SemanticErrorCode code, 
-                          SourceLocation location, 
-                          const char *format, ...);
+void semantic_report_error(SemanticAnalyzer *analyzer, SemanticErrorCode code,
+                           SourceLocation location, const char *format, ...);
 
 /**
  * Clear all errors from the analyzer
@@ -62,4 +60,4 @@ const char *semantic_error_code_description(SemanticErrorCode code);
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_ERRORS_H 
+#endif // ASTHRA_SEMANTIC_ERRORS_H

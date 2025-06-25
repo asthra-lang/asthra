@@ -11,9 +11,9 @@
 #define ASTHRA_TEST_COMPREHENSIVE_CORE_H
 
 #include "../framework/test_framework.h"
-#include <stdint.h>
-#include <stdbool.h>
 #include <stdatomic.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -120,13 +120,14 @@ typedef struct {
 // =============================================================================
 
 // Context management
-AsthraExtendedTestContext* asthra_test_context_create_extended(const AsthraExtendedTestMetadata *metadata);
+AsthraExtendedTestContext *
+asthra_test_context_create_extended(const AsthraExtendedTestMetadata *metadata);
 void asthra_test_context_destroy_extended(AsthraExtendedTestContext *ctx);
 void asthra_test_context_reset_extended(AsthraExtendedTestContext *ctx);
 
 // Global statistics management
 void asthra_set_global_stats(AsthraTestStatistics *stats);
-AsthraTestStatistics* asthra_get_global_stats(void);
+AsthraTestStatistics *asthra_get_global_stats(void);
 
 // =============================================================================
 // BACKWARD COMPATIBILITY ALIASES
@@ -178,4 +179,4 @@ typedef AsthraExtendedTestContext AsthraV12TestContext;
 }
 #endif
 
-#endif // ASTHRA_TEST_COMPREHENSIVE_CORE_H 
+#endif // ASTHRA_TEST_COMPREHENSIVE_CORE_H

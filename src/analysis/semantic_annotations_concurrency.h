@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Annotations Concurrency Module
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Tier 1/2 concurrency annotation handling for semantic annotations
  * Split from semantic_annotations.c for better modularity
  */
@@ -12,9 +12,9 @@
 #ifndef ASTHRA_SEMANTIC_ANNOTATIONS_CONCURRENCY_H
 #define ASTHRA_SEMANTIC_ANNOTATIONS_CONCURRENCY_H
 
+#include "../parser/ast.h"
 #include "semantic_annotations_registry.h"
 #include "semantic_core.h"
-#include "../parser/ast.h"
 #include <stdbool.h>
 
 #ifdef __cplusplus
@@ -32,7 +32,8 @@ extern "C" {
  * @param target_node The AST node that is annotated (function, statement, etc.)
  * @return true if the annotation is valid and properly applied, false otherwise
  */
-bool validate_non_deterministic_annotation(SemanticAnalyzer *analyzer, ASTNode *tag_node, ASTNode *target_node);
+bool validate_non_deterministic_annotation(SemanticAnalyzer *analyzer, ASTNode *tag_node,
+                                           ASTNode *target_node);
 
 /**
  * Check if a node requires non-deterministic annotation
@@ -62,4 +63,4 @@ bool analyze_tier1_concurrency_feature(SemanticAnalyzer *analyzer, ASTNode *node
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_ANNOTATIONS_CONCURRENCY_H 
+#endif // ASTHRA_SEMANTIC_ANNOTATIONS_CONCURRENCY_H

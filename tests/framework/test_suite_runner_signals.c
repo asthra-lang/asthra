@@ -1,8 +1,8 @@
 /**
  * Test Suite Runner - Signal Handling
- * 
+ *
  * Signal handling functionality for test suite runner.
- * 
+ *
  * Copyright (c) 2025 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -10,7 +10,7 @@
 #include "test_suite_runner_common.h"
 
 // Global runner instance for signal handling
-AsthraTestRunner* g_runner = NULL;
+AsthraTestRunner *g_runner = NULL;
 
 // =============================================================================
 // SIGNAL HANDLING

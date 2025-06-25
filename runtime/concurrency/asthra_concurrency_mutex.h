@@ -1,7 +1,7 @@
 /**
  * Asthra Concurrency Thread Management - Mutex Operations Module
  * Mutex creation, locking, and management primitives
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -25,37 +25,37 @@ extern "C" {
  * @param recursive Whether to create a recursive mutex
  * @return Mutex handle or NULL on failure
  */
-AsthraConcurrencyMutex* Asthra_mutex_create(const char* name, bool recursive);
+AsthraConcurrencyMutex *Asthra_mutex_create(const char *name, bool recursive);
 
 /**
  * Lock a mutex (blocks if already locked)
  * @param mutex Mutex to lock
  * @return Success result or error details
  */
-AsthraResult Asthra_mutex_lock(AsthraConcurrencyMutex* mutex);
+AsthraResult Asthra_mutex_lock(AsthraConcurrencyMutex *mutex);
 
 /**
  * Try to lock a mutex (non-blocking)
  * @param mutex Mutex to try to lock
  * @return Success result or timeout error
  */
-AsthraResult Asthra_mutex_trylock(AsthraConcurrencyMutex* mutex);
+AsthraResult Asthra_mutex_trylock(AsthraConcurrencyMutex *mutex);
 
 /**
  * Unlock a mutex
  * @param mutex Mutex to unlock
  * @return Success result or error details
  */
-AsthraResult Asthra_mutex_unlock(AsthraConcurrencyMutex* mutex);
+AsthraResult Asthra_mutex_unlock(AsthraConcurrencyMutex *mutex);
 
 /**
  * Destroy a mutex and free resources
  * @param mutex Mutex to destroy
  */
-void Asthra_mutex_destroy(AsthraConcurrencyMutex* mutex);
+void Asthra_mutex_destroy(AsthraConcurrencyMutex *mutex);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ASTHRA_CONCURRENCY_MUTEX_H 
+#endif // ASTHRA_CONCURRENCY_MUTEX_H

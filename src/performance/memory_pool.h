@@ -1,10 +1,10 @@
 #ifndef ASTHRA_MEMORY_POOL_H
 #define ASTHRA_MEMORY_POOL_H
 
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
 #include <stdatomic.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -16,15 +16,15 @@ extern "C" {
 
 // C17 Feature Detection for Memory Optimization
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201710L
-    #define ASTHRA_MEMORY_POOL_HAS_C17 1
-    #define ASTHRA_MEMORY_POOL_ALIGNAS(x) _Alignas(x)
-    #define ASTHRA_MEMORY_POOL_STATIC_ASSERT(cond, msg) _Static_assert(cond, msg)
-    #define ASTHRA_MEMORY_POOL_THREAD_LOCAL _Thread_local
+#define ASTHRA_MEMORY_POOL_HAS_C17 1
+#define ASTHRA_MEMORY_POOL_ALIGNAS(x) _Alignas(x)
+#define ASTHRA_MEMORY_POOL_STATIC_ASSERT(cond, msg) _Static_assert(cond, msg)
+#define ASTHRA_MEMORY_POOL_THREAD_LOCAL _Thread_local
 #else
-    #define ASTHRA_MEMORY_POOL_HAS_C17 0
-    #define ASTHRA_MEMORY_POOL_ALIGNAS(x)
-    #define ASTHRA_MEMORY_POOL_STATIC_ASSERT(cond, msg)
-    #define ASTHRA_MEMORY_POOL_THREAD_LOCAL
+#define ASTHRA_MEMORY_POOL_HAS_C17 0
+#define ASTHRA_MEMORY_POOL_ALIGNAS(x)
+#define ASTHRA_MEMORY_POOL_STATIC_ASSERT(cond, msg)
+#define ASTHRA_MEMORY_POOL_THREAD_LOCAL
 #endif
 
 // Memory alignment constants
@@ -44,27 +44,27 @@ extern "C" {
 
 // Pool allocation strategy
 typedef enum {
-    ASTHRA_POOL_STRATEGY_FIXED_SIZE,     // Fixed-size blocks
-    ASTHRA_POOL_STRATEGY_POWER_OF_TWO,   // Power-of-two sized blocks
-    ASTHRA_POOL_STRATEGY_BUDDY_SYSTEM,   // Buddy allocation system
-    ASTHRA_POOL_STRATEGY_SLAB,           // Slab allocator
-    ASTHRA_POOL_STRATEGY_STACK           // Stack allocator
+    ASTHRA_POOL_STRATEGY_FIXED_SIZE,   // Fixed-size blocks
+    ASTHRA_POOL_STRATEGY_POWER_OF_TWO, // Power-of-two sized blocks
+    ASTHRA_POOL_STRATEGY_BUDDY_SYSTEM, // Buddy allocation system
+    ASTHRA_POOL_STRATEGY_SLAB,         // Slab allocator
+    ASTHRA_POOL_STRATEGY_STACK         // Stack allocator
 } AsthraPoolStrategy;
 
 // Pool memory layout optimization
 typedef enum {
-    ASTHRA_POOL_LAYOUT_AOS,              // Array of Structures
-    ASTHRA_POOL_LAYOUT_SOA,              // Structure of Arrays
-    ASTHRA_POOL_LAYOUT_AOSOA,            // Array of Structures of Arrays
-    ASTHRA_POOL_LAYOUT_CACHE_FRIENDLY    // Cache-line optimized
+    ASTHRA_POOL_LAYOUT_AOS,           // Array of Structures
+    ASTHRA_POOL_LAYOUT_SOA,           // Structure of Arrays
+    ASTHRA_POOL_LAYOUT_AOSOA,         // Array of Structures of Arrays
+    ASTHRA_POOL_LAYOUT_CACHE_FRIENDLY // Cache-line optimized
 } AsthraPoolLayout;
 
 // Pool thread safety mode
 typedef enum {
-    ASTHRA_POOL_THREAD_UNSAFE,           // No thread safety
-    ASTHRA_POOL_THREAD_LOCAL,            // Thread-local pools
-    ASTHRA_POOL_THREAD_SAFE_ATOMIC,      // Atomic operations
-    ASTHRA_POOL_THREAD_SAFE_LOCK_FREE    // Lock-free implementation
+    ASTHRA_POOL_THREAD_UNSAFE,        // No thread safety
+    ASTHRA_POOL_THREAD_LOCAL,         // Thread-local pools
+    ASTHRA_POOL_THREAD_SAFE_ATOMIC,   // Atomic operations
+    ASTHRA_POOL_THREAD_SAFE_LOCK_FREE // Lock-free implementation
 } AsthraPoolThreadSafety;
 
 // Pool statistics for performance monitoring
@@ -178,18 +178,14 @@ typedef struct {
 // =============================================================================
 
 // Create and destroy fixed-size pools
-AsthraFixedSizePool* asthra_fixed_pool_create(
-    const char *name,
-    size_t block_size,
-    size_t block_count,
-    size_t alignment,
-    AsthraPoolThreadSafety thread_safety
-);
+AsthraFixedSizePool *asthra_fixed_pool_create(const char *name, size_t block_size,
+                                              size_t block_count, size_t alignment,
+                                              AsthraPoolThreadSafety thread_safety);
 
 void asthra_fixed_pool_destroy(AsthraFixedSizePool *pool);
 
 // Allocation and deallocation
-void* asthra_fixed_pool_alloc(AsthraFixedSizePool *pool);
+void *asthra_fixed_pool_alloc(AsthraFixedSizePool *pool);
 bool asthra_fixed_pool_free(AsthraFixedSizePool *pool, void *ptr);
 
 // Pool management
@@ -202,17 +198,14 @@ bool asthra_fixed_pool_validate(const AsthraFixedSizePool *pool);
 // =============================================================================
 
 // Create and destroy stack allocators
-AsthraStackAllocator* asthra_stack_allocator_create(
-    const char *name,
-    size_t total_size,
-    size_t alignment
-);
+AsthraStackAllocator *asthra_stack_allocator_create(const char *name, size_t total_size,
+                                                    size_t alignment);
 
 void asthra_stack_allocator_destroy(AsthraStackAllocator *allocator);
 
 // Allocation operations
-void* asthra_stack_alloc(AsthraStackAllocator *allocator, size_t size);
-void* asthra_stack_alloc_aligned(AsthraStackAllocator *allocator, size_t size, size_t alignment);
+void *asthra_stack_alloc(AsthraStackAllocator *allocator, size_t size);
+void *asthra_stack_alloc_aligned(AsthraStackAllocator *allocator, size_t size, size_t alignment);
 
 // Checkpoint operations for bulk deallocation
 typedef struct {
@@ -229,12 +222,8 @@ void asthra_stack_reset(AsthraStackAllocator *allocator);
 // =============================================================================
 
 // Create and destroy ring buffers
-AsthraRingBuffer* asthra_ring_buffer_create(
-    const char *name,
-    size_t buffer_size,
-    size_t alignment,
-    bool allow_overwrite
-);
+AsthraRingBuffer *asthra_ring_buffer_create(const char *name, size_t buffer_size, size_t alignment,
+                                            bool allow_overwrite);
 
 void asthra_ring_buffer_destroy(AsthraRingBuffer *buffer);
 
@@ -257,17 +246,13 @@ bool asthra_ring_buffer_is_full(const AsthraRingBuffer *buffer);
 // =============================================================================
 
 // Create and destroy slab allocators
-AsthraSlabAllocator* asthra_slab_allocator_create(
-    const char *name,
-    size_t object_size,
-    size_t objects_per_slab,
-    size_t alignment
-);
+AsthraSlabAllocator *asthra_slab_allocator_create(const char *name, size_t object_size,
+                                                  size_t objects_per_slab, size_t alignment);
 
 void asthra_slab_allocator_destroy(AsthraSlabAllocator *allocator);
 
 // Allocation operations
-void* asthra_slab_alloc(AsthraSlabAllocator *allocator);
+void *asthra_slab_alloc(AsthraSlabAllocator *allocator);
 bool asthra_slab_free(AsthraSlabAllocator *allocator, void *ptr);
 
 // Slab management
@@ -279,37 +264,25 @@ void asthra_slab_allocator_shrink(AsthraSlabAllocator *allocator);
 // =============================================================================
 
 // Global pool manager
-AsthraMemoryPoolManager* asthra_pool_manager_create(size_t max_pools);
+AsthraMemoryPoolManager *asthra_pool_manager_create(size_t max_pools);
 void asthra_pool_manager_destroy(AsthraMemoryPoolManager *manager);
 
 // Pool registration
-bool asthra_pool_manager_register_fixed_pool(
-    AsthraMemoryPoolManager *manager,
-    AsthraFixedSizePool *pool
-);
+bool asthra_pool_manager_register_fixed_pool(AsthraMemoryPoolManager *manager,
+                                             AsthraFixedSizePool *pool);
 
-bool asthra_pool_manager_register_stack_allocator(
-    AsthraMemoryPoolManager *manager,
-    AsthraStackAllocator *allocator
-);
+bool asthra_pool_manager_register_stack_allocator(AsthraMemoryPoolManager *manager,
+                                                  AsthraStackAllocator *allocator);
 
-bool asthra_pool_manager_register_ring_buffer(
-    AsthraMemoryPoolManager *manager,
-    AsthraRingBuffer *buffer
-);
+bool asthra_pool_manager_register_ring_buffer(AsthraMemoryPoolManager *manager,
+                                              AsthraRingBuffer *buffer);
 
-bool asthra_pool_manager_register_slab_allocator(
-    AsthraMemoryPoolManager *manager,
-    AsthraSlabAllocator *allocator
-);
+bool asthra_pool_manager_register_slab_allocator(AsthraMemoryPoolManager *manager,
+                                                 AsthraSlabAllocator *allocator);
 
 // Global allocation interface
-void* asthra_pool_manager_alloc(
-    AsthraMemoryPoolManager *manager,
-    size_t size,
-    size_t alignment,
-    AsthraPoolStrategy strategy
-);
+void *asthra_pool_manager_alloc(AsthraMemoryPoolManager *manager, size_t size, size_t alignment,
+                                AsthraPoolStrategy strategy);
 
 bool asthra_pool_manager_free(AsthraMemoryPoolManager *manager, void *ptr);
 
@@ -319,33 +292,55 @@ bool asthra_pool_manager_free(AsthraMemoryPoolManager *manager, void *ptr);
 
 // Memory prefetching hints
 static inline void asthra_prefetch_read(const void *addr, int locality) {
-    #if defined(__GNUC__) || defined(__clang__)
-        // Locality must be a constant integer (0-3)
-        switch (locality) {
-            case 0: __builtin_prefetch(addr, 0, 0); break;
-            case 1: __builtin_prefetch(addr, 0, 1); break;
-            case 2: __builtin_prefetch(addr, 0, 2); break;
-            case 3: __builtin_prefetch(addr, 0, 3); break;
-            default: __builtin_prefetch(addr, 0, 3); break;
-        }
-    #else
-        (void)addr; (void)locality;
-    #endif
+#if defined(__GNUC__) || defined(__clang__)
+    // Locality must be a constant integer (0-3)
+    switch (locality) {
+    case 0:
+        __builtin_prefetch(addr, 0, 0);
+        break;
+    case 1:
+        __builtin_prefetch(addr, 0, 1);
+        break;
+    case 2:
+        __builtin_prefetch(addr, 0, 2);
+        break;
+    case 3:
+        __builtin_prefetch(addr, 0, 3);
+        break;
+    default:
+        __builtin_prefetch(addr, 0, 3);
+        break;
+    }
+#else
+    (void)addr;
+    (void)locality;
+#endif
 }
 
 static inline void asthra_prefetch_write(const void *addr, int locality) {
-    #if defined(__GNUC__) || defined(__clang__)
-        // Locality must be a constant integer (0-3)
-        switch (locality) {
-            case 0: __builtin_prefetch(addr, 1, 0); break;
-            case 1: __builtin_prefetch(addr, 1, 1); break;
-            case 2: __builtin_prefetch(addr, 1, 2); break;
-            case 3: __builtin_prefetch(addr, 1, 3); break;
-            default: __builtin_prefetch(addr, 1, 3); break;
-        }
-    #else
-        (void)addr; (void)locality;
-    #endif
+#if defined(__GNUC__) || defined(__clang__)
+    // Locality must be a constant integer (0-3)
+    switch (locality) {
+    case 0:
+        __builtin_prefetch(addr, 1, 0);
+        break;
+    case 1:
+        __builtin_prefetch(addr, 1, 1);
+        break;
+    case 2:
+        __builtin_prefetch(addr, 1, 2);
+        break;
+    case 3:
+        __builtin_prefetch(addr, 1, 3);
+        break;
+    default:
+        __builtin_prefetch(addr, 1, 3);
+        break;
+    }
+#else
+    (void)addr;
+    (void)locality;
+#endif
 }
 
 // Cache-friendly memory operations
@@ -363,10 +358,7 @@ bool asthra_is_aligned(const void *ptr, size_t alignment);
 
 // Statistics collection
 void asthra_pool_statistics_reset(AsthraPoolStatistics *stats);
-void asthra_pool_statistics_merge(
-    AsthraPoolStatistics *dest,
-    const AsthraPoolStatistics *src
-);
+void asthra_pool_statistics_merge(AsthraPoolStatistics *dest, const AsthraPoolStatistics *src);
 
 // Performance monitoring
 typedef struct {
@@ -377,9 +369,7 @@ typedef struct {
     double cache_hit_ratio;
 } AsthraPoolPerformanceMetrics;
 
-AsthraPoolPerformanceMetrics asthra_pool_get_performance_metrics(
-    const AsthraPoolStatistics *stats
-);
+AsthraPoolPerformanceMetrics asthra_pool_get_performance_metrics(const AsthraPoolStatistics *stats);
 
 // Reporting
 void asthra_pool_print_statistics(const AsthraPoolStatistics *stats, const char *pool_name);
@@ -390,28 +380,20 @@ void asthra_pool_manager_print_summary(const AsthraMemoryPoolManager *manager);
 // =============================================================================
 
 // Ensure proper alignment for performance-critical structures
-ASTHRA_MEMORY_POOL_STATIC_ASSERT(
-    sizeof(AsthraPoolStatistics) >= ASTHRA_MEMORY_POOL_CACHE_LINE_SIZE,
-    "AsthraPoolStatistics should be cache-line aligned"
-);
+ASTHRA_MEMORY_POOL_STATIC_ASSERT(sizeof(AsthraPoolStatistics) >= ASTHRA_MEMORY_POOL_CACHE_LINE_SIZE,
+                                 "AsthraPoolStatistics should be cache-line aligned");
 
-ASTHRA_MEMORY_POOL_STATIC_ASSERT(
-    sizeof(AsthraFixedSizePool) >= ASTHRA_MEMORY_POOL_CACHE_LINE_SIZE,
-    "AsthraFixedSizePool should be cache-line aligned"
-);
+ASTHRA_MEMORY_POOL_STATIC_ASSERT(sizeof(AsthraFixedSizePool) >= ASTHRA_MEMORY_POOL_CACHE_LINE_SIZE,
+                                 "AsthraFixedSizePool should be cache-line aligned");
 
-ASTHRA_MEMORY_POOL_STATIC_ASSERT(
-    sizeof(AsthraStackAllocator) >= ASTHRA_MEMORY_POOL_CACHE_LINE_SIZE,
-    "AsthraStackAllocator should be cache-line aligned"
-);
+ASTHRA_MEMORY_POOL_STATIC_ASSERT(sizeof(AsthraStackAllocator) >= ASTHRA_MEMORY_POOL_CACHE_LINE_SIZE,
+                                 "AsthraStackAllocator should be cache-line aligned");
 
-ASTHRA_MEMORY_POOL_STATIC_ASSERT(
-    sizeof(AsthraRingBuffer) >= ASTHRA_MEMORY_POOL_CACHE_LINE_SIZE,
-    "AsthraRingBuffer should be cache-line aligned"
-);
+ASTHRA_MEMORY_POOL_STATIC_ASSERT(sizeof(AsthraRingBuffer) >= ASTHRA_MEMORY_POOL_CACHE_LINE_SIZE,
+                                 "AsthraRingBuffer should be cache-line aligned");
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ASTHRA_MEMORY_POOL_H 
+#endif // ASTHRA_MEMORY_POOL_H

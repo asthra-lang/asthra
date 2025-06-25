@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language v1.2 Enhanced FFI Tests
  * Header file for Enhanced FFI Test Functions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Declarations for all enhanced FFI test functions split across multiple files.
  */
 
@@ -96,4 +96,4 @@ AsthraTestResult test_ffi_c17_compliance_types(AsthraV12TestContext *ctx);
  */
 AsthraTestResult test_ffi_c17_compliance_functions(AsthraV12TestContext *ctx);
 
-#endif // TEST_FFI_ENHANCED_H 
+#endif // TEST_FFI_ENHANCED_H

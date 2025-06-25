@@ -12,8 +12,8 @@
 #ifndef ASTHRA_TEST_CONTEXT_H
 #define ASTHRA_TEST_CONTEXT_H
 
-#include "test_types.h"
 #include "test_statistics.h"
+#include "test_types.h"
 #include <stddef.h>
 
 #ifdef __cplusplus
@@ -31,11 +31,11 @@ typedef struct AsthraTestContext {
     uint64_t start_time_ns;
     uint64_t end_time_ns;
     uint64_t duration_ns;
-    const char *error_message;  // Back to const char * for string literals
-    bool error_message_allocated;  // Track if error_message was dynamically allocated
+    const char *error_message;    // Back to const char * for string literals
+    bool error_message_allocated; // Track if error_message was dynamically allocated
     size_t assertions_in_test;
     AsthraTestStatistics *global_stats;
-    void *user_data;  // NEW: For adapter pattern support
+    void *user_data; // NEW: For adapter pattern support
 } AsthraTestContext;
 
 // =============================================================================
@@ -43,8 +43,8 @@ typedef struct AsthraTestContext {
 // =============================================================================
 
 // Test context management
-AsthraTestContext* asthra_test_context_create(const AsthraTestMetadata *metadata,
-                                             AsthraTestStatistics *global_stats);
+AsthraTestContext *asthra_test_context_create(const AsthraTestMetadata *metadata,
+                                              AsthraTestStatistics *global_stats);
 void asthra_test_context_destroy(AsthraTestContext *context);
 void asthra_test_context_start(AsthraTestContext *context);
 void asthra_test_context_end(AsthraTestContext *context, AsthraTestResult result);

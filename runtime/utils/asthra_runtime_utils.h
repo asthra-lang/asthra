@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Runtime v1.2 - Utilities Module
  * Utility Functions and I/O Support
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This module provides utility functionality including
  * timing functions and I/O support.
  */
@@ -47,16 +47,16 @@ AsthraSliceHeader asthra_infinite_iterator(void);
 
 // Type-generic macros using C17 _Generic
 #if ASTHRA_HAS_C17
-#define asthra_free_typed(ptr) _Generic((ptr), \
-    AsthraString*: asthra_string_free, \
-    AsthraSliceHeader*: asthra_slice_free, \
-    AsthraResult*: asthra_result_free, \
-    default: asthra_free \
-)(ptr)
+#define asthra_free_typed(ptr)                                                                     \
+    _Generic((ptr),                                                                                \
+        AsthraString *: asthra_string_free,                                                        \
+        AsthraSliceHeader *: asthra_slice_free,                                                    \
+        AsthraResult *: asthra_result_free,                                                        \
+        default: asthra_free)(ptr)
 #endif
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ASTHRA_RUNTIME_UTILS_H 
+#endif // ASTHRA_RUNTIME_UTILS_H

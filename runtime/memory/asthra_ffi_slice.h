@@ -1,7 +1,7 @@
 /**
  * Asthra Safe C Memory Interface v1.0 - Slice Operations
  * Slice creation, management, bounds checking, and element access
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -9,9 +9,9 @@
 #ifndef ASTHRA_FFI_SLICE_H
 #define ASTHRA_FFI_SLICE_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdio.h>
 
 #include "asthra_ffi_memory_core.h"
@@ -20,7 +20,7 @@
 extern "C" {
 #endif
 
-#define ASTHRA_SLICE_MAGIC 0x534C4943  // "SLIC" in hex
+#define ASTHRA_SLICE_MAGIC 0x534C4943 // "SLIC" in hex
 
 // =============================================================================
 // SLICE TYPES AND STRUCTURES
@@ -55,9 +55,9 @@ typedef struct {
  * @param ownership Ownership transfer semantics
  * @return Initialized slice header
  */
-AsthraFFISliceHeader Asthra_slice_from_raw_parts(void* c_array_ptr, size_t len, 
-                                              size_t element_size, bool is_mutable, 
-                                              AsthraOwnershipTransfer ownership);
+AsthraFFISliceHeader Asthra_slice_from_raw_parts(void *c_array_ptr, size_t len, size_t element_size,
+                                                 bool is_mutable,
+                                                 AsthraOwnershipTransfer ownership);
 
 /**
  * Create new slice with specified capacity
@@ -67,8 +67,8 @@ AsthraFFISliceHeader Asthra_slice_from_raw_parts(void* c_array_ptr, size_t len,
  * @param zone_hint Memory zone hint for allocation
  * @return New slice header
  */
-AsthraFFISliceHeader Asthra_slice_new(size_t element_size, size_t len, size_t cap, 
-                                   AsthraMemoryZoneHint zone_hint);
+AsthraFFISliceHeader Asthra_slice_new(size_t element_size, size_t len, size_t cap,
+                                      AsthraMemoryZoneHint zone_hint);
 
 /**
  * Create subslice from existing slice
@@ -94,7 +94,7 @@ void Asthra_slice_free(AsthraFFISliceHeader slice);
  * @param slice Slice to query
  * @return Data pointer
  */
-void* Asthra_slice_get_ptr(AsthraFFISliceHeader slice);
+void *Asthra_slice_get_ptr(AsthraFFISliceHeader slice);
 
 /**
  * Get slice length
@@ -147,7 +147,8 @@ AsthraFFIResult Asthra_slice_bounds_check(AsthraFFISliceHeader slice, size_t ind
  * @param out_element Output buffer for element
  * @return Result indicating success or failure
  */
-AsthraFFIResult Asthra_slice_get_element(AsthraFFISliceHeader slice, size_t index, void* out_element);
+AsthraFFIResult Asthra_slice_get_element(AsthraFFISliceHeader slice, size_t index,
+                                         void *out_element);
 
 /**
  * Set element in slice
@@ -156,7 +157,8 @@ AsthraFFIResult Asthra_slice_get_element(AsthraFFISliceHeader slice, size_t inde
  * @param element Element data to set
  * @return Result indicating success or failure
  */
-AsthraFFIResult Asthra_slice_set_element(AsthraFFISliceHeader slice, size_t index, const void* element);
+AsthraFFIResult Asthra_slice_set_element(AsthraFFISliceHeader slice, size_t index,
+                                         const void *element);
 
 // =============================================================================
 // SECURE SLICE OPERATIONS
@@ -172,4 +174,4 @@ void Asthra_secure_zero_slice(AsthraFFISliceHeader slice_ref);
 }
 #endif
 
-#endif // ASTHRA_FFI_SLICE_H 
+#endif // ASTHRA_FFI_SLICE_H

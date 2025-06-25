@@ -14,8 +14,8 @@
 
 #include "test_comprehensive.h"
 #include "test_grammar_helpers.h"
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
 // =============================================================================
 // EXTERNAL TEST FUNCTION DECLARATIONS
@@ -53,12 +53,9 @@ AsthraTestResult test_slice_array_literal_syntax(AsthraV12TestContext *ctx);
  */
 AsthraTestResult run_grammar_disambiguation_tests(AsthraV12TestContext *ctx) {
     AsthraTestResult results[] = {
-        test_grammar_postfix_expr_disambiguation(ctx),
-        test_grammar_precedence_rules(ctx),
-        test_grammar_zero_parsing_conflicts(ctx),
-        test_grammar_semantic_tags_parsing(ctx),
-        test_grammar_ffi_annotations_parsing(ctx)
-    };
+        test_grammar_postfix_expr_disambiguation(ctx), test_grammar_precedence_rules(ctx),
+        test_grammar_zero_parsing_conflicts(ctx), test_grammar_semantic_tags_parsing(ctx),
+        test_grammar_ffi_annotations_parsing(ctx)};
 
     for (size_t i = 0; i < sizeof(results) / sizeof(results[0]); i++) {
         if (results[i] != ASTHRA_TEST_PASS) {
@@ -74,11 +71,8 @@ AsthraTestResult run_grammar_disambiguation_tests(AsthraV12TestContext *ctx) {
  */
 AsthraTestResult run_pattern_matching_syntax_tests(AsthraV12TestContext *ctx) {
     AsthraTestResult results[] = {
-        test_pattern_match_statement_syntax(ctx),
-        test_pattern_if_let_constructs(ctx),
-        test_pattern_destructuring_syntax(ctx),
-        test_pattern_result_type_syntax(ctx)
-    };
+        test_pattern_match_statement_syntax(ctx), test_pattern_if_let_constructs(ctx),
+        test_pattern_destructuring_syntax(ctx), test_pattern_result_type_syntax(ctx)};
 
     for (size_t i = 0; i < sizeof(results) / sizeof(results[0]); i++) {
         if (results[i] != ASTHRA_TEST_PASS) {
@@ -93,10 +87,8 @@ AsthraTestResult run_pattern_matching_syntax_tests(AsthraV12TestContext *ctx) {
  * Run all string operations syntax tests
  */
 AsthraTestResult run_string_operations_syntax_tests(AsthraV12TestContext *ctx) {
-    AsthraTestResult results[] = {
-        test_string_concatenation_syntax(ctx),
-        test_string_edge_case_parsing(ctx)
-    };
+    AsthraTestResult results[] = {test_string_concatenation_syntax(ctx),
+                                  test_string_edge_case_parsing(ctx)};
 
     for (size_t i = 0; i < sizeof(results) / sizeof(results[0]); i++) {
         if (results[i] != ASTHRA_TEST_PASS) {
@@ -111,11 +103,9 @@ AsthraTestResult run_string_operations_syntax_tests(AsthraV12TestContext *ctx) {
  * Run all slice syntax tests
  */
 AsthraTestResult run_slice_syntax_tests(AsthraV12TestContext *ctx) {
-    AsthraTestResult results[] = {
-        test_slice_creation_syntax(ctx),
-        test_slice_len_access_syntax(ctx),
-        test_slice_array_literal_syntax(ctx)
-    };
+    AsthraTestResult results[] = {test_slice_creation_syntax(ctx),
+                                  test_slice_len_access_syntax(ctx),
+                                  test_slice_array_literal_syntax(ctx)};
 
     for (size_t i = 0; i < sizeof(results) / sizeof(results[0]); i++) {
         if (results[i] != ASTHRA_TEST_PASS) {
@@ -160,4 +150,4 @@ AsthraTestResult run_all_grammar_tests(AsthraV12TestContext *ctx) {
 
     printf("All grammar tests passed!\n");
     return ASTHRA_TEST_PASS;
-} 
+}

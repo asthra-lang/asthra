@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Type Resolution Helpers Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Type resolution utilities and helpers
  */
 
@@ -35,4 +35,4 @@ ASTNode *create_type_node_from_descriptor(TypeDescriptor *type);
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_TYPES_RESOLUTION_H 
+#endif // ASTHRA_SEMANTIC_TYPES_RESOLUTION_H

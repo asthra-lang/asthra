@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler - Statement Grammar Productions
  * Statement parsing including control flow and declarations
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -53,4 +53,4 @@ bool is_statement_start(Parser *parser);
 }
 #endif
 
-#endif // ASTHRA_GRAMMAR_STATEMENTS_H 
+#endif // ASTHRA_GRAMMAR_STATEMENTS_H

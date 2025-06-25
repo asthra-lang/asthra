@@ -1,24 +1,25 @@
 /**
  * Asthra Programming Language
  * Code formatter tool
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
 
+#include <getopt.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <getopt.h>
-#include <stdatomic.h>
 
 #include "../runtime/asthra_runtime.h"
 #include "../src/compiler.h"
 
 // C17 feature detection and static assertions
 ASTHRA_STATIC_ASSERT(sizeof(int) >= 4, "int must be at least 32 bits for formatter");
-ASTHRA_STATIC_ASSERT(sizeof(size_t) >= sizeof(void*), "size_t must be at least as large as pointer");
+ASTHRA_STATIC_ASSERT(sizeof(size_t) >= sizeof(void *),
+                     "size_t must be at least as large as pointer");
 
 // C17 atomic counters for thread-safe statistics
 typedef struct {
@@ -40,17 +41,17 @@ typedef struct {
 } FormatterOptions;
 
 // C17 _Generic for polymorphic formatting operations
-#define format_token(token) _Generic((token), \
-    char*: format_string_token, \
-    const char*: format_string_token, \
-    int: format_integer_token, \
-    default: format_generic_token \
-)(token)
+#define format_token(token)                                                                        \
+    _Generic((token),                                                                              \
+        char *: format_string_token,                                                               \
+        const char *: format_string_token,                                                         \
+        int: format_integer_token,                                                                 \
+        default: format_generic_token)(token)
 
 // Forward declarations for _Generic dispatch
-static char* format_string_token(const char *token);
-static char* format_integer_token(int token);
-static char* format_generic_token(void *token);
+static char *format_string_token(const char *token);
+static char *format_integer_token(int token);
+static char *format_generic_token(void *token);
 
 // C17 atomic operations for thread-safe statistics
 static inline void increment_stat(_Atomic(uint64_t) *counter, uint64_t value) {
@@ -73,20 +74,18 @@ static void print_usage(const char *program_name) {
     printf("  -h, --help              Show this help message\n");
 }
 
-static FormatterStatistics* create_formatter_statistics(void) {
+static FormatterStatistics *create_formatter_statistics(void) {
     FormatterStatistics *stats = malloc(sizeof(FormatterStatistics));
     if (!stats) {
         return NULL;
     }
-    
+
     // C17 designated initializer with atomic initialization
-    *stats = (FormatterStatistics) {
-        .lines_formatted = 0,
-        .bytes_processed = 0,
-        .indentation_changes = 0,
-        .whitespace_normalized = 0
-    };
-    
+    *stats = (FormatterStatistics){.lines_formatted = 0,
+                                   .bytes_processed = 0,
+                                   .indentation_changes = 0,
+                                   .whitespace_normalized = 0};
+
     return stats;
 }
 
@@ -97,26 +96,23 @@ static void destroy_formatter_statistics(FormatterStatistics *stats) {
 static int parse_arguments(int argc, char *argv[], FormatterOptions *options) {
     // C17 designated initializer for long options
     static struct option long_options[] = {
-        {.name = "in-place",    .has_arg = no_argument,       .flag = 0, .val = 'i'},
-        {.name = "output",      .has_arg = required_argument, .flag = 0, .val = 'o'},
-        {.name = "check",       .has_arg = no_argument,       .flag = 0, .val = 'c'},
+        {.name = "in-place", .has_arg = no_argument, .flag = 0, .val = 'i'},
+        {.name = "output", .has_arg = required_argument, .flag = 0, .val = 'o'},
+        {.name = "check", .has_arg = no_argument, .flag = 0, .val = 'c'},
         {.name = "indent-size", .has_arg = required_argument, .flag = 0, .val = 's'},
-        {.name = "verbose",     .has_arg = no_argument,       .flag = 0, .val = 'v'},
-        {.name = "help",        .has_arg = no_argument,       .flag = 0, .val = 'h'},
-        {0, 0, 0, 0}
-    };
+        {.name = "verbose", .has_arg = no_argument, .flag = 0, .val = 'v'},
+        {.name = "help", .has_arg = no_argument, .flag = 0, .val = 'h'},
+        {0, 0, 0, 0}};
 
     // C17 designated initializer for default options
-    *options = (FormatterOptions) {
-        .input_file = NULL,
-        .output_file = NULL,
-        .in_place = false,
-        .verbose = false,
-        .check_only = false,
-        .indent_size = 4,
-        .stats = create_formatter_statistics()
-    };
-    
+    *options = (FormatterOptions){.input_file = NULL,
+                                  .output_file = NULL,
+                                  .in_place = false,
+                                  .verbose = false,
+                                  .check_only = false,
+                                  .indent_size = 4,
+                                  .stats = create_formatter_statistics()};
+
     if (!options->stats) {
         fprintf(stderr, "Error: Failed to create formatter statistics\n");
         return -1;
@@ -127,32 +123,32 @@ static int parse_arguments(int argc, char *argv[], FormatterOptions *options) {
 
     while ((c = getopt_long(argc, argv, "io:cs:vh", long_options, &option_index)) != -1) {
         switch (c) {
-            case 'i':
-                options->in_place = true;
-                break;
-            case 'o':
-                options->output_file = optarg;
-                break;
-            case 'c':
-                options->check_only = true;
-                break;
-            case 's':
-                options->indent_size = atoi(optarg);
-                if (options->indent_size < 1 || options->indent_size > 8) {
-                    fprintf(stderr, "Error: Invalid indent size: %s\n", optarg);
-                    return -1;
-                }
-                break;
-            case 'v':
-                options->verbose = true;
-                break;
-            case 'h':
-                print_usage(argv[0]);
-                return 1;
-            case '?':
+        case 'i':
+            options->in_place = true;
+            break;
+        case 'o':
+            options->output_file = optarg;
+            break;
+        case 'c':
+            options->check_only = true;
+            break;
+        case 's':
+            options->indent_size = atoi(optarg);
+            if (options->indent_size < 1 || options->indent_size > 8) {
+                fprintf(stderr, "Error: Invalid indent size: %s\n", optarg);
                 return -1;
-            default:
-                abort();
+            }
+            break;
+        case 'v':
+            options->verbose = true;
+            break;
+        case 'h':
+            print_usage(argv[0]);
+            return 1;
+        case '?':
+            return -1;
+        default:
+            abort();
         }
     }
 
@@ -233,9 +229,10 @@ static int write_file(const char *filename, const char *content, FormatterStatis
 }
 
 // C17 _Generic dispatch implementations
-static char* format_string_token(const char *token) {
-    if (!token) return NULL;
-    
+static char *format_string_token(const char *token) {
+    if (!token)
+        return NULL;
+
     size_t len = strlen(token);
     char *formatted = malloc(len + 1);
     if (formatted) {
@@ -244,7 +241,7 @@ static char* format_string_token(const char *token) {
     return formatted;
 }
 
-static char* format_integer_token(int token) {
+static char *format_integer_token(int token) {
     char *formatted = malloc(32); // Sufficient for int
     if (formatted) {
         snprintf(formatted, 32, "%d", token);
@@ -252,7 +249,7 @@ static char* format_integer_token(int token) {
     return formatted;
 }
 
-static char* format_generic_token(void *token) {
+static char *format_generic_token(void *token) {
     (void)token; // Suppress unused parameter warning
     return NULL; // Generic fallback
 }
@@ -265,7 +262,7 @@ typedef struct {
     bool decrease_indent;
 } FormatRule;
 
-static const FormatRule* get_format_rules(void) {
+static const FormatRule *get_format_rules(void) {
     // C17 compound literal array
     static const FormatRule rules[] = {
         {'{', " {\n", true, false},
@@ -280,7 +277,7 @@ static const FormatRule* get_format_rules(void) {
 static char *format_asthra_code(const char *input, FormatterOptions *options) {
     // This is a simplified formatter implementation
     // A full implementation would parse the AST and reformat based on syntax
-    
+
     size_t input_len = strlen(input);
     size_t output_capacity = input_len * 2; // Generous buffer
     char *output = malloc(output_capacity);
@@ -347,7 +344,7 @@ static char *format_asthra_code(const char *input, FormatterOptions *options) {
                     indent_level--;
                     indent_changes++;
                 }
-                
+
                 if (rule->replacement) {
                     size_t repl_len = strlen(rule->replacement);
                     memcpy(output + output_pos, rule->replacement, repl_len);
@@ -356,17 +353,17 @@ static char *format_asthra_code(const char *input, FormatterOptions *options) {
                 } else {
                     output[output_pos++] = c;
                 }
-                
+
                 if (rule->increase_indent) {
                     indent_level++;
                     indent_changes++;
                 }
-                
+
                 if (strchr(rule->replacement ? rule->replacement : "", '\n')) {
                     at_line_start = true;
                     lines_count++;
                 }
-                
+
                 rule_applied = true;
                 break;
             }
@@ -412,18 +409,23 @@ static char *format_asthra_code(const char *input, FormatterOptions *options) {
 }
 
 static void print_statistics(const FormatterStatistics *stats, bool verbose) {
-    if (!verbose) return;
-    
+    if (!verbose)
+        return;
+
     printf("\nFormatter Statistics:\n");
-    printf("  Lines formatted: %llu\n", (unsigned long long)get_stat((_Atomic(uint64_t)*)&stats->lines_formatted));
-    printf("  Bytes processed: %llu\n", (unsigned long long)get_stat((_Atomic(uint64_t)*)&stats->bytes_processed));
-    printf("  Indentation changes: %llu\n", (unsigned long long)get_stat((_Atomic(uint64_t)*)&stats->indentation_changes));
-    printf("  Whitespace normalized: %llu\n", (unsigned long long)get_stat((_Atomic(uint64_t)*)&stats->whitespace_normalized));
+    printf("  Lines formatted: %llu\n",
+           (unsigned long long)get_stat((_Atomic(uint64_t) *)&stats->lines_formatted));
+    printf("  Bytes processed: %llu\n",
+           (unsigned long long)get_stat((_Atomic(uint64_t) *)&stats->bytes_processed));
+    printf("  Indentation changes: %llu\n",
+           (unsigned long long)get_stat((_Atomic(uint64_t) *)&stats->indentation_changes));
+    printf("  Whitespace normalized: %llu\n",
+           (unsigned long long)get_stat((_Atomic(uint64_t) *)&stats->whitespace_normalized));
 }
 
 int main(int argc, char *argv[]) {
     FormatterOptions options;
-    
+
     // Parse command line arguments
     int parse_result = parse_arguments(argc, argv, &options);
     if (parse_result != 0) {
@@ -458,12 +460,12 @@ int main(int argc, char *argv[]) {
     if (options.check_only) {
         int is_formatted = (strcmp(input_content, formatted_content) == 0);
         if (options.verbose) {
-            printf("File %s %s formatted\n", options.input_file, 
+            printf("File %s %s formatted\n", options.input_file,
                    is_formatted ? "is already" : "needs to be");
         }
-        
+
         print_statistics(options.stats, options.verbose);
-        
+
         free(input_content);
         free(formatted_content);
         destroy_formatter_statistics(options.stats);
@@ -499,4 +501,4 @@ int main(int argc, char *argv[]) {
     destroy_formatter_statistics(options.stats);
 
     return write_result;
-} 
+}

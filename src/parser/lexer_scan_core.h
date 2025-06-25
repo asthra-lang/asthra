@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Core token scanning functions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -35,4 +35,4 @@ Token scan_identifier(Lexer *lexer);
  */
 Token scan_character(Lexer *lexer);
 
-#endif // LEXER_SCAN_CORE_H 
+#endif // LEXER_SCAN_CORE_H

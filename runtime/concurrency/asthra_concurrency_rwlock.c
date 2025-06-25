@@ -1,7 +1,7 @@
 /**
  * Asthra Concurrency Thread Management - Read-Write Lock Implementation
  * Read-write lock creation and locking primitives
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -14,12 +14,12 @@
 // READ-WRITE LOCK IMPLEMENTATION
 // =============================================================================
 
-AsthraConcurrencyRWLock* Asthra_rwlock_create(const char* name) {
+AsthraConcurrencyRWLock *Asthra_rwlock_create(const char *name) {
     AsthraConcurrencyRWLock *rwlock = malloc(sizeof(AsthraConcurrencyRWLock));
     if (!rwlock) {
         return NULL;
     }
-    
+
 #if !ASTHRA_HAS_C11_THREADS
     if (pthread_rwlock_init(&rwlock->rwlock, NULL) != 0) {
         free(rwlock);
@@ -34,7 +34,7 @@ AsthraConcurrencyRWLock* Asthra_rwlock_create(const char* name) {
         return NULL;
     }
 #endif
-    
+
     // Note: creation_time field doesn't exist in the structure
     rwlock->name = name ? strdup(name) : NULL;
     atomic_store_explicit(&rwlock->reader_count, 0, ASTHRA_MEMORY_ORDER_RELAXED);
@@ -42,16 +42,16 @@ AsthraConcurrencyRWLock* Asthra_rwlock_create(const char* name) {
     atomic_store_explicit(&rwlock->waiting_writers, 0, ASTHRA_MEMORY_ORDER_RELAXED);
     asthra_concurrency_atomic_store_counter(&rwlock->read_lock_count, 0);
     asthra_concurrency_atomic_store_counter(&rwlock->write_lock_count, 0);
-    
+
     return rwlock;
 }
 
-AsthraResult Asthra_rwlock_read_lock(AsthraConcurrencyRWLock* rwlock) {
+AsthraResult Asthra_rwlock_read_lock(AsthraConcurrencyRWLock *rwlock) {
     if (!rwlock) {
-        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_INVALID_HANDLE, 
-                                                     "Invalid read-write lock handle");
+        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_INVALID_HANDLE,
+                                                      "Invalid read-write lock handle");
     }
-    
+
 #if !ASTHRA_HAS_C11_THREADS
     int result = pthread_rwlock_rdlock(&rwlock->rwlock);
 #else
@@ -75,17 +75,17 @@ AsthraResult Asthra_rwlock_read_lock(AsthraConcurrencyRWLock* rwlock) {
             AsthraConcurrencyBridge *bridge = asthra_concurrency_get_bridge();
             asthra_concurrency_atomic_increment_counter(&bridge->stats.rwlock_contentions);
         }
-        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_SYSTEM_ERROR, 
-                                                     "Read-write lock read lock failed");
+        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_SYSTEM_ERROR,
+                                                      "Read-write lock read lock failed");
     }
 }
 
-AsthraResult Asthra_rwlock_write_lock(AsthraConcurrencyRWLock* rwlock) {
+AsthraResult Asthra_rwlock_write_lock(AsthraConcurrencyRWLock *rwlock) {
     if (!rwlock) {
-        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_INVALID_HANDLE, 
-                                                     "Invalid read-write lock handle");
+        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_INVALID_HANDLE,
+                                                      "Invalid read-write lock handle");
     }
-    
+
 #if !ASTHRA_HAS_C11_THREADS
     int result = pthread_rwlock_wrlock(&rwlock->rwlock);
 #else
@@ -112,17 +112,17 @@ AsthraResult Asthra_rwlock_write_lock(AsthraConcurrencyRWLock* rwlock) {
             AsthraConcurrencyBridge *bridge = asthra_concurrency_get_bridge();
             asthra_concurrency_atomic_increment_counter(&bridge->stats.rwlock_contentions);
         }
-        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_SYSTEM_ERROR, 
-                                                     "Read-write lock write lock failed");
+        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_SYSTEM_ERROR,
+                                                      "Read-write lock write lock failed");
     }
 }
 
-AsthraResult Asthra_rwlock_try_read_lock(AsthraConcurrencyRWLock* rwlock) {
+AsthraResult Asthra_rwlock_try_read_lock(AsthraConcurrencyRWLock *rwlock) {
     if (!rwlock) {
-        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_INVALID_HANDLE, 
-                                                     "Invalid read-write lock handle");
+        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_INVALID_HANDLE,
+                                                      "Invalid read-write lock handle");
     }
-    
+
 #if !ASTHRA_HAS_C11_THREADS
     int result = pthread_rwlock_tryrdlock(&rwlock->rwlock);
 #else
@@ -143,24 +143,25 @@ AsthraResult Asthra_rwlock_try_read_lock(AsthraConcurrencyRWLock* rwlock) {
         asthra_concurrency_atomic_increment_counter(&rwlock->read_lock_count);
         return asthra_result_ok(NULL, 0, ASTHRA_TYPE_VOID, ASTHRA_OWNERSHIP_GC);
     } else if (result == EBUSY) {
-        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_MUTEX_TIMEOUT, 
-                                                     "Read-write lock is already locked for writing");
+        return asthra_concurrency_create_error_result(
+            ASTHRA_CONCURRENCY_ERROR_MUTEX_TIMEOUT,
+            "Read-write lock is already locked for writing");
     } else {
         if (asthra_concurrency_is_initialized()) {
             AsthraConcurrencyBridge *bridge = asthra_concurrency_get_bridge();
             asthra_concurrency_atomic_increment_counter(&bridge->stats.rwlock_contentions);
         }
-        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_SYSTEM_ERROR, 
-                                                     "Read-write lock try read lock failed");
+        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_SYSTEM_ERROR,
+                                                      "Read-write lock try read lock failed");
     }
 }
 
-AsthraResult Asthra_rwlock_try_write_lock(AsthraConcurrencyRWLock* rwlock) {
+AsthraResult Asthra_rwlock_try_write_lock(AsthraConcurrencyRWLock *rwlock) {
     if (!rwlock) {
-        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_INVALID_HANDLE, 
-                                                     "Invalid read-write lock handle");
+        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_INVALID_HANDLE,
+                                                      "Invalid read-write lock handle");
     }
-    
+
 #if !ASTHRA_HAS_C11_THREADS
     int result = pthread_rwlock_trywrlock(&rwlock->rwlock);
 #else
@@ -182,24 +183,24 @@ AsthraResult Asthra_rwlock_try_write_lock(AsthraConcurrencyRWLock* rwlock) {
         asthra_concurrency_atomic_increment_counter(&rwlock->write_lock_count);
         return asthra_result_ok(NULL, 0, ASTHRA_TYPE_VOID, ASTHRA_OWNERSHIP_GC);
     } else if (result == EBUSY) {
-        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_MUTEX_TIMEOUT, 
-                                                     "Read-write lock is already locked");
+        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_MUTEX_TIMEOUT,
+                                                      "Read-write lock is already locked");
     } else {
         if (asthra_concurrency_is_initialized()) {
             AsthraConcurrencyBridge *bridge = asthra_concurrency_get_bridge();
             asthra_concurrency_atomic_increment_counter(&bridge->stats.rwlock_contentions);
         }
-        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_SYSTEM_ERROR, 
-                                                     "Read-write lock try write lock failed");
+        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_SYSTEM_ERROR,
+                                                      "Read-write lock try write lock failed");
     }
 }
 
-AsthraResult Asthra_rwlock_unlock(AsthraConcurrencyRWLock* rwlock) {
+AsthraResult Asthra_rwlock_unlock(AsthraConcurrencyRWLock *rwlock) {
     if (!rwlock) {
-        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_INVALID_HANDLE, 
-                                                     "Invalid read-write lock handle");
+        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_INVALID_HANDLE,
+                                                      "Invalid read-write lock handle");
     }
-    
+
     // Check if writer is active and reset it
     bool was_writer = atomic_load_explicit(&rwlock->writer_active, ASTHRA_MEMORY_ORDER_RELAXED);
     if (was_writer) {
@@ -208,7 +209,7 @@ AsthraResult Asthra_rwlock_unlock(AsthraConcurrencyRWLock* rwlock) {
         // Must be a reader unlock
         atomic_fetch_sub_explicit(&rwlock->reader_count, 1, ASTHRA_MEMORY_ORDER_RELAXED);
     }
-    
+
 #if !ASTHRA_HAS_C11_THREADS
     int result = pthread_rwlock_unlock(&rwlock->rwlock);
 #else
@@ -238,16 +239,16 @@ AsthraResult Asthra_rwlock_unlock(AsthraConcurrencyRWLock* rwlock) {
     if (result == 0) {
         return asthra_result_ok(NULL, 0, ASTHRA_TYPE_VOID, ASTHRA_OWNERSHIP_GC);
     } else {
-        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_SYSTEM_ERROR, 
-                                                     "Read-write lock unlock failed");
+        return asthra_concurrency_create_error_result(ASTHRA_CONCURRENCY_ERROR_SYSTEM_ERROR,
+                                                      "Read-write lock unlock failed");
     }
 }
 
-void Asthra_rwlock_destroy(AsthraConcurrencyRWLock* rwlock) {
+void Asthra_rwlock_destroy(AsthraConcurrencyRWLock *rwlock) {
     if (!rwlock) {
         return;
     }
-    
+
 #if !ASTHRA_HAS_C11_THREADS
     pthread_rwlock_destroy(&rwlock->rwlock);
 #else
@@ -255,11 +256,11 @@ void Asthra_rwlock_destroy(AsthraConcurrencyRWLock* rwlock) {
     ASTHRA_CONCURRENCY_COND_DESTROY(&rwlock->read_cond);
     ASTHRA_CONCURRENCY_COND_DESTROY(&rwlock->write_cond);
 #endif
-    
+
     if (rwlock->name) {
-        char* mutable_name = (char*)rwlock->name;
+        char *mutable_name = (char *)rwlock->name;
         free(mutable_name);
     }
-    
+
     free(rwlock);
-} 
+}

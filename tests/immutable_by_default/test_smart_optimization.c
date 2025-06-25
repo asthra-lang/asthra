@@ -6,7 +6,7 @@
 
 bool test_smart_optimization_integration(void) {
     printf("Testing smart optimization integration...\n");
-    
+
     IntegrationTestCase test_cases[] = {
         // Self-mutation pattern optimization
         {
@@ -21,11 +21,10 @@ bool test_smart_optimization_integration(void) {
             "    let final_state: GameState = level_up_if_needed(updated_state);\n"
             "    return final_state;\n"
             "}",
-            "GameState updated_state",
-            true,
-            true  // Expect optimization
+            "GameState updated_state", true,
+            true // Expect optimization
         },
-        
+
         // Call-chain optimization pattern
         {
             "pub fn process_data_pipeline(input: string) -> string {\n"
@@ -35,11 +34,10 @@ bool test_smart_optimization_integration(void) {
             "    let step4: string = trim_edges(step3);\n"
             "    return step4;\n"
             "}",
-            "string step1",
-            true,
-            true  // Expect optimization
+            "string step1", true,
+            true // Expect optimization
         },
-        
+
         // Large struct optimization
         {
             "struct LargeDataStructure {\n"
@@ -54,11 +52,10 @@ bool test_smart_optimization_integration(void) {
             "    let optimized: LargeDataStructure = optimize_layout(validated);\n"
             "    return optimized;\n"
             "}",
-            "LargeDataStructure processed",
-            true,
-            true  // Expect optimization for large struct
+            "LargeDataStructure processed", true,
+            true // Expect optimization for large struct
         },
-        
+
         // Small struct - no optimization needed
         {
             "struct SmallPoint {\n"
@@ -73,31 +70,27 @@ bool test_smart_optimization_integration(void) {
             "    };\n"
             "    return new_point;\n"
             "}",
-            "SmallPoint new_point",
-            true,
-            false  // No optimization expected for small struct
-        }
-    };
-    
+            "SmallPoint new_point", true,
+            false // No optimization expected for small struct
+        }};
+
     size_t num_tests = sizeof(test_cases) / sizeof(test_cases[0]);
     for (size_t i = 0; i < num_tests; i++) {
-        bool result = compile_and_validate_asthra_code(
-            test_cases[i].asthra_code, 
-            test_cases[i].expected_c_pattern
-        );
-        
+        bool result = compile_and_validate_asthra_code(test_cases[i].asthra_code,
+                                                       test_cases[i].expected_c_pattern);
+
         if (!result) {
             printf("  ❌ Smart optimization test case %zu failed\n", i);
             return false;
         }
-        
+
         // Note: In a full implementation, we would also check for optimization markers
         // For stub testing, we just verify compilation success
         if (test_cases[i].expect_optimization) {
             printf("  📈 Test case %zu: Optimization opportunity detected\n", i);
         }
     }
-    
+
     printf("  ✅ Smart optimization integration tests passed\n");
     return true;
-} 
+}

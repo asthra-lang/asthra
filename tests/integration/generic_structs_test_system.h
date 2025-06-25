@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Generic Structs Testing - System Integration Tests
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Tests for memory management, boundary conditions, and type system integration
  */
 
@@ -53,4 +53,4 @@ bool test_comprehensive_error_recovery(void);
 }
 #endif
 
-#endif // GENERIC_STRUCTS_TEST_SYSTEM_H 
+#endif // GENERIC_STRUCTS_TEST_SYSTEM_H

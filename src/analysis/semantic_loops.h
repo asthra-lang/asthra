@@ -1,8 +1,8 @@
 #ifndef SEMANTIC_LOOPS_H
 #define SEMANTIC_LOOPS_H
 
-#include "semantic_analyzer_core.h"
 #include "../parser/ast_types.h"
+#include "semantic_analyzer_core.h"
 
 // Loop statement analysis functions
 bool analyze_for_statement(SemanticAnalyzer *analyzer, ASTNode *stmt);

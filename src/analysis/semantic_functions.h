@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Function Declaration Analysis Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Analysis of function declarations
  */
 
@@ -39,4 +39,4 @@ bool analyze_extern_declaration(SemanticAnalyzer *analyzer, ASTNode *extern_decl
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_FUNCTIONS_H 
+#endif // ASTHRA_SEMANTIC_FUNCTIONS_H

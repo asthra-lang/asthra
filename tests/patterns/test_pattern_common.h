@@ -2,44 +2,44 @@
  * =============================================================================
  * PATTERN MATCHING TEST COMMON UTILITIES
  * =============================================================================
- * 
+ *
  * This header contains shared types, macros, and utility functions used
  * across all pattern matching test files.
- * 
+ *
  * Part of Phase 3.1: Advanced Pattern Matching
- * 
+ *
  * =============================================================================
  */
 
 #ifndef TEST_PATTERN_COMMON_H
 #define TEST_PATTERN_COMMON_H
 
+#include "ast_node.h"
+#include "parser_core.h"
+#include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include <stdbool.h>
 #include <time.h>
-#include "ast_node.h"
-#include "parser_core.h"
 
 // =============================================================================
 // TEST FRAMEWORK MACROS
 // =============================================================================
 
-#define TEST_ASSERT(condition, message) \
-    do { \
-        if (!(condition)) { \
-            printf("FAIL: %s\n", message); \
-            return false; \
-        } \
-    } while(0)
+#define TEST_ASSERT(condition, message)                                                            \
+    do {                                                                                           \
+        if (!(condition)) {                                                                        \
+            printf("FAIL: %s\n", message);                                                         \
+            return false;                                                                          \
+        }                                                                                          \
+    } while (0)
 
-#define TEST_SUCCESS() \
-    do { \
-        printf("PASS\n"); \
-        return true; \
-    } while(0)
+#define TEST_SUCCESS()                                                                             \
+    do {                                                                                           \
+        printf("PASS\n");                                                                          \
+        return true;                                                                               \
+    } while (0)
 
 #define TEST_START(name) printf("Testing %s... ", name)
 #define TEST_END() TEST_SUCCESS()
@@ -50,7 +50,8 @@
 #define ASSERT_LT(a, b) TEST_ASSERT((a) < (b), "First value should be less than second")
 #define ASSERT_GT(a, b) TEST_ASSERT((a) > (b), "First value should be greater than second")
 #define ASSERT_STRING_EQ(a, b) TEST_ASSERT(strcmp((a), (b)) == 0, "Strings should be equal")
-#define ASSERT_STRING_CONTAINS(str, substr) TEST_ASSERT(strstr((str), (substr)) != NULL, "String should contain substring")
+#define ASSERT_STRING_CONTAINS(str, substr)                                                        \
+    TEST_ASSERT(strstr((str), (substr)) != NULL, "String should contain substring")
 
 // =============================================================================
 // MOCK TYPES FOR DEMONSTRATION
@@ -72,7 +73,7 @@ typedef struct {
     char *missing_pattern_names[10];
     bool uses_jump_table;
     int jump_table_size;
-    
+
     // Additional fields for optimization tests
     bool optimizes_range_checks;
     bool eliminates_redundant_checks;
@@ -93,7 +94,7 @@ typedef struct {
     double cache_miss_estimate;
     int guard_count;
     int instruction_count;
-    
+
     // Guard-specific fields for pattern matching tests
     bool has_guards;
     bool has_complex_guards;
@@ -140,35 +141,37 @@ typedef struct {
 } StructValue;
 
 // Generic value type for flexibility
-typedef void* Value;
+typedef void *Value;
 
 // =============================================================================
 // UTILITY FUNCTIONS
 // =============================================================================
 
 // Mock functions for demonstration
-extern ASTNode* parse_source(const char* source);
-extern SemanticResult* analyze_semantics(ASTNode* ast);
-extern PatternCompilationResult* compile_enum_patterns(ASTNode* ast);
-extern EnumValue create_enum_value(const char* enum_name, const char* variant_name, int value);
-extern TaggedUnionValue create_tagged_union_value(const char* enum_name, const char* variant_name, void* value);
-extern void* create_i32_value(int value);
-extern void* create_string_value(const char* str);
-extern void* create_f64_value(double value);
-extern void* create_bool_value(bool value);
-extern void* create_i8_value(int value);
-extern void* create_i64_value(long long value);
-extern Value create_tuple_value(Value* values, int count);
-extern String execute_pattern_match(PatternCompilationResult* result, EnumValue value);
-extern String execute_pattern_match_with_value(PatternCompilationResult* result, void* value);
-extern i32 execute_pattern_match_i32(PatternCompilationResult* result, TaggedUnionValue value);
-extern StructValue create_struct_value(StructValue* fields, int count);
-extern StructValue* create_struct_value_ptr(StructValue* fields, int count);
-extern void cleanup_pattern_compilation_result(PatternCompilationResult* result);
-extern void cleanup_semantic_result(SemanticResult* result);
-extern void cleanup_ast(ASTNode* ast);
+extern ASTNode *parse_source(const char *source);
+extern SemanticResult *analyze_semantics(ASTNode *ast);
+extern PatternCompilationResult *compile_enum_patterns(ASTNode *ast);
+extern EnumValue create_enum_value(const char *enum_name, const char *variant_name, int value);
+extern TaggedUnionValue create_tagged_union_value(const char *enum_name, const char *variant_name,
+                                                  void *value);
+extern void *create_i32_value(int value);
+extern void *create_string_value(const char *str);
+extern void *create_f64_value(double value);
+extern void *create_bool_value(bool value);
+extern void *create_i8_value(int value);
+extern void *create_i64_value(long long value);
+extern Value create_tuple_value(Value *values, int count);
+extern String execute_pattern_match(PatternCompilationResult *result, EnumValue value);
+extern String execute_pattern_match_with_value(PatternCompilationResult *result, void *value);
+extern i32 execute_pattern_match_i32(PatternCompilationResult *result, TaggedUnionValue value);
+extern StructValue create_struct_value(StructValue *fields, int count);
+extern StructValue *create_struct_value_ptr(StructValue *fields, int count);
+extern void cleanup_pattern_compilation_result(PatternCompilationResult *result);
+extern void cleanup_semantic_result(SemanticResult *result);
+extern void cleanup_ast(ASTNode *ast);
 
 // Additional utility function for TaggedUnionValue compatibility
-extern String execute_pattern_match_tagged_union(PatternCompilationResult* result, TaggedUnionValue value);
+extern String execute_pattern_match_tagged_union(PatternCompilationResult *result,
+                                                 TaggedUnionValue value);
 
-#endif // TEST_PATTERN_COMMON_H 
+#endif // TEST_PATTERN_COMMON_H

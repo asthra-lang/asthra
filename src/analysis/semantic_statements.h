@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Statement Analysis Module Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Analysis of statement nodes (let, blocks, if, match, etc.)
  */
 
@@ -128,4 +128,4 @@ bool analyze_unsafe_block_statement(SemanticAnalyzer *analyzer, ASTNode *stmt);
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_STATEMENTS_H 
+#endif // ASTHRA_SEMANTIC_STATEMENTS_H

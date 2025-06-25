@@ -55,5 +55,6 @@ void print_benchmark_results(void) {
     printf("\n=== Benchmark Results ===\n");
     printf("Tests run: %d\n", tests_run);
     printf("Tests passed: %d\n", tests_passed);
-    printf("Success rate: %.1f%%\n", tests_run > 0 ? (double)tests_passed / tests_run * 100.0 : 0.0);
+    printf("Success rate: %.1f%%\n",
+           tests_run > 0 ? (double)tests_passed / tests_run * 100.0 : 0.0);
 }

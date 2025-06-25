@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language
  * Lexer Test Utilities
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Shared utilities for lexer tests to avoid code duplication
  */
 
@@ -35,9 +35,11 @@ static inline bool is_skippable_token(TokenType type) {
 /**
  * Create a test lexer with standard error handling (wrapper for framework function)
  */
-static inline Lexer* create_test_lexer_with_context(AsthraTestContext *context, const char* input, const char* filename) {
-    Lexer* lexer = create_test_lexer(input, filename);
-    if (!asthra_test_assert_pointer(context, lexer, "Failed to create lexer for input: %s", filename)) {
+static inline Lexer *create_test_lexer_with_context(AsthraTestContext *context, const char *input,
+                                                    const char *filename) {
+    Lexer *lexer = create_test_lexer(input, filename);
+    if (!asthra_test_assert_pointer(context, lexer, "Failed to create lexer for input: %s",
+                                    filename)) {
         return NULL;
     }
     return lexer;
@@ -46,10 +48,10 @@ static inline Lexer* create_test_lexer_with_context(AsthraTestContext *context, 
 /**
  * Count tokens of a specific type in input
  */
-static inline size_t count_tokens_of_type(Lexer* lexer, TokenType target_type) {
+static inline size_t count_tokens_of_type(Lexer *lexer, TokenType target_type) {
     size_t count = 0;
     Token token;
-    
+
     do {
         token = lexer_next_token(lexer);
         if (token.type == target_type) {
@@ -57,17 +59,17 @@ static inline size_t count_tokens_of_type(Lexer* lexer, TokenType target_type) {
         }
         token_free(&token);
     } while (token.type != TOKEN_EOF);
-    
+
     return count;
 }
 
 /**
  * Verify that braces are balanced in a token stream
  */
-static inline int check_brace_balance(Lexer* lexer) {
+static inline int check_brace_balance(Lexer *lexer) {
     int balance = 0;
     Token token;
-    
+
     do {
         token = lexer_next_token(lexer);
         if (token.type == TOKEN_LEFT_BRACE) {
@@ -77,8 +79,8 @@ static inline int check_brace_balance(Lexer* lexer) {
         }
         token_free(&token);
     } while (token.type != TOKEN_EOF);
-    
+
     return balance;
 }
 
-#endif // LEXER_TEST_UTILS_H 
+#endif // LEXER_TEST_UTILS_H

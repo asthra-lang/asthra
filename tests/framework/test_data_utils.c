@@ -18,12 +18,12 @@
 // TEST DATA MANAGEMENT
 // =============================================================================
 
-char* load_test_file(const char* filename) {
+char *load_test_file(const char *filename) {
     if (!filename) {
         return NULL;
     }
 
-    FILE* file = fopen(filename, "r");
+    FILE *file = fopen(filename, "r");
     if (!file) {
         return NULL;
     }
@@ -38,7 +38,7 @@ char* load_test_file(const char* filename) {
         return NULL;
     }
 
-    char* content = malloc(size + 1);
+    char *content = malloc(size + 1);
     if (!content) {
         fclose(file);
         return NULL;
@@ -58,12 +58,12 @@ char* load_test_file(const char* filename) {
     return content;
 }
 
-bool save_test_output(const char* filename, const char* content) {
+bool save_test_output(const char *filename, const char *content) {
     if (!filename || !content) {
         return false;
     }
 
-    FILE* file = fopen(filename, "w");
+    FILE *file = fopen(filename, "w");
     if (!file) {
         return false;
     }
@@ -75,9 +75,9 @@ bool save_test_output(const char* filename, const char* content) {
     return written == content_len;
 }
 
-bool compare_test_files(const char* expected_file, const char* actual_file) {
-    char* expected_content = load_test_file(expected_file);
-    char* actual_content = load_test_file(actual_file);
+bool compare_test_files(const char *expected_file, const char *actual_file) {
+    char *expected_content = load_test_file(expected_file);
+    char *actual_content = load_test_file(actual_file);
 
     if (!expected_content || !actual_content) {
         free(expected_content);
@@ -92,13 +92,13 @@ bool compare_test_files(const char* expected_file, const char* actual_file) {
     return equal;
 }
 
-char* create_temp_test_file(const char* content, const char* suffix) {
+char *create_temp_test_file(const char *content, const char *suffix) {
     if (!content || !suffix) {
         return NULL;
     }
 
     // Create temporary filename
-    char* template = malloc(256);
+    char *template = malloc(256);
     if (!template) {
         return NULL;
     }
@@ -126,7 +126,7 @@ char* create_temp_test_file(const char* content, const char* suffix) {
     return template;
 }
 
-void cleanup_temp_test_file(const char* filename) {
+void cleanup_temp_test_file(const char *filename) {
     if (filename) {
         unlink(filename);
         track_memory_deallocation(256); // Approximate

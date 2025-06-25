@@ -1,8 +1,8 @@
 /**
  * FFI Test Stubs - Types and Structures
- * 
+ *
  * Contains type definitions and structures used across FFI test stubs
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -16,8 +16,8 @@
 #include <stdint.h>
 
 // Include actual FFI infrastructure
-#include "ffi_assembly_generator.h"
 #include "code_generator_core.h"
+#include "ffi_assembly_generator.h"
 #include "parser.h"
 #include "semantic_analyzer.h"
 
@@ -39,7 +39,7 @@ typedef struct {
 typedef EnhancedFFIGenerator MinimalFFIGenerator;
 
 // Generation statistics
-typedef struct { 
+typedef struct {
     int total_generated;
     int successful_generations;
     int failed_generations;

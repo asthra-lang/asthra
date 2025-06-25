@@ -1,7 +1,7 @@
 /**
  * Asthra Concurrency Thread Management - Thread Registry Module
  * Thread registration and management for GC integration
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -47,4 +47,4 @@ AsthraConcurrencyThreadRegistryStats Asthra_get_thread_registry_stats(void);
 }
 #endif
 
-#endif // ASTHRA_CONCURRENCY_THREAD_REGISTRY_H 
+#endif // ASTHRA_CONCURRENCY_THREAD_REGISTRY_H

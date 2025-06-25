@@ -1,7 +1,7 @@
 /**
  * Asthra Concurrency Thread Management - Common Definitions
  * Shared types, constants, and utilities for modular thread management
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -9,14 +9,14 @@
 #ifndef ASTHRA_CONCURRENCY_THREADS_COMMON_H
 #define ASTHRA_CONCURRENCY_THREADS_COMMON_H
 
+#include <assert.h>
+#include <errno.h>
+#include <pthread.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include <time.h>
-#include <pthread.h>
-#include <assert.h>
-#include <stdatomic.h>
 
 #include "../asthra_concurrency_bridge_modular.h"
 
@@ -28,16 +28,18 @@ extern "C" {
 // COMMON FORWARD DECLARATIONS
 // =============================================================================
 
-extern AsthraConcurrencyBridge* asthra_concurrency_get_bridge(void);
-extern AsthraConcurrencyThreadData* asthra_concurrency_get_thread_data(void);
-extern void asthra_concurrency_set_thread_data(AsthraConcurrencyThreadData* data);
+extern AsthraConcurrencyBridge *asthra_concurrency_get_bridge(void);
+extern AsthraConcurrencyThreadData *asthra_concurrency_get_thread_data(void);
+extern void asthra_concurrency_set_thread_data(AsthraConcurrencyThreadData *data);
 extern bool asthra_concurrency_is_initialized(void);
-extern AsthraResult asthra_concurrency_create_error_result(AsthraConcurrencyErrorCode code, const char *message);
+extern AsthraResult asthra_concurrency_create_error_result(AsthraConcurrencyErrorCode code,
+                                                           const char *message);
 extern uint64_t asthra_concurrency_get_timestamp_ms(void);
 extern size_t asthra_concurrency_atomic_load_size(asthra_concurrency_atomic_size_t *size_ptr);
 extern size_t asthra_concurrency_atomic_increment_size(asthra_concurrency_atomic_size_t *size_ptr);
 extern size_t asthra_concurrency_atomic_decrement_size(asthra_concurrency_atomic_size_t *size_ptr);
-extern uint64_t asthra_concurrency_atomic_increment_counter(asthra_concurrency_atomic_counter_t *counter);
+extern uint64_t
+asthra_concurrency_atomic_increment_counter(asthra_concurrency_atomic_counter_t *counter);
 
 // =============================================================================
 // THREAD REGISTRY STATISTICS TYPE
@@ -64,4 +66,4 @@ AsthraConcurrencyThreadRegistryStats asthra_concurrency_get_thread_registry_stat
 }
 #endif
 
-#endif // ASTHRA_CONCURRENCY_THREADS_COMMON_H 
+#endif // ASTHRA_CONCURRENCY_THREADS_COMMON_H

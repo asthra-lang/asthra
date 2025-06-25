@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Command Line Interface - Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -9,9 +9,9 @@
 #ifndef ASTHRA_CLI_H
 #define ASTHRA_CLI_H
 
-#include <stdbool.h>
 #include "compiler.h"
 #include "platform.h"
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,29 +37,29 @@ typedef struct {
 
 // Simple command line parsing for Windows
 typedef struct {
-    const char* name;
+    const char *name;
     bool has_arg;
     int val;
 } win_option_t;
 
 // Windows getopt variables
 extern int win_optind;
-extern char* win_optarg;
+extern char *win_optarg;
 
 // Windows getopt function
-int win_getopt_long(int argc, char* argv[], const char* optstring, const win_option_t* longopts);
+int win_getopt_long(int argc, char *argv[], const char *optstring, const win_option_t *longopts);
 
 // Compatibility macros
 #define optind win_optind
 #define optarg win_optarg
-#define getopt_long(argc, argv, optstring, longopts, longindex) \
+#define getopt_long(argc, argv, optstring, longopts, longindex)                                    \
     win_getopt_long(argc, argv, optstring, longopts)
 
 // Define option structure for compatibility
 struct option {
-    const char* name;
+    const char *name;
     int has_arg;
-    int* flag;
+    int *flag;
     int val;
 };
 
@@ -117,4 +117,4 @@ void cli_options_cleanup(CliOptions *options);
 }
 #endif
 
-#endif // ASTHRA_CLI_H 
+#endif // ASTHRA_CLI_H

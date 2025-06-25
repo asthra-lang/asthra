@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Core parser types and main interface
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -9,19 +9,20 @@
 #ifndef ASTHRA_PARSER_CORE_H
 #define ASTHRA_PARSER_CORE_H
 
-#include "lexer.h"
 #include "ast.h"
+#include "lexer.h"
+#include <stdatomic.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
-#include <stdatomic.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 // C17 static assertions for parser assumptions
-_Static_assert(sizeof(size_t) >= sizeof(uint32_t), "size_t must be at least 32-bit for parser state");
+_Static_assert(sizeof(size_t) >= sizeof(uint32_t),
+               "size_t must be at least 32-bit for parser state");
 _Static_assert(__STDC_VERSION__ >= 201710L, "C17 standard required for parser modernization");
 
 // Forward declarations
@@ -66,15 +67,14 @@ typedef struct ParserConfig {
 } ParserConfig;
 
 // Default parser configuration using C17 compound literal
-#define PARSER_DEFAULT_CONFIG ((ParserConfig){ \
-    .allow_incomplete_parse = false, \
-    .strict_mode = true, \
-    .enable_recovery = true, \
-    .collect_statistics = true, \
-    .max_errors = 100, \
-    .max_recursion_depth = 1000, \
-    .initial_token_buffer_size = 256 \
-})
+#define PARSER_DEFAULT_CONFIG                                                                      \
+    ((ParserConfig){.allow_incomplete_parse = false,                                               \
+                    .strict_mode = true,                                                           \
+                    .enable_recovery = true,                                                       \
+                    .collect_statistics = true,                                                    \
+                    .max_errors = 100,                                                             \
+                    .max_recursion_depth = 1000,                                                   \
+                    .initial_token_buffer_size = 256})
 
 // Parse error information with enhanced C17 features
 typedef struct ParseError {
@@ -83,7 +83,7 @@ typedef struct ParseError {
     bool is_warning;
     uint32_t error_code;
     struct ParseError *next;
-    
+
     // Enhanced error context
     struct {
         TokenType expected_token;
@@ -106,18 +106,18 @@ struct Parser {
     bool panic_mode;
     bool had_error;
     SymbolTable *symbol_table;
-    
+
     // Enhanced parser state
     ParserConfig config;
     ParseStatistics stats;
     uint32_t current_recursion_depth;
-    
+
     // Token lookahead buffer with flexible array
     struct {
         size_t capacity;
         size_t count;
         size_t head;
-        Token tokens[];  // C17 flexible array member
+        Token tokens[]; // C17 flexible array member
     } *token_buffer;
 };
 
@@ -130,7 +130,7 @@ _Static_assert(offsetof(Parser, token_buffer) > 0, "Parser structure layout must
 
 // Create and initialize parser with configuration
 Parser *parser_create_with_config(Lexer *lexer, ParserConfig config);
-Parser *parser_create(Lexer *lexer);  // Uses default config
+Parser *parser_create(Lexer *lexer); // Uses default config
 
 // Destroy parser and free resources
 void parser_destroy(Parser *parser);
@@ -161,4 +161,4 @@ ASTNode *parser_parse_with_recovery(Parser *parser, ASTNodeType expected_type);
 }
 #endif
 
-#endif // ASTHRA_PARSER_CORE_H 
+#endif // ASTHRA_PARSER_CORE_H

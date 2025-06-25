@@ -6,8 +6,8 @@
 
 bool test_real_world_game_engine_scenario(void) {
     printf("Testing real-world game engine scenario...\n");
-    
-    const char *game_engine_code = 
+
+    const char *game_engine_code =
         "struct GameState {\n"
         "    player_position: Point3D,\n"
         "    enemy_positions: [Point3D],\n"
@@ -39,7 +39,8 @@ bool test_real_world_game_engine_scenario(void) {
         "    );\n"
         "    \n"
         "    // Check for collisions and update score\n"
-        "    let collision_result: CollisionResult = check_collisions(new_player_pos, updated_enemies);\n"
+        "    let collision_result: CollisionResult = check_collisions(new_player_pos, "
+        "updated_enemies);\n"
         "    let new_score: i32 = current_state.score + collision_result.score_delta;\n"
         "    \n"
         "    // Update time\n"
@@ -56,22 +57,22 @@ bool test_real_world_game_engine_scenario(void) {
         "    \n"
         "    return next_state;\n"
         "}";
-    
+
     bool result = compile_and_validate_asthra_code(game_engine_code, "GameState next_state");
-    
+
     if (!result) {
         printf("  ❌ Game engine scenario test failed\n");
         return false;
     }
-    
+
     printf("  ✅ Real-world game engine scenario test passed\n");
     return true;
 }
 
 bool test_real_world_web_server_scenario(void) {
     printf("Testing real-world web server scenario...\n");
-    
-    const char *web_server_code = 
+
+    const char *web_server_code =
         "struct HttpRequest {\n"
         "    method: string,\n"
         "    path: string,\n"
@@ -115,14 +116,14 @@ bool test_real_world_web_server_scenario(void) {
         "    \n"
         "    return response;\n"
         "}";
-    
+
     bool result = compile_and_validate_asthra_code(web_server_code, "HttpResponse");
-    
+
     if (!result) {
         printf("  ❌ Web server scenario test failed\n");
         return false;
     }
-    
+
     printf("  ✅ Real-world web server scenario test passed\n");
     return true;
-} 
+}

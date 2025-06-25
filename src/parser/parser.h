@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Unified parser header - includes all parser modules
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This header provides a single include point for all parser functionality
  * while maintaining modular organization through separate header files.
  */
@@ -16,16 +16,16 @@
 #include "parser_core.h"
 
 // Specialized parser modules
-#include "parser_error.h"
-#include "parser_token.h"
 #include "parser_ast_helpers.h"
-#include "parser_operators.h"
-#include "parser_grammar.h"
-#include "parser_validation.h"
-#include "parser_context.h"
-#include "parser_symbol.h"
-#include "parser_generic.h"
 #include "parser_concurrency.h"
+#include "parser_context.h"
+#include "parser_error.h"
+#include "parser_generic.h"
+#include "parser_grammar.h"
+#include "parser_operators.h"
+#include "parser_symbol.h"
+#include "parser_token.h"
+#include "parser_validation.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -50,4 +50,4 @@ void parser_set_allow_incomplete(Parser *parser, bool allow);
 }
 #endif
 
-#endif // ASTHRA_PARSER_H 
+#endif // ASTHRA_PARSER_H

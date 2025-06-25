@@ -1,14 +1,14 @@
 #ifndef SEMANTIC_HELPERS_H
 #define SEMANTIC_HELPERS_H
 
+#include "../parser/ast_types.h"
 #include "semantic_symbols.h"
 #include "semantic_types.h"
-#include "../parser/ast_types.h"
 
 // Type promotion and helper functions
-TypeDescriptor *semantic_promote_arithmetic_types(SemanticAnalyzer *analyzer, 
-                                                 TypeDescriptor *left_type, 
-                                                 TypeDescriptor *right_type);
+TypeDescriptor *semantic_promote_arithmetic_types(SemanticAnalyzer *analyzer,
+                                                  TypeDescriptor *left_type,
+                                                  TypeDescriptor *right_type);
 
 bool semantic_is_bool_type(TypeDescriptor *type);
 

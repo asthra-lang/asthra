@@ -11,9 +11,9 @@
 #ifndef ASTHRA_TEST_DATA_UTILS_H
 #define ASTHRA_TEST_DATA_UTILS_H
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,7 +28,7 @@ extern "C" {
  * @param filename The file to load
  * @return The file contents (caller must free)
  */
-char* load_test_file(const char* filename);
+char *load_test_file(const char *filename);
 
 /**
  * Save test output to file
@@ -36,7 +36,7 @@ char* load_test_file(const char* filename);
  * @param content The content to save
  * @return true if save succeeded
  */
-bool save_test_output(const char* filename, const char* content);
+bool save_test_output(const char *filename, const char *content);
 
 /**
  * Compare two test files for equality
@@ -44,7 +44,7 @@ bool save_test_output(const char* filename, const char* content);
  * @param actual_file The actual output file
  * @return true if files are equal
  */
-bool compare_test_files(const char* expected_file, const char* actual_file);
+bool compare_test_files(const char *expected_file, const char *actual_file);
 
 /**
  * Create a temporary test file with content
@@ -52,13 +52,13 @@ bool compare_test_files(const char* expected_file, const char* actual_file);
  * @param suffix File suffix (e.g., ".ast")
  * @return The temporary filename (caller must free)
  */
-char* create_temp_test_file(const char* content, const char* suffix);
+char *create_temp_test_file(const char *content, const char *suffix);
 
 /**
  * Clean up temporary test files
  * @param filename The temporary file to remove
  */
-void cleanup_temp_test_file(const char* filename);
+void cleanup_temp_test_file(const char *filename);
 
 #ifdef __cplusplus
 }

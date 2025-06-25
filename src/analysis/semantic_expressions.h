@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Expression Analysis Module Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Analysis of expression nodes and field/module access
  */
 
@@ -140,4 +140,4 @@ bool semantic_has_side_effects(SemanticAnalyzer *analyzer, ASTNode *expr);
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_EXPRESSIONS_H 
+#endif // ASTHRA_SEMANTIC_EXPRESSIONS_H

@@ -1,47 +1,47 @@
 #ifndef ASTHRA_AI_SEMANTIC_CACHE_H
 #define ASTHRA_AI_SEMANTIC_CACHE_H
 
+#include <pthread.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <time.h>
-#include <pthread.h>
 
 // Cache entry structure
 typedef struct CacheEntry {
-    char *key;                    // Cache key (symbol name, expression, etc.)
-    void *data;                   // Cached data
-    size_t data_size;             // Size of cached data
-    time_t timestamp;             // When entry was created/accessed
-    bool is_valid;                // Whether entry is still valid
-    struct CacheEntry *prev;      // LRU doubly-linked list
-    struct CacheEntry *next;      // LRU doubly-linked list
+    char *key;               // Cache key (symbol name, expression, etc.)
+    void *data;              // Cached data
+    size_t data_size;        // Size of cached data
+    time_t timestamp;        // When entry was created/accessed
+    bool is_valid;           // Whether entry is still valid
+    struct CacheEntry *prev; // LRU doubly-linked list
+    struct CacheEntry *next; // LRU doubly-linked list
 } CacheEntry;
 
 // Semantic cache structure with LRU eviction
 typedef struct {
-    CacheEntry **hash_table;      // Hash table for O(1) lookup
-    CacheEntry *lru_head;         // Most recently used
-    CacheEntry *lru_tail;         // Least recently used
-    size_t capacity;              // Maximum number of entries
-    size_t count;                 // Current number of entries
-    size_t hash_size;             // Hash table size
-    pthread_rwlock_t cache_lock;  // Reader-writer lock for thread safety
-    
+    CacheEntry **hash_table;     // Hash table for O(1) lookup
+    CacheEntry *lru_head;        // Most recently used
+    CacheEntry *lru_tail;        // Least recently used
+    size_t capacity;             // Maximum number of entries
+    size_t count;                // Current number of entries
+    size_t hash_size;            // Hash table size
+    pthread_rwlock_t cache_lock; // Reader-writer lock for thread safety
+
     // Performance statistics
-    size_t hits;                  // Cache hits
-    size_t misses;                // Cache misses
-    size_t evictions;             // Number of evictions
-    size_t memory_usage;          // Current memory usage in bytes
-    size_t max_memory;            // Maximum memory limit
+    size_t hits;         // Cache hits
+    size_t misses;       // Cache misses
+    size_t evictions;    // Number of evictions
+    size_t memory_usage; // Current memory usage in bytes
+    size_t max_memory;   // Maximum memory limit
 } SemanticCache;
 
 // Cache configuration
 typedef struct {
-    size_t max_entries;           // Maximum number of cache entries
-    size_t max_memory_mb;         // Maximum memory usage in MB
-    time_t ttl_seconds;           // Time-to-live for entries
-    bool enable_statistics;       // Whether to track performance stats
+    size_t max_entries;     // Maximum number of cache entries
+    size_t max_memory_mb;   // Maximum memory usage in MB
+    time_t ttl_seconds;     // Time-to-live for entries
+    bool enable_statistics; // Whether to track performance stats
 } CacheConfig;
 
 // Cache statistics
@@ -49,7 +49,7 @@ typedef struct {
     size_t total_hits;
     size_t total_misses;
     size_t total_evictions;
-    double hit_rate;              // hits / (hits + misses)
+    double hit_rate; // hits / (hits + misses)
     size_t current_entries;
     size_t memory_usage_bytes;
     double average_lookup_time_ms;

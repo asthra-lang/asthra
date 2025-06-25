@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language
  * Sanitizer Integration Test Suite - Common Definitions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -10,13 +10,13 @@
 #define TEST_SANITIZER_COMMON_H
 
 #include "../framework/test_framework.h"
+#include <limits.h>
+#include <pthread.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <pthread.h>
-#include <stdint.h>
-#include <limits.h>
 
 // Test configuration
 #define BUFFER_SIZE 64
@@ -52,7 +52,7 @@ AsthraTestResult test_sanitizer_environment_setup(AsthraTestContext *context);
 AsthraTestResult test_sanitizer_symbol_availability(AsthraTestContext *context);
 
 // Thread helper functions
-void* thread_increment_function(void *arg);
-void* thread_unsafe_increment_function(void *arg);
+void *thread_increment_function(void *arg);
+void *thread_unsafe_increment_function(void *arg);
 
-#endif // TEST_SANITIZER_COMMON_H 
+#endif // TEST_SANITIZER_COMMON_H

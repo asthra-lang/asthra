@@ -4,12 +4,12 @@
 #ifndef ASTHRA_SAFETY_MINIMAL_INCLUDES_H
 #define ASTHRA_SAFETY_MINIMAL_INCLUDES_H
 
+#include <pthread.h>
+#include <stdarg.h>
+#include <stdatomic.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
-#include <pthread.h>
-#include <stdatomic.h>
-#include <stdarg.h>
 
 // Forward declarations of essential types from asthra_runtime.h
 typedef enum {

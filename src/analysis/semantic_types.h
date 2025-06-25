@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Type System Module Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Type descriptor operations and type system functionality
  */
 
@@ -54,7 +54,8 @@ TypeDescriptor *type_descriptor_create_function(void);
 /**
  * Create a function type descriptor with parameters
  */
-TypeDescriptor *type_descriptor_create_function_with_params(TypeDescriptor *return_type, size_t param_count);
+TypeDescriptor *type_descriptor_create_function_with_params(TypeDescriptor *return_type,
+                                                            size_t param_count);
 
 /**
  * Create a generic instance type descriptor
@@ -62,9 +63,9 @@ TypeDescriptor *type_descriptor_create_function_with_params(TypeDescriptor *retu
  * @param type_args Array of concrete type arguments (e.g., [i32])
  * @param type_arg_count Number of type arguments
  */
-TypeDescriptor *type_descriptor_create_generic_instance(TypeDescriptor *base_type, 
-                                                       TypeDescriptor **type_args, 
-                                                       size_t type_arg_count);
+TypeDescriptor *type_descriptor_create_generic_instance(TypeDescriptor *base_type,
+                                                        TypeDescriptor **type_args,
+                                                        size_t type_arg_count);
 
 /**
  * Create a tuple type descriptor
@@ -100,15 +101,14 @@ size_t type_descriptor_hash(const TypeDescriptor *type);
 /**
  * Add a field to a struct type descriptor
  */
-bool type_descriptor_add_struct_field(TypeDescriptor *struct_type, 
-                                     const char *field_name, 
-                                     TypeDescriptor *field_type,
-                                     ASTNode *field_declaration);
+bool type_descriptor_add_struct_field(TypeDescriptor *struct_type, const char *field_name,
+                                      TypeDescriptor *field_type, ASTNode *field_declaration);
 
 /**
  * Look up a field in a struct type descriptor
  */
-SymbolEntry *type_descriptor_lookup_struct_field(TypeDescriptor *struct_type, const char *field_name);
+SymbolEntry *type_descriptor_lookup_struct_field(TypeDescriptor *struct_type,
+                                                 const char *field_name);
 
 // =============================================================================
 // TYPE RESOLUTION UTILITIES
@@ -139,4 +139,4 @@ bool type_is_never(const TypeDescriptor *type);
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_TYPES_H 
+#endif // ASTHRA_SEMANTIC_TYPES_H

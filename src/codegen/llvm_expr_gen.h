@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language LLVM Expression Generation
  * Expression code generation for LLVM backend
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -9,8 +9,8 @@
 #ifndef ASTHRA_LLVM_EXPR_GEN_H
 #define ASTHRA_LLVM_EXPR_GEN_H
 
-#include "llvm_backend_internal.h"
 #include "../parser/ast_types.h"
+#include "llvm_backend_internal.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Internal lexical analyzer header for v1.25 grammar
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -72,4 +72,4 @@ bool is_reserved_keyword(const char *identifier, size_t length);
 }
 #endif
 
-#endif // ASTHRA_LEXER_INTERNAL_H 
+#endif // ASTHRA_LEXER_INTERNAL_H

@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language
  * Simple code formatter tool (using common framework)
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -12,8 +12,8 @@
 #include <unistd.h>
 
 #include "common/cli_framework.h"
-#include "common/statistics_framework.h"
 #include "common/error_framework.h"
+#include "common/statistics_framework.h"
 
 // Formatter-specific options structure
 typedef struct {
@@ -59,15 +59,15 @@ static char *read_file(const char *filename, StatsFramework *stats) {
     return content;
 }
 
-static char* format_content(const char *content, const FormatterOptions *options, 
-                           StatsFramework *stats, ErrorFramework *errors) {
+static char *format_content(const char *content, const FormatterOptions *options,
+                            StatsFramework *stats, ErrorFramework *errors) {
     if (!content) {
         ERROR_REPORT_ERROR(errors, "No content to format");
         return NULL;
     }
 
     size_t content_len = strlen(content);
-    char *output = malloc(content_len * 2);  // Simple allocation
+    char *output = malloc(content_len * 2); // Simple allocation
     if (!output) {
         ERROR_REPORT_CRITICAL(errors, "Failed to allocate memory for formatting");
         return NULL;
@@ -75,7 +75,7 @@ static char* format_content(const char *content, const FormatterOptions *options
 
     // Simple formatting: just copy content and add some basic formatting
     strcpy(output, content);
-    
+
     // Update statistics
     stats_set(stats, "lines_formatted", 1);
     stats_increment_by_one(stats, "whitespace_normalized");
@@ -86,16 +86,17 @@ static char* format_content(const char *content, const FormatterOptions *options
 static int setup_cli_config(CliConfig *config) {
     cli_add_option(config, "in-place", 'i', false, false, "Format file in place");
     cli_add_option(config, "output", 'o', true, false, "Output file (default: stdout)");
-    cli_add_option(config, "check", 'c', false, false, "Check if file is formatted (exit code 1 if not)");
+    cli_add_option(config, "check", 'c', false, false,
+                   "Check if file is formatted (exit code 1 if not)");
     cli_add_option(config, "indent-size", 's', true, false, "Indentation size (default: 4)");
     cli_add_option(config, "verbose", 'v', false, false, "Verbose output");
-    
+
     return 0;
 }
 
-static int parse_formatter_options(const CliOptionValue *values, size_t count, 
-                                  const char **remaining_args, size_t remaining_count,
-                                  FormatterOptions *options, ErrorFramework *errors) {
+static int parse_formatter_options(const CliOptionValue *values, size_t count,
+                                   const char **remaining_args, size_t remaining_count,
+                                   FormatterOptions *options, ErrorFramework *errors) {
     // Initialize with defaults
     options->input_file = NULL;
     options->output_file = NULL;
@@ -142,8 +143,8 @@ static int parse_formatter_options(const CliOptionValue *values, size_t count,
 
 int main(int argc, char *argv[]) {
     // Create frameworks
-    CliConfig *cli_config = cli_create_config("Asthra Code Formatter", "[options] <input_file>", 
-                                             "Format Asthra source code files");
+    CliConfig *cli_config = cli_create_config("Asthra Code Formatter", "[options] <input_file>",
+                                              "Format Asthra source code files");
     StatsFramework *stats = stats_create_framework("Asthra Code Formatter");
     ErrorFramework *errors = error_create_framework("Asthra Code Formatter");
 
@@ -179,8 +180,8 @@ int main(int argc, char *argv[]) {
 
     // Parse formatter-specific options
     FormatterOptions options;
-    if (parse_formatter_options(values, CLI_MAX_OPTIONS, parse_result.remaining_args, 
-                               parse_result.remaining_count, &options, errors) != 0) {
+    if (parse_formatter_options(values, CLI_MAX_OPTIONS, parse_result.remaining_args,
+                                parse_result.remaining_count, &options, errors) != 0) {
         error_print_all(errors);
         goto cleanup;
     }
@@ -222,4 +223,4 @@ cleanup:
     stats_destroy_framework(stats);
     error_destroy_framework(errors);
     return 0;
-} 
+}

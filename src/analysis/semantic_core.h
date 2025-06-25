@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Core Module Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Core semantic analyzer lifecycle and main analysis functions
  */
 
@@ -69,4 +69,4 @@ bool semantic_analyze_expression(SemanticAnalyzer *analyzer, ASTNode *expr);
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_CORE_H 
+#endif // ASTHRA_SEMANTIC_CORE_H

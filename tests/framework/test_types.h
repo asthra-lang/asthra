@@ -11,10 +11,10 @@
 #ifndef ASTHRA_TEST_TYPES_H
 #define ASTHRA_TEST_TYPES_H
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <time.h>
 #include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <time.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,9 +25,11 @@ extern "C" {
 // =============================================================================
 
 // Test framework assumptions validation
-_Static_assert(sizeof(size_t) >= sizeof(uint32_t), "size_t must be at least 32-bit for test framework");
-_Static_assert(sizeof(void*) >= 4, "Pointer size must be at least 32-bit for test framework");
-_Static_assert(__STDC_VERSION__ >= 201710L, "C17 standard required for test framework modernization");
+_Static_assert(sizeof(size_t) >= sizeof(uint32_t),
+               "size_t must be at least 32-bit for test framework");
+_Static_assert(sizeof(void *) >= 4, "Pointer size must be at least 32-bit for test framework");
+_Static_assert(__STDC_VERSION__ >= 201710L,
+               "C17 standard required for test framework modernization");
 _Static_assert(sizeof(clock_t) > 0, "clock_t must be available for timing measurements");
 
 // Test result type validation
@@ -81,11 +83,13 @@ typedef AsthraTestResult (*AsthraTestFunction)(AsthraTestContext *context);
 // =============================================================================
 
 // High-resolution timing for test duration measurement
+#ifndef ASTHRA_CONCURRENCY_TEST_UTILS_H
 static inline uint64_t asthra_test_get_time_ns(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec;
 }
+#endif
 
 #ifdef __cplusplus
 }

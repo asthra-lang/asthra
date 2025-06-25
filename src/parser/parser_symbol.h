@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Parser symbol table integration functions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -10,8 +10,8 @@
 #define ASTHRA_PARSER_SYMBOL_H
 
 #include "ast.h"
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,7 +30,8 @@ ASTNode *lookup_symbol(Parser *parser, const char *name);
 bool is_symbol_defined(Parser *parser, const char *name);
 
 // Enhanced symbol table operations
-bool register_symbol_in_scope(Parser *parser, const char *name, ASTNode *declaration, uint32_t scope_id);
+bool register_symbol_in_scope(Parser *parser, const char *name, ASTNode *declaration,
+                              uint32_t scope_id);
 void enter_new_scope(Parser *parser);
 void exit_current_scope(Parser *parser);
 uint32_t get_current_scope_id(Parser *parser);
@@ -39,4 +40,4 @@ uint32_t get_current_scope_id(Parser *parser);
 }
 #endif
 
-#endif // ASTHRA_PARSER_SYMBOL_H 
+#endif // ASTHRA_PARSER_SYMBOL_H

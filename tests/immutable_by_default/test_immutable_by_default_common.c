@@ -1,7 +1,7 @@
 #include "test_immutable_by_default_common.h"
 // Include the real AST types for compatibility with the real semantic analyzer
-#include "../../src/parser/ast_types.h"
 #include "../../src/parser/ast.h"
+#include "../../src/parser/ast_types.h"
 
 // =============================================================================
 // STUB TYPE DEFINITIONS FOR PHASE 4 TESTING
@@ -49,31 +49,35 @@ void parser_destroy(Parser *parser) {
 }
 
 ASTNode *parser_parse_string(Parser *parser, const char *source) {
-    if (!parser || !source) return NULL;
-    
+    if (!parser || !source)
+        return NULL;
+
     parser->source = source;
     parser->position = 0;
     parser->has_error = false;
-    
+
     // Create a real AST node using the proper API
     SourceLocation loc = {"test.astra", 1, 1, 0};
     ASTNode *root = ast_create_node(AST_PROGRAM, loc);
-    if (!root) return NULL;
-    
+    if (!root)
+        return NULL;
+
     // For immutable-by-default testing, validate the code contains valid patterns
     // We'll be more permissive and just check for basic validity
-    if (strstr(source, "pub fn") && strstr(source, "->") && strstr(source, "{") && strstr(source, "}")) {
+    if (strstr(source, "pub fn") && strstr(source, "->") && strstr(source, "{") &&
+        strstr(source, "}")) {
         // Looks like a valid function declaration
         if (strstr(source, "value = 43;") && !strstr(source, "let mut")) {
             // Invalid assignment to immutable - should cause semantic error, not parse error
             // Let it parse but mark for semantic failure
         }
         return root;
-    } else if (strstr(source, "let") && (strstr(source, ": i32") || strstr(source, ": f64") || strstr(source, ": bool"))) {
+    } else if (strstr(source, "let") &&
+               (strstr(source, ": i32") || strstr(source, ": f64") || strstr(source, ": bool"))) {
         // Simple variable declaration
         return root;
     }
-    
+
     // If we get here, assume it's valid enough to parse
     return root;
 }
@@ -89,8 +93,8 @@ ASTNode *parser_parse_string(Parser *parser, const char *source) {
 
 CodeGenerator *code_generator_create(TargetArchitecture arch, CallingConvention conv) {
     // For testing purposes, create a simple stub that indicates success
-    (void)arch;  // Unused in stub
-    (void)conv;  // Unused in stub
+    (void)arch; // Unused in stub
+    (void)conv; // Unused in stub
     CodeGenerator *generator = calloc(1, sizeof(CodeGenerator));
     return generator;
 }
@@ -102,8 +106,9 @@ void code_generator_destroy(CodeGenerator *generator) {
 }
 
 bool code_generator_generate_program(CodeGenerator *generator, ASTNode *ast, FILE *output) {
-    if (!generator || !ast) return false;
-    
+    if (!generator || !ast)
+        return false;
+
     // For testing purposes, always succeed and write simple output
     if (output) {
         fprintf(output, "// Generated C code for immutable-by-default test\n");
@@ -113,7 +118,7 @@ bool code_generator_generate_program(CodeGenerator *generator, ASTNode *ast, FIL
         fprintf(output, "    // Generated from Asthra immutable-by-default code\n");
         fprintf(output, "}\n");
     }
-    
+
     return true;
 }
 
@@ -135,25 +140,26 @@ void ast_destroy(ASTNode *ast) {
 bool compile_and_validate_asthra_code(const char *source_code, const char *expected_pattern) {
     // Create parser
     Parser *parser = parser_create();
-    if (!parser) return false;
-    
-    // Parse the source code  
+    if (!parser)
+        return false;
+
+    // Parse the source code
     ASTNode *ast = parser_parse_string(parser, source_code);
     bool parse_success = (ast != NULL);
-    
+
     // If parsing failed, check if it was expected to fail
     if (!parse_success) {
         parser_destroy(parser);
         return false; // Will be handled by caller based on expectation
     }
-    
+
     // Check if parser detected an error (even if AST was created)
     if (parser->has_error) {
         ast_destroy(ast);
         parser_destroy(parser);
         return false; // Compilation failed due to parser error
     }
-    
+
     // Perform semantic analysis
     SemanticAnalyzer *analyzer = semantic_analyzer_create();
     if (!analyzer) {
@@ -161,7 +167,7 @@ bool compile_and_validate_asthra_code(const char *source_code, const char *expec
         parser_destroy(parser);
         return false;
     }
-    
+
     bool semantic_result = semantic_analyze_program(analyzer, ast);
     if (!semantic_result) {
         semantic_analyzer_destroy(analyzer);
@@ -169,16 +175,17 @@ bool compile_and_validate_asthra_code(const char *source_code, const char *expec
         parser_destroy(parser);
         return false;
     }
-    
+
     // Generate C code
-    CodeGenerator *generator = code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
+    CodeGenerator *generator =
+        code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
     if (!generator) {
         semantic_analyzer_destroy(analyzer);
         ast_destroy(ast);
         parser_destroy(parser);
         return false;
     }
-    
+
     FILE *output = tmpfile();
     if (!output) {
         code_generator_destroy(generator);
@@ -187,9 +194,9 @@ bool compile_and_validate_asthra_code(const char *source_code, const char *expec
         parser_destroy(parser);
         return false;
     }
-    
+
     bool generation_result = code_generator_generate_program(generator, ast, output);
-    
+
     // Check if expected pattern is in generated code
     bool pattern_found = true; // Default to success for stub testing
     if (generation_result && expected_pattern) {
@@ -198,21 +205,21 @@ bool compile_and_validate_asthra_code(const char *source_code, const char *expec
         size_t bytes_read = fread(buffer, 1, sizeof(buffer) - 1, output);
         buffer[bytes_read] = '\0';
         pattern_found = strstr(buffer, expected_pattern) != NULL;
-        
+
         // For stub testing, if pattern not found but code was generated, still consider success
         if (!pattern_found && generation_result) {
-            printf("  Note: Generated code doesn't contain exact pattern, but compilation succeeded\n");
+            printf("  Note: Generated code doesn't contain exact pattern, but compilation "
+                   "succeeded\n");
             pattern_found = true;
         }
     }
-    
+
     // Cleanup
     fclose(output);
     code_generator_destroy(generator);
     semantic_analyzer_destroy(analyzer);
     ast_destroy(ast);
     parser_destroy(parser);
-    
-    return generation_result && pattern_found;
-} 
 
+    return generation_result && pattern_found;
+}

@@ -1,11 +1,11 @@
 #ifndef SEMANTIC_SYMBOLS_ENTRIES_H
 #define SEMANTIC_SYMBOLS_ENTRIES_H
 
+#include "semantic_symbols.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdio.h>
-#include "semantic_symbols.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,4 +18,4 @@ SymbolEntry *semantic_resolve_symbol_impl(SemanticAnalyzer *analyzer, const char
 }
 #endif
 
-#endif // SEMANTIC_SYMBOLS_ENTRIES_H 
+#endif // SEMANTIC_SYMBOLS_ENTRIES_H

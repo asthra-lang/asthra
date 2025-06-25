@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * FFI Assembly Generator Tests - Common Implementation Stubs
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Implementation stubs for FFI assembly generator test functions
  */
 
@@ -38,7 +38,7 @@ bool setup_test_suite(void) {
     if (!g_generator) {
         return false;
     }
-    
+
     // Initialize mock generator with basic values
     g_generator->config.enable_bounds_checking = true;
     g_generator->config.enable_security_features = true;
@@ -47,7 +47,7 @@ bool setup_test_suite(void) {
     g_generator->config.optimize_pattern_matching = true;
     g_generator->config.max_variadic_args = 32;
     g_generator->config.pic_mode = false;
-    
+
     return true;
 }
 
@@ -66,7 +66,7 @@ ASTNode *create_test_identifier(const char *name) {
     ASTNode *node = calloc(1, sizeof(ASTNode));
     node->type = AST_IDENTIFIER;
     node->data.identifier.name = strdup(name);
-    
+
     // Add mock type information to avoid architectural violation
     node->type_info = calloc(1, sizeof(TypeInfo));
     if (node->type_info) {
@@ -79,7 +79,7 @@ ASTNode *create_test_identifier(const char *name) {
         node->type_info->flags.is_ffi_compatible = true;
         node->type_info->flags.is_copyable = true;
     }
-    
+
     return node;
 }
 
@@ -135,7 +135,8 @@ bool ffi_generate_string_length(FFIAssemblyGenerator *gen, int src_reg, int dest
     return true; // Mock implementation
 }
 
-bool ffi_generate_string_comparison(FFIAssemblyGenerator *gen, int left_reg, int right_reg, int result_reg) {
+bool ffi_generate_string_comparison(FFIAssemblyGenerator *gen, int left_reg, int right_reg,
+                                    int result_reg) {
     return true; // Mock implementation
 }
 
@@ -148,15 +149,18 @@ bool ffi_generate_slice_to_string(FFIAssemblyGenerator *gen, int src_reg, int de
 }
 
 // Slice operations
-bool ffi_generate_slice_index_access(FFIAssemblyGenerator *gen, int slice_reg, int index_reg, int result_reg, bool bounds_check) {
+bool ffi_generate_slice_index_access(FFIAssemblyGenerator *gen, int slice_reg, int index_reg,
+                                     int result_reg, bool bounds_check) {
     return true; // Mock implementation
 }
 
-bool ffi_generate_slice_subslice(FFIAssemblyGenerator *gen, int slice_reg, int start_reg, int end_reg, int result_reg) {
+bool ffi_generate_slice_subslice(FFIAssemblyGenerator *gen, int slice_reg, int start_reg,
+                                 int end_reg, int result_reg) {
     return true; // Mock implementation
 }
 
-bool ffi_generate_slice_iteration_setup(FFIAssemblyGenerator *gen, int slice_reg, int iter_reg, int end_reg) {
+bool ffi_generate_slice_iteration_setup(FFIAssemblyGenerator *gen, int slice_reg, int iter_reg,
+                                        int end_reg) {
     return true; // Mock implementation
 }
 
@@ -182,7 +186,8 @@ bool ffi_generate_mutex_unlock(FFIAssemblyGenerator *gen, int mutex_reg) {
     return true; // Mock implementation
 }
 
-bool ffi_generate_atomic_cas(FFIAssemblyGenerator *gen, int target_reg, int expected_reg, int desired_reg, int result_reg) {
+bool ffi_generate_atomic_cas(FFIAssemblyGenerator *gen, int target_reg, int expected_reg,
+                             int desired_reg, int result_reg) {
     return true; // Mock implementation
 }
 
@@ -227,7 +232,8 @@ bool ffi_optimize_array_access(FFIAssemblyGenerator *gen, ASTNode *array_access)
     return true; // Mock implementation
 }
 
-bool ffi_optimize_conditional_move(FFIAssemblyGenerator *gen, ASTNode *conditional, int result_reg) {
+bool ffi_optimize_conditional_move(FFIAssemblyGenerator *gen, ASTNode *conditional,
+                                   int result_reg) {
     return true; // Mock implementation
 }
 

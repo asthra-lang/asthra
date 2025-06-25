@@ -1,10 +1,10 @@
 /*
  * Concurrency Tiers Integration Tests - Real-World Scenarios
- * 
+ *
  * Tests for real-world applications of the three-tier concurrency system.
  * Includes web servers, data processing pipelines, and production-like
  * workload scenarios.
- * 
+ *
  * Phase 8: Testing and Validation
  * Focus: Real-world scenarios and production patterns
  */
@@ -17,8 +17,8 @@
 
 void test_web_server_scenario(void) {
     printf("Testing web server concurrency scenario...\n");
-    
-    const char* web_server_code = 
+
+    const char *web_server_code =
         "import \"stdlib/concurrent/channels\";\n"
         "import \"stdlib/concurrent/patterns\";\n"
         "\n"
@@ -95,31 +95,31 @@ void test_web_server_scenario(void) {
         "fn process_request_advanced(request: HttpRequest) -> Result<HttpResponse, string> {\n"
         "    Result.Ok(HttpResponse { status: 200, body: \"Advanced Response!\" })\n"
         "}\n";
-    
+
     ParseResult result = parse_string(web_server_code);
     ASSERT_TRUE(result.success);
-    
+
     SemanticAnalysisResult semantic_result = analyze_semantics(result.ast);
     ASSERT_TRUE(semantic_result.success);
     ASSERT_EQUAL(semantic_result.error_count, 0);
-    
+
     // Verify tier usage is correct
-    ASTNode* simple_handler = find_function_declaration(result.ast, "handle_request_simple");
+    ASTNode *simple_handler = find_function_declaration(result.ast, "handle_request_simple");
     ASSERT_NOT_NULL(simple_handler);
     ASSERT_FALSE(has_annotation(simple_handler, "non_deterministic"));
-    
-    ASTNode* server_func = find_function_declaration(result.ast, "run_web_server");
+
+    ASTNode *server_func = find_function_declaration(result.ast, "run_web_server");
     ASSERT_NOT_NULL(server_func);
     ASSERT_TRUE(has_annotation(server_func, "non_deterministic"));
-    
+
     cleanup_parse_result(&result);
     cleanup_semantic_result(&semantic_result);
 }
 
 void test_data_processing_pipeline(void) {
     printf("Testing data processing pipeline scenario...\n");
-    
-    const char* pipeline_code = 
+
+    const char *pipeline_code =
         "import \"stdlib/concurrent/channels\";\n"
         "import \"stdlib/concurrent/coordination\";\n"
         "\n"
@@ -217,23 +217,23 @@ void test_data_processing_pipeline(void) {
         "        processed_value: item.value * 3 + 1,\n"
         "    })\n"
         "}\n";
-    
+
     ParseResult result = parse_string(pipeline_code);
     ASSERT_TRUE(result.success);
-    
+
     SemanticAnalysisResult semantic_result = analyze_semantics(result.ast);
     ASSERT_TRUE(semantic_result.success);
     ASSERT_EQUAL(semantic_result.error_count, 0);
-    
+
     // Verify tier usage
-    ASTNode* simple_batch = find_function_declaration(result.ast, "process_batch_simple");
+    ASTNode *simple_batch = find_function_declaration(result.ast, "process_batch_simple");
     ASSERT_NOT_NULL(simple_batch);
     ASSERT_FALSE(has_annotation(simple_batch, "non_deterministic"));
-    
-    ASTNode* streaming_pipeline = find_function_declaration(result.ast, "run_streaming_pipeline");
+
+    ASTNode *streaming_pipeline = find_function_declaration(result.ast, "run_streaming_pipeline");
     ASSERT_NOT_NULL(streaming_pipeline);
     ASSERT_TRUE(has_annotation(streaming_pipeline, "non_deterministic"));
-    
+
     cleanup_parse_result(&result);
     cleanup_semantic_result(&semantic_result);
 }
@@ -246,4 +246,4 @@ void run_real_world_scenario_tests(void) {
     printf("\n--- Real-World Scenario Tests ---\n");
     test_web_server_scenario();
     test_data_processing_pipeline();
-} 
+}

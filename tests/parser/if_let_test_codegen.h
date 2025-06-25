@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language
  * If-Let Statement Testing - Code Generation Tests
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Phase 4.3: Code generation tests for if-let statements (Mock implementations)
  */
 
@@ -45,4 +45,4 @@ bool run_codegen_tests(void);
 }
 #endif
 
-#endif // IF_LET_TEST_CODEGEN_H 
+#endif // IF_LET_TEST_CODEGEN_H

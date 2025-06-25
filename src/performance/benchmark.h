@@ -1,11 +1,11 @@
 #ifndef ASTHRA_BENCHMARK_H
 #define ASTHRA_BENCHMARK_H
 
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
-#include <time.h>
 #include <stdatomic.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <time.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -17,13 +17,13 @@ extern "C" {
 
 // C17 Feature Detection for Performance Optimization
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201710L
-    #define ASTHRA_BENCHMARK_HAS_C17 1
-    #define ASTHRA_BENCHMARK_ALIGNAS(x) _Alignas(x)
-    #define ASTHRA_BENCHMARK_STATIC_ASSERT(cond, msg) _Static_assert(cond, msg)
+#define ASTHRA_BENCHMARK_HAS_C17 1
+#define ASTHRA_BENCHMARK_ALIGNAS(x) _Alignas(x)
+#define ASTHRA_BENCHMARK_STATIC_ASSERT(cond, msg) _Static_assert(cond, msg)
 #else
-    #define ASTHRA_BENCHMARK_HAS_C17 0
-    #define ASTHRA_BENCHMARK_ALIGNAS(x)
-    #define ASTHRA_BENCHMARK_STATIC_ASSERT(cond, msg)
+#define ASTHRA_BENCHMARK_HAS_C17 0
+#define ASTHRA_BENCHMARK_ALIGNAS(x)
+#define ASTHRA_BENCHMARK_STATIC_ASSERT(cond, msg)
 #endif
 
 // Performance measurement precision
@@ -166,24 +166,17 @@ typedef struct {
 // =============================================================================
 
 // Core benchmark execution
-AsthraBenchmarkStatus asthra_benchmark_execute(
-    const AsthraBenchmarkDefinition *benchmark,
-    AsthraBenchmarkResult *result
-);
+AsthraBenchmarkStatus asthra_benchmark_execute(const AsthraBenchmarkDefinition *benchmark,
+                                               AsthraBenchmarkResult *result);
 
 // Execute benchmark suite
-AsthraBenchmarkStatus asthra_benchmark_execute_suite(
-    const AsthraBenchmarkSuite *suite,
-    AsthraBenchmarkResult *results,
-    size_t *result_count
-);
+AsthraBenchmarkStatus asthra_benchmark_execute_suite(const AsthraBenchmarkSuite *suite,
+                                                     AsthraBenchmarkResult *results,
+                                                     size_t *result_count);
 
 // Single iteration timing
-AsthraBenchmarkStatus asthra_benchmark_time_function(
-    AsthraBenchmarkFunction func,
-    void *context,
-    uint64_t *duration_ns
-);
+AsthraBenchmarkStatus asthra_benchmark_time_function(AsthraBenchmarkFunction func, void *context,
+                                                     uint64_t *duration_ns);
 
 // =============================================================================
 // TIMING UTILITIES
@@ -208,26 +201,17 @@ uint64_t asthra_benchmark_get_cpu_time_ns(void);
 // =============================================================================
 
 // Calculate statistics from timing data
-void asthra_benchmark_calculate_statistics(
-    const uint64_t *durations,
-    size_t count,
-    AsthraBenchmarkStatistics *stats
-);
+void asthra_benchmark_calculate_statistics(const uint64_t *durations, size_t count,
+                                           AsthraBenchmarkStatistics *stats);
 
 // Outlier detection and filtering
-size_t asthra_benchmark_filter_outliers(
-    uint64_t *durations,
-    size_t count,
-    double threshold_std_devs
-);
+size_t asthra_benchmark_filter_outliers(uint64_t *durations, size_t count,
+                                        double threshold_std_devs);
 
 // Confidence interval calculation
-void asthra_benchmark_confidence_interval(
-    const AsthraBenchmarkStatistics *stats,
-    double confidence_level,
-    uint64_t *lower_bound,
-    uint64_t *upper_bound
-);
+void asthra_benchmark_confidence_interval(const AsthraBenchmarkStatistics *stats,
+                                          double confidence_level, uint64_t *lower_bound,
+                                          uint64_t *upper_bound);
 
 // =============================================================================
 // MEMORY TRACKING
@@ -245,11 +229,8 @@ void asthra_benchmark_memory_record_deallocation(size_t size);
 
 // Configuration helpers
 AsthraBenchmarkConfig asthra_benchmark_config_default(const char *name);
-AsthraBenchmarkConfig asthra_benchmark_config_create(
-    const char *name,
-    uint64_t iterations,
-    AsthraBenchmarkMode mode
-);
+AsthraBenchmarkConfig asthra_benchmark_config_create(const char *name, uint64_t iterations,
+                                                     AsthraBenchmarkMode mode);
 
 // Validation functions
 bool asthra_benchmark_config_validate(const AsthraBenchmarkConfig *config);
@@ -261,83 +242,63 @@ bool asthra_benchmark_definition_validate(const AsthraBenchmarkDefinition *bench
 
 // Result formatting and output
 void asthra_benchmark_print_result(const AsthraBenchmarkResult *result);
-void asthra_benchmark_print_suite_results(
-    const AsthraBenchmarkResult *results,
-    size_t count
-);
+void asthra_benchmark_print_suite_results(const AsthraBenchmarkResult *results, size_t count);
 
 // JSON output for automated analysis
-AsthraBenchmarkStatus asthra_benchmark_export_json(
-    const AsthraBenchmarkResult *results,
-    size_t count,
-    const char *filename
-);
+AsthraBenchmarkStatus asthra_benchmark_export_json(const AsthraBenchmarkResult *results,
+                                                   size_t count, const char *filename);
 
 // CSV output for spreadsheet analysis
-AsthraBenchmarkStatus asthra_benchmark_export_csv(
-    const AsthraBenchmarkResult *results,
-    size_t count,
-    const char *filename
-);
+AsthraBenchmarkStatus asthra_benchmark_export_csv(const AsthraBenchmarkResult *results,
+                                                  size_t count, const char *filename);
 
 // =============================================================================
 // SUITE MANAGEMENT
 // =============================================================================
 
 // Suite creation and management
-AsthraBenchmarkSuite* asthra_benchmark_suite_create(const char *name);
+AsthraBenchmarkSuite *asthra_benchmark_suite_create(const char *name);
 void asthra_benchmark_suite_destroy(AsthraBenchmarkSuite *suite);
 
 // Add benchmarks to suite
-AsthraBenchmarkStatus asthra_benchmark_suite_add(
-    AsthraBenchmarkSuite *suite,
-    const AsthraBenchmarkDefinition *benchmark
-);
+AsthraBenchmarkStatus asthra_benchmark_suite_add(AsthraBenchmarkSuite *suite,
+                                                 const AsthraBenchmarkDefinition *benchmark);
 
 // Remove benchmarks from suite
-AsthraBenchmarkStatus asthra_benchmark_suite_remove(
-    AsthraBenchmarkSuite *suite,
-    const char *benchmark_name
-);
+AsthraBenchmarkStatus asthra_benchmark_suite_remove(AsthraBenchmarkSuite *suite,
+                                                    const char *benchmark_name);
 
 // =============================================================================
 // PERFORMANCE MACROS
 // =============================================================================
 
 // Convenient macros for common benchmarking patterns
-#define ASTHRA_BENCHMARK_SIMPLE(name, func, iterations) \
-    do { \
-        AsthraBenchmarkConfig config = asthra_benchmark_config_create( \
-            name, iterations, ASTHRA_BENCHMARK_MODE_SINGLE_THREADED); \
-        AsthraBenchmarkDefinition def = { \
-            .config = config, \
-            .benchmark_func = func, \
-            .setup_func = NULL, \
-            .teardown_func = NULL, \
-            .user_data = NULL \
-        }; \
-        AsthraBenchmarkResult result; \
-        asthra_benchmark_execute(&def, &result); \
-        asthra_benchmark_print_result(&result); \
-    } while(0)
+#define ASTHRA_BENCHMARK_SIMPLE(name, func, iterations)                                            \
+    do {                                                                                           \
+        AsthraBenchmarkConfig config = asthra_benchmark_config_create(                             \
+            name, iterations, ASTHRA_BENCHMARK_MODE_SINGLE_THREADED);                              \
+        AsthraBenchmarkDefinition def = {.config = config,                                         \
+                                         .benchmark_func = func,                                   \
+                                         .setup_func = NULL,                                       \
+                                         .teardown_func = NULL,                                    \
+                                         .user_data = NULL};                                       \
+        AsthraBenchmarkResult result;                                                              \
+        asthra_benchmark_execute(&def, &result);                                                   \
+        asthra_benchmark_print_result(&result);                                                    \
+    } while (0)
 
-#define ASTHRA_BENCHMARK_TIME_BLOCK(name) \
-    for (AsthraBenchmarkTimer _timer = asthra_benchmark_timer_start(); \
-         _timer.start_ns != 0; \
-         asthra_benchmark_timer_end(&_timer), \
-         printf("%s: %lu ns\n", name, _timer.duration_ns), \
-         _timer.start_ns = 0)
+#define ASTHRA_BENCHMARK_TIME_BLOCK(name)                                                          \
+    for (AsthraBenchmarkTimer _timer = asthra_benchmark_timer_start(); _timer.start_ns != 0;       \
+         asthra_benchmark_timer_end(&_timer), printf("%s: %lu ns\n", name, _timer.duration_ns),    \
+                              _timer.start_ns = 0)
 
 // Compile-time assertions for structure sizes and alignment
-ASTHRA_BENCHMARK_STATIC_ASSERT(
-    sizeof(AsthraBenchmarkStatistics) >= ASTHRA_BENCHMARK_CACHE_LINE_SIZE,
-    "AsthraBenchmarkStatistics should be cache-line aligned"
-);
+ASTHRA_BENCHMARK_STATIC_ASSERT(sizeof(AsthraBenchmarkStatistics) >=
+                                   ASTHRA_BENCHMARK_CACHE_LINE_SIZE,
+                               "AsthraBenchmarkStatistics should be cache-line aligned");
 
-ASTHRA_BENCHMARK_STATIC_ASSERT(
-    sizeof(AsthraBenchmarkResult) >= ASTHRA_BENCHMARK_CACHE_LINE_SIZE,
-    "AsthraBenchmarkResult should be cache-line aligned"
-);
+ASTHRA_BENCHMARK_STATIC_ASSERT(sizeof(AsthraBenchmarkResult) >= ASTHRA_BENCHMARK_CACHE_LINE_SIZE,
+                               "AsthraBenchmarkResult should be cache-line aligned");
 
 #ifdef __cplusplus
 }

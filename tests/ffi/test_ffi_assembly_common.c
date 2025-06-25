@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * FFI Assembly Generator Tests - Common Implementation
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Common implementations and utilities for FFI assembly generator tests
  */
 
@@ -33,17 +33,19 @@ void mock_semantic_analyzer_destroy(MockSemanticAnalyzer *analyzer) {
 
 // Helper function to set up mock variables in the symbol table
 bool setup_mock_variables(FFIAssemblyGenerator *generator) {
-    if (!generator || !generator->base_generator) return false;
-    
+    if (!generator || !generator->base_generator)
+        return false;
+
     // Create a mock type descriptor for testing
     TypeDescriptor *mock_type = calloc(1, sizeof(TypeDescriptor));
-    if (!mock_type) return false;
-    
+    if (!mock_type)
+        return false;
+
     mock_type->category = TYPE_PRIMITIVE;
     mock_type->name = strdup("i32");
     mock_type->size = 4;
     mock_type->alignment = 4;
-    
+
     // Add common test variables to the symbol table
     bool success = true;
     success &= add_local_variable(generator->base_generator, "result_value", mock_type, 4);
@@ -51,12 +53,12 @@ bool setup_mock_variables(FFIAssemblyGenerator *generator) {
     success &= add_local_variable(generator->base_generator, "value", mock_type, 4);
     success &= add_local_variable(generator->base_generator, "test_var", mock_type, 4);
     success &= add_local_variable(generator->base_generator, "object", mock_type, 8);
-    
+
     if (!success) {
         free((char *)mock_type->name);
         free(mock_type);
     }
-    
+
     return success;
 }
 
@@ -75,28 +77,29 @@ static void destroy_mock_type_info(TypeInfo *type_info) {
 // Helper function to create mock TypeInfo for test identifiers
 static TypeInfo *create_mock_type_info(const char *type_name) {
     TypeInfo *type_info = calloc(1, sizeof(TypeInfo));
-    if (!type_info) return NULL;
-    
+    if (!type_info)
+        return NULL;
+
     type_info->type_id = 1; // Mock type ID
     type_info->name = strdup(type_name ? type_name : "i32");
     type_info->category = TYPE_INFO_PRIMITIVE;
     type_info->size = 4;
     type_info->alignment = 4;
-    
+
     // Set flags for a basic integer type
     type_info->flags.is_mutable = true;
     type_info->flags.is_owned = true;
     type_info->flags.is_ffi_compatible = true;
     type_info->flags.is_copyable = true;
     type_info->flags.is_movable = true;
-    
+
     type_info->ownership = OWNERSHIP_INFO_STACK;
-    
+
     // Set primitive type data
     type_info->data.primitive.kind = PRIMITIVE_INFO_I32;
     type_info->data.primitive.is_signed = true;
     type_info->data.primitive.is_integer = true;
-    
+
     return type_info;
 }
 
@@ -120,7 +123,7 @@ void free_test_identifier(ASTNode *node) {
         }
         // Clean up the identifier name
         if (node->data.identifier.name) {
-            free((char*)node->data.identifier.name);
+            free((char *)node->data.identifier.name);
             node->data.identifier.name = NULL;
         }
         // Free the node itself
@@ -183,7 +186,8 @@ ASTNode *create_test_unsafe_block(ASTNode *block) {
 void run_test(test_function_t test_func) {
     g_tests_run++;
     bool result = test_func();
-    if (result) g_tests_passed++;
+    if (result)
+        g_tests_passed++;
 }
 
 // Setup and teardown functions for test suite
@@ -194,15 +198,15 @@ bool setup_test_suite(void) {
         fprintf(stderr, "ERROR: Failed to create FFI assembly generator\n");
         return false;
     }
-    
+
     // Set up semantic analyzer on the base generator
     if (g_generator->base_generator) {
-        SemanticAnalyzer* analyzer = setup_semantic_analyzer();
+        SemanticAnalyzer *analyzer = setup_semantic_analyzer();
         if (analyzer) {
             g_generator->base_generator->semantic_analyzer = analyzer;
         }
     }
-    
+
     // Initialize mock variables
     if (!setup_mock_variables(g_generator)) {
         fprintf(stderr, "ERROR: Failed to setup mock variables\n");
@@ -210,10 +214,10 @@ bool setup_test_suite(void) {
         g_generator = NULL;
         return false;
     }
-    
+
     g_tests_run = 0;
     g_tests_passed = 0;
-    
+
     return true;
 }
 
@@ -227,17 +231,17 @@ void teardown_test_suite(void) {
         ffi_assembly_generator_destroy(g_generator);
         g_generator = NULL;
     }
-    
+
     printf("\n==================================================\n");
     printf("FFI Assembly Generator Test Results\n");
     printf("==================================================\n");
     printf("Tests run: %zu\n", g_tests_run);
     printf("Tests passed: %zu\n", g_tests_passed);
     printf("Success rate: %.1f%%\n\n", (float)g_tests_passed / (float)g_tests_run * 100.0f);
-    
+
     if (g_tests_passed == g_tests_run) {
         printf("🎉 All tests passed!\n");
     } else {
         printf("❌ Some tests failed!\n");
     }
-} 
+}

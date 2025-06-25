@@ -1,10 +1,10 @@
 /*
  * Annotation Tests Common - Shared Definitions and Utilities
  * Common header for modular annotation test suite
- * 
+ *
  * Provides shared types, macros, and utility functions for:
  * - Basic annotation parsing tests
- * - Annotation validation tests  
+ * - Annotation validation tests
  * - Complex annotation scenarios
  * - Error detection tests
  * - Performance and edge cases
@@ -13,15 +13,15 @@
 #ifndef TEST_ANNOTATIONS_COMMON_H
 #define TEST_ANNOTATIONS_COMMON_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
 #include "../framework/test_framework.h"
 #include "ast_types.h"
 #include "parser.h"
-#include "semantic_core.h"
 #include "semantic_annotations.h"
+#include "semantic_core.h"
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 // ============================================================================
 // Test Framework Macros
@@ -31,16 +31,16 @@
 extern size_t tests_run;
 extern size_t tests_passed;
 
-#define ASSERT_TRUE(condition) \
-    do { \
-        tests_run++; \
-        if (condition) { \
-            tests_passed++; \
-            printf("  ✅ PASS: %s\n", #condition); \
-        } else { \
-            printf("  ❌ FAIL: %s:%d - %s\n", __FILE__, __LINE__, #condition); \
-        } \
-    } while(0)
+#define ASSERT_TRUE(condition)                                                                     \
+    do {                                                                                           \
+        tests_run++;                                                                               \
+        if (condition) {                                                                           \
+            tests_passed++;                                                                        \
+            printf("  ✅ PASS: %s\n", #condition);                                                 \
+        } else {                                                                                   \
+            printf("  ❌ FAIL: %s:%d - %s\n", __FILE__, __LINE__, #condition);                     \
+        }                                                                                          \
+    } while (0)
 
 #define ASSERT_FALSE(condition) ASSERT_TRUE(!(condition))
 #define ASSERT_NULL(ptr) ASSERT_TRUE((ptr) == NULL)
@@ -58,7 +58,7 @@ extern size_t tests_passed;
  * @param name Function name to find
  * @return Function declaration node or NULL if not found
  */
-ASTNode* find_function_declaration(ASTNode* ast, const char* name);
+ASTNode *find_function_declaration(ASTNode *ast, const char *name);
 
 /**
  * Check if a function has a specific annotation
@@ -66,19 +66,19 @@ ASTNode* find_function_declaration(ASTNode* ast, const char* name);
  * @param annotation_name Name of annotation to check for
  * @return true if annotation is present, false otherwise
  */
-bool has_annotation(ASTNode* function_node, const char* annotation_name);
+bool has_annotation(ASTNode *function_node, const char *annotation_name);
 
 /**
  * Clean up parse result resources
  * @param result Parse result to clean up
  */
-void cleanup_parse_result(ParseResult* result);
+void cleanup_parse_result(ParseResult *result);
 
 /**
  * Clean up semantic analysis result resources
  * @param result Semantic analysis result to clean up
  */
-void cleanup_semantic_result(SemanticAnalysisResult* result);
+void cleanup_semantic_result(SemanticAnalysisResult *result);
 
 /**
  * Initialize test counters
@@ -90,13 +90,13 @@ void init_test_counters(void);
  * @param total_tests Output parameter for total tests run
  * @param passed_tests Output parameter for tests passed
  */
-void get_test_stats(size_t* total_tests, size_t* passed_tests);
+void get_test_stats(size_t *total_tests, size_t *passed_tests);
 
 /**
  * Print test results summary
  * @param category_name Name of test category for reporting
  */
-void print_test_results(const char* category_name);
+void print_test_results(const char *category_name);
 
 // ============================================================================
 // Test Function Declarations
@@ -125,4 +125,4 @@ void test_annotation_placement_restrictions(void);
 void test_many_annotations(void);
 void test_annotation_with_complex_parameters(void);
 
-#endif // TEST_ANNOTATIONS_COMMON_H 
+#endif // TEST_ANNOTATIONS_COMMON_H

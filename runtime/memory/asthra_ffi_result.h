@@ -1,7 +1,7 @@
 /**
  * Asthra Safe C Memory Interface v1.0 - Result Type System
  * Result type creation, unwrapping, validation, and memory management
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -9,9 +9,9 @@
 #ifndef ASTHRA_FFI_RESULT_H
 #define ASTHRA_FFI_RESULT_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 #include "asthra_ffi_memory_core.h"
 
@@ -52,7 +52,7 @@ extern "C" {
  * @param result Result to unwrap
  * @return Pointer to the value, or NULL if result is Err
  */
-void* Asthra_result_unwrap_ok(AsthraFFIResult result);
+void *Asthra_result_unwrap_ok(AsthraFFIResult result);
 
 /**
  * Get error code from a result
@@ -66,7 +66,7 @@ int Asthra_result_get_error_code(AsthraFFIResult result);
  * @param result Result to query
  * @return Error message string, or NULL if result is Ok
  */
-const char* Asthra_result_get_error_message(AsthraFFIResult result);
+const char *Asthra_result_get_error_message(AsthraFFIResult result);
 
 // =============================================================================
 // RESULT TYPE MEMORY MANAGEMENT
@@ -82,4 +82,4 @@ void Asthra_result_free(AsthraFFIResult result);
 }
 #endif
 
-#endif // ASTHRA_FFI_RESULT_H 
+#endif // ASTHRA_FFI_RESULT_H

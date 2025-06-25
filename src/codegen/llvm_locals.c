@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language LLVM Local Variables
  * Implementation of local variable tracking
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -11,7 +11,8 @@
 #include <string.h>
 
 // Register a local variable with its alloca instruction
-void register_local_var(LLVMBackendData *data, const char *name, LLVMValueRef alloca, LLVMTypeRef type) {
+void register_local_var(LLVMBackendData *data, const char *name, LLVMValueRef alloca,
+                        LLVMTypeRef type) {
     LocalVar *var = malloc(sizeof(LocalVar));
     var->name = strdup(name);
     var->alloca = alloca;
@@ -21,7 +22,7 @@ void register_local_var(LLVMBackendData *data, const char *name, LLVMValueRef al
 }
 
 // Look up a local variable entry by name
-LocalVar* lookup_local_var_entry(LLVMBackendData *data, const char *name) {
+LocalVar *lookup_local_var_entry(LLVMBackendData *data, const char *name) {
     LocalVar *var = data->local_vars;
     while (var) {
         if (strcmp(var->name, name) == 0) {
@@ -43,7 +44,7 @@ void clear_local_vars(LLVMBackendData *data) {
     LocalVar *var = data->local_vars;
     while (var) {
         LocalVar *next = var->next;
-        free((char*)var->name);
+        free((char *)var->name);
         free(var);
         var = next;
     }

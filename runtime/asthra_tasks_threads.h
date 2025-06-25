@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Task System Threads v1.2
  * Thread Registration and GC Integration Functions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -39,4 +39,4 @@ bool asthra_thread_is_registered(void);
  */
 void init_thread_key(void);
 
-#endif // ASTHRA_TASKS_THREADS_H 
+#endif // ASTHRA_TASKS_THREADS_H

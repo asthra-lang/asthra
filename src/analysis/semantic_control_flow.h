@@ -1,8 +1,8 @@
 #ifndef SEMANTIC_CONTROL_FLOW_H
 #define SEMANTIC_CONTROL_FLOW_H
 
-#include "semantic_analyzer_core.h"
 #include "../parser/ast_types.h"
+#include "semantic_analyzer_core.h"
 
 // Control flow statement analysis functions
 bool analyze_return_statement(SemanticAnalyzer *analyzer, ASTNode *stmt);

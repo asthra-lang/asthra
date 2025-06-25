@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language
  * If-Let Statement Testing - Semantic Analysis Tests
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Phase 4.2: Semantic analysis tests for if-let statements (Mock implementations)
  */
 
@@ -45,4 +45,4 @@ bool run_semantic_tests(void);
 }
 #endif
 
-#endif // IF_LET_TEST_SEMANTIC_H 
+#endif // IF_LET_TEST_SEMANTIC_H

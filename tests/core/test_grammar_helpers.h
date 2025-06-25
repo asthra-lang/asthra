@@ -73,7 +73,7 @@ bool grammar_test_validate_ffi_annotation(const char *annotation);
  * Mock function to get the last error message from parsing
  * In a real implementation, this would return actual parser error
  */
-const char* grammar_test_get_last_error(void);
+const char *grammar_test_get_last_error(void);
 
 /**
  * Mock function to check if expression parses as associated function call
@@ -103,4 +103,4 @@ bool grammar_test_check_deterministic_parsing(void);
 }
 #endif
 
-#endif // ASTHRA_TEST_GRAMMAR_HELPERS_H 
+#endif // ASTHRA_TEST_GRAMMAR_HELPERS_H

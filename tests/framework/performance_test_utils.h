@@ -11,10 +11,10 @@
 #ifndef ASTHRA_PERFORMANCE_TEST_UTILS_H
 #define ASTHRA_PERFORMANCE_TEST_UTILS_H
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,20 +40,20 @@ typedef struct {
  * Start performance measurement
  * @return Performance metrics structure
  */
-PerformanceMetrics* start_performance_measurement(void);
+PerformanceMetrics *start_performance_measurement(void);
 
 /**
  * End performance measurement
  * @param metrics The metrics to update
  */
-void end_performance_measurement(PerformanceMetrics* metrics);
+void end_performance_measurement(PerformanceMetrics *metrics);
 
 /**
  * Report performance metrics
  * @param metrics The metrics to report
  * @param test_name The name of the test
  */
-void report_performance(const PerformanceMetrics* metrics, const char* test_name);
+void report_performance(const PerformanceMetrics *metrics, const char *test_name);
 
 /**
  * Track memory allocation

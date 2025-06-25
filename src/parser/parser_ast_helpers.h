@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Parser AST creation helper functions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -11,8 +11,8 @@
 
 #include "ast.h"
 #include "lexer.h"
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,7 +34,8 @@ ASTNode *create_literal_float(Parser *parser, double value);
 ASTNode *create_literal_string(Parser *parser, const char *value);
 ASTNode *create_literal_bool(Parser *parser, bool value);
 ASTNode *create_literal_char(Parser *parser, uint32_t value);
-ASTNode *create_enum_variant(Parser *parser, const char *enum_name, const char *variant_name, ASTNode *value);
+ASTNode *create_enum_variant(Parser *parser, const char *enum_name, const char *variant_name,
+                             ASTNode *value);
 
 // Enhanced AST creation with statistics tracking
 ASTNode *create_ast_node_safe(Parser *parser, ASTNodeType type, ASTNodeData data);
@@ -44,4 +45,4 @@ ASTNode *create_ast_node_with_location(Parser *parser, ASTNodeType type, SourceL
 }
 #endif
 
-#endif // ASTHRA_PARSER_AST_HELPERS_H 
+#endif // ASTHRA_PARSER_AST_HELPERS_H

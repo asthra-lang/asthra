@@ -11,12 +11,12 @@
 #define ASTHRA_TEST_SECURITY_HELPERS_H
 
 #include "../core/test_comprehensive.h"
-#include <string.h>
+#include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
+#include <string.h>
 #include <time.h>
-#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,4 +51,4 @@ uint64_t rdtsc(void);
 }
 #endif
 
-#endif // ASTHRA_TEST_SECURITY_HELPERS_H 
+#endif // ASTHRA_TEST_SECURITY_HELPERS_H

@@ -1,8 +1,8 @@
 #ifndef SEMANTIC_EXPRESSION_UTILS_H
 #define SEMANTIC_EXPRESSION_UTILS_H
 
-#include "semantic_analyzer_core.h"
 #include "../parser/ast_types.h"
+#include "semantic_analyzer_core.h"
 
 // Struct and enum expression analysis functions
 bool analyze_struct_instantiation(SemanticAnalyzer *analyzer, ASTNode *expr);

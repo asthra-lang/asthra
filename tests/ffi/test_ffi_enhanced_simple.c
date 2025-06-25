@@ -1,9 +1,9 @@
 /**
  * Asthra Programming Language v1.2 Enhanced FFI Tests - Simple Implementation
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Simple stub implementations for enhanced FFI test functions.
  */
 

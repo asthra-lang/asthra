@@ -1,20 +1,20 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Loop Statements
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Analysis of loop statements (for, while)
  */
 
 #include "semantic_loops.h"
+#include "../parser/ast_node_list.h"
+#include "semantic_basic_statements.h"
 #include "semantic_core.h"
 #include "semantic_symbols.h"
 #include "semantic_types.h"
 #include "semantic_utilities.h"
-#include "semantic_basic_statements.h"
-#include "../parser/ast_node_list.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -32,9 +32,9 @@ bool analyze_for_statement(SemanticAnalyzer *analyzer, ASTNode *stmt) {
     ASTNode *body = stmt->data.for_stmt.body;
 
     if (!iterator_var || !iterable_expr || !body) {
-        semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION,
-                             stmt->location,
-                             "For statement missing iterator variable, iterable expression, or body");
+        semantic_report_error(
+            analyzer, SEMANTIC_ERROR_INVALID_OPERATION, stmt->location,
+            "For statement missing iterator variable, iterable expression, or body");
         return false;
     }
 
@@ -46,8 +46,8 @@ bool analyze_for_statement(SemanticAnalyzer *analyzer, ASTNode *stmt) {
     TypeDescriptor *iterable_type = semantic_get_expression_type(analyzer, iterable_expr);
     if (!iterable_type) {
         semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_INFERENCE_FAILED,
-                             iterable_expr->location,
-                             "Could not infer type of iterable expression in for loop");
+                              iterable_expr->location,
+                              "Could not infer type of iterable expression in for loop");
         return false;
     }
 
@@ -56,9 +56,9 @@ bool analyze_for_statement(SemanticAnalyzer *analyzer, ASTNode *stmt) {
     if (iterable_type->category == TYPE_SLICE) {
         element_type = iterable_type->data.slice.element_type;
     } else {
-        semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH,
-                             iterable_expr->location,
-                             "For loop iterable must be a slice, but found %s", iterable_type->name);
+        semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, iterable_expr->location,
+                              "For loop iterable must be a slice, but found %s",
+                              iterable_type->name);
         type_descriptor_release(iterable_type);
         return false;
     }
@@ -93,10 +93,9 @@ bool analyze_while_statement(SemanticAnalyzer *analyzer, ASTNode *stmt) {
     // This is a placeholder for future implementation
     (void)analyzer;
     (void)stmt;
-    
-    semantic_report_error(analyzer, SEMANTIC_ERROR_UNSUPPORTED_OPERATION,
-                         stmt->location,
-                         "While statements are not yet implemented");
+
+    semantic_report_error(analyzer, SEMANTIC_ERROR_UNSUPPORTED_OPERATION, stmt->location,
+                          "While statements are not yet implemented");
     return false;
 }
 
@@ -108,15 +107,14 @@ bool analyze_break_statement(SemanticAnalyzer *analyzer, ASTNode *stmt) {
     if (!analyzer || !stmt || stmt->type != AST_BREAK_STMT) {
         return false;
     }
-    
+
     // Check if we're inside a loop
     if (analyzer->loop_depth == 0) {
-        semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION,
-                             stmt->location,
-                             "Break statement can only be used inside a loop");
+        semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, stmt->location,
+                              "Break statement can only be used inside a loop");
         return false;
     }
-    
+
     // Break statements are valid within loops
     return true;
 }
@@ -125,15 +123,14 @@ bool analyze_continue_statement(SemanticAnalyzer *analyzer, ASTNode *stmt) {
     if (!analyzer || !stmt || stmt->type != AST_CONTINUE_STMT) {
         return false;
     }
-    
+
     // Check if we're inside a loop
     if (analyzer->loop_depth == 0) {
-        semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION,
-                             stmt->location,
-                             "Continue statement can only be used inside a loop");
+        semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, stmt->location,
+                              "Continue statement can only be used inside a loop");
         return false;
     }
-    
+
     // Continue statements are valid within loops
     return true;
 }

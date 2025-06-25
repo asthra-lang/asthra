@@ -1,10 +1,10 @@
 /**
  * Asthra Concurrency Patterns - Worker Pools and Advanced Concurrency Patterns
  * Part of the Asthra Runtime Modularization Plan - Phase 2
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * DESIGN GOALS:
  * - Worker pool management and task distribution
  * - Fan-out/fan-in patterns for parallel processing
@@ -15,21 +15,20 @@
 #ifndef ASTHRA_CONCURRENCY_PATTERNS_H
 #define ASTHRA_CONCURRENCY_PATTERNS_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 
-#include "asthra_concurrency_atomics.h"
-#include "asthra_concurrency_tasks.h"
-#include "asthra_concurrency_channels.h"
 #include "../asthra_runtime.h"
+#include "asthra_concurrency_atomics.h"
+#include "asthra_concurrency_channels.h"
+#include "asthra_concurrency_tasks.h"
 
 #ifdef __cplusplus
 extern "C" {
 
 // Asthra_worker_pool_dump_stats
 ;
-
 
 // Asthra_multiplexer_create
 AsthraConcurrencyMultiplexer* Asthra_multiplexer_create(AsthraConcurrencyChannel** channels, size_t channel_count,;
@@ -72,24 +71,24 @@ AsthraConcurrencyTaskHandleWithAwait* Asthra_load_balancer_submit(AsthraConcurre
  * Worker pool for managing a pool of worker threads
  */
 typedef struct AsthraConcurrencyWorkerPool {
-    asthra_concurrency_thread_t *workers;       // Array of worker threads
-    size_t num_workers;                  // Number of worker threads
-    AsthraConcurrencyChannel *task_queue; // Task queue channel
-    asthra_concurrency_atomic_bool shutdown; // Shutdown flag
+    asthra_concurrency_thread_t *workers;                // Array of worker threads
+    size_t num_workers;                                  // Number of worker threads
+    AsthraConcurrencyChannel *task_queue;                // Task queue channel
+    asthra_concurrency_atomic_bool shutdown;             // Shutdown flag
     asthra_concurrency_atomic_counter_t tasks_submitted; // Total tasks submitted
     asthra_concurrency_atomic_counter_t tasks_completed; // Total tasks completed
     asthra_concurrency_atomic_counter_t tasks_failed;    // Total failed tasks
-    asthra_concurrency_mutex_t pool_mutex; // Protects pool state
-    char name[64];                       // Pool name for debugging
+    asthra_concurrency_mutex_t pool_mutex;               // Protects pool state
+    char name[64];                                       // Pool name for debugging
 } AsthraConcurrencyWorkerPool;
 
 /**
  * Work item for worker pool task submission
  */
 typedef struct {
-    AsthraConcurrencyTaskFunction func;  // Task function to execute
-    void *args;                          // Task arguments
-    size_t args_size;                    // Size of arguments
+    AsthraConcurrencyTaskFunction func;           // Task function to execute
+    void *args;                                   // Task arguments
+    size_t args_size;                             // Size of arguments
     AsthraConcurrencyTaskHandleWithAwait *handle; // Task handle for results
 } AsthraConcurrencyWorkItem;
 
@@ -102,23 +101,23 @@ typedef struct {
  */
 typedef struct {
     AsthraConcurrencyTaskFunction stage_func; // Stage processing function
-    size_t buffer_size;                  // Buffer size for this stage
-    int priority;                        // Stage priority
-    const char *name;                    // Stage name for debugging
+    size_t buffer_size;                       // Buffer size for this stage
+    int priority;                             // Stage priority
+    const char *name;                         // Stage name for debugging
 } AsthraConcurrencyPipelineStage;
 
 /**
  * Pipeline configuration
  */
 typedef struct {
-    AsthraConcurrencyPipelineStage *stages; // Array of pipeline stages
-    size_t num_stages;                   // Number of stages
-    AsthraConcurrencyChannel *input_channel; // Pipeline input
-    AsthraConcurrencyChannel *output_channel; // Pipeline output
-    AsthraConcurrencyChannel **intermediate_channels; // Intermediate channels
-    asthra_concurrency_atomic_bool running; // Pipeline running flag
+    AsthraConcurrencyPipelineStage *stages;              // Array of pipeline stages
+    size_t num_stages;                                   // Number of stages
+    AsthraConcurrencyChannel *input_channel;             // Pipeline input
+    AsthraConcurrencyChannel *output_channel;            // Pipeline output
+    AsthraConcurrencyChannel **intermediate_channels;    // Intermediate channels
+    asthra_concurrency_atomic_bool running;              // Pipeline running flag
     asthra_concurrency_atomic_counter_t items_processed; // Total items processed
-    char name[64];                       // Pipeline name
+    char name[64];                                       // Pipeline name
 } AsthraConcurrencyPipeline;
 
 // =============================================================================
@@ -129,11 +128,11 @@ typedef struct {
  * Fan-out configuration for distributing work to multiple workers
  */
 typedef struct {
-    AsthraConcurrencyChannel *input_channel; // Input channel
-    AsthraConcurrencyChannel **output_channels; // Array of output channels
-    size_t num_outputs;                  // Number of output channels
-    AsthraConcurrencyTaskFunction worker_func; // Worker function
-    asthra_concurrency_atomic_bool running; // Fan-out running flag
+    AsthraConcurrencyChannel *input_channel;               // Input channel
+    AsthraConcurrencyChannel **output_channels;            // Array of output channels
+    size_t num_outputs;                                    // Number of output channels
+    AsthraConcurrencyTaskFunction worker_func;             // Worker function
+    asthra_concurrency_atomic_bool running;                // Fan-out running flag
     asthra_concurrency_atomic_counter_t items_distributed; // Items distributed
 } AsthraConcurrencyFanOut;
 
@@ -141,11 +140,11 @@ typedef struct {
  * Fan-in configuration for collecting results from multiple workers
  */
 typedef struct {
-    AsthraConcurrencyChannel **input_channels; // Array of input channels
-    size_t num_inputs;                   // Number of input channels
-    AsthraConcurrencyChannel *output_channel; // Output channel
-    AsthraConcurrencyTaskFunction collector_func; // Collector function
-    asthra_concurrency_atomic_bool running; // Fan-in running flag
+    AsthraConcurrencyChannel **input_channels;           // Array of input channels
+    size_t num_inputs;                                   // Number of input channels
+    AsthraConcurrencyChannel *output_channel;            // Output channel
+    AsthraConcurrencyTaskFunction collector_func;        // Collector function
+    asthra_concurrency_atomic_bool running;              // Fan-in running flag
     asthra_concurrency_atomic_counter_t items_collected; // Items collected
 } AsthraConcurrencyFanIn;
 
@@ -431,13 +430,13 @@ AsthraResult Asthra_pattern_producer_consumer(AsthraConcurrencyTaskFunction prod
  * Pattern system statistics
  */
 typedef struct {
-    asthra_concurrency_atomic_counter_t worker_pools_created; // Total worker pools created
-    asthra_concurrency_atomic_counter_t worker_pools_active;  // Currently active worker pools
-    asthra_concurrency_atomic_counter_t pipelines_created;    // Total pipelines created
-    asthra_concurrency_atomic_counter_t pipelines_active;     // Currently active pipelines
-    asthra_concurrency_atomic_counter_t fan_outs_created;     // Total fan-outs created
-    asthra_concurrency_atomic_counter_t fan_ins_created;      // Total fan-ins created
-    asthra_concurrency_atomic_counter_t total_pattern_tasks;  // Total pattern tasks executed
+    asthra_concurrency_atomic_counter_t worker_pools_created;  // Total worker pools created
+    asthra_concurrency_atomic_counter_t worker_pools_active;   // Currently active worker pools
+    asthra_concurrency_atomic_counter_t pipelines_created;     // Total pipelines created
+    asthra_concurrency_atomic_counter_t pipelines_active;      // Currently active pipelines
+    asthra_concurrency_atomic_counter_t fan_outs_created;      // Total fan-outs created
+    asthra_concurrency_atomic_counter_t fan_ins_created;       // Total fan-ins created
+    asthra_concurrency_atomic_counter_t total_pattern_tasks;   // Total pattern tasks executed
     asthra_concurrency_atomic_counter_t pattern_task_failures; // Pattern task failures
 } AsthraConcurrencyPatternStats;
 
@@ -489,4 +488,4 @@ typedef enum {
 }
 #endif
 
-#endif // ASTHRA_CONCURRENCY_PATTERNS_H 
+#endif // ASTHRA_CONCURRENCY_PATTERNS_H

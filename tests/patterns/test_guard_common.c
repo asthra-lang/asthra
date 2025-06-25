@@ -2,12 +2,12 @@
  * =============================================================================
  * GUARD EXPRESSION TEST COMMON UTILITIES - IMPLEMENTATION
  * =============================================================================
- * 
+ *
  * This file contains the implementations of shared utility functions used
  * across all guard expression test files.
- * 
+ *
  * Part of Phase 3.2: Advanced Pattern Matching
- * 
+ *
  * =============================================================================
  */
 
@@ -43,9 +43,9 @@ void cleanup_guard_expression_compiler(void) {
 // GUARD COMPILATION FUNCTIONS
 // =============================================================================
 
-PatternCompilationResult* compile_patterns_with_guards(ASTNode* ast) {
-    PatternCompilationResult* result = malloc(sizeof(PatternCompilationResult));
-    
+PatternCompilationResult *compile_patterns_with_guards(ASTNode *ast) {
+    PatternCompilationResult *result = malloc(sizeof(PatternCompilationResult));
+
     // Initialize basic pattern compilation fields
     result->success = true;
     result->pattern_count = 3;
@@ -61,7 +61,7 @@ PatternCompilationResult* compile_patterns_with_guards(ASTNode* ast) {
     result->missing_patterns = 0;
     result->uses_jump_table = true;
     result->jump_table_size = 20;
-    
+
     // Initialize guard-specific fields
     result->guard_count = 4;
     result->has_guards = true;
@@ -81,7 +81,7 @@ PatternCompilationResult* compile_patterns_with_guards(ASTNode* ast) {
     result->optimization_level = 1;
     result->has_errors = false;
     result->error_message = NULL;
-    
+
     return result;
 }
 
@@ -89,7 +89,7 @@ PatternCompilationResult* compile_patterns_with_guards(ASTNode* ast) {
 // VALUE CREATION FUNCTIONS
 // =============================================================================
 
-String create_string(const char* str) {
+String create_string(const char *str) {
     String s;
     size_t len = strlen(str);
     s.data = malloc(len + 1);
@@ -98,7 +98,7 @@ String create_string(const char* str) {
     return s;
 }
 
-TupleValue create_tuple_value(Value* values, size_t count) {
+TupleValue create_tuple_value(Value *values, size_t count) {
     TupleValue tuple;
     tuple.values = values;
     tuple.count = count;
@@ -106,19 +106,19 @@ TupleValue create_tuple_value(Value* values, size_t count) {
 }
 
 Value create_i32_value(int value) {
-    int* ptr = malloc(sizeof(int));
+    int *ptr = malloc(sizeof(int));
     *ptr = value;
     return (Value)ptr;
 }
 
 Value create_f64_value(double value) {
-    double* ptr = malloc(sizeof(double));
+    double *ptr = malloc(sizeof(double));
     *ptr = value;
     return (Value)ptr;
 }
 
 Value create_bool_value(bool value) {
-    bool* ptr = malloc(sizeof(bool));
+    bool *ptr = malloc(sizeof(bool));
     *ptr = value;
     return (Value)ptr;
 }
@@ -127,12 +127,12 @@ Value create_bool_value(bool value) {
 // PATTERN EXECUTION FUNCTIONS
 // =============================================================================
 
-String execute_pattern_match_with_value(PatternCompilationResult* result, void* value) {
+String execute_pattern_match_with_value(PatternCompilationResult *result, void *value) {
     // Enhanced mock implementation to handle guard test cases
-    
+
     // Handle i32 values for numeric guard tests
     if (value) {
-        i32* int_val = (i32*)value;
+        i32 *int_val = (i32 *)value;
         if (*int_val == -5) {
             return create_string("negative");
         } else if (*int_val == 0) {
@@ -144,7 +144,7 @@ String execute_pattern_match_with_value(PatternCompilationResult* result, void* 
         } else if (*int_val == 1000) {
             return create_string("large number");
         }
-        
+
         // Handle tuple values for comparison guard tests
         // Assume tuple has two i32 values
         if (result && result->guard_count == 3) {
@@ -159,9 +159,9 @@ String execute_pattern_match_with_value(PatternCompilationResult* result, void* 
             }
         }
     }
-    
-    // Handle String values for string guard tests  
-    String* str_val = (String*)value;
+
+    // Handle String values for string guard tests
+    String *str_val = (String *)value;
     if (str_val && str_val->data) {
         if (str_val->length == 0 || strlen(str_val->data) == 0) {
             return create_string("empty");
@@ -177,7 +177,7 @@ String execute_pattern_match_with_value(PatternCompilationResult* result, void* 
             return create_string("regular text");
         }
     }
-    
+
     // Default fallback
     return create_string("default");
 }
@@ -200,4 +200,4 @@ void init_pattern_compiler(void) {
 
 void cleanup_pattern_compiler(void) {
     // Mock implementation
-} 
+}

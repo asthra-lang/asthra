@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Utilities Module Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Utility functions and helpers for semantic analysis
  */
 
@@ -24,16 +24,13 @@ extern "C" {
 /**
  * Check if two types are compatible (can type1 be used where type2 is expected)
  */
-bool semantic_check_type_compatibility(SemanticAnalyzer *analyzer, 
-                                      TypeDescriptor *type1, 
-                                      TypeDescriptor *type2);
+bool semantic_check_type_compatibility(SemanticAnalyzer *analyzer, TypeDescriptor *type1,
+                                       TypeDescriptor *type2);
 
 /**
  * Check if a cast from one type to another is valid
  */
-bool semantic_can_cast(SemanticAnalyzer *analyzer, 
-                      TypeDescriptor *from, 
-                      TypeDescriptor *to);
+bool semantic_can_cast(SemanticAnalyzer *analyzer, TypeDescriptor *from, TypeDescriptor *to);
 
 /**
  * Get the type of an expression
@@ -43,9 +40,9 @@ TypeDescriptor *semantic_get_expression_type(SemanticAnalyzer *analyzer, ASTNode
 /**
  * Promote arithmetic types according to type promotion rules
  */
-TypeDescriptor *semantic_promote_arithmetic_types(SemanticAnalyzer *analyzer, 
-                                                 TypeDescriptor *left_type, 
-                                                 TypeDescriptor *right_type);
+TypeDescriptor *semantic_promote_arithmetic_types(SemanticAnalyzer *analyzer,
+                                                  TypeDescriptor *left_type,
+                                                  TypeDescriptor *right_type);
 
 /**
  * Check if a type is a boolean type
@@ -79,11 +76,8 @@ SymbolEntry *semantic_get_current_function(SemanticAnalyzer *analyzer);
 /**
  * Declare a new symbol in the current scope
  */
-bool semantic_declare_symbol(SemanticAnalyzer *analyzer, 
-                            const char *name, 
-                            SymbolKind kind, 
-                            TypeDescriptor *type, 
-                            ASTNode *declaration);
+bool semantic_declare_symbol(SemanticAnalyzer *analyzer, const char *name, SymbolKind kind,
+                             TypeDescriptor *type, ASTNode *declaration);
 
 // =============================================================================
 // C17 GENERIC IMPLEMENTATION FUNCTIONS
@@ -103,4 +97,4 @@ bool semantic_analyze_node_const_impl(SemanticAnalyzer *analyzer, const ASTNode 
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_UTILITIES_H 
+#endif // ASTHRA_SEMANTIC_UTILITIES_H

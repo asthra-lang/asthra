@@ -3,14 +3,14 @@
 #ifdef FAST_CHECK_USE_STUBS
 
 #include "dependency_tracker.h"
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 // =============================================================================
 // DEPENDENCY GRAPH
 // =============================================================================
 
-DependencyGraph* dependency_graph_create(void) {
+DependencyGraph *dependency_graph_create(void) {
     return calloc(1, sizeof(DependencyGraph));
 }
 

@@ -9,31 +9,31 @@
 typedef struct SourceLocation {
     int line;
     int column;
-    const char* file;
+    const char *file;
 } SourceLocation;
 
 typedef struct ASTNode {
     int type;
     SourceLocation location;
-    void* data;
+    void *data;
 } ASTNode;
 
 typedef struct SemanticAnalyzer {
-    void* data;
+    void *data;
 } SemanticAnalyzer;
 
 typedef struct CodeGenerator {
-    void* data;
+    void *data;
 } CodeGenerator;
 
 typedef struct SymbolTable {
-    void* data;
+    void *data;
 } SymbolTable;
 
 typedef struct TypeInfo {
-    void* data;
+    void *data;
 } TypeInfo;
 
 // Type info constants
-const void* TYPE_INFO_CHAR = (void*)0x1;
-const void* TYPE_INFO_STRING = (void*)0x2;
+const void *TYPE_INFO_CHAR = (void *)0x1;
+const void *TYPE_INFO_STRING = (void *)0x2;

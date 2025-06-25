@@ -1,10 +1,10 @@
 #include "benchmark_test_functions.h"
 #include "benchmark_test_helpers.h"
 #include "static_analysis.h"
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdatomic.h>
 
 // =============================================================================
 // BENCHMARK FUNCTION IMPLEMENTATIONS
@@ -142,7 +142,7 @@ AsthraBenchmarkStatus benchmark_atomic_operations(void *context, uint64_t iterat
 }
 
 AsthraBenchmarkStatus benchmark_large_memory_copy(void *context, uint64_t iteration) {
-    BenchmarkContext *ctx = (BenchmarkContext*)context;
+    BenchmarkContext *ctx = (BenchmarkContext *)context;
     if (!ctx || !ctx->large_buffer) {
         return ASTHRA_BENCHMARK_STATUS_ERROR;
     }

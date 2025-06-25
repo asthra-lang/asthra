@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Dominator Analysis Tests
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This file tests dominator analysis and immediate dominator computation
  */
 
@@ -19,10 +19,10 @@
 /**
  * Test dominator analysis
  */
-AsthraTestResult test_dominator_analysis(AsthraTestContext* context) {
+AsthraTestResult test_dominator_analysis(AsthraTestContext *context) {
     // TODO: Fix Instruction type issues in this test
     return ASTHRA_TEST_SKIP;
-    
+
 #if 0
     ControlFlowAnalysisTestFixture* fixture = setup_control_flow_analysis_fixture();
     if (!asthra_test_assert_pointer(context, fixture, "Failed to setup test fixture")) {
@@ -90,10 +90,10 @@ AsthraTestResult test_dominator_analysis(AsthraTestContext* context) {
 /**
  * Test immediate dominator computation
  */
-AsthraTestResult test_immediate_dominators(AsthraTestContext* context) {
+AsthraTestResult test_immediate_dominators(AsthraTestContext *context) {
     // TODO: Fix Instruction type issues in this test
     return ASTHRA_TEST_SKIP;
-    
+
 #if 0
     ControlFlowAnalysisTestFixture* fixture = setup_control_flow_analysis_fixture();
     if (!asthra_test_assert_pointer(context, fixture, "Failed to setup test fixture")) {
@@ -147,7 +147,7 @@ int main(void) {
     // TODO: Fix header conflicts and function signatures before enabling tests
     printf("Dominator Analysis Tests: SKIPPED due to header conflicts\n");
     return 0;
-    
+
 #if 0
     AsthraTestSuite suite = {
         .name = "Dominator Analysis Tests",

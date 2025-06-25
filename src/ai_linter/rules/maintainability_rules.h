@@ -14,4 +14,4 @@ bool check_descriptive_names(ASTNode *node, AsthraSemanticsAPI *api, AILintResul
 // Registration function
 void register_maintainability_rules(AILinter *linter);
 
-#endif // ASTHRA_AI_MAINTAINABILITY_RULES_H 
+#endif // ASTHRA_AI_MAINTAINABILITY_RULES_H

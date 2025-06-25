@@ -1,8 +1,8 @@
 #ifndef SEMANTIC_BINARY_UNARY_H
 #define SEMANTIC_BINARY_UNARY_H
 
-#include "semantic_analyzer_core.h"
 #include "../parser/ast_types.h"
+#include "semantic_analyzer_core.h"
 
 // Binary and unary expression analysis functions
 bool analyze_binary_expression(SemanticAnalyzer *analyzer, ASTNode *expr);

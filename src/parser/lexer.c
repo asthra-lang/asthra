@@ -2,7 +2,7 @@
  * Asthra Programming Language Compiler
  * Lexical analyzer implementation for v1.25 grammar
  * Modular version with separate files for components
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -60,4 +60,4 @@ Token scan_token(Lexer *lexer);
 // bool lexer_consume(Lexer *lexer, TokenType expected);
 // Token lexer_current_token(Lexer *lexer);
 // bool lexer_at_eof(Lexer *lexer);
-// const char *lexer_get_error(Lexer *lexer); 
+// const char *lexer_get_error(Lexer *lexer);

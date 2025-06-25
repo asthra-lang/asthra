@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language
  * Profile-Guided Optimization (PGO) Individual Benchmark Tests Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Declarations for individual benchmark test functions
  */
 
@@ -21,4 +21,4 @@ AsthraTestResult test_pgo_compilation_performance(AsthraTestContext *context);
 AsthraTestResult test_pgo_memory_usage(AsthraTestContext *context);
 AsthraTestResult test_pgo_profile_data_quality(AsthraTestContext *context);
 
-#endif // ASTHRA_TEST_PGO_BENCHMARKS_H 
+#endif // ASTHRA_TEST_PGO_BENCHMARKS_H

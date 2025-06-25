@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Type Resolution Helpers
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Type resolution utilities and helpers
  */
 
@@ -29,4 +29,4 @@ ASTNode *create_type_node_from_descriptor(TypeDescriptor *type) {
     (void)type;
     // TODO: Implement type node creation from descriptor
     return NULL;
-} 
+}

@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Annotations Registry Module
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Registry of known semantic annotations, parameter schemas, and conflict definitions
  * Split from semantic_annotations.c for better modularity
  */
@@ -12,8 +12,8 @@
 #ifndef ASTHRA_SEMANTIC_ANNOTATIONS_REGISTRY_H
 #define ASTHRA_SEMANTIC_ANNOTATIONS_REGISTRY_H
 
-#include "semantic_core.h"
 #include "../parser/ast.h"
+#include "semantic_core.h"
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -29,35 +29,35 @@ extern "C" {
  * Categories of semantic annotations for organization and validation
  */
 typedef enum {
-    SEMANTIC_CONCURRENCY,    // Concurrency-related annotations
-    SEMANTIC_OPTIMIZATION,   // Optimization hints
-    SEMANTIC_LIFECYCLE,      // Lifecycle annotations (deprecated, experimental, etc.)
-    SEMANTIC_SECURITY,       // Security-related annotations
-    SEMANTIC_MEMORY,         // Memory management annotations
-    SEMANTIC_FFI            // Foreign Function Interface annotations
+    SEMANTIC_CONCURRENCY,  // Concurrency-related annotations
+    SEMANTIC_OPTIMIZATION, // Optimization hints
+    SEMANTIC_LIFECYCLE,    // Lifecycle annotations (deprecated, experimental, etc.)
+    SEMANTIC_SECURITY,     // Security-related annotations
+    SEMANTIC_MEMORY,       // Memory management annotations
+    SEMANTIC_FFI           // Foreign Function Interface annotations
 } SemanticTagCategory;
 
 /**
  * Valid contexts where annotations can be applied
  */
 typedef enum {
-    CONTEXT_FUNCTION    = 1 << 0,   // Functions and methods
-    CONTEXT_STRUCT      = 1 << 1,   // Struct definitions
-    CONTEXT_STATEMENT   = 1 << 2,   // Statements
-    CONTEXT_EXPRESSION  = 1 << 3,   // Expressions
-    CONTEXT_PARAMETER   = 1 << 4,   // Function parameters
-    CONTEXT_RETURN_TYPE = 1 << 5,   // Return types
-    CONTEXT_ANY         = 0xFF      // Any context
+    CONTEXT_FUNCTION = 1 << 0,    // Functions and methods
+    CONTEXT_STRUCT = 1 << 1,      // Struct definitions
+    CONTEXT_STATEMENT = 1 << 2,   // Statements
+    CONTEXT_EXPRESSION = 1 << 3,  // Expressions
+    CONTEXT_PARAMETER = 1 << 4,   // Function parameters
+    CONTEXT_RETURN_TYPE = 1 << 5, // Return types
+    CONTEXT_ANY = 0xFF            // Any context
 } AnnotationContext;
 
 /**
  * Types of annotation parameter values
  */
 typedef enum {
-    ANNOTATION_PARAM_STRING,    // String literal parameter
-    ANNOTATION_PARAM_IDENT,     // Identifier parameter
-    ANNOTATION_PARAM_INT,       // Integer parameter
-    ANNOTATION_PARAM_BOOL       // Boolean parameter
+    ANNOTATION_PARAM_STRING, // String literal parameter
+    ANNOTATION_PARAM_IDENT,  // Identifier parameter
+    ANNOTATION_PARAM_INT,    // Integer parameter
+    ANNOTATION_PARAM_BOOL    // Boolean parameter
 } AnnotationParamType;
 
 /**
@@ -68,9 +68,15 @@ typedef struct {
     bool required;
     const char *name;
     union {
-        struct { int min, max; } int_range;
-        struct { const char **values; } enum_values;
-        struct { int min_len, max_len; } string_constraints;
+        struct {
+            int min, max;
+        } int_range;
+        struct {
+            const char **values;
+        } enum_values;
+        struct {
+            int min_len, max_len;
+        } string_constraints;
     } validation;
 } ParameterDefinition;
 
@@ -160,4 +166,4 @@ ASTNodeList *get_node_annotations(ASTNode *node);
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_ANNOTATIONS_REGISTRY_H 
+#endif // ASTHRA_SEMANTIC_ANNOTATIONS_REGISTRY_H

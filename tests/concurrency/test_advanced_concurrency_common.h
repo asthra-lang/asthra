@@ -1,9 +1,9 @@
 /**
  * Asthra Programming Language - Advanced Concurrency Tests Common Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Common definitions, test framework, and shared utilities for the
  * three-tier concurrency system test suite.
  */
@@ -11,17 +11,17 @@
 #ifndef TEST_ADVANCED_CONCURRENCY_COMMON_H
 #define TEST_ADVANCED_CONCURRENCY_COMMON_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <stdbool.h>
 #include "../framework/test_framework.h"
 #include "ast_types.h"
 #include "parser.h"
 #include "parser_string_interface.h"
-#include "semantic_core.h"
 #include "semantic_annotations.h"
+#include "semantic_core.h"
+#include <assert.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 // #include "code_generator_core.h" // REMOVED: depends on deleted code generator
 
 // =============================================================================
@@ -32,16 +32,16 @@
 extern size_t tests_run;
 extern size_t tests_passed;
 
-#define ASSERT_TRUE(condition) \
-    do { \
-        tests_run++; \
-        if (condition) { \
-            tests_passed++; \
-            printf("  ✅ PASS: %s\n", #condition); \
-        } else { \
-            printf("  ❌ FAIL: %s:%d - %s\n", __FILE__, __LINE__, #condition); \
-        } \
-    } while(0)
+#define ASSERT_TRUE(condition)                                                                     \
+    do {                                                                                           \
+        tests_run++;                                                                               \
+        if (condition) {                                                                           \
+            tests_passed++;                                                                        \
+            printf("  ✅ PASS: %s\n", #condition);                                                 \
+        } else {                                                                                   \
+            printf("  ❌ FAIL: %s:%d - %s\n", __FILE__, __LINE__, #condition);                     \
+        }                                                                                          \
+    } while (0)
 
 #define ASSERT_FALSE(condition) ASSERT_TRUE(!(condition))
 #define ASSERT_NULL(ptr) ASSERT_TRUE((ptr) == NULL)
@@ -63,7 +63,7 @@ typedef struct {
     bool success;
     int error_count;
     struct {
-        char* message;
+        char *message;
         int line;
         int column;
     } errors[32]; // Maximum 32 errors for testing
@@ -77,22 +77,22 @@ typedef struct {
 // =============================================================================
 
 // Test framework functions
-void cleanup_parse_result(ParseResult* result);
-void cleanup_semantic_result(SemanticAnalysisResult* result);
+void cleanup_parse_result(ParseResult *result);
+void cleanup_semantic_result(SemanticAnalysisResult *result);
 
 // Parser and semantic analysis functions
 // parse_string is now provided by parser_string_interface.h
-SemanticAnalysisResult analyze_semantics(ASTNode* ast);
-TokenType keyword_to_token_type(const char* keyword);
+SemanticAnalysisResult analyze_semantics(ASTNode *ast);
+TokenType keyword_to_token_type(const char *keyword);
 
 // AST navigation and validation helper functions
-bool contains_spawn_statement(ASTNode* node);
-bool contains_spawn_with_handle_statement(ASTNode* node);
-bool contains_await_expression(ASTNode* node);
-int count_await_expressions(ASTNode* node);
-bool contains_removed_concurrency_nodes(ASTNode* node);
-bool has_annotation(ASTNode* function_node, const char* annotation_name);
-ASTNode* find_function_declaration(ASTNode* root, const char* function_name);
+bool contains_spawn_statement(ASTNode *node);
+bool contains_spawn_with_handle_statement(ASTNode *node);
+bool contains_await_expression(ASTNode *node);
+int count_await_expressions(ASTNode *node);
+bool contains_removed_concurrency_nodes(ASTNode *node);
+bool has_annotation(ASTNode *function_node, const char *annotation_name);
+ASTNode *find_function_declaration(ASTNode *root, const char *function_name);
 
 // Test category functions (implemented in respective modules)
 

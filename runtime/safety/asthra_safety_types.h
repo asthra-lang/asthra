@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Runtime Safety System
  * Core Type Safety Module - Type validation and checking
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -10,9 +10,9 @@
 #define ASTHRA_SAFETY_TYPES_H
 
 #include "asthra_safety_minimal_includes.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,11 +24,11 @@ extern "C" {
 
 // Safety levels for different use cases
 typedef enum {
-    ASTHRA_SAFETY_LEVEL_NONE = 0,        // No safety checks (production)
-    ASTHRA_SAFETY_LEVEL_BASIC = 1,       // Basic bounds and null checks
-    ASTHRA_SAFETY_LEVEL_STANDARD = 2,    // Standard safety checks
-    ASTHRA_SAFETY_LEVEL_ENHANCED = 3,    // Enhanced debugging aids
-    ASTHRA_SAFETY_LEVEL_PARANOID = 4     // Maximum safety validation
+    ASTHRA_SAFETY_LEVEL_NONE = 0,     // No safety checks (production)
+    ASTHRA_SAFETY_LEVEL_BASIC = 1,    // Basic bounds and null checks
+    ASTHRA_SAFETY_LEVEL_STANDARD = 2, // Standard safety checks
+    ASTHRA_SAFETY_LEVEL_ENHANCED = 3, // Enhanced debugging aids
+    ASTHRA_SAFETY_LEVEL_PARANOID = 4  // Maximum safety validation
 } AsthraSafetyLevel;
 
 // Comprehensive safety configuration
@@ -120,22 +120,28 @@ typedef struct {
 /**
  * Validate slice element type safety
  */
-AsthraTypeSafetyCheck asthra_safety_validate_slice_type_safety(AsthraSliceHeader slice, uint32_t expected_element_type_id);
+AsthraTypeSafetyCheck asthra_safety_validate_slice_type_safety(AsthraSliceHeader slice,
+                                                               uint32_t expected_element_type_id);
 
 /**
  * Validate Result<T,E> type usage
  */
-AsthraTypeSafetyCheck asthra_safety_validate_result_type_usage(AsthraResult result, uint32_t expected_type_id);
+AsthraTypeSafetyCheck asthra_safety_validate_result_type_usage(AsthraResult result,
+                                                               uint32_t expected_type_id);
 
 /**
  * Check pattern matching completeness
  */
-AsthraPatternCompletenessCheck asthra_safety_check_pattern_completeness(AsthraMatchArm *arms, size_t arm_count, uint32_t result_type_id);
+AsthraPatternCompletenessCheck asthra_safety_check_pattern_completeness(AsthraMatchArm *arms,
+                                                                        size_t arm_count,
+                                                                        uint32_t result_type_id);
 
 /**
  * Verify match exhaustiveness for specific result types
  */
-AsthraPatternCompletenessCheck asthra_safety_verify_match_exhaustiveness(AsthraMatchArm *arms, size_t arm_count, uint32_t result_type_id);
+AsthraPatternCompletenessCheck asthra_safety_verify_match_exhaustiveness(AsthraMatchArm *arms,
+                                                                         size_t arm_count,
+                                                                         uint32_t result_type_id);
 
 /**
  * Validate type ID consistency and registration
@@ -174,12 +180,12 @@ AsthraSafetyConfig asthra_safety_get_config(void);
 /**
  * Report a safety violation
  */
-void asthra_safety_report_violation(AsthraViolationType type, AsthraSafetyLevel severity, 
-                                   const char *message, const char *location, int line, 
-                                   const char *function, void *context, size_t context_size);
+void asthra_safety_report_violation(AsthraViolationType type, AsthraSafetyLevel severity,
+                                    const char *message, const char *location, int line,
+                                    const char *function, void *context, size_t context_size);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ASTHRA_SAFETY_TYPES_H 
+#endif // ASTHRA_SAFETY_TYPES_H

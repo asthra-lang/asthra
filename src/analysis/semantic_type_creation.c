@@ -1,30 +1,32 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Type Creation Functions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Factory functions for creating various type descriptors
  */
 
 #include "semantic_type_creation.h"
-#include "semantic_type_descriptors.h"
 #include "semantic_core.h"
+#include "semantic_type_descriptors.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 // =============================================================================
 // TYPE DESCRIPTOR CREATION FUNCTIONS
 // =============================================================================
 
 TypeDescriptor *type_descriptor_create_struct(const char *name, size_t field_count) {
-    if (!name) return NULL;
-    
+    if (!name)
+        return NULL;
+
     TypeDescriptor *struct_type = malloc(sizeof(TypeDescriptor));
-    if (!struct_type) return NULL;
-    
+    if (!struct_type)
+        return NULL;
+
     struct_type->category = TYPE_STRUCT;
     struct_type->flags.is_mutable = false;
     struct_type->flags.is_owned = false;
@@ -34,26 +36,28 @@ TypeDescriptor *type_descriptor_create_struct(const char *name, size_t field_cou
     struct_type->flags.is_atomic = false;
     struct_type->flags.is_ffi_compatible = true;
     struct_type->flags.reserved = 0;
-    
+
     struct_type->size = 0; // Would be calculated based on fields
     struct_type->alignment = 1;
     struct_type->name = strdup(name);
     atomic_init(&struct_type->ref_count, 1); // Initialize reference count
-    
+
     // Initialize struct data
     struct_type->data.struct_type.field_count = field_count;
     struct_type->data.struct_type.fields = NULL; // Could be allocated if needed
     struct_type->data.struct_type.methods = NULL;
-    
+
     return struct_type;
 }
 
 TypeDescriptor *type_descriptor_create_pointer(TypeDescriptor *pointee_type) {
-    if (!pointee_type) return NULL;
-    
+    if (!pointee_type)
+        return NULL;
+
     TypeDescriptor *ptr_type = malloc(sizeof(TypeDescriptor));
-    if (!ptr_type) return NULL;
-    
+    if (!ptr_type)
+        return NULL;
+
     ptr_type->category = TYPE_POINTER;
     ptr_type->flags.is_mutable = false;
     ptr_type->flags.is_owned = false;
@@ -63,10 +67,10 @@ TypeDescriptor *type_descriptor_create_pointer(TypeDescriptor *pointee_type) {
     ptr_type->flags.is_atomic = false;
     ptr_type->flags.is_ffi_compatible = true;
     ptr_type->flags.reserved = 0;
-    
-    ptr_type->size = sizeof(void*);
-    ptr_type->alignment = _Alignof(void*);
-    
+
+    ptr_type->size = sizeof(void *);
+    ptr_type->alignment = _Alignof(void *);
+
     // Generate a proper name for the pointer type like "*i32"
     if (pointee_type->name) {
         size_t name_len = strlen(pointee_type->name) + 2; // "*" + name + null terminator
@@ -80,21 +84,23 @@ TypeDescriptor *type_descriptor_create_pointer(TypeDescriptor *pointee_type) {
     } else {
         ptr_type->name = NULL;
     }
-    
+
     ptr_type->data.pointer.pointee_type = pointee_type;
     type_descriptor_retain(pointee_type); // Retain the pointee type
-    
+
     atomic_init(&ptr_type->ref_count, 1);
-    
+
     return ptr_type;
 }
 
 TypeDescriptor *type_descriptor_create_slice(TypeDescriptor *element_type) {
-    if (!element_type) return NULL;
-    
+    if (!element_type)
+        return NULL;
+
     TypeDescriptor *slice_type = malloc(sizeof(TypeDescriptor));
-    if (!slice_type) return NULL;
-    
+    if (!slice_type)
+        return NULL;
+
     slice_type->category = TYPE_SLICE;
     slice_type->flags.is_mutable = false;
     slice_type->flags.is_owned = false;
@@ -104,25 +110,27 @@ TypeDescriptor *type_descriptor_create_slice(TypeDescriptor *element_type) {
     slice_type->flags.is_atomic = false;
     slice_type->flags.is_ffi_compatible = true;
     slice_type->flags.reserved = 0;
-    
-    slice_type->size = sizeof(void*) + sizeof(size_t); // ptr + len
-    slice_type->alignment = _Alignof(void*);
+
+    slice_type->size = sizeof(void *) + sizeof(size_t); // ptr + len
+    slice_type->alignment = _Alignof(void *);
     slice_type->name = NULL;
-    
+
     slice_type->data.slice.element_type = element_type;
     type_descriptor_retain(element_type); // Retain the element type
-    
+
     atomic_init(&slice_type->ref_count, 1);
-    
+
     return slice_type;
 }
 
 TypeDescriptor *type_descriptor_create_array(TypeDescriptor *element_type, size_t size) {
-    if (!element_type || size == 0) return NULL;
-    
+    if (!element_type || size == 0)
+        return NULL;
+
     TypeDescriptor *array_type = malloc(sizeof(TypeDescriptor));
-    if (!array_type) return NULL;
-    
+    if (!array_type)
+        return NULL;
+
     array_type->category = TYPE_ARRAY;
     array_type->flags.is_mutable = false;
     array_type->flags.is_owned = false;
@@ -132,32 +140,34 @@ TypeDescriptor *type_descriptor_create_array(TypeDescriptor *element_type, size_
     array_type->flags.is_atomic = false;
     array_type->flags.is_ffi_compatible = true; // Arrays are FFI compatible
     array_type->flags.reserved = 0;
-    
+
     // Array size is element size * number of elements
     array_type->size = element_type->size * size;
     array_type->alignment = element_type->alignment;
-    
+
     // Create name like "[5]i32"
     char name_buffer[256];
     const char *elem_name = element_type->name ? element_type->name : "unknown";
     snprintf(name_buffer, sizeof(name_buffer), "[%zu]%s", size, elem_name);
     array_type->name = strdup(name_buffer);
-    
+
     array_type->data.array.element_type = element_type;
     array_type->data.array.size = size;
     type_descriptor_retain(element_type); // Retain the element type
-    
+
     atomic_init(&array_type->ref_count, 1);
-    
+
     return array_type;
 }
 
 TypeDescriptor *type_descriptor_create_result(TypeDescriptor *ok_type, TypeDescriptor *err_type) {
-    if (!ok_type || !err_type) return NULL;
-    
+    if (!ok_type || !err_type)
+        return NULL;
+
     TypeDescriptor *result_type = malloc(sizeof(TypeDescriptor));
-    if (!result_type) return NULL;
-    
+    if (!result_type)
+        return NULL;
+
     result_type->category = TYPE_RESULT;
     result_type->flags.is_mutable = false;
     result_type->flags.is_owned = false;
@@ -167,19 +177,19 @@ TypeDescriptor *type_descriptor_create_result(TypeDescriptor *ok_type, TypeDescr
     result_type->flags.is_atomic = false;
     result_type->flags.is_ffi_compatible = false; // Result types are not FFI compatible
     result_type->flags.reserved = 0;
-    
+
     // Result size is a tagged union - size of largest variant plus tag
     size_t ok_size = ok_type->size;
     size_t err_size = err_type->size;
     result_type->size = (ok_size > err_size ? ok_size : err_size) + sizeof(int);
-    result_type->alignment = _Alignof(void*);
-    
+    result_type->alignment = _Alignof(void *);
+
     // Generate name like "Result<i32, string>"
     size_t name_size = 8; // "Result<" + ">" + null
     const char *ok_name = ok_type->name ? ok_type->name : "unknown";
     const char *err_name = err_type->name ? err_type->name : "unknown";
     name_size += strlen(ok_name) + strlen(err_name) + 2; // ", "
-    
+
     char *result_name = malloc(name_size);
     if (result_name) {
         snprintf(result_name, name_size, "Result<%s, %s>", ok_name, err_name);
@@ -187,23 +197,25 @@ TypeDescriptor *type_descriptor_create_result(TypeDescriptor *ok_type, TypeDescr
     } else {
         result_type->name = NULL;
     }
-    
+
     result_type->data.result.ok_type = ok_type;
     result_type->data.result.err_type = err_type;
-    type_descriptor_retain(ok_type); // Retain the OK type
+    type_descriptor_retain(ok_type);  // Retain the OK type
     type_descriptor_retain(err_type); // Retain the error type
-    
+
     atomic_init(&result_type->ref_count, 1);
-    
+
     return result_type;
 }
 
 TypeDescriptor *type_descriptor_create_option(TypeDescriptor *value_type) {
-    if (!value_type) return NULL;
-    
+    if (!value_type)
+        return NULL;
+
     TypeDescriptor *option_type = malloc(sizeof(TypeDescriptor));
-    if (!option_type) return NULL;
-    
+    if (!option_type)
+        return NULL;
+
     option_type->category = TYPE_OPTION;
     option_type->flags.is_mutable = false;
     option_type->flags.is_owned = false;
@@ -213,22 +225,22 @@ TypeDescriptor *type_descriptor_create_option(TypeDescriptor *value_type) {
     option_type->flags.is_atomic = false;
     option_type->flags.is_ffi_compatible = false; // Option types are not FFI compatible
     option_type->flags.reserved = 0;
-    
+
     // Option size is a tagged union - size of value plus tag
     option_type->size = value_type->size + sizeof(int);
-    option_type->alignment = _Alignof(void*);
-    
+    option_type->alignment = _Alignof(void *);
+
     // Create name like "Option<i32>"
     char name_buffer[256];
     const char *value_name = value_type->name ? value_type->name : "unknown";
     snprintf(name_buffer, sizeof(name_buffer), "Option<%s>", value_name);
     option_type->name = strdup(name_buffer);
-    
+
     option_type->data.option.value_type = value_type;
     type_descriptor_retain(value_type); // Retain the value type
-    
+
     atomic_init(&option_type->ref_count, 1);
-    
+
     return option_type;
 }
 
@@ -237,54 +249,55 @@ TypeDescriptor *type_descriptor_create_function(void) {
     if (!func_type) {
         return NULL;
     }
-    
+
     func_type->category = TYPE_FUNCTION;
     func_type->flags = (TypeFlags){0}; // Initialize all flags to false
-    func_type->size = sizeof(void*); // Function pointer size
-    func_type->alignment = _Alignof(void*);
+    func_type->size = sizeof(void *);  // Function pointer size
+    func_type->alignment = _Alignof(void *);
     func_type->name = NULL; // Function types don't have names
-    
+
     // Initialize function-specific data
     func_type->data.function.return_type = NULL; // Will be set later
-    func_type->data.function.param_count = 0; // Will be set later
+    func_type->data.function.param_count = 0;    // Will be set later
     func_type->data.function.param_types = NULL; // Will be allocated later if needed
-    
+
     // Initialize FFI-specific fields
     func_type->data.function.is_extern = false;
     func_type->data.function.extern_name = NULL;
     func_type->data.function.ffi_annotations = NULL;
     func_type->data.function.ffi_annotation_count = 0;
     func_type->data.function.requires_ffi_marshaling = false;
-    
+
     // Initialize reference count to 1
     atomic_init(&func_type->ref_count, 1);
-    
+
     return func_type;
 }
 
-TypeDescriptor *type_descriptor_create_function_with_params(TypeDescriptor *return_type, size_t param_count) {
+TypeDescriptor *type_descriptor_create_function_with_params(TypeDescriptor *return_type,
+                                                            size_t param_count) {
     if (!return_type) {
         return NULL;
     }
-    
+
     TypeDescriptor *func_type = calloc(1, sizeof(TypeDescriptor));
     if (!func_type) {
         return NULL;
     }
-    
+
     func_type->category = TYPE_FUNCTION;
     func_type->flags = (TypeFlags){0}; // Initialize all flags to false
-    func_type->size = sizeof(void*); // Function pointer size
-    func_type->alignment = _Alignof(void*);
+    func_type->size = sizeof(void *);  // Function pointer size
+    func_type->alignment = _Alignof(void *);
     func_type->name = NULL; // Function types don't have names
-    
+
     // Initialize function-specific data
     func_type->data.function.return_type = return_type;
     type_descriptor_retain(return_type); // Retain the return type
-    
+
     func_type->data.function.param_count = param_count;
     if (param_count > 0) {
-        func_type->data.function.param_types = calloc(param_count, sizeof(TypeDescriptor*));
+        func_type->data.function.param_types = calloc(param_count, sizeof(TypeDescriptor *));
         if (!func_type->data.function.param_types) {
             type_descriptor_release(return_type);
             free(func_type);
@@ -293,61 +306,62 @@ TypeDescriptor *type_descriptor_create_function_with_params(TypeDescriptor *retu
     } else {
         func_type->data.function.param_types = NULL;
     }
-    
+
     // Initialize FFI-specific fields
     func_type->data.function.is_extern = false;
     func_type->data.function.extern_name = NULL;
     func_type->data.function.ffi_annotations = NULL;
     func_type->data.function.ffi_annotation_count = 0;
     func_type->data.function.requires_ffi_marshaling = false;
-    
+
     // Initialize reference count to 1
     atomic_init(&func_type->ref_count, 1);
-    
+
     return func_type;
 }
 
-TypeDescriptor *type_descriptor_create_generic_instance(TypeDescriptor *base_type, 
-                                                       TypeDescriptor **type_args, 
-                                                       size_t type_arg_count) {
+TypeDescriptor *type_descriptor_create_generic_instance(TypeDescriptor *base_type,
+                                                        TypeDescriptor **type_args,
+                                                        size_t type_arg_count) {
     if (!base_type || !type_args || type_arg_count == 0) {
         return NULL;
     }
-    
+
     // Validate that base type is actually generic (struct or enum)
     if (base_type->category != TYPE_STRUCT && base_type->category != TYPE_ENUM) {
         return NULL;
     }
-    
+
     TypeDescriptor *instance_type = malloc(sizeof(TypeDescriptor));
     if (!instance_type) {
         return NULL;
     }
-    
+
     instance_type->category = TYPE_GENERIC_INSTANCE;
     instance_type->flags = base_type->flags; // Inherit flags from base type
-    instance_type->size = base_type->size; // Will be computed properly later
+    instance_type->size = base_type->size;   // Will be computed properly later
     instance_type->alignment = base_type->alignment;
     instance_type->name = NULL; // Will be set to canonical name later
-    
+
     // Set up generic instance data
     instance_type->data.generic_instance.base_type = base_type;
     type_descriptor_retain(base_type); // Retain the base type
-    
+
     // Copy type arguments
     instance_type->data.generic_instance.type_arg_count = type_arg_count;
-    instance_type->data.generic_instance.type_args = malloc(type_arg_count * sizeof(TypeDescriptor*));
+    instance_type->data.generic_instance.type_args =
+        malloc(type_arg_count * sizeof(TypeDescriptor *));
     if (!instance_type->data.generic_instance.type_args) {
         type_descriptor_release(base_type);
         free(instance_type);
         return NULL;
     }
-    
+
     for (size_t i = 0; i < type_arg_count; i++) {
         instance_type->data.generic_instance.type_args[i] = type_args[i];
         type_descriptor_retain(type_args[i]); // Retain each type argument
     }
-    
+
     // Generate canonical name (e.g., "Vec<i32>")
     if (!base_type->name) {
         // Base type missing name - this shouldn't happen for valid structs
@@ -366,15 +380,17 @@ TypeDescriptor *type_descriptor_create_generic_instance(TypeDescriptor *base_typ
         } else {
             name_size += 10; // Reserve space for anonymous types
         }
-        if (i > 0) name_size += 2; // ", "
+        if (i > 0)
+            name_size += 2; // ", "
     }
-    
+
     char *canonical_name = malloc(name_size);
     if (canonical_name) {
         strcpy(canonical_name, base_type->name);
         strcat(canonical_name, "<");
         for (size_t i = 0; i < type_arg_count; i++) {
-            if (i > 0) strcat(canonical_name, ", ");
+            if (i > 0)
+                strcat(canonical_name, ", ");
             if (type_args[i]->name) {
                 strcat(canonical_name, type_args[i]->name);
             } else {
@@ -383,27 +399,30 @@ TypeDescriptor *type_descriptor_create_generic_instance(TypeDescriptor *base_typ
         }
         strcat(canonical_name, ">");
         instance_type->data.generic_instance.canonical_name = canonical_name;
-        instance_type->name = canonical_name;  // Note: This points to the same memory as canonical_name
-                                               // The generic instance cleanup will free canonical_name
-                                               // So we must not free name separately
+        instance_type->name =
+            canonical_name; // Note: This points to the same memory as canonical_name
+                            // The generic instance cleanup will free canonical_name
+                            // So we must not free name separately
     } else {
         // Fallback: use base type name if malloc fails
         instance_type->data.generic_instance.canonical_name = NULL;
         instance_type->name = base_type->name ? strdup(base_type->name) : NULL;
     }
-    
+
     // Initialize reference count to 1
     atomic_init(&instance_type->ref_count, 1);
-    
+
     return instance_type;
 }
 
 TypeDescriptor *type_descriptor_create_tuple(TypeDescriptor **element_types, size_t element_count) {
-    if (!element_types || element_count < 2) return NULL;
-    
+    if (!element_types || element_count < 2)
+        return NULL;
+
     TypeDescriptor *tuple_type = malloc(sizeof(TypeDescriptor));
-    if (!tuple_type) return NULL;
-    
+    if (!tuple_type)
+        return NULL;
+
     tuple_type->category = TYPE_TUPLE;
     tuple_type->flags.is_mutable = false;
     tuple_type->flags.is_owned = false;
@@ -413,57 +432,57 @@ TypeDescriptor *type_descriptor_create_tuple(TypeDescriptor **element_types, siz
     tuple_type->flags.is_atomic = false;
     tuple_type->flags.is_ffi_compatible = true; // Tuples can be FFI compatible if all elements are
     tuple_type->flags.reserved = 0;
-    
+
     // Calculate size and alignment based on element types
     size_t total_size = 0;
     size_t max_alignment = 1;
-    
+
     // Allocate arrays for element types and offsets
     tuple_type->data.tuple.element_count = element_count;
-    tuple_type->data.tuple.element_types = malloc(element_count * sizeof(TypeDescriptor*));
+    tuple_type->data.tuple.element_types = malloc(element_count * sizeof(TypeDescriptor *));
     tuple_type->data.tuple.element_offsets = malloc(element_count * sizeof(size_t));
-    
+
     if (!tuple_type->data.tuple.element_types || !tuple_type->data.tuple.element_offsets) {
         free(tuple_type->data.tuple.element_types);
         free(tuple_type->data.tuple.element_offsets);
         free(tuple_type);
         return NULL;
     }
-    
+
     // Copy element types and calculate layout
     for (size_t i = 0; i < element_count; i++) {
         tuple_type->data.tuple.element_types[i] = element_types[i];
         type_descriptor_retain(element_types[i]); // Retain each element type
-        
+
         // Update max alignment
         if (element_types[i]->alignment > max_alignment) {
             max_alignment = element_types[i]->alignment;
         }
-        
+
         // Align current offset to element alignment
         size_t element_alignment = element_types[i]->alignment;
         if (element_alignment > 0) {
             total_size = (total_size + element_alignment - 1) & ~(element_alignment - 1);
         }
-        
+
         // Store offset and add element size
         tuple_type->data.tuple.element_offsets[i] = total_size;
         total_size += element_types[i]->size;
-        
+
         // Check FFI compatibility
         if (!element_types[i]->flags.is_ffi_compatible) {
             tuple_type->flags.is_ffi_compatible = false;
         }
     }
-    
+
     // Align total size to max alignment
     if (max_alignment > 0) {
         total_size = (total_size + max_alignment - 1) & ~(max_alignment - 1);
     }
-    
+
     tuple_type->size = total_size;
     tuple_type->alignment = max_alignment;
-    
+
     // Generate name for tuple type (e.g., "(i32, string)")
     size_t name_size = 3; // "(" + ")" + null
     for (size_t i = 0; i < element_count; i++) {
@@ -472,14 +491,16 @@ TypeDescriptor *type_descriptor_create_tuple(TypeDescriptor **element_types, siz
         } else {
             name_size += 10; // Reserve space for anonymous types
         }
-        if (i > 0) name_size += 2; // ", "
+        if (i > 0)
+            name_size += 2; // ", "
     }
-    
+
     char *tuple_name = malloc(name_size);
     if (tuple_name) {
         strcpy(tuple_name, "(");
         for (size_t i = 0; i < element_count; i++) {
-            if (i > 0) strcat(tuple_name, ", ");
+            if (i > 0)
+                strcat(tuple_name, ", ");
             if (element_types[i]->name) {
                 strcat(tuple_name, element_types[i]->name);
             } else {
@@ -491,10 +512,10 @@ TypeDescriptor *type_descriptor_create_tuple(TypeDescriptor **element_types, siz
     } else {
         tuple_type->name = NULL;
     }
-    
+
     // Initialize reference count to 1
     atomic_init(&tuple_type->ref_count, 1);
-    
+
     return tuple_type;
 }
 
@@ -502,10 +523,8 @@ TypeDescriptor *type_descriptor_create_tuple(TypeDescriptor **element_types, siz
 // STRUCT TYPE OPERATIONS STUBS
 // =============================================================================
 
-bool type_descriptor_add_struct_field(TypeDescriptor *struct_type, 
-                                     const char *field_name, 
-                                     TypeDescriptor *field_type,
-                                     ASTNode *field_declaration) {
+bool type_descriptor_add_struct_field(TypeDescriptor *struct_type, const char *field_name,
+                                      TypeDescriptor *field_type, ASTNode *field_declaration) {
     // Stub implementation
     (void)struct_type;
     (void)field_name;
@@ -514,7 +533,8 @@ bool type_descriptor_add_struct_field(TypeDescriptor *struct_type,
     return false;
 }
 
-SymbolEntry *type_descriptor_lookup_struct_field(TypeDescriptor *struct_type, const char *field_name) {
+SymbolEntry *type_descriptor_lookup_struct_field(TypeDescriptor *struct_type,
+                                                 const char *field_name) {
     // Stub implementation
     (void)struct_type;
     (void)field_name;

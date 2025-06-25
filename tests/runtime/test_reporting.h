@@ -1,9 +1,9 @@
 /**
  * Asthra Programming Language v1.2 Test Reporting
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Test reporting and AI feedback generation
  */
 
@@ -44,4 +44,4 @@ void print_help(const char *program_name);
 }
 #endif
 
-#endif // ASTHRA_TEST_REPORTING_H 
+#endif // ASTHRA_TEST_REPORTING_H

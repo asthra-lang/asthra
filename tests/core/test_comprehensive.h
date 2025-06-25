@@ -26,11 +26,11 @@
 #define ASTHRA_TEST_COMPREHENSIVE_H
 
 // Include all modular components
-#include "test_comprehensive_core.h"
 #include "test_comprehensive_benchmark.h"
-#include "test_comprehensive_security.h"
+#include "test_comprehensive_core.h"
 #include "test_comprehensive_reporting.h"
 #include "test_comprehensive_runners.h"
+#include "test_comprehensive_security.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -79,7 +79,7 @@ typedef AsthraExtendedTestContext AsthraV12TestContext;
 // LEGACY FUNCTION ALIASES
 // =============================================================================
 
-// Legacy function aliases for backward compatibility  
+// Legacy function aliases for backward compatibility
 #define asthra_test_context_create asthra_test_context_create_extended
 #define asthra_v12_test_context_destroy asthra_test_context_destroy_extended
 #define asthra_v12_test_context_reset asthra_test_context_reset_extended
@@ -207,4 +207,4 @@ void asthra_security_print_separator(void);
 }
 #endif
 
-#endif // ASTHRA_TEST_COMPREHENSIVE_H 
+#endif // ASTHRA_TEST_COMPREHENSIVE_H

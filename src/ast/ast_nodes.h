@@ -7,8 +7,8 @@ typedef enum {
     AST_IMPL_BLOCK,
     AST_METHOD_DECL,
     AST_EXTERN_DECL,
-    AST_CONST_DECL,                   // const NAME: Type = value;
-    
+    AST_CONST_DECL, // const NAME: Type = value;
+
     // Statements
     AST_VAR_DECL,
     AST_ASSIGN_STMT,
@@ -21,7 +21,7 @@ typedef enum {
     AST_MATCH_STMT,
     AST_UNSAFE_BLOCK,
     // Note: AST_WORKER_POOL_DECL, AST_CLOSE_STMT moved to stdlib
-    
+
     // Expressions
     AST_BINARY_EXPR,
     AST_UNARY_EXPR,
@@ -33,7 +33,7 @@ typedef enum {
     AST_ENUM_VARIANT,
     AST_TASK_HANDLE,
     // Note: AST_TIMEOUT_EXPR moved to stdlib
-    
+
     // Literals
     AST_INT_LITERAL,
     AST_FLOAT_LITERAL,
@@ -42,10 +42,10 @@ typedef enum {
     AST_BOOL_LITERAL,
     AST_UNIT_LITERAL,
     AST_IDENTIFIER,
-    
+
     // Const expressions
-    AST_CONST_EXPR,                   // Compile-time constant expression
-    
+    AST_CONST_EXPR, // Compile-time constant expression
+
     // Types
     AST_TYPE,
     AST_BASE_TYPE,
@@ -56,12 +56,12 @@ typedef enum {
     AST_OPTION_TYPE,
     // Note: Tier 3 types moved to stdlib:
     // AST_CHANNEL_TYPE, AST_TASK_HANDLE_TYPE, AST_WORKER_POOL_TYPE
-    
+
     // Patterns
     AST_ENUM_PATTERN,
     AST_STRUCT_PATTERN,
     AST_FIELD_PATTERN,
-    
+
     // Special
     AST_BLOCK,
     AST_PARAMETER,
@@ -69,7 +69,7 @@ typedef enum {
     AST_FIELD_LIST,
     AST_MATCH_ARM,
     AST_PROGRAM,
-    
+
     AST_NODE_TYPE_COUNT
 } ASTNodeType;
 
@@ -77,12 +77,12 @@ typedef enum {
 typedef struct {
     char *function_name;
     ASTNodeList *args;
-    char *handle_var_name;  // Variable to store the task handle
+    char *handle_var_name; // Variable to store the task handle
 } SpawnWithHandleStmt;
 
 typedef struct {
-    ASTNode *task_handle_expr;  // Expression that evaluates to a task handle
-    ASTNode *timeout_expr;      // Optional timeout expression
+    ASTNode *task_handle_expr; // Expression that evaluates to a task handle
+    ASTNode *timeout_expr;     // Optional timeout expression
 } AwaitExpr;
 
 /*
@@ -169,4 +169,4 @@ typedef union {
     // WorkerPoolType worker_pool_type;
     // TimeoutExpr timeout_expr;
     // ... existing fields ...
-} ASTNodeData; 
+} ASTNodeData;

@@ -3,15 +3,15 @@
 #ifdef FAST_CHECK_USE_STUBS
 
 #include "performance_profiler.h"
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 
 // =============================================================================
 // PERFORMANCE PROFILING
 // =============================================================================
 
-PerformanceProfile* performance_profiler_create(void) {
+PerformanceProfile *performance_profiler_create(void) {
     return calloc(1, sizeof(PerformanceProfile));
 }
 
@@ -65,8 +65,8 @@ void performance_record_file_start(PerformanceProfile *profile, const char *file
     // Stub implementation
 }
 
-void performance_record_file_complete(PerformanceProfile *profile, const char *filename, 
-                                     uint32_t lines, uint32_t symbols, double duration_ms) {
+void performance_record_file_complete(PerformanceProfile *profile, const char *filename,
+                                      uint32_t lines, uint32_t symbols, double duration_ms) {
     if (profile) {
         profile->file_stats.files_processed++;
         profile->file_stats.lines_analyzed += lines;
@@ -81,8 +81,8 @@ void performance_print_summary(const PerformanceProfile *profile) {
 
 void performance_print_detailed_stats(const PerformanceProfile *profile) {
     if (profile) {
-        printf("Cache hits: %llu, misses: %llu\n", 
-               (unsigned long long)profile->cache_stats.cache_hits, 
+        printf("Cache hits: %llu, misses: %llu\n",
+               (unsigned long long)profile->cache_stats.cache_hits,
                (unsigned long long)profile->cache_stats.cache_misses);
     }
 }
@@ -97,9 +97,10 @@ void performance_print_optimization_recommendations(const PerformanceProfile *pr
 
 void performance_track_memory_deallocation(PerformanceProfile *profile, size_t bytes) {
     if (profile) {
-        profile->memory_stats.current_memory_bytes = 
-            (profile->memory_stats.current_memory_bytes > bytes) ? 
-            profile->memory_stats.current_memory_bytes - bytes : 0;
+        profile->memory_stats.current_memory_bytes =
+            (profile->memory_stats.current_memory_bytes > bytes)
+                ? profile->memory_stats.current_memory_bytes - bytes
+                : 0;
     }
 }
 

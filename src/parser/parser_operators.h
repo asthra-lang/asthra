@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Parser operator handling and precedence functions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -46,29 +46,26 @@ bool is_valid_unary_operator_context(UnaryOperator op, ASTNodeType operand_type)
 // =============================================================================
 
 // C17 static assertions for parser compile-time validation
-#define PARSER_VALIDATE_TOKEN_TYPE(type) \
-    _Static_assert((type) >= TOKEN_EOF && (type) < TOKEN_ERROR, \
-                   "Token type must be valid")
+#define PARSER_VALIDATE_TOKEN_TYPE(type)                                                           \
+    _Static_assert((type) >= TOKEN_EOF && (type) < TOKEN_ERROR, "Token type must be valid")
 
-#define PARSER_VALIDATE_AST_NODE_TYPE(type) \
-    _Static_assert((type) >= AST_PROGRAM && (type) < AST_NODE_TYPE_COUNT, \
+#define PARSER_VALIDATE_AST_NODE_TYPE(type)                                                        \
+    _Static_assert((type) >= AST_PROGRAM && (type) < AST_NODE_TYPE_COUNT,                          \
                    "AST node type must be valid")
 
-#define PARSER_VALIDATE_BINARY_OPERATOR(op) \
-    _Static_assert((op) >= BINOP_ADD && (op) < BINOP_COUNT, \
-                   "Binary operator must be valid")
+#define PARSER_VALIDATE_BINARY_OPERATOR(op)                                                        \
+    _Static_assert((op) >= BINOP_ADD && (op) < BINOP_COUNT, "Binary operator must be valid")
 
-#define PARSER_VALIDATE_UNARY_OPERATOR(op) \
-    _Static_assert((op) >= UNOP_MINUS && (op) < UNOP_COUNT, \
-                   "Unary operator must be valid")
+#define PARSER_VALIDATE_UNARY_OPERATOR(op)                                                         \
+    _Static_assert((op) >= UNOP_MINUS && (op) < UNOP_COUNT, "Unary operator must be valid")
 
 // Compile-time grammar validation
-#define PARSER_VALIDATE_PRECEDENCE_TABLE() \
-    _Static_assert(sizeof(precedence_table) / sizeof(precedence_table[0]) == BINOP_COUNT, \
+#define PARSER_VALIDATE_PRECEDENCE_TABLE()                                                         \
+    _Static_assert(sizeof(precedence_table) / sizeof(precedence_table[0]) == BINOP_COUNT,          \
                    "Precedence table must cover all binary operators")
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ASTHRA_PARSER_OPERATORS_H 
+#endif // ASTHRA_PARSER_OPERATORS_H

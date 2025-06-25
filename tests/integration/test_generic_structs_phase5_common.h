@@ -1,7 +1,7 @@
 /*
  * Common Header for Generic Structs Phase 5 Integration Tests
  * Shared definitions, types, and function declarations for end-to-end testing
- * 
+ *
  * Part of test_generic_structs_phase5.c split (580 lines -> 6 focused modules)
  * Provides comprehensive generic structs integration test infrastructure
  */
@@ -9,19 +9,19 @@
 #ifndef TEST_GENERIC_STRUCTS_PHASE5_COMMON_H
 #define TEST_GENERIC_STRUCTS_PHASE5_COMMON_H
 
+#include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include <stdbool.h>
 
 // Include all necessary headers
-#include "parser.h"
 #include "ast.h"
-#include "lexer.h"
-#include "semantic_analyzer.h"
 #include "backend_interface.h"
 #include "generic_instantiation.h"
+#include "lexer.h"
+#include "parser.h"
+#include "semantic_analyzer.h"
 
 // ============================================================================
 // TEST FRAMEWORK MACROS
@@ -30,21 +30,23 @@
 extern size_t tests_run;
 extern size_t tests_passed;
 
-#define TEST_ASSERT(condition, message) do { \
-    tests_run++; \
-    if (condition) { \
-        tests_passed++; \
-        printf("  ✅ PASS: %s\n", message); \
-    } else { \
-        printf("  ❌ FAIL: %s\n", message); \
-        return false; \
-    } \
-} while(0)
+#define TEST_ASSERT(condition, message)                                                            \
+    do {                                                                                           \
+        tests_run++;                                                                               \
+        if (condition) {                                                                           \
+            tests_passed++;                                                                        \
+            printf("  ✅ PASS: %s\n", message);                                                    \
+        } else {                                                                                   \
+            printf("  ❌ FAIL: %s\n", message);                                                    \
+            return false;                                                                          \
+        }                                                                                          \
+    } while (0)
 
-#define TEST_SUCCESS() do { \
-    printf("  🎉 Test completed successfully!\n"); \
-    return true; \
-} while(0)
+#define TEST_SUCCESS()                                                                             \
+    do {                                                                                           \
+        printf("  🎉 Test completed successfully!\n");                                             \
+        return true;                                                                               \
+    } while (0)
 
 // ============================================================================
 // COMPILATION PIPELINE TYPES
@@ -128,4 +130,4 @@ bool test_performance_many_instantiations(void);
  */
 bool test_type_system_consistency(void);
 
-#endif // TEST_GENERIC_STRUCTS_PHASE5_COMMON_H 
+#endif // TEST_GENERIC_STRUCTS_PHASE5_COMMON_H

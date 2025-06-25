@@ -2,7 +2,7 @@
  * Comprehensive Asthra Platform Executable Generator Test
  * Tests for platform-specific executable generation, format handling,
  * and validation functionality
- * 
+ *
  * NOTE: This is a stub test as the executable generator implementation
  * is not yet available.
  */

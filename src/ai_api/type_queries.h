@@ -27,7 +27,8 @@ char *asthra_ai_infer_expression_type(AsthraSemanticsAPI *api, const char *expre
  * @param actual The actual type name
  * @return true if types are compatible, false otherwise
  */
-bool asthra_ai_check_type_compatibility(AsthraSemanticsAPI *api, const char *expected, const char *actual);
+bool asthra_ai_check_type_compatibility(AsthraSemanticsAPI *api, const char *expected,
+                                        const char *actual);
 
 /**
  * Get list of types compatible with a given context
@@ -48,17 +49,17 @@ char **asthra_ai_get_compatible_types(AsthraSemanticsAPI *api, const char *conte
  */
 struct AITypeInfo {
     char *type_name;
-    char *category;          // "primitive", "struct", "enum", "slice", "pointer", "function"
+    char *category; // "primitive", "struct", "enum", "slice", "pointer", "function"
     bool is_mutable;
     bool is_generic;
-    char **generic_params;   // Array of generic parameter names
+    char **generic_params; // Array of generic parameter names
     size_t generic_param_count;
-    
+
     // Additional type metadata
-    size_t size_bytes;       // Type size in bytes (0 if unknown)
-    size_t alignment;        // Type alignment (0 if unknown)
-    bool is_ffi_compatible;  // Can be used in FFI
-    bool is_copy_type;       // Can be copied (vs moved)
+    size_t size_bytes;      // Type size in bytes (0 if unknown)
+    size_t alignment;       // Type alignment (0 if unknown)
+    bool is_ffi_compatible; // Can be used in FFI
+    bool is_copy_type;      // Can be copied (vs moved)
 };
 
 /**

@@ -9,37 +9,37 @@
 typedef struct SourceLocation {
     int line;
     int column;
-    const char* file;
+    const char *file;
 } SourceLocation;
 
 typedef struct ASTNode {
     int type;
     SourceLocation location;
-    void* data;
+    void *data;
 } ASTNode;
 
 // AST functions
-void ast_free_node(ASTNode* node) {
+void ast_free_node(ASTNode *node) {
     free(node);
 }
 
-ASTNode* create_identifier(const char* name, SourceLocation loc) {
+ASTNode *create_identifier(const char *name, SourceLocation loc) {
     (void)name;
     (void)loc;
     return malloc(sizeof(ASTNode));
 }
 
-SourceLocation current_location(void* lexer) {
+SourceLocation current_location(void *lexer) {
     (void)lexer;
     SourceLocation loc = {0};
     return loc;
 }
 
 // Optimization functions
-void* optimize_ast(void* ast) {
+void *optimize_ast(void *ast) {
     return ast;
 }
 
-void* optimize_ir(void* ir) {
+void *optimize_ir(void *ir) {
     return ir;
 }

@@ -59,7 +59,8 @@ bool asthra_test_assert_size(AsthraTestContext *context, size_t value, const cha
  * @param ... Variable arguments for message formatting
  * @return true if string is valid and non-empty
  */
-bool asthra_test_assert_string(AsthraTestContext *context, const char *value, const char *message, ...);
+bool asthra_test_assert_string(AsthraTestContext *context, const char *value, const char *message,
+                               ...);
 
 /**
  * Assert that a pointer is non-null
@@ -95,4 +96,4 @@ bool asthra_test_assert_not_null(AsthraTestContext *context, void *value, const 
 }
 #endif
 
-#endif // ASTHRA_TEST_ASSERTIONS_BASIC_H 
+#endif // ASTHRA_TEST_ASSERTIONS_BASIC_H

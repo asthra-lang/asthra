@@ -1,10 +1,10 @@
 /**
  * Asthra Concurrency Bridge - Modular Version (Phase 2 Complete)
  * Umbrella header for all concurrency modules with backward compatibility
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * DESIGN GOALS:
  * - Full backward compatibility with original asthra_concurrency_bridge.h
  * - Clean modular architecture with focused components
@@ -20,10 +20,10 @@
 // =============================================================================
 
 #include "concurrency/asthra_concurrency_atomics.h"
-#include "concurrency/asthra_concurrency_tasks.h"
-#include "concurrency/asthra_concurrency_sync.h"
 #include "concurrency/asthra_concurrency_channels.h"
 #include "concurrency/asthra_concurrency_patterns.h"
+#include "concurrency/asthra_concurrency_sync.h"
+#include "concurrency/asthra_concurrency_tasks.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,47 +59,47 @@ void asthra_safety_log_task_lifecycle_event_enhanced(uint64_t task_id, AsthraTas
 typedef struct {
     // Task system statistics
     AsthraConcurrencyTaskStats task_stats;
-    
+
     // Synchronization statistics
     AsthraConcurrencySyncStats sync_stats;
-    
+
     // Channel system statistics
     AsthraConcurrencyChannelStats channel_stats;
-    
+
     // Pattern system statistics
     AsthraConcurrencyPatternStats pattern_stats;
-    
+
     // Overall system statistics
-    asthra_concurrency_atomic_counter_t total_operations;    // Total operations across all systems
-    asthra_concurrency_atomic_counter_t total_errors;        // Total errors across all systems
-    asthra_concurrency_atomic_counter_t memory_usage;        // Total memory usage
-    asthra_concurrency_atomic_counter_t active_components;   // Active components count
-    
+    asthra_concurrency_atomic_counter_t total_operations;  // Total operations across all systems
+    asthra_concurrency_atomic_counter_t total_errors;      // Total errors across all systems
+    asthra_concurrency_atomic_counter_t memory_usage;      // Total memory usage
+    asthra_concurrency_atomic_counter_t active_components; // Active components count
+
     // Callback system statistics
     asthra_concurrency_atomic_counter_t callbacks_enqueued;  // Total callbacks enqueued
     asthra_concurrency_atomic_counter_t callbacks_processed; // Total callbacks processed
     asthra_concurrency_atomic_counter_t callbacks_dropped;   // Total callbacks dropped
-    
+
     // Task system statistics
-    asthra_concurrency_atomic_counter_t tasks_spawned;       // Tasks spawned
-    asthra_concurrency_atomic_counter_t tasks_completed;     // Tasks completed
-    asthra_concurrency_atomic_counter_t tasks_failed;        // Tasks failed
-    asthra_concurrency_atomic_counter_t tasks_cancelled;     // Tasks cancelled
-    asthra_concurrency_atomic_counter_t tasks_timeout;       // Tasks that timed out
-    
+    asthra_concurrency_atomic_counter_t tasks_spawned;   // Tasks spawned
+    asthra_concurrency_atomic_counter_t tasks_completed; // Tasks completed
+    asthra_concurrency_atomic_counter_t tasks_failed;    // Tasks failed
+    asthra_concurrency_atomic_counter_t tasks_cancelled; // Tasks cancelled
+    asthra_concurrency_atomic_counter_t tasks_timeout;   // Tasks that timed out
+
     // Thread system statistics
     asthra_concurrency_atomic_counter_t threads_registered;  // Threads registered
     asthra_concurrency_atomic_counter_t gc_roots_registered; // GC roots registered
-    
+
     // Synchronization statistics
-    asthra_concurrency_atomic_counter_t mutex_contentions;   // Mutex contentions
-    asthra_concurrency_atomic_counter_t rwlock_contentions;  // RWLock contentions
-    
+    asthra_concurrency_atomic_counter_t mutex_contentions;  // Mutex contentions
+    asthra_concurrency_atomic_counter_t rwlock_contentions; // RWLock contentions
+
     // Data structure operations
-    asthra_concurrency_atomic_counter_t string_operations;   // String operations
-    asthra_concurrency_atomic_counter_t slice_operations;    // Slice operations
+    asthra_concurrency_atomic_counter_t string_operations;    // String operations
+    asthra_concurrency_atomic_counter_t slice_operations;     // Slice operations
     asthra_concurrency_atomic_counter_t lock_free_operations; // Lock-free operations
-    
+
     // Safety and debugging
     asthra_concurrency_atomic_counter_t memory_ordering_violations; // Memory ordering violations
 } AsthraConcurrencyStats;
@@ -112,14 +112,14 @@ typedef struct {
  * Core concurrency bridge structure with C17 atomics support
  */
 typedef struct {
-    asthra_concurrency_atomic_bool initialized;  // C17 atomic initialization flag
+    asthra_concurrency_atomic_bool initialized; // C17 atomic initialization flag
     size_t max_tasks;
     size_t max_callbacks;
-    _Atomic(AsthraConcurrencyTaskHandle*) task_registry; // Atomic task registry
+    _Atomic(AsthraConcurrencyTaskHandle *) task_registry; // Atomic task registry
     AsthraConcurrencyCallbackQueue global_callback_queue;
     AsthraConcurrencyThreadRegistry thread_registry;
     AsthraConcurrencyStats stats;
-    asthra_concurrency_mutex_t global_mutex;    // Hybrid mutex
+    asthra_concurrency_mutex_t global_mutex;          // Hybrid mutex
     asthra_concurrency_atomic_counter_t next_task_id; // C17 atomic task ID counter
     asthra_concurrency_atomic_counter_t init_time;    // Initialization time
 } AsthraConcurrencyBridge;
@@ -344,9 +344,9 @@ const char* Asthra_concurrency_error_string(AsthraConcurrencyErrorCode error_cod
  * Information about a concurrency module
  */
 typedef struct {
-    const char* name;
-    const char* version;
-    const char* description;
+    const char *name;
+    const char *version;
+    const char *description;
     bool is_initialized;
     size_t memory_usage;
     uint64_t operation_count;
@@ -384,12 +384,12 @@ AsthraResult Asthra_concurrency_bridge_init_default(void);
  * Result indicating success or failure
  */
 typedef struct {
-    size_t max_tasks;           // Maximum concurrent tasks
-    size_t max_callbacks;       // Maximum queued callbacks
-    size_t max_channels;        // Maximum concurrent channels
-    size_t max_worker_pools;    // Maximum worker pools
-    bool enable_statistics;     // Enable detailed statistics
-    bool enable_debugging;      // Enable debugging features
+    size_t max_tasks;        // Maximum concurrent tasks
+    size_t max_callbacks;    // Maximum queued callbacks
+    size_t max_channels;     // Maximum concurrent channels
+    size_t max_worker_pools; // Maximum worker pools
+    bool enable_statistics;  // Enable detailed statistics
+    bool enable_debugging;   // Enable debugging features
 } AsthraConcurrencyConfig;
 
 AsthraResult Asthra_concurrency_bridge_init_with_config(const AsthraConcurrencyConfig* config);
@@ -398,20 +398,18 @@ AsthraResult Asthra_concurrency_bridge_init_with_config(const AsthraConcurrencyC
 // BACKWARD COMPATIBILITY MACROS
 // =============================================================================
 
-// For code that was using the original asthra_concurrency_bridge.h, 
+// For code that was using the original asthra_concurrency_bridge.h,
 // these macros provide seamless compatibility
 
 // Original initialization function (now calls modular version)
-#define ASTHRA_CONCURRENCY_BRIDGE_INIT(max_tasks, max_callbacks) \
+#define ASTHRA_CONCURRENCY_BRIDGE_INIT(max_tasks, max_callbacks)                                   \
     Asthra_concurrency_bridge_init(max_tasks, max_callbacks)
 
 // Original cleanup function (now calls modular version)
-#define ASTHRA_CONCURRENCY_BRIDGE_CLEANUP() \
-    Asthra_concurrency_bridge_cleanup()
+#define ASTHRA_CONCURRENCY_BRIDGE_CLEANUP() Asthra_concurrency_bridge_cleanup()
 
 // Original statistics function (now returns unified stats)
-#define ASTHRA_GET_CONCURRENCY_STATS() \
-    Asthra_get_concurrency_stats()
+#define ASTHRA_GET_CONCURRENCY_STATS() Asthra_get_concurrency_stats()
 
 // =============================================================================
 // PHASE 2 COMPLETION VERIFICATION

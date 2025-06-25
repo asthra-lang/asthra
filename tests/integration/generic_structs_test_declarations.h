@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Generic Structs Testing - Declaration Tests
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Tests for generic struct declaration edge cases and syntax validation
  */
 
@@ -39,4 +39,4 @@ bool test_invalid_generic_struct_syntax(void);
 }
 #endif
 
-#endif // GENERIC_STRUCTS_TEST_DECLARATIONS_H 
+#endif // GENERIC_STRUCTS_TEST_DECLARATIONS_H

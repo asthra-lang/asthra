@@ -1,11 +1,12 @@
 #ifndef ASTHRA_SAFETY_CORE_H
 #define ASTHRA_SAFETY_CORE_H
 
+#include "asthra_safety_common.h"
+#include "core/asthra_runtime_core.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdio.h>
-#include "core/asthra_runtime_core.h"
 
 #ifdef __cplusplus
 extern "C" {

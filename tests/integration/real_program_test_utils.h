@@ -1,9 +1,9 @@
 /**
  * Real Program Test Utilities Header
- * 
+ *
  * Contains utility functions for timestamps, configuration, and common
  * helper functions for the real program test framework.
- * 
+ *
  * Copyright (c) 2025 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -11,9 +11,9 @@
 #ifndef REAL_PROGRAM_TEST_UTILS_H
 #define REAL_PROGRAM_TEST_UTILS_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdbool.h>
 
 // =============================================================================
 // TEST CONFIGURATION
@@ -26,8 +26,8 @@ typedef struct {
     bool detect_false_positives;
     size_t max_execution_time_ms;
     size_t max_memory_usage_kb;
-    const char* output_format;
-    FILE* output_stream;
+    const char *output_format;
+    FILE *output_stream;
     bool enable_memory_debugging;
 } TestSuiteConfig;
 

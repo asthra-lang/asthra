@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Task System Types v1.2
  * Core Data Structures and Type Definitions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -9,14 +9,14 @@
 #ifndef ASTHRA_TASKS_TYPES_H
 #define ASTHRA_TASKS_TYPES_H
 
-#include <stdint.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <pthread.h>
+#include <stdint.h>
 
 // C17 modernization includes
-#include <stdatomic.h>
 #include <stdalign.h>
+#include <stdatomic.h>
 
 #include "asthra_runtime.h"
 
@@ -26,15 +26,15 @@
 
 // Import atomic compatibility layer from core
 #if ASTHRA_HAS_ATOMICS
-    #define ASTHRA_ATOMIC_LOAD(ptr) atomic_load(ptr)
-    #define ASTHRA_ATOMIC_STORE(ptr, val) atomic_store(ptr, val)
-    #define ASTHRA_ATOMIC_FETCH_ADD(ptr, val) atomic_fetch_add(ptr, val)
-    #define ASTHRA_ATOMIC_FETCH_SUB(ptr, val) atomic_fetch_sub(ptr, val)
+#define ASTHRA_ATOMIC_LOAD(ptr) atomic_load(ptr)
+#define ASTHRA_ATOMIC_STORE(ptr, val) atomic_store(ptr, val)
+#define ASTHRA_ATOMIC_FETCH_ADD(ptr, val) atomic_fetch_add(ptr, val)
+#define ASTHRA_ATOMIC_FETCH_SUB(ptr, val) atomic_fetch_sub(ptr, val)
 #else
-    #define ASTHRA_ATOMIC_LOAD(ptr) (*(ptr))
-    #define ASTHRA_ATOMIC_STORE(ptr, val) (*(ptr) = (val))
-    #define ASTHRA_ATOMIC_FETCH_ADD(ptr, val) (__sync_fetch_and_add(ptr, val))
-    #define ASTHRA_ATOMIC_FETCH_SUB(ptr, val) (__sync_fetch_and_sub(ptr, val))
+#define ASTHRA_ATOMIC_LOAD(ptr) (*(ptr))
+#define ASTHRA_ATOMIC_STORE(ptr, val) (*(ptr) = (val))
+#define ASTHRA_ATOMIC_FETCH_ADD(ptr, val) (__sync_fetch_and_add(ptr, val))
+#define ASTHRA_ATOMIC_FETCH_SUB(ptr, val) (__sync_fetch_and_sub(ptr, val))
 #endif
 
 // =============================================================================
@@ -61,9 +61,9 @@ struct AsthraTask {
 struct AsthraScheduler {
     AsthraTask **tasks;
     size_t max_tasks;
-    asthra_atomic_size_t task_count;      // C17 atomic counter
+    asthra_atomic_size_t task_count; // C17 atomic counter
     size_t worker_threads;
-    asthra_atomic_bool running;           // C17 atomic flag
+    asthra_atomic_bool running; // C17 atomic flag
     pthread_mutex_t mutex;
     pthread_cond_t cond;
 };
@@ -119,4 +119,4 @@ extern bool g_callback_queue_initialized;
 extern pthread_key_t g_thread_registered_key;
 extern bool g_thread_key_initialized;
 
-#endif // ASTHRA_TASKS_TYPES_H 
+#endif // ASTHRA_TASKS_TYPES_H

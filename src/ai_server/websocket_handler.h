@@ -1,9 +1,9 @@
 #ifndef WEBSOCKET_HANDLER_H
 #define WEBSOCKET_HANDLER_H
 
-#include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 // WebSocket frame structure for basic implementation
 typedef struct {
@@ -18,7 +18,8 @@ typedef struct {
 
 // WebSocket handling functions
 char *generate_websocket_accept_key(const char *websocket_key);
-bool parse_websocket_frame(const char *buffer, size_t buffer_len, char **payload, size_t *payload_len);
+bool parse_websocket_frame(const char *buffer, size_t buffer_len, char **payload,
+                           size_t *payload_len);
 void send_websocket_text_frame(int fd, const char *message);
 
 // SHA1 and Base64 helper functions

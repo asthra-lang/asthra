@@ -1,9 +1,9 @@
 /**
  * Real Program Test Utilities Implementation
- * 
+ *
  * Contains utility functions for timestamps, configuration, and common
  * helper functions for the real program test framework.
- * 
+ *
  * Copyright (c) 2025 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -26,16 +26,14 @@ double calculate_execution_time(uint64_t start_time, uint64_t end_time) {
 }
 
 TestSuiteConfig create_default_config(void) {
-    TestSuiteConfig config = {
-        .verbose_output = true,
-        .stop_on_first_failure = false,
-        .measure_performance = true,
-        .detect_false_positives = true,
-        .max_execution_time_ms = 30000,  // 30 seconds
-        .max_memory_usage_kb = 102400,   // 100MB
-        .output_format = "text",
-        .output_stream = stdout,
-        .enable_memory_debugging = false
-    };
+    TestSuiteConfig config = {.verbose_output = true,
+                              .stop_on_first_failure = false,
+                              .measure_performance = true,
+                              .detect_false_positives = true,
+                              .max_execution_time_ms = 30000, // 30 seconds
+                              .max_memory_usage_kb = 102400,  // 100MB
+                              .output_format = "text",
+                              .output_stream = stdout,
+                              .enable_memory_debugging = false};
     return config;
 }

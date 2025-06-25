@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * AST Node Destruction - Common Utilities Implementation
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This file contains implementation of common utilities for AST node destruction
  */
 
@@ -36,4 +36,4 @@ ASTDestructionStats ast_destruction_stats_get(void) {
  */
 void ast_destruction_stats_reset(void) {
     ast_destruction_stats_init();
-} 
+}

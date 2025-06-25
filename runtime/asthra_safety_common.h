@@ -2,13 +2,13 @@
 #define ASTHRA_SAFETY_COMMON_H
 
 #include "asthra_runtime.h"
+#include <pthread.h>
+#include <stdalign.h>
+#include <stdarg.h>
+#include <stdatomic.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
-#include <stdarg.h>
-#include <pthread.h>
-#include <stdatomic.h>
-#include <stdalign.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,11 +19,11 @@ extern "C" {
 // =============================================================================
 
 typedef enum {
-    ASTHRA_SAFETY_LEVEL_NONE = 0,        // No safety checks (production)
-    ASTHRA_SAFETY_LEVEL_BASIC = 1,       // Basic bounds and null checks
-    ASTHRA_SAFETY_LEVEL_STANDARD = 2,    // Standard safety checks
-    ASTHRA_SAFETY_LEVEL_ENHANCED = 3,    // Enhanced debugging aids
-    ASTHRA_SAFETY_LEVEL_PARANOID = 4     // Maximum safety validation
+    ASTHRA_SAFETY_LEVEL_NONE = 0,     // No safety checks (production)
+    ASTHRA_SAFETY_LEVEL_BASIC = 1,    // Basic bounds and null checks
+    ASTHRA_SAFETY_LEVEL_STANDARD = 2, // Standard safety checks
+    ASTHRA_SAFETY_LEVEL_ENHANCED = 3, // Enhanced debugging aids
+    ASTHRA_SAFETY_LEVEL_PARANOID = 4  // Maximum safety validation
 } AsthraSafetyLevel;
 
 typedef struct {
@@ -72,22 +72,22 @@ typedef struct {
 // =============================================================================
 
 // Global state accessors (implemented in asthra_safety_core.c)
-extern AsthraSafetyConfig* asthra_safety_get_config_ptr(void);
+extern AsthraSafetyConfig *asthra_safety_get_config_ptr(void);
 extern bool asthra_safety_is_initialized(void);
-extern pthread_mutex_t* asthra_safety_get_mutex(void);
-extern AsthraSafetyPerformanceMetrics* asthra_safety_get_metrics_ptr(void);
+extern pthread_mutex_t *asthra_safety_get_mutex(void);
+extern AsthraSafetyPerformanceMetrics *asthra_safety_get_metrics_ptr(void);
 
 // Utility functions
 extern uint64_t asthra_get_timestamp_ns(void);
-extern int asthra_random_bytes(uint8_t* buffer, size_t size);
+extern int asthra_random_bytes(uint8_t *buffer, size_t size);
 
 // =============================================================================
 // SHARED VIOLATION REPORTING
 // =============================================================================
 
-void asthra_safety_report_violation(AsthraViolationType type, AsthraSafetyLevel severity, 
-                                   const char *message, const char *location, int line, 
-                                   const char *function, void *context, size_t context_size);
+void asthra_safety_report_violation(AsthraViolationType type, AsthraSafetyLevel severity,
+                                    const char *message, const char *location, int line,
+                                    const char *function, void *context, size_t context_size);
 
 // =============================================================================
 // MODULE FUNCTION DECLARATIONS
@@ -134,8 +134,11 @@ typedef struct {
 } AsthraTypeSafetyCheck;
 
 AsthraGrammarValidation asthra_safety_validate_grammar(const char *source_code, size_t code_length);
-AsthraPatternCompletenessCheck asthra_safety_check_pattern_completeness(AsthraMatchArm *arms, size_t arm_count, uint32_t result_type_id);
-AsthraTypeSafetyCheck asthra_safety_validate_result_type_usage(AsthraResult result, uint32_t expected_type_id);
+AsthraPatternCompletenessCheck asthra_safety_check_pattern_completeness(AsthraMatchArm *arms,
+                                                                        size_t arm_count,
+                                                                        uint32_t result_type_id);
+AsthraTypeSafetyCheck asthra_safety_validate_result_type_usage(AsthraResult result,
+                                                               uint32_t expected_type_id);
 
 // Memory and FFI Safety (asthra_safety_memory_ffi.c)
 typedef enum {
@@ -170,10 +173,12 @@ typedef struct {
     atomic_int reference_count;
 } AsthraFFIPointerTracker;
 
-AsthraFFIAnnotationCheck asthra_safety_verify_ffi_annotation(void *func_ptr, void **args, size_t arg_count, 
-                                                             AsthraTransferType *expected_transfers, bool *is_borrowed);
-int asthra_safety_register_ffi_pointer(void *ptr, size_t size, AsthraTransferType transfer, 
-                                       AsthraOwnershipHint ownership, bool is_borrowed, 
+AsthraFFIAnnotationCheck asthra_safety_verify_ffi_annotation(void *func_ptr, void **args,
+                                                             size_t arg_count,
+                                                             AsthraTransferType *expected_transfers,
+                                                             bool *is_borrowed);
+int asthra_safety_register_ffi_pointer(void *ptr, size_t size, AsthraTransferType transfer,
+                                       AsthraOwnershipHint ownership, bool is_borrowed,
                                        const char *source, int line);
 int asthra_safety_unregister_ffi_pointer(void *ptr);
 AsthraFFIPointerTracker *asthra_safety_get_ffi_pointer_info(void *ptr);
@@ -199,7 +204,8 @@ typedef struct {
     char error_details[256];
 } AsthraBoundaryCheck;
 
-AsthraStringOperationValidation asthra_safety_validate_string_concatenation(AsthraString *strings, size_t count);
+AsthraStringOperationValidation asthra_safety_validate_string_concatenation(AsthraString *strings,
+                                                                            size_t count);
 AsthraBoundaryCheck asthra_safety_slice_bounds_check(AsthraSliceHeader slice, size_t index);
 
 // Concurrency and Error Handling (asthra_safety_concurrency_errors.c)
@@ -225,7 +231,8 @@ typedef struct {
     char event_details[256];
 } AsthraTaskLifecycleEvent;
 
-void asthra_safety_log_task_lifecycle_event(uint64_t task_id, AsthraTaskEvent event, const char *details);
+void asthra_safety_log_task_lifecycle_event(uint64_t task_id, AsthraTaskEvent event,
+                                            const char *details);
 
 // Security Enforcement (asthra_safety_security.c)
 typedef struct {
@@ -254,4 +261,4 @@ void asthra_safety_reset_performance_metrics(void);
 }
 #endif
 
-#endif // ASTHRA_SAFETY_COMMON_H 
+#endif // ASTHRA_SAFETY_COMMON_H

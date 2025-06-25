@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler - Annotation Grammar Productions
  * Annotation parsing for ownership, FFI, and security attributes
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -45,4 +45,4 @@ bool is_annotation_start(Parser *parser);
 }
 #endif
 
-#endif // ASTHRA_GRAMMAR_ANNOTATIONS_H 
+#endif // ASTHRA_GRAMMAR_ANNOTATIONS_H

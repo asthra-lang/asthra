@@ -1,19 +1,19 @@
 /**
  * Asthra Programming Language Runtime v1.2 - Modular Umbrella Header
  * Complete Runtime API with Modular Architecture
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * BACKWARD COMPATIBILITY HEADER
- * 
+ *
  * This header provides complete backward compatibility with the original
  * asthra_runtime.h by including all modular components. Applications can
  * use this header as a drop-in replacement for the original monolithic header.
- * 
+ *
  * For new applications, consider including only the specific modules you need
  * to reduce compilation overhead and improve build times.
- * 
+ *
  * DESIGN GOALS:
  * - Zero dependencies except libc
  * - POSIX-compliant implementation
@@ -51,8 +51,8 @@
 #include "strings/asthra_runtime_strings.h"
 
 // Concurrency and task system
-#include "concurrency/asthra_runtime_tasks.h"
 #include "concurrency/asthra_runtime_sync.h"
+#include "concurrency/asthra_runtime_tasks.h"
 
 // Cryptographic support and security
 #include "crypto/asthra_runtime_crypto.h"
@@ -93,4 +93,4 @@ ASTHRA_STATIC_ASSERT(ASTHRA_RESULT_OK >= 0, "AsthraResultTag must be defined");
 }
 #endif
 
-#endif // ASTHRA_RUNTIME_MODULAR_H 
+#endif // ASTHRA_RUNTIME_MODULAR_H

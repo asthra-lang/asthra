@@ -1,7 +1,7 @@
 /*
  * Annotation Tests - Main Test Runner
  * Orchestrates all annotation test modules
- * 
+ *
  * Coordinates:
  * - Basic annotation parsing tests
  * - Annotation validation tests
@@ -36,48 +36,48 @@ int main(void) {
     printf("- Complex annotation scenarios\n");
     printf("- Error detection and edge cases\n");
     printf("- Performance and edge case handling\n\n");
-    
+
     // Initialize test counters
     init_test_counters();
-    
+
     // Run all test modules
     printf("=== Running Modular Annotation Test Suite ===\n\n");
-    
+
     // Basic Annotation Parsing Tests
     run_basic_annotation_tests();
     printf("\n");
-    
+
     // Annotation Validation Tests
     run_validation_annotation_tests();
     printf("\n");
-    
+
     // Complex Annotation Scenarios
     run_complex_annotation_tests();
     printf("\n");
-    
+
     // Error Detection Tests
     run_error_annotation_tests();
     printf("\n");
-    
+
     // Performance and Edge Cases
     run_performance_annotation_tests();
     printf("\n");
-    
+
     // Final Results Summary
     int total_tests, passed_tests;
     get_test_stats(&total_tests, &passed_tests);
-    
+
     printf("=== Final Annotation Test Results ===\n");
     printf("Total tests run: %d\n", total_tests);
     printf("Total tests passed: %d\n", passed_tests);
     printf("Total tests failed: %d\n", total_tests - passed_tests);
-    
+
     if (total_tests > 0) {
         printf("Overall success rate: %.1f%%\n", (float)passed_tests / total_tests * 100.0);
     } else {
         printf("Overall success rate: N/A (no tests run)\n");
     }
-    
+
     if (passed_tests == total_tests && total_tests > 0) {
         printf("✅ All annotation tests passed!\n");
         printf("#[non_deterministic] annotation system is working correctly.\n");
@@ -98,4 +98,4 @@ int main(void) {
         printf("⚠️  No annotation tests were run.\n");
         return 1;
     }
-} 
+}

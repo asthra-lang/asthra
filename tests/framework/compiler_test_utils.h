@@ -15,10 +15,10 @@
 // Include all the modular test utilities
 #include "lexer_test_utils.h"
 #include "parser_test_utils.h"
+#include "performance_test_utils.h"
 #include "semantic_test_utils.h"
 #include "test_assertions.h"
 #include "test_data_utils.h"
-#include "performance_test_utils.h"
 
 #ifdef __cplusplus
 extern "C" {

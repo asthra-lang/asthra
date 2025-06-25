@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Builtin Types and Predeclared Identifiers Module Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Builtin type definitions and predeclared identifier management
  */
 
@@ -59,4 +59,4 @@ TypeDescriptor *create_predeclared_function_type(const char *name, const char *s
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_BUILTINS_H 
+#endif // ASTHRA_SEMANTIC_BUILTINS_H

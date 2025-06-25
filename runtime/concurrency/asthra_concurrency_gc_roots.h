@@ -1,7 +1,7 @@
 /**
  * Asthra Concurrency Thread Management - GC Root Management Module
  * Thread-local GC root registration and management
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -37,4 +37,4 @@ AsthraResult Asthra_unregister_thread_gc_root(void *ptr);
 }
 #endif
 
-#endif // ASTHRA_CONCURRENCY_GC_ROOTS_H 
+#endif // ASTHRA_CONCURRENCY_GC_ROOTS_H

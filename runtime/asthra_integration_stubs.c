@@ -9,12 +9,12 @@
  * while maintaining compatibility with existing runtime functions.
  */
 
-#include "asthra_runtime.h"
-#include "asthra_ffi_memory.h"
-#include "../tests/framework/test_framework.h"
-#include <string.h>
-#include <stdio.h>
 #include "asthra_integration_stubs.h"
+#include "../tests/framework/test_framework.h"
+#include "asthra_ffi_memory.h"
+#include "asthra_runtime.h"
+#include <stdio.h>
+#include <string.h>
 
 // =============================================================================
 // RUNTIME FUNCTION STUBS
@@ -27,9 +27,9 @@
 AsthraResult Asthra_register_c_thread(void) {
     // Delegate to existing runtime function
     asthra_thread_register();
-    
+
     // Return success result
-    AsthraResult result = { .tag = ASTHRA_RESULT_OK };
+    AsthraResult result = {.tag = ASTHRA_RESULT_OK};
     return result;
 }
 
@@ -37,23 +37,24 @@ AsthraResult Asthra_register_c_thread(void) {
  * Create error result with FFI signature
  * Matches the signature in asthra_ffi_memory.h
  */
-AsthraFFIResult Asthra_result_err(int error_code, const char* error_message, 
-                                 const char* error_source, void* error_context) {
+AsthraFFIResult Asthra_result_err(int error_code, const char *error_message,
+                                  const char *error_source, void *error_context) {
     AsthraFFIResult result;
     result.tag = ASTHRA_FFI_RESULT_ERR;
     result.data.err.error_code = error_code;
-    
+
     // Safely copy error message
     if (error_message) {
         strncpy(result.data.err.error_message, error_message, 255);
         result.data.err.error_message[255] = '\0';
     } else {
-        snprintf(result.data.err.error_message, sizeof(result.data.err.error_message), "Unknown error");
+        snprintf(result.data.err.error_message, sizeof(result.data.err.error_message),
+                 "Unknown error");
     }
-    
+
     result.data.err.error_source = error_source;
     result.data.err.error_context = error_context;
-    
+
     return result;
 }
 
@@ -74,15 +75,15 @@ void Asthra_unregister_c_thread(void) {
  * Initialize test context
  * Provides basic initialization for integration tests
  */
-void asthra_test_context_init(AsthraTestContext* context) {
+void asthra_test_context_init(AsthraTestContext *context) {
     if (!context) {
         return;
     }
-    
+
     // Initialize context structure
     memset(context, 0, sizeof(AsthraTestContext));
     context->result = ASTHRA_TEST_PASS;
-    
+
     // Initialize metadata with default values
     context->metadata.name = "integration_test";
     context->metadata.file = __FILE__;
@@ -92,7 +93,7 @@ void asthra_test_context_init(AsthraTestContext* context) {
     context->metadata.timeout_ns = 30000000000ULL; // 30 seconds
     context->metadata.skip = false;
     context->metadata.skip_reason = NULL;
-    
+
     // Initialize timing
     context->start_time_ns = asthra_test_get_time_ns();
     context->end_time_ns = 0;
@@ -111,30 +112,30 @@ void asthra_test_context_init(AsthraTestContext* context) {
  * Create lexer stub
  * Returns dummy pointer for basic functionality
  */
-Lexer* lexer_create_stub(const char* source) {
+Lexer *lexer_create_stub(const char *source) {
     (void)source; // Suppress unused parameter warning
-    
+
     // Return dummy pointer to indicate "success"
     // Integration tests will use this for basic compilation testing
-    return (Lexer*)0x1;
+    return (Lexer *)0x1;
 }
 
 /**
  * Create parser stub
  * Returns dummy pointer for basic functionality
  */
-Parser* parser_create_stub(Lexer* lexer) {
+Parser *parser_create_stub(Lexer *lexer) {
     (void)lexer; // Suppress unused parameter warning
-    
+
     // Return dummy pointer to indicate "success"
-    return (Parser*)0x2;
+    return (Parser *)0x2;
 }
 
 /**
  * Destroy parser stub
  * No-op for stub implementation
  */
-void parser_destroy_stub(Parser* parser) {
+void parser_destroy_stub(Parser *parser) {
     (void)parser; // Suppress unused parameter warning
     // No-op for stub implementation
 }
@@ -143,11 +144,11 @@ void parser_destroy_stub(Parser* parser) {
  * Parse program stub
  * Returns dummy AST pointer for basic functionality
  */
-ASTNode* parser_parse_program_stub(Parser* parser) {
+ASTNode *parser_parse_program_stub(Parser *parser) {
     (void)parser; // Suppress unused parameter warning
-    
+
     // Return dummy AST pointer to indicate "success"
-    return (ASTNode*)0x3;
+    return (ASTNode *)0x3;
 }
 
 // =============================================================================
@@ -158,10 +159,10 @@ ASTNode* parser_parse_program_stub(Parser* parser) {
  * Analyze program semantically stub
  * Returns success for basic functionality
  */
-int semantic_analyze_program_stub(SemanticAnalyzer* analyzer, ASTNode* ast) {
+int semantic_analyze_program_stub(SemanticAnalyzer *analyzer, ASTNode *ast) {
     (void)analyzer; // Suppress unused parameter warning
     (void)ast;      // Suppress unused parameter warning
-    
+
     // Return 0 to indicate "success"
     return 0;
 }
@@ -170,16 +171,16 @@ int semantic_analyze_program_stub(SemanticAnalyzer* analyzer, ASTNode* ast) {
  * Create semantic analyzer stub
  * Returns dummy pointer for basic functionality
  */
-SemanticAnalyzer* semantic_analyzer_create_stub(void) {
+SemanticAnalyzer *semantic_analyzer_create_stub(void) {
     // Return dummy pointer to indicate "success"
-    return (SemanticAnalyzer*)0x4;
+    return (SemanticAnalyzer *)0x4;
 }
 
 /**
  * Destroy semantic analyzer stub
  * No-op for stub implementation
  */
-void semantic_analyzer_destroy_stub(SemanticAnalyzer* analyzer) {
+void semantic_analyzer_destroy_stub(SemanticAnalyzer *analyzer) {
     (void)analyzer; // Suppress unused parameter warning
     // No-op for stub implementation
-} 
+}

@@ -2,8 +2,8 @@
 #define ASTHRA_AI_GUIDANCE_OUTPUT_H
 
 #include "ai_lint_core.h"
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -17,10 +17,10 @@ typedef struct AILintGuidanceReport AILintGuidanceReport;
 // Statistics structure
 struct AILintStatistics {
     size_t total_issues;
-    size_t by_category[5];        // One for each AILintCategory
-    size_t by_severity[3];        // One for each AILintSeverity
+    size_t by_category[5]; // One for each AILintCategory
+    size_t by_severity[3]; // One for each AILintSeverity
     size_t auto_fixable_count;
-    size_t high_impact_count;     // Issues with impact_score >= 0.7
+    size_t high_impact_count; // Issues with impact_score >= 0.7
     float average_confidence;
     float average_impact;
 };
@@ -46,12 +46,12 @@ struct AILintGuidanceIssue {
 
 // Guidance report structure
 struct AILintGuidanceReport {
-    char *version;                 // Schema version
-    char *file_path;              // Source file
-    size_t total_issues;          // Total number of issues
-    size_t auto_fixable_count;    // Number of auto-fixable issues
-    AILintGuidanceIssue *issues;  // Array of issues
-    AILintStatistics stats;       // Summary statistics
+    char *version;               // Schema version
+    char *file_path;             // Source file
+    size_t total_issues;         // Total number of issues
+    size_t auto_fixable_count;   // Number of auto-fixable issues
+    AILintGuidanceIssue *issues; // Array of issues
+    AILintStatistics stats;      // Summary statistics
 };
 
 // JSON output generation functions
@@ -72,4 +72,4 @@ void ai_lint_guidance_issue_destroy(AILintGuidanceIssue *issue);
 }
 #endif
 
-#endif // ASTHRA_AI_GUIDANCE_OUTPUT_H 
+#endif // ASTHRA_AI_GUIDANCE_OUTPUT_H

@@ -1,9 +1,9 @@
 /**
  * Asthra Programming Language v1.2 Test Execution
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Test execution logic and output formatting
  */
 
@@ -62,13 +62,11 @@ AsthraTestResult execute_single_test(const TestRegistryEntry *entry, TestSummary
  * @param filter_category Category filter (NULL for no filter)
  * @return true if test should be skipped
  */
-bool should_skip_test(const TestRegistryEntry *entry, 
-                     bool run_performance_tests, 
-                     bool run_security_tests, 
-                     const char *filter_category);
+bool should_skip_test(const TestRegistryEntry *entry, bool run_performance_tests,
+                      bool run_security_tests, const char *filter_category);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ASTHRA_TEST_EXECUTION_H 
+#endif // ASTHRA_TEST_EXECUTION_H

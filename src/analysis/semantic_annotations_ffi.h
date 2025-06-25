@@ -1,13 +1,13 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - FFI Annotations Validation Module
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * FFI annotation validation for SafeFFIAnnotation implementation
  * Phase 3: Semantic Analysis Enhancement for FFI Annotation Ambiguity Fix
- * 
+ *
  * Implements context-specific validation rules:
  * 1. Return Types: Only #[transfer_full] or #[transfer_none] allowed
  * 2. Parameters: Only #[borrowed], #[transfer_full], or #[transfer_none] allowed
@@ -18,10 +18,10 @@
 #ifndef ASTHRA_SEMANTIC_ANNOTATIONS_FFI_H
 #define ASTHRA_SEMANTIC_ANNOTATIONS_FFI_H
 
-#include "semantic_annotations_registry.h"
-#include "semantic_core.h"
 #include "../parser/ast.h"
 #include "../parser/ast_types.h"
+#include "semantic_annotations_registry.h"
+#include "semantic_core.h"
 #include <stdbool.h>
 
 #ifdef __cplusplus
@@ -40,10 +40,9 @@ extern "C" {
  * @param context The specific context (CONTEXT_PARAMETER or CONTEXT_RETURN_TYPE)
  * @return true if annotation is valid in this context, false otherwise
  */
-bool validate_ffi_transfer_annotation_context(SemanticAnalyzer *analyzer, 
-                                             const char *annotation_name,
-                                             ASTNode *target_node, 
-                                             AnnotationContext context);
+bool validate_ffi_transfer_annotation_context(SemanticAnalyzer *analyzer,
+                                              const char *annotation_name, ASTNode *target_node,
+                                              AnnotationContext context);
 
 /**
  * Validate return type FFI annotation
@@ -53,9 +52,8 @@ bool validate_ffi_transfer_annotation_context(SemanticAnalyzer *analyzer,
  * @param function_node The function or extern declaration node
  * @return true if annotation is valid for return type, false otherwise
  */
-bool validate_return_type_ffi_annotation(SemanticAnalyzer *analyzer, 
-                                        const char *annotation_name,
-                                        ASTNode *function_node);
+bool validate_return_type_ffi_annotation(SemanticAnalyzer *analyzer, const char *annotation_name,
+                                         ASTNode *function_node);
 
 /**
  * Validate parameter FFI annotation
@@ -65,9 +63,8 @@ bool validate_return_type_ffi_annotation(SemanticAnalyzer *analyzer,
  * @param param_node The parameter declaration node
  * @return true if annotation is valid for parameter, false otherwise
  */
-bool validate_parameter_ffi_annotation(SemanticAnalyzer *analyzer, 
-                                      const char *annotation_name,
-                                      ASTNode *param_node);
+bool validate_parameter_ffi_annotation(SemanticAnalyzer *analyzer, const char *annotation_name,
+                                       ASTNode *param_node);
 
 /**
  * Check if an annotation is an FFI transfer annotation
@@ -84,9 +81,8 @@ bool is_ffi_transfer_annotation(const char *annotation_name);
  * @param annotations List of annotations to validate
  * @return true if no conflicts found, false if conflicts detected
  */
-bool validate_ffi_annotation_mutual_exclusivity(SemanticAnalyzer *analyzer, 
-                                               ASTNode *node,
-                                               ASTNodeList *annotations);
+bool validate_ffi_annotation_mutual_exclusivity(SemanticAnalyzer *analyzer, ASTNode *node,
+                                                ASTNodeList *annotations);
 
 /**
  * Get FFI annotation context for a node
@@ -124,10 +120,9 @@ bool validate_extern_ffi_annotations(SemanticAnalyzer *analyzer, ASTNode *extern
  * @param annotation_name The invalid annotation name
  * @param context The context where it was used
  */
-void report_invalid_ffi_annotation_context_error(SemanticAnalyzer *analyzer,
-                                                ASTNode *node,
-                                                const char *annotation_name,
-                                                AnnotationContext context);
+void report_invalid_ffi_annotation_context_error(SemanticAnalyzer *analyzer, ASTNode *node,
+                                                 const char *annotation_name,
+                                                 AnnotationContext context);
 
 /**
  * Report FFI annotation conflict error
@@ -136,13 +131,12 @@ void report_invalid_ffi_annotation_context_error(SemanticAnalyzer *analyzer,
  * @param first_annotation First conflicting annotation
  * @param second_annotation Second conflicting annotation
  */
-void report_ffi_annotation_conflict_error(SemanticAnalyzer *analyzer,
-                                         ASTNode *node,
-                                         const char *first_annotation,
-                                         const char *second_annotation);
+void report_ffi_annotation_conflict_error(SemanticAnalyzer *analyzer, ASTNode *node,
+                                          const char *first_annotation,
+                                          const char *second_annotation);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_ANNOTATIONS_FFI_H 
+#endif // ASTHRA_SEMANTIC_ANNOTATIONS_FFI_H

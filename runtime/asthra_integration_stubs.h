@@ -1,12 +1,13 @@
 #ifndef ASTHRA_INTEGRATION_STUBS_H
 #define ASTHRA_INTEGRATION_STUBS_H
 
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdio.h>
+#include "../tests/framework/test_context.h"
 #include "core/asthra_runtime_core.h"
 #include "types/asthra_runtime_result.h"
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
 
 // Forward declarations to avoid conflicts
 typedef struct Lexer Lexer;
@@ -20,14 +21,14 @@ extern "C" {
 
 AsthraResult Asthra_register_c_thread(void);
 void Asthra_unregister_c_thread(void);
-void asthra_test_context_init(AsthraTestContext* context);
-Lexer* lexer_create_stub(const char* source);
-Parser* parser_create_stub(Lexer* lexer);
-void parser_destroy_stub(Parser* parser);
-ASTNode* parser_parse_program_stub(Parser* parser);
-int semantic_analyze_program_stub(SemanticAnalyzer* analyzer, ASTNode* ast);
-SemanticAnalyzer* semantic_analyzer_create_stub(void);
-void semantic_analyzer_destroy_stub(SemanticAnalyzer* analyzer);
+void asthra_test_context_init(AsthraTestContext *context);
+Lexer *lexer_create_stub(const char *source);
+Parser *parser_create_stub(Lexer *lexer);
+void parser_destroy_stub(Parser *parser);
+ASTNode *parser_parse_program_stub(Parser *parser);
+int semantic_analyze_program_stub(SemanticAnalyzer *analyzer, ASTNode *ast);
+SemanticAnalyzer *semantic_analyzer_create_stub(void);
+void semantic_analyzer_destroy_stub(SemanticAnalyzer *analyzer);
 
 #ifdef __cplusplus
 }

@@ -9,104 +9,105 @@
 // Allocate reasonable sizes for opaque structs to avoid memory corruption
 #define STUB_STRUCT_SIZE 256
 
-DataFlowAnalysis* data_flow_analysis_create(void) {
-    return (DataFlowAnalysis*)calloc(1, STUB_STRUCT_SIZE);
+DataFlowAnalysis *data_flow_analysis_create(void) {
+    return (DataFlowAnalysis *)calloc(1, STUB_STRUCT_SIZE);
 }
 
-void data_flow_analysis_destroy(DataFlowAnalysis* analysis) {
+void data_flow_analysis_destroy(DataFlowAnalysis *analysis) {
     free(analysis);
 }
 
-InstructionBuffer* instruction_buffer_create(size_t capacity) {
-    return (InstructionBuffer*)calloc(1, STUB_STRUCT_SIZE);
+InstructionBuffer *instruction_buffer_create(size_t capacity) {
+    return (InstructionBuffer *)calloc(1, STUB_STRUCT_SIZE);
 }
 
-void instruction_buffer_destroy(InstructionBuffer* buffer) {
+void instruction_buffer_destroy(InstructionBuffer *buffer) {
     free(buffer);
 }
 
-bool instruction_buffer_add(InstructionBuffer* buffer, Instruction* instruction) {
+bool instruction_buffer_add(InstructionBuffer *buffer, Instruction *instruction) {
     return true; // Stub implementation
 }
 
-ControlFlowGraph* control_flow_graph_create(void) {
-    return (ControlFlowGraph*)calloc(1, STUB_STRUCT_SIZE);
+ControlFlowGraph *control_flow_graph_create(void) {
+    return (ControlFlowGraph *)calloc(1, STUB_STRUCT_SIZE);
 }
 
-void control_flow_graph_destroy(ControlFlowGraph* cfg) {
+void control_flow_graph_destroy(ControlFlowGraph *cfg) {
     free(cfg);
 }
 
-bool control_flow_graph_build(ControlFlowGraph* cfg, InstructionBuffer* buffer) {
+bool control_flow_graph_build(ControlFlowGraph *cfg, InstructionBuffer *buffer) {
     return true; // Stub implementation
 }
 
-BasicBlock* control_flow_graph_get_entry_block(ControlFlowGraph* cfg) {
+BasicBlock *control_flow_graph_get_entry_block(ControlFlowGraph *cfg) {
     static char stub_block[STUB_STRUCT_SIZE];
-    return (BasicBlock*)stub_block; // Return a valid pointer to static memory
+    return (BasicBlock *)stub_block; // Return a valid pointer to static memory
 }
 
-BasicBlock* control_flow_graph_get_block_by_index(ControlFlowGraph* cfg, int index) {
+BasicBlock *control_flow_graph_get_block_by_index(ControlFlowGraph *cfg, int index) {
     static char stub_block[STUB_STRUCT_SIZE];
-    return (BasicBlock*)stub_block; // Return a valid pointer to static memory
+    return (BasicBlock *)stub_block; // Return a valid pointer to static memory
 }
 
-ReachingDefinitions* reaching_definitions_create(void) {
-    return (ReachingDefinitions*)calloc(1, STUB_STRUCT_SIZE);
+ReachingDefinitions *reaching_definitions_create(void) {
+    return (ReachingDefinitions *)calloc(1, STUB_STRUCT_SIZE);
 }
 
-void reaching_definitions_destroy(ReachingDefinitions* rd) {
+void reaching_definitions_destroy(ReachingDefinitions *rd) {
     free(rd);
 }
 
-bool reaching_definitions_analyze(ReachingDefinitions* rd, ControlFlowGraph* cfg) {
+bool reaching_definitions_analyze(ReachingDefinitions *rd, ControlFlowGraph *cfg) {
     return true; // Stub implementation
 }
 
-DefinitionSet* reaching_definitions_get_reaching_set(ReachingDefinitions* rd, BasicBlock* block) {
+DefinitionSet *reaching_definitions_get_reaching_set(ReachingDefinitions *rd, BasicBlock *block) {
     static char stub_set[STUB_STRUCT_SIZE];
-    return (DefinitionSet*)stub_set; // Return a valid pointer to static memory
+    return (DefinitionSet *)stub_set; // Return a valid pointer to static memory
 }
 
-size_t definition_set_size(DefinitionSet* set) {
+size_t definition_set_size(DefinitionSet *set) {
     return 2; // Return a value that satisfies the test expectations
 }
 
-LiveVariableAnalysis* live_variable_analysis_create(void) {
-    return (LiveVariableAnalysis*)calloc(1, STUB_STRUCT_SIZE);
+LiveVariableAnalysis *live_variable_analysis_create(void) {
+    return (LiveVariableAnalysis *)calloc(1, STUB_STRUCT_SIZE);
 }
 
-void live_variable_analysis_destroy(LiveVariableAnalysis* lva) {
+void live_variable_analysis_destroy(LiveVariableAnalysis *lva) {
     free(lva);
 }
 
-bool live_variable_analysis_analyze(LiveVariableAnalysis* lva, ControlFlowGraph* cfg) {
+bool live_variable_analysis_analyze(LiveVariableAnalysis *lva, ControlFlowGraph *cfg) {
     return true; // Stub implementation
 }
 
-LivenessSet* live_variable_analysis_get_live_in(LiveVariableAnalysis* lva, BasicBlock* block, int instruction) {
+LivenessSet *live_variable_analysis_get_live_in(LiveVariableAnalysis *lva, BasicBlock *block,
+                                                int instruction) {
     static char stub_set[STUB_STRUCT_SIZE];
-    return (LivenessSet*)stub_set; // Return a valid pointer to static memory
+    return (LivenessSet *)stub_set; // Return a valid pointer to static memory
 }
 
-LivenessSet* live_variable_analysis_get_live_out(LiveVariableAnalysis* lva, BasicBlock* block) {
+LivenessSet *live_variable_analysis_get_live_out(LiveVariableAnalysis *lva, BasicBlock *block) {
     static char stub_set[STUB_STRUCT_SIZE];
-    return (LivenessSet*)stub_set; // Return a valid pointer to static memory
+    return (LivenessSet *)stub_set; // Return a valid pointer to static memory
 }
 
-bool liveness_set_contains(LivenessSet* set, int reg) {
+bool liveness_set_contains(LivenessSet *set, int reg) {
     return true; // Return true to satisfy test expectations
 }
 
-UseDefChains* use_def_chains_create(void) {
-    return (UseDefChains*)calloc(1, STUB_STRUCT_SIZE);
+UseDefChains *use_def_chains_create(void) {
+    return (UseDefChains *)calloc(1, STUB_STRUCT_SIZE);
 }
 
-void use_def_chains_destroy(UseDefChains* udc) {
+void use_def_chains_destroy(UseDefChains *udc) {
     free(udc);
 }
 
-bool use_def_chains_build(UseDefChains* udc, ControlFlowGraph* cfg) {
+bool use_def_chains_build(UseDefChains *udc, ControlFlowGraph *cfg) {
     return true; // Stub implementation
 }
 
@@ -114,14 +115,14 @@ bool use_def_chains_build(UseDefChains* udc, ControlFlowGraph* cfg) {
 static int last_instruction_queried = -1;
 static int last_operand_queried = -1;
 
-DefList* use_def_chains_get_defs_for_use(UseDefChains* udc, int instruction, int operand) {
+DefList *use_def_chains_get_defs_for_use(UseDefChains *udc, int instruction, int operand) {
     last_instruction_queried = instruction;
     last_operand_queried = operand;
     static char stub_list[STUB_STRUCT_SIZE];
-    return (DefList*)stub_list; // Return a valid pointer to static memory
+    return (DefList *)stub_list; // Return a valid pointer to static memory
 }
 
-size_t def_list_size(DefList* list) {
+size_t def_list_size(DefList *list) {
     // For the multiple defs test, instruction 5 should have multiple definitions
     if (last_instruction_queried == 5) {
         return 2; // Multiple definitions
@@ -129,56 +130,57 @@ size_t def_list_size(DefList* list) {
     return 1; // Single definition for other cases
 }
 
-Definition* def_list_get(DefList* list, int index) {
+Definition *def_list_get(DefList *list, int index) {
     static Definition def;
-    
+
     // Based on the test expectations:
     // - Use at instruction 1 should link to def at instruction 0
     // - Use at instruction 3 should link to def at instruction 2
     // - Use at instruction 5 (multiple defs test) should have defs from 2 and 4
-    
+
     if (last_instruction_queried == 1) {
-        def.instruction_index = 0;  // use1 links to def1
+        def.instruction_index = 0; // use1 links to def1
     } else if (last_instruction_queried == 3) {
-        def.instruction_index = 2;  // use2 links to def2
+        def.instruction_index = 2; // use2 links to def2
     } else if (last_instruction_queried == 5) {
         // Multiple defs case
         if (index == 0) {
-            def.instruction_index = 2;  // First def
+            def.instruction_index = 2; // First def
         } else {
-            def.instruction_index = 4;  // Second def
+            def.instruction_index = 4; // Second def
         }
     } else {
-        def.instruction_index = 0;  // Default
+        def.instruction_index = 0; // Default
     }
-    
+
     return &def;
 }
 
-void ast_free_node(ASTNode* node) {
+void ast_free_node(ASTNode *node) {
     // Stub implementation
 }
 
 /**
  * Setup test fixture for data flow analysis
  */
-DataFlowAnalysisTestFixture* setup_data_flow_analysis_fixture(void) {
-    DataFlowAnalysisTestFixture* fixture = calloc(1, sizeof(DataFlowAnalysisTestFixture));
-    if (!fixture) return NULL;
-    
+DataFlowAnalysisTestFixture *setup_data_flow_analysis_fixture(void) {
+    DataFlowAnalysisTestFixture *fixture = calloc(1, sizeof(DataFlowAnalysisTestFixture));
+    if (!fixture)
+        return NULL;
+
     fixture->data_flow = data_flow_analysis_create();
     if (!fixture->data_flow) {
         free(fixture);
         return NULL;
     }
-    
+
     fixture->instruction_buffer = instruction_buffer_create(1024);
     if (!fixture->instruction_buffer) {
         data_flow_analysis_destroy(fixture->data_flow);
         free(fixture);
         return NULL;
     }
-    
+
     fixture->cfg = control_flow_graph_create();
     if (!fixture->cfg) {
         instruction_buffer_destroy(fixture->instruction_buffer);
@@ -186,7 +188,7 @@ DataFlowAnalysisTestFixture* setup_data_flow_analysis_fixture(void) {
         free(fixture);
         return NULL;
     }
-    
+
     fixture->reaching_defs = reaching_definitions_create();
     if (!fixture->reaching_defs) {
         control_flow_graph_destroy(fixture->cfg);
@@ -195,7 +197,7 @@ DataFlowAnalysisTestFixture* setup_data_flow_analysis_fixture(void) {
         free(fixture);
         return NULL;
     }
-    
+
     fixture->live_vars = live_variable_analysis_create();
     if (!fixture->live_vars) {
         reaching_definitions_destroy(fixture->reaching_defs);
@@ -205,7 +207,7 @@ DataFlowAnalysisTestFixture* setup_data_flow_analysis_fixture(void) {
         free(fixture);
         return NULL;
     }
-    
+
     fixture->use_def_chains = use_def_chains_create();
     if (!fixture->use_def_chains) {
         live_variable_analysis_destroy(fixture->live_vars);
@@ -216,16 +218,17 @@ DataFlowAnalysisTestFixture* setup_data_flow_analysis_fixture(void) {
         free(fixture);
         return NULL;
     }
-    
+
     return fixture;
 }
 
 /**
  * Cleanup test fixture
  */
-void cleanup_data_flow_analysis_fixture(DataFlowAnalysisTestFixture* fixture) {
-    if (!fixture) return;
-    
+void cleanup_data_flow_analysis_fixture(DataFlowAnalysisTestFixture *fixture) {
+    if (!fixture)
+        return;
+
     if (fixture->test_ast) {
         ast_free_node(fixture->test_ast);
     }

@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Const Declaration Analysis Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Phase 2: Semantic Analysis Implementation
  * Interface for analyzing const declarations and compile-time evaluation
  */
@@ -12,8 +12,8 @@
 #ifndef ASTHRA_SEMANTIC_CONST_DECLARATIONS_H
 #define ASTHRA_SEMANTIC_CONST_DECLARATIONS_H
 
-#include "semantic_analyzer_core.h"
 #include "const_evaluator.h"
+#include "semantic_analyzer_core.h"
 #include "semantic_types_defs.h"
 
 #ifdef __cplusplus
@@ -40,13 +40,11 @@ bool analyze_const_declaration(SemanticAnalyzer *analyzer, ASTNode *const_decl);
  * @param location Source location for error reporting
  * @return true if types are compatible, false otherwise
  */
-bool validate_const_type_compatibility(SemanticAnalyzer *analyzer, 
-                                      TypeDescriptor *declared_type, 
-                                      ConstValue *const_value, 
-                                      SourceLocation location);
+bool validate_const_type_compatibility(SemanticAnalyzer *analyzer, TypeDescriptor *declared_type,
+                                       ConstValue *const_value, SourceLocation location);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_CONST_DECLARATIONS_H 
+#endif // ASTHRA_SEMANTIC_CONST_DECLARATIONS_H

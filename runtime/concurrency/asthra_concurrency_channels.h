@@ -1,10 +1,10 @@
 /**
  * Asthra Concurrency Channels - Channels and Communication Primitives
  * Part of the Asthra Runtime Modularization Plan - Phase 2
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * DESIGN GOALS:
  * - Channel definitions and operations
  * - Select operations for multi-channel coordination
@@ -15,14 +15,14 @@
 #ifndef ASTHRA_CONCURRENCY_CHANNELS_H
 #define ASTHRA_CONCURRENCY_CHANNELS_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 
+#include "../asthra_ffi_memory.h"
+#include "../asthra_runtime.h"
 #include "asthra_concurrency_atomics.h"
 #include "asthra_concurrency_sync.h"
-#include "../asthra_runtime.h"
-#include "../asthra_ffi_memory.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,22 +30,17 @@ extern "C" {
 // Asthra_channel_len
 ;
 
-
 // Asthra_channel_cap
 ;
-
 
 // Asthra_channel_is_empty
 ;
 
-
 // Asthra_channel_is_full
 ;
 
-
 // Asthra_channel_get_info
 ;
-
 
 // Asthra_channel_dump_info
 ;
@@ -59,35 +54,36 @@ extern "C" {
 /**
  * Callback function signature for C-to-Asthra communication
  */
-typedef AsthraResult (*AsthraConcurrencyCallbackFunction)(void *data, size_t data_size, void *context);
+typedef AsthraResult (*AsthraConcurrencyCallbackFunction)(void *data, size_t data_size,
+                                                          void *context);
 
 /**
  * Callback entry for the atomic callback queue
  */
 typedef struct AsthraConcurrencyCallbackEntry {
-    AsthraConcurrencyCallbackFunction func; // Callback function
-    void *data;                          // Callback data
-    size_t data_size;                    // Size of callback data
-    void *context;                       // Additional context
-    asthra_concurrency_atomic_counter_t timestamp; // Atomic timestamp
-    asthra_concurrency_atomic_int priority;        // Atomic priority
-    _Atomic(struct AsthraConcurrencyCallbackEntry*) next; // Atomic next pointer
+    AsthraConcurrencyCallbackFunction func;                // Callback function
+    void *data;                                            // Callback data
+    size_t data_size;                                      // Size of callback data
+    void *context;                                         // Additional context
+    asthra_concurrency_atomic_counter_t timestamp;         // Atomic timestamp
+    asthra_concurrency_atomic_int priority;                // Atomic priority
+    _Atomic(struct AsthraConcurrencyCallbackEntry *) next; // Atomic next pointer
 } AsthraConcurrencyCallbackEntry;
 
 /**
  * Lock-free callback queue for C-to-Asthra communication
  */
 typedef struct {
-    _Atomic(AsthraConcurrencyCallbackEntry*) head; // Atomic queue head
-    _Atomic(AsthraConcurrencyCallbackEntry*) tail; // Atomic queue tail
-    asthra_concurrency_atomic_size_t size;         // Atomic queue size
-    asthra_concurrency_atomic_bool shutdown;       // Atomic shutdown flag
+    _Atomic(AsthraConcurrencyCallbackEntry *) head;    // Atomic queue head
+    _Atomic(AsthraConcurrencyCallbackEntry *) tail;    // Atomic queue tail
+    asthra_concurrency_atomic_size_t size;             // Atomic queue size
+    asthra_concurrency_atomic_bool shutdown;           // Atomic shutdown flag
     asthra_concurrency_atomic_counter_t enqueue_count; // Total enqueued
     asthra_concurrency_atomic_counter_t dequeue_count; // Total dequeued
     asthra_concurrency_atomic_counter_t drop_count;    // Dropped callbacks
-    asthra_concurrency_mutex_t queue_mutex;       // Hybrid queue mutex
-    asthra_concurrency_mutex_t process_mutex;     // Protects processing (optional)
-    asthra_concurrency_cond_t process_cond;       // Signals new callbacks
+    asthra_concurrency_mutex_t queue_mutex;            // Hybrid queue mutex
+    asthra_concurrency_mutex_t process_mutex;          // Protects processing (optional)
+    asthra_concurrency_cond_t process_cond;            // Signals new callbacks
 } AsthraConcurrencyCallbackQueue;
 
 // =============================================================================
@@ -98,19 +94,19 @@ typedef struct {
  * Channel structure for inter-task communication
  */
 typedef struct AsthraConcurrencyChannel {
-    void *buffer;                        // Circular buffer for messages
-    size_t element_size;                 // Size of each element
-    size_t buffer_capacity;              // Maximum number of elements
-    _Atomic(size_t) head;                // Head index (for reading)
-    _Atomic(size_t) tail;                // Tail index (for writing)
-    _Atomic(size_t) count;               // Current number of elements
-    asthra_concurrency_mutex_t mutex;    // Protects buffer operations
-    asthra_concurrency_cond_t not_empty; // Signals when data is available
-    asthra_concurrency_cond_t not_full;  // Signals when space is available
-    _Atomic(bool) is_closed;             // Channel closed flag
-    char name[64];                       // Channel name for debugging
-    asthra_concurrency_atomic_counter_t send_count; // Total send operations
-    asthra_concurrency_atomic_counter_t recv_count; // Total receive operations
+    void *buffer;                                    // Circular buffer for messages
+    size_t element_size;                             // Size of each element
+    size_t buffer_capacity;                          // Maximum number of elements
+    _Atomic(size_t) head;                            // Head index (for reading)
+    _Atomic(size_t) tail;                            // Tail index (for writing)
+    _Atomic(size_t) count;                           // Current number of elements
+    asthra_concurrency_mutex_t mutex;                // Protects buffer operations
+    asthra_concurrency_cond_t not_empty;             // Signals when data is available
+    asthra_concurrency_cond_t not_full;              // Signals when space is available
+    _Atomic(bool) is_closed;                         // Channel closed flag
+    char name[64];                                   // Channel name for debugging
+    asthra_concurrency_atomic_counter_t send_count;  // Total send operations
+    asthra_concurrency_atomic_counter_t recv_count;  // Total receive operations
     asthra_concurrency_atomic_counter_t block_count; // Total blocking operations
 } AsthraConcurrencyChannel;
 
@@ -121,13 +117,13 @@ typedef AsthraConcurrencyChannel AsthraConcurrencyChannelHandle;
  * Select context for multi-channel operations
  */
 typedef struct {
-    AsthraConcurrencyChannel **channels; // Array of channels to select on
-    size_t channel_count;                // Number of channels
-    bool *is_send_op;                    // Array indicating send vs recv operations
-    void **send_values;                  // Values to send (for send operations)
-    void **recv_buffers;                 // Buffers for received values
-    int selected_index;                  // Index of selected channel (-1 if timeout)
-    uint64_t timeout_ms;                 // Timeout in milliseconds (0 for no timeout)
+    AsthraConcurrencyChannel **channels;  // Array of channels to select on
+    size_t channel_count;                 // Number of channels
+    bool *is_send_op;                     // Array indicating send vs recv operations
+    void **send_values;                   // Values to send (for send operations)
+    void **recv_buffers;                  // Buffers for received values
+    int selected_index;                   // Index of selected channel (-1 if timeout)
+    uint64_t timeout_ms;                  // Timeout in milliseconds (0 for no timeout)
     asthra_concurrency_atomic_bool ready; // Atomic ready flag
 } AsthraConcurrencySelectContext;
 
@@ -156,8 +152,8 @@ void Asthra_callback_system_cleanup(void);
  * @param priority Priority of the callback (higher numbers = higher priority)
  * @return Result indicating success or failure
  */
-AsthraResult Asthra_enqueue_callback(AsthraConcurrencyCallbackFunction func, void* data, 
-                                    size_t data_size, void* context, uint32_t priority);
+AsthraResult Asthra_enqueue_callback(AsthraConcurrencyCallbackFunction func, void *data,
+                                     size_t data_size, void *context, uint32_t priority);
 
 /**
  * Process queued callbacks
@@ -172,7 +168,7 @@ size_t Asthra_process_callbacks(size_t max_callbacks);
  * @param processed_count Total processed count
  * @return Result indicating success or failure
  */
-AsthraResult Asthra_get_callback_stats(size_t* queue_size, uint64_t* processed_count);
+AsthraResult Asthra_get_callback_stats(size_t *queue_size, uint64_t *processed_count);
 
 // =============================================================================
 // CHANNEL OPERATIONS
@@ -185,9 +181,8 @@ AsthraResult Asthra_get_callback_stats(size_t* queue_size, uint64_t* processed_c
  * @param name Optional name for debugging
  * @return New channel handle or NULL on failure
  */
-AsthraConcurrencyChannel* Asthra_channel_create(size_t element_size, 
-                                                size_t buffer_capacity, 
-                                                const char* name);
+AsthraConcurrencyChannel *Asthra_channel_create(size_t element_size, size_t buffer_capacity,
+                                                const char *name);
 
 /**
  * Send a value to a channel
@@ -196,9 +191,8 @@ AsthraConcurrencyChannel* Asthra_channel_create(size_t element_size,
  * @param timeout_ms Timeout in milliseconds (0 for blocking)
  * @return Result indicating success, timeout, or failure
  */
-AsthraResult Asthra_channel_send(AsthraConcurrencyChannel* channel, 
-                                const void* value, 
-                                uint64_t timeout_ms);
+AsthraResult Asthra_channel_send(AsthraConcurrencyChannel *channel, const void *value,
+                                 uint64_t timeout_ms);
 
 /**
  * Receive a value from a channel
@@ -207,9 +201,8 @@ AsthraResult Asthra_channel_send(AsthraConcurrencyChannel* channel,
  * @param timeout_ms Timeout in milliseconds (0 for blocking)
  * @return Result indicating success, timeout, or failure
  */
-AsthraResult Asthra_channel_recv(AsthraConcurrencyChannel* channel, 
-                                void* buffer, 
-                                uint64_t timeout_ms);
+AsthraResult Asthra_channel_recv(AsthraConcurrencyChannel *channel, void *buffer,
+                                 uint64_t timeout_ms);
 
 /**
  * Try to send without blocking
@@ -217,8 +210,7 @@ AsthraResult Asthra_channel_recv(AsthraConcurrencyChannel* channel,
  * @param value Value to send
  * @return Result indicating success or would-block
  */
-AsthraResult Asthra_channel_try_send(AsthraConcurrencyChannel* channel, 
-                                     const void* value);
+AsthraResult Asthra_channel_try_send(AsthraConcurrencyChannel *channel, const void *value);
 
 /**
  * Try to receive without blocking
@@ -226,27 +218,26 @@ AsthraResult Asthra_channel_try_send(AsthraConcurrencyChannel* channel,
  * @param buffer Buffer to store received value
  * @return Result indicating success or would-block
  */
-AsthraResult Asthra_channel_try_recv(AsthraConcurrencyChannel* channel, 
-                                     void* buffer);
+AsthraResult Asthra_channel_try_recv(AsthraConcurrencyChannel *channel, void *buffer);
 
 /**
  * Close a channel
  * @param channel Channel to close
  */
-void Asthra_channel_close(AsthraConcurrencyChannel* channel);
+void Asthra_channel_close(AsthraConcurrencyChannel *channel);
 
 /**
  * Destroy a channel
  * @param channel Channel to destroy
  */
-void Asthra_channel_destroy(AsthraConcurrencyChannel* channel);
+void Asthra_channel_destroy(AsthraConcurrencyChannel *channel);
 
 /**
  * Check if a channel is closed
  * @param channel Channel to check
  * @return true if closed, false otherwise
  */
-bool Asthra_channel_is_closed(AsthraConcurrencyChannel* channel);
+bool Asthra_channel_is_closed(AsthraConcurrencyChannel *channel);
 
 /**
  * Get channel statistics
@@ -255,9 +246,7 @@ bool Asthra_channel_is_closed(AsthraConcurrencyChannel* channel);
  * @param capacity Maximum capacity
  * @return true if successful, false otherwise
  */
-bool Asthra_channel_get_stats(AsthraConcurrencyChannel* channel, 
-                             size_t* count, 
-                             size_t* capacity);
+bool Asthra_channel_get_stats(AsthraConcurrencyChannel *channel, size_t *count, size_t *capacity);
 
 // =============================================================================
 // SELECT OPERATIONS
@@ -268,7 +257,7 @@ bool Asthra_channel_get_stats(AsthraConcurrencyChannel* channel,
  * @param max_channels Maximum number of channels to select on
  * @return New select context or NULL on failure
  */
-AsthraConcurrencySelectContext* Asthra_select_context_create(size_t max_channels);
+AsthraConcurrencySelectContext *Asthra_select_context_create(size_t max_channels);
 
 /**
  * Add a receive operation to select context
@@ -277,9 +266,8 @@ AsthraConcurrencySelectContext* Asthra_select_context_create(size_t max_channels
  * @param buffer Buffer for received value
  * @return true if successful, false otherwise
  */
-bool Asthra_select_add_recv(AsthraConcurrencySelectContext* context,
-                           AsthraConcurrencyChannel* channel,
-                           void* buffer);
+bool Asthra_select_add_recv(AsthraConcurrencySelectContext *context,
+                            AsthraConcurrencyChannel *channel, void *buffer);
 
 /**
  * Add a send operation to select context
@@ -288,9 +276,8 @@ bool Asthra_select_add_recv(AsthraConcurrencySelectContext* context,
  * @param value Value to send
  * @return true if successful, false otherwise
  */
-bool Asthra_select_add_send(AsthraConcurrencySelectContext* context,
-                           AsthraConcurrencyChannel* channel,
-                           const void* value);
+bool Asthra_select_add_send(AsthraConcurrencySelectContext *context,
+                            AsthraConcurrencyChannel *channel, const void *value);
 
 /**
  * Execute select operation
@@ -298,20 +285,19 @@ bool Asthra_select_add_send(AsthraConcurrencySelectContext* context,
  * @param timeout_ms Timeout in milliseconds (0 for no timeout)
  * @return Index of selected operation, -1 on timeout, -2 on error
  */
-int Asthra_select_execute(AsthraConcurrencySelectContext* context, 
-                         uint64_t timeout_ms);
+int Asthra_select_execute(AsthraConcurrencySelectContext *context, uint64_t timeout_ms);
 
 /**
  * Reset select context for reuse
  * @param context Select context to reset
  */
-void Asthra_select_context_reset(AsthraConcurrencySelectContext* context);
+void Asthra_select_context_reset(AsthraConcurrencySelectContext *context);
 
 /**
  * Destroy select context
  * @param context Context to destroy
  */
-void Asthra_select_context_destroy(AsthraConcurrencySelectContext* context);
+void Asthra_select_context_destroy(AsthraConcurrencySelectContext *context);
 
 // =============================================================================
 // CHANNEL UTILITIES
@@ -321,21 +307,21 @@ void Asthra_select_context_destroy(AsthraConcurrencySelectContext* context);
  * Create a string concatenation context for concurrent operations
  */
 typedef struct {
-    AsthraFFIString *strings;            // Array of strings to concatenate
-    size_t string_count;                 // Number of strings
-    AsthraMemoryZoneHint zone_hint;      // Target memory zone
-    bool preserve_order;                 // Maintain order during concurrent ops
+    AsthraFFIString *strings;       // Array of strings to concatenate
+    size_t string_count;            // Number of strings
+    AsthraMemoryZoneHint zone_hint; // Target memory zone
+    bool preserve_order;            // Maintain order during concurrent ops
 } AsthraConcurrencyStringConcatContext;
 
 /**
  * Create a slice operation context for concurrent operations
  */
 typedef struct {
-    AsthraFFISliceHeader slice;          // Source slice
-    size_t start_index;                  // Start index for operation
-    size_t end_index;                    // End index for operation
-    void *operation_data;                // Operation-specific data
-    AsthraMemoryZoneHint zone_hint;      // Target memory zone
+    AsthraFFISliceHeader slice;     // Source slice
+    size_t start_index;             // Start index for operation
+    size_t end_index;               // End index for operation
+    void *operation_data;           // Operation-specific data
+    AsthraMemoryZoneHint zone_hint; // Target memory zone
 } AsthraConcurrencySliceOpContext;
 
 /**
@@ -343,7 +329,7 @@ typedef struct {
  * @param context String concatenation context
  * @return Result with concatenated string or error
  */
-AsthraResult Asthra_string_concat_concurrent(const AsthraConcurrencyStringConcatContext* context);
+AsthraResult Asthra_string_concat_concurrent(const AsthraConcurrencyStringConcatContext *context);
 
 /**
  * Perform concurrent string interpolation
@@ -352,9 +338,8 @@ AsthraResult Asthra_string_concat_concurrent(const AsthraConcurrencyStringConcat
  * @param zone_hint Memory zone hint
  * @return Result with interpolated string or error
  */
-AsthraResult Asthra_string_interpolate_concurrent(const char* template, 
-                                                 AsthraVariantArray args, 
-                                                 AsthraMemoryZoneHint zone_hint);
+AsthraResult Asthra_string_interpolate_concurrent(const char *template, AsthraVariantArray args,
+                                                  AsthraMemoryZoneHint zone_hint);
 
 /**
  * Create a slice concurrently
@@ -364,15 +349,15 @@ AsthraResult Asthra_string_interpolate_concurrent(const char* template,
  * @param zone_hint Memory zone hint
  * @return Result with slice or error
  */
-AsthraResult Asthra_slice_create_concurrent(size_t element_size, size_t len, 
-                                           size_t cap, AsthraMemoryZoneHint zone_hint);
+AsthraResult Asthra_slice_create_concurrent(size_t element_size, size_t len, size_t cap,
+                                            AsthraMemoryZoneHint zone_hint);
 
 /**
  * Create a subslice concurrently
  * @param context Slice operation context
  * @return Result with subslice or error
  */
-AsthraResult Asthra_slice_subslice_concurrent(const AsthraConcurrencySliceOpContext* context);
+AsthraResult Asthra_slice_subslice_concurrent(const AsthraConcurrencySliceOpContext *context);
 
 /**
  * Get an element from a slice concurrently
@@ -381,8 +366,8 @@ AsthraResult Asthra_slice_subslice_concurrent(const AsthraConcurrencySliceOpCont
  * @param out_element Output buffer for element
  * @return Result indicating success or failure
  */
-AsthraResult Asthra_slice_get_element_concurrent(AsthraFFISliceHeader slice, 
-                                               size_t index, void* out_element);
+AsthraResult Asthra_slice_get_element_concurrent(AsthraFFISliceHeader slice, size_t index,
+                                                 void *out_element);
 
 /**
  * Set an element in a slice concurrently
@@ -391,8 +376,8 @@ AsthraResult Asthra_slice_get_element_concurrent(AsthraFFISliceHeader slice,
  * @param element Element data to set
  * @return Result indicating success or failure
  */
-AsthraResult Asthra_slice_set_element_concurrent(AsthraFFISliceHeader slice, 
-                                               size_t index, const void* element);
+AsthraResult Asthra_slice_set_element_concurrent(AsthraFFISliceHeader slice, size_t index,
+                                                 const void *element);
 
 // =============================================================================
 // CHANNEL STATISTICS
@@ -402,15 +387,15 @@ AsthraResult Asthra_slice_set_element_concurrent(AsthraFFISliceHeader slice,
  * Channel system statistics
  */
 typedef struct {
-    asthra_concurrency_atomic_counter_t channels_created; // Total channels created
-    asthra_concurrency_atomic_counter_t channels_active;  // Currently active channels
-    asthra_concurrency_atomic_counter_t total_sends;      // Total send operations
-    asthra_concurrency_atomic_counter_t total_receives;   // Total receive operations
-    asthra_concurrency_atomic_counter_t blocked_sends;    // Total blocked sends
-    asthra_concurrency_atomic_counter_t blocked_receives; // Total blocked receives
-    asthra_concurrency_atomic_counter_t callbacks_enqueued; // Callbacks enqueued
+    asthra_concurrency_atomic_counter_t channels_created;    // Total channels created
+    asthra_concurrency_atomic_counter_t channels_active;     // Currently active channels
+    asthra_concurrency_atomic_counter_t total_sends;         // Total send operations
+    asthra_concurrency_atomic_counter_t total_receives;      // Total receive operations
+    asthra_concurrency_atomic_counter_t blocked_sends;       // Total blocked sends
+    asthra_concurrency_atomic_counter_t blocked_receives;    // Total blocked receives
+    asthra_concurrency_atomic_counter_t callbacks_enqueued;  // Callbacks enqueued
     asthra_concurrency_atomic_counter_t callbacks_processed; // Callbacks processed
-    asthra_concurrency_atomic_counter_t callbacks_dropped; // Dropped callbacks
+    asthra_concurrency_atomic_counter_t callbacks_dropped;   // Dropped callbacks
 } AsthraConcurrencyChannelStats;
 
 /**
@@ -446,4 +431,4 @@ typedef enum {
 }
 #endif
 
-#endif // ASTHRA_CONCURRENCY_CHANNELS_H 
+#endif // ASTHRA_CONCURRENCY_CHANNELS_H

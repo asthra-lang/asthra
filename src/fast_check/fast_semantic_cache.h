@@ -1,10 +1,10 @@
 #ifndef FAST_SEMANTIC_CACHE_H
 #define FAST_SEMANTIC_CACHE_H
 
+#include <pthread.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <time.h>
-#include <pthread.h>
 
 // Forward declarations
 typedef struct FastSemanticCacheManager FastSemanticCacheManager;
@@ -16,7 +16,7 @@ typedef struct EnhancedDiagnostic EnhancedDiagnostic;
 #include "../analysis/semantic_types_defs.h"
 #endif
 
-#ifndef SEMANTIC_SYMBOLS_DEFS_H  
+#ifndef SEMANTIC_SYMBOLS_DEFS_H
 #include "../analysis/semantic_symbols_defs.h"
 #endif
 
@@ -53,7 +53,7 @@ struct SemanticAnalysisCache {
     EnhancedDiagnostic *diagnostics;
     size_t diagnostic_count;
     time_t cache_timestamp;
-    
+
     // Additional fields used by cache implementation
     void *symbols;
     void *types;
@@ -81,13 +81,13 @@ struct FastSemanticCacheManager {
     size_t max_memory_usage;
     size_t current_memory_usage;
     time_t default_ttl;
-    
+
     // Statistics
     size_t total_file_checks;
     size_t cache_hits;
     size_t cache_misses;
     double total_analysis_time;
-    
+
     // Thread safety
     pthread_rwlock_t fast_cache_lock;
 };
@@ -97,20 +97,22 @@ struct FastSemanticCacheManager {
 // CacheConfig is defined in semantic_cache.h
 
 // Function declarations
-FastSemanticCacheManager* fast_semantic_cache_create(size_t max_memory_mb);
+FastSemanticCacheManager *fast_semantic_cache_create(size_t max_memory_mb);
 void fast_semantic_cache_destroy(FastSemanticCacheManager *cache);
-SemanticAnalysisCache* fast_semantic_cache_get_file(FastSemanticCacheManager *cache, const char *file_path);
-bool fast_semantic_cache_store_file(FastSemanticCacheManager *cache, const char *file_path, SemanticAnalysisCache *result);
+SemanticAnalysisCache *fast_semantic_cache_get_file(FastSemanticCacheManager *cache,
+                                                    const char *file_path);
+bool fast_semantic_cache_store_file(FastSemanticCacheManager *cache, const char *file_path,
+                                    SemanticAnalysisCache *result);
 void fast_semantic_cache_invalidate_file(FastSemanticCacheManager *cache, const char *file_path);
 FastCacheStatistics fast_semantic_cache_get_statistics(FastSemanticCacheManager *cache);
 void fast_semantic_cache_reset_statistics(FastSemanticCacheManager *cache);
 void fast_semantic_cache_cleanup_expired(FastSemanticCacheManager *cache);
 
 // Semantic analysis cache functions
-SemanticAnalysisCache* semantic_analysis_cache_create(void);
+SemanticAnalysisCache *semantic_analysis_cache_create(void);
 void semantic_analysis_cache_destroy(SemanticAnalysisCache *cache);
 
 // Cache utility functions
 size_t fast_semantic_cache_calculate_file_hash(const char *file_path);
 
-#endif // FAST_SEMANTIC_CACHE_H 
+#endif // FAST_SEMANTIC_CACHE_H

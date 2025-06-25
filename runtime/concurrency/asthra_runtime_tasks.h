@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Runtime v1.2 - Concurrency Tasks Module
  * Task System and Async Operations
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This module provides task management functionality including
  * task spawning, scheduling, and async operations.
  */
@@ -51,7 +51,8 @@ struct AsthraTaskHandle {
 
 // Task operations
 AsthraTaskHandle asthra_spawn_task(AsthraTaskFunction func, void *args, size_t args_size);
-AsthraTaskHandle asthra_spawn_task_with_stack(AsthraTaskFunction func, void *args, size_t args_size, size_t stack_size);
+AsthraTaskHandle asthra_spawn_task_with_stack(AsthraTaskFunction func, void *args, size_t args_size,
+                                              size_t stack_size);
 AsthraResult asthra_task_await(AsthraTaskHandle handle);
 bool asthra_task_is_completed(AsthraTaskHandle handle);
 void asthra_task_detach(AsthraTaskHandle handle);
@@ -89,4 +90,4 @@ bool asthra_thread_is_registered(void);
 }
 #endif
 
-#endif // ASTHRA_RUNTIME_TASKS_H 
+#endif // ASTHRA_RUNTIME_TASKS_H

@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Task System Synchronization v1.2
  * Synchronization Primitives Functions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -118,4 +118,4 @@ void asthra_rwlock_read_unlock(AsthraRWLock *rwlock);
  */
 void asthra_rwlock_write_unlock(AsthraRWLock *rwlock);
 
-#endif // ASTHRA_TASKS_SYNC_H 
+#endif // ASTHRA_TASKS_SYNC_H

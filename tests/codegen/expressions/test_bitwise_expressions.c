@@ -6,10 +6,10 @@
 /**
  * Asthra Programming Language Compiler
  * Bitwise Expression Generation Tests
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Test code generation for bitwise expressions including AND, OR, XOR,
  * and shift operations
  */
@@ -22,9 +22,10 @@
 /**
  * Test bitwise expression generation (simplified)
  */
-AsthraTestResult test_generate_bitwise_expressions(AsthraTestContext* context) {
+AsthraTestResult test_generate_bitwise_expressions(AsthraTestContext *context) {
     // Log that we're skipping these tests for now
-    return ASTHRA_TEST_SKIP;;
+    return ASTHRA_TEST_SKIP;
+    ;
     return ASTHRA_TEST_PASS;
 }
 
@@ -108,4 +109,4 @@ AsthraTestResult test_generate_bitwise_expressions_original(AsthraTestContext* c
     cleanup_codegen_fixture(fixture);
     return ASTHRA_TEST_PASS;
 }
-#endif 
+#endif

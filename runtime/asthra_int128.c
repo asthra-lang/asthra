@@ -1,34 +1,36 @@
 /**
  * Asthra Programming Language Runtime
  * 128-bit Integer Support Implementation
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This file implements runtime support for 128-bit integer operations.
  * It provides both native implementations (when available) and emulated
  * implementations for platforms without native 128-bit support.
  */
 
 #include "asthra_int128.h"
-#include <string.h>
-#include <stdlib.h>
 #include <limits.h>
+#include <stdlib.h>
+#include <string.h>
 
 // =============================================================================
 // CONSTANTS
 // =============================================================================
 
 #if ASTHRA_HAS_NATIVE_INT128
-    const asthra_i128 ASTHRA_I128_MAX = ((asthra_i128)0x7FFFFFFFFFFFFFFFULL << 64) | 0xFFFFFFFFFFFFFFFFULL;
-    const asthra_i128 ASTHRA_I128_MIN = -(((asthra_i128)0x7FFFFFFFFFFFFFFFULL << 64) | 0xFFFFFFFFFFFFFFFFULL) - 1;
-    const asthra_u128 ASTHRA_U128_MAX = ~(asthra_u128)0;
-    const asthra_u128 ASTHRA_U128_MIN = 0;
+const asthra_i128 ASTHRA_I128_MAX =
+    ((asthra_i128)0x7FFFFFFFFFFFFFFFULL << 64) | 0xFFFFFFFFFFFFFFFFULL;
+const asthra_i128 ASTHRA_I128_MIN =
+    -(((asthra_i128)0x7FFFFFFFFFFFFFFFULL << 64) | 0xFFFFFFFFFFFFFFFFULL) - 1;
+const asthra_u128 ASTHRA_U128_MAX = ~(asthra_u128)0;
+const asthra_u128 ASTHRA_U128_MIN = 0;
 #else
-    const asthra_i128 ASTHRA_I128_MAX = {.low = 0xFFFFFFFFFFFFFFFFULL, .high = 0x7FFFFFFFFFFFFFFFLL};
-    const asthra_i128 ASTHRA_I128_MIN = {.low = 0, .high = (int64_t)0x8000000000000000LL};
-    const asthra_u128 ASTHRA_U128_MAX = {.low = 0xFFFFFFFFFFFFFFFFULL, .high = 0xFFFFFFFFFFFFFFFFULL};
-    const asthra_u128 ASTHRA_U128_MIN = {.low = 0, .high = 0};
+const asthra_i128 ASTHRA_I128_MAX = {.low = 0xFFFFFFFFFFFFFFFFULL, .high = 0x7FFFFFFFFFFFFFFFLL};
+const asthra_i128 ASTHRA_I128_MIN = {.low = 0, .high = (int64_t)0x8000000000000000LL};
+const asthra_u128 ASTHRA_U128_MAX = {.low = 0xFFFFFFFFFFFFFFFFULL, .high = 0xFFFFFFFFFFFFFFFFULL};
+const asthra_u128 ASTHRA_U128_MIN = {.low = 0, .high = 0};
 #endif
 
 // =============================================================================
@@ -50,12 +52,14 @@ asthra_i128 asthra_i128_mul(asthra_i128 a, asthra_i128 b) {
 }
 
 asthra_i128 asthra_i128_div(asthra_i128 a, asthra_i128 b) {
-    if (b == 0) return 0;
+    if (b == 0)
+        return 0;
     return a / b;
 }
 
 asthra_i128 asthra_i128_mod(asthra_i128 a, asthra_i128 b) {
-    if (b == 0) return 0;
+    if (b == 0)
+        return 0;
     return a % b;
 }
 
@@ -76,12 +80,14 @@ asthra_u128 asthra_u128_mul(asthra_u128 a, asthra_u128 b) {
 }
 
 asthra_u128 asthra_u128_div(asthra_u128 a, asthra_u128 b) {
-    if (b == 0) return 0;
+    if (b == 0)
+        return 0;
     return a / b;
 }
 
 asthra_u128 asthra_u128_mod(asthra_u128 a, asthra_u128 b) {
-    if (b == 0) return 0;
+    if (b == 0)
+        return 0;
     return a % b;
 }
 
@@ -112,17 +118,17 @@ asthra_i128 asthra_i128_mul(asthra_i128 a, asthra_i128 b) {
     uint64_t b_low = b.low;
     int64_t a_high = a.high;
     int64_t b_high = b.high;
-    
+
     // Calculate low * low
     result.low = a_low * b_low;
-    
+
     // Calculate cross products and high * low products
     uint64_t cross1 = (uint64_t)a_high * b_low;
     uint64_t cross2 = a_low * (uint64_t)b_high;
-    
+
     // Add to high part (ignoring overflow)
     result.high = cross1 + cross2;
-    
+
     return result;
 }
 
@@ -132,13 +138,13 @@ asthra_i128 asthra_i128_div(asthra_i128 a, asthra_i128 b) {
         asthra_i128 zero = {0, 0};
         return zero;
     }
-    
+
     // For now, only handle division by values that fit in 64 bits
     if (b.high != 0 && b.high != -1) {
         asthra_i128 zero = {0, 0};
         return zero;
     }
-    
+
     // Simple case: divide by small positive number
     if (b.high == 0) {
         asthra_i128 result;
@@ -146,7 +152,7 @@ asthra_i128 asthra_i128_div(asthra_i128 a, asthra_i128 b) {
         result.low = a.low / b.low;
         return result;
     }
-    
+
     // Return zero for complex cases
     asthra_i128 zero = {0, 0};
     return zero;
@@ -158,7 +164,7 @@ asthra_i128 asthra_i128_mod(asthra_i128 a, asthra_i128 b) {
         asthra_i128 zero = {0, 0};
         return zero;
     }
-    
+
     // For now, only handle modulo by values that fit in 64 bits
     if (b.high == 0) {
         asthra_i128 result;
@@ -166,7 +172,7 @@ asthra_i128 asthra_i128_mod(asthra_i128 a, asthra_i128 b) {
         result.low = a.low % b.low;
         return result;
     }
-    
+
     // Return zero for complex cases
     asthra_i128 zero = {0, 0};
     return zero;
@@ -196,17 +202,17 @@ asthra_u128 asthra_u128_sub(asthra_u128 a, asthra_u128 b) {
 asthra_u128 asthra_u128_mul(asthra_u128 a, asthra_u128 b) {
     // Simplified multiplication - doesn't handle overflow
     asthra_u128 result;
-    
+
     // Calculate low * low
     result.low = a.low * b.low;
-    
+
     // Calculate cross products
     uint64_t cross1 = a.high * b.low;
     uint64_t cross2 = a.low * b.high;
-    
+
     // Add to high part (ignoring overflow)
     result.high = cross1 + cross2;
-    
+
     return result;
 }
 
@@ -216,7 +222,7 @@ asthra_u128 asthra_u128_div(asthra_u128 a, asthra_u128 b) {
         asthra_u128 zero = {0, 0};
         return zero;
     }
-    
+
     // For now, only handle division by values that fit in 64 bits
     if (b.high == 0) {
         asthra_u128 result;
@@ -224,7 +230,7 @@ asthra_u128 asthra_u128_div(asthra_u128 a, asthra_u128 b) {
         result.low = a.low / b.low;
         return result;
     }
-    
+
     // Return zero for complex cases
     asthra_u128 zero = {0, 0};
     return zero;
@@ -236,7 +242,7 @@ asthra_u128 asthra_u128_mod(asthra_u128 a, asthra_u128 b) {
         asthra_u128 zero = {0, 0};
         return zero;
     }
-    
+
     // For now, only handle modulo by values that fit in 64 bits
     if (b.high == 0) {
         asthra_u128 result;
@@ -244,7 +250,7 @@ asthra_u128 asthra_u128_mod(asthra_u128 a, asthra_u128 b) {
         result.low = a.low % b.low;
         return result;
     }
-    
+
     // Return zero for complex cases
     asthra_u128 zero = {0, 0};
     return zero;
@@ -275,12 +281,14 @@ asthra_i128 asthra_i128_not(asthra_i128 a) {
 }
 
 asthra_i128 asthra_i128_shl(asthra_i128 a, int shift) {
-    if (shift < 0 || shift >= 128) return a;
+    if (shift < 0 || shift >= 128)
+        return a;
     return a << shift;
 }
 
 asthra_i128 asthra_i128_shr(asthra_i128 a, int shift) {
-    if (shift < 0 || shift >= 128) return a;
+    if (shift < 0 || shift >= 128)
+        return a;
     return a >> shift;
 }
 
@@ -301,12 +309,14 @@ asthra_u128 asthra_u128_not(asthra_u128 a) {
 }
 
 asthra_u128 asthra_u128_shl(asthra_u128 a, int shift) {
-    if (shift < 0 || shift >= 128) return a;
+    if (shift < 0 || shift >= 128)
+        return a;
     return a << shift;
 }
 
 asthra_u128 asthra_u128_shr(asthra_u128 a, int shift) {
-    if (shift < 0 || shift >= 128) return a;
+    if (shift < 0 || shift >= 128)
+        return a;
     return a >> shift;
 }
 
@@ -342,8 +352,9 @@ asthra_i128 asthra_i128_not(asthra_i128 a) {
 
 asthra_i128 asthra_i128_shl(asthra_i128 a, int shift) {
     asthra_i128 result;
-    if (shift < 0 || shift >= 128) return a;
-    
+    if (shift < 0 || shift >= 128)
+        return a;
+
     if (shift >= 64) {
         result.low = 0;
         result.high = (int64_t)(a.low << (shift - 64));
@@ -358,8 +369,9 @@ asthra_i128 asthra_i128_shl(asthra_i128 a, int shift) {
 
 asthra_i128 asthra_i128_shr(asthra_i128 a, int shift) {
     asthra_i128 result;
-    if (shift < 0 || shift >= 128) return a;
-    
+    if (shift < 0 || shift >= 128)
+        return a;
+
     if (shift >= 64) {
         result.high = a.high >> 63; // Sign extend
         result.low = (uint64_t)(a.high >> (shift - 64));
@@ -402,8 +414,9 @@ asthra_u128 asthra_u128_not(asthra_u128 a) {
 
 asthra_u128 asthra_u128_shl(asthra_u128 a, int shift) {
     asthra_u128 result;
-    if (shift < 0 || shift >= 128) return a;
-    
+    if (shift < 0 || shift >= 128)
+        return a;
+
     if (shift >= 64) {
         result.low = 0;
         result.high = a.low << (shift - 64);
@@ -418,8 +431,9 @@ asthra_u128 asthra_u128_shl(asthra_u128 a, int shift) {
 
 asthra_u128 asthra_u128_shr(asthra_u128 a, int shift) {
     asthra_u128 result;
-    if (shift < 0 || shift >= 128) return a;
-    
+    if (shift < 0 || shift >= 128)
+        return a;
+
     if (shift >= 64) {
         result.high = 0;
         result.low = a.high >> (shift - 64);
@@ -643,29 +657,29 @@ int asthra_i128_to_string(asthra_i128 value, char *buffer, int base) {
     if (!buffer || (base != 2 && base != 8 && base != 10 && base != 16)) {
         return 0;
     }
-    
+
     // Handle zero case
     if (asthra_i128_is_zero(value)) {
         buffer[0] = '0';
         buffer[1] = '\0';
         return 1;
     }
-    
+
     // Handle negative numbers for base 10
     bool is_negative = false;
     if (base == 10 && asthra_i128_lt(value, asthra_i128_from_i64(0))) {
         is_negative = true;
         value = asthra_i128_neg(value);
     }
-    
+
     // Convert to string (reversed)
     char temp[130]; // Max binary representation + null
     int pos = 0;
-    
+
 #if ASTHRA_HAS_NATIVE_INT128
     asthra_u128 uvalue = (asthra_u128)value;
     const char *digits = "0123456789ABCDEF";
-    
+
     while (uvalue > 0) {
         temp[pos++] = digits[uvalue % base];
         uvalue /= base;
@@ -674,13 +688,13 @@ int asthra_i128_to_string(asthra_i128 value, char *buffer, int base) {
     // Simplified conversion for emulated mode
     asthra_u128 uvalue = asthra_i128_to_u128(value);
     const char *digits = "0123456789ABCDEF";
-    
+
     // Only handle base 10 and 16 for now
     if (base == 10 || base == 16) {
         while (!asthra_u128_is_zero(uvalue)) {
             uint64_t remainder = uvalue.low % base;
             temp[pos++] = digits[remainder];
-            
+
             // Divide by base (simplified)
             if (base == 10) {
                 uvalue.low /= 10;
@@ -697,20 +711,20 @@ int asthra_i128_to_string(asthra_i128 value, char *buffer, int base) {
         }
     }
 #endif
-    
+
     // Add sign if needed
     int start = 0;
     if (is_negative) {
         buffer[0] = '-';
         start = 1;
     }
-    
+
     // Reverse the string
     for (int i = 0; i < pos; i++) {
         buffer[start + i] = temp[pos - 1 - i];
     }
     buffer[start + pos] = '\0';
-    
+
     return start + pos;
 }
 
@@ -718,34 +732,34 @@ int asthra_u128_to_string(asthra_u128 value, char *buffer, int base) {
     if (!buffer || (base != 2 && base != 8 && base != 10 && base != 16)) {
         return 0;
     }
-    
+
     // Handle zero case
     if (asthra_u128_is_zero(value)) {
         buffer[0] = '0';
         buffer[1] = '\0';
         return 1;
     }
-    
+
     // Convert to string (reversed)
     char temp[130]; // Max binary representation + null
     int pos = 0;
-    
+
 #if ASTHRA_HAS_NATIVE_INT128
     const char *digits = "0123456789ABCDEF";
-    
+
     while (value > 0) {
         temp[pos++] = digits[value % base];
         value /= base;
     }
 #else
     const char *digits = "0123456789ABCDEF";
-    
+
     // Only handle base 10 and 16 for now
     if (base == 10 || base == 16) {
         while (!asthra_u128_is_zero(value)) {
             uint64_t remainder = value.low % base;
             temp[pos++] = digits[remainder];
-            
+
             // Divide by base (simplified)
             if (base == 10) {
                 value.low /= 10;
@@ -762,28 +776,29 @@ int asthra_u128_to_string(asthra_u128 value, char *buffer, int base) {
         }
     }
 #endif
-    
+
     // Reverse the string
     for (int i = 0; i < pos; i++) {
         buffer[i] = temp[pos - 1 - i];
     }
     buffer[pos] = '\0';
-    
+
     return pos;
 }
 
 asthra_i128 asthra_i128_from_string(const char *str, char **endptr, int base) {
     // Simplified implementation - only handles base 10
     if (!str || base != 10) {
-        if (endptr) *endptr = (char *)str;
+        if (endptr)
+            *endptr = (char *)str;
         return asthra_i128_from_i64(0);
     }
-    
+
     // Skip whitespace
     while (*str == ' ' || *str == '\t' || *str == '\n') {
         str++;
     }
-    
+
     // Handle sign
     bool is_negative = false;
     if (*str == '-') {
@@ -792,51 +807,54 @@ asthra_i128 asthra_i128_from_string(const char *str, char **endptr, int base) {
     } else if (*str == '+') {
         str++;
     }
-    
+
     // Parse digits
     asthra_i128 result = asthra_i128_from_i64(0);
     asthra_i128 ten = asthra_i128_from_i64(10);
-    
+
     while (*str >= '0' && *str <= '9') {
         asthra_i128 digit = asthra_i128_from_i64(*str - '0');
         result = asthra_i128_add(asthra_i128_mul(result, ten), digit);
         str++;
     }
-    
-    if (endptr) *endptr = (char *)str;
-    
+
+    if (endptr)
+        *endptr = (char *)str;
+
     return is_negative ? asthra_i128_neg(result) : result;
 }
 
 asthra_u128 asthra_u128_from_string(const char *str, char **endptr, int base) {
     // Simplified implementation - only handles base 10
     if (!str || base != 10) {
-        if (endptr) *endptr = (char *)str;
+        if (endptr)
+            *endptr = (char *)str;
         return asthra_u128_from_u64(0);
     }
-    
+
     // Skip whitespace
     while (*str == ' ' || *str == '\t' || *str == '\n') {
         str++;
     }
-    
+
     // Skip optional +
     if (*str == '+') {
         str++;
     }
-    
+
     // Parse digits
     asthra_u128 result = asthra_u128_from_u64(0);
     asthra_u128 ten = asthra_u128_from_u64(10);
-    
+
     while (*str >= '0' && *str <= '9') {
         asthra_u128 digit = asthra_u128_from_u64(*str - '0');
         result = asthra_u128_add(asthra_u128_mul(result, ten), digit);
         str++;
     }
-    
-    if (endptr) *endptr = (char *)str;
-    
+
+    if (endptr)
+        *endptr = (char *)str;
+
     return result;
 }
 
@@ -855,117 +873,121 @@ bool asthra_u128_is_zero(asthra_u128 value) {
 }
 
 int asthra_i128_clz(asthra_i128 value) {
-    if (value == 0) return 128;
-    
-    // Use compiler builtin if available
-    #ifdef __GNUC__
-        unsigned long long high = (unsigned long long)(value >> 64);
-        if (high != 0) {
-            return __builtin_clzll(high);
-        } else {
-            return 64 + __builtin_clzll((unsigned long long)value);
-        }
-    #else
-        // Fallback implementation
-        int count = 0;
-        asthra_i128 mask = (asthra_i128)1 << 127;
-        while ((value & mask) == 0 && count < 128) {
-            count++;
-            mask >>= 1;
-        }
-        return count;
-    #endif
+    if (value == 0)
+        return 128;
+
+// Use compiler builtin if available
+#ifdef __GNUC__
+    unsigned long long high = (unsigned long long)(value >> 64);
+    if (high != 0) {
+        return __builtin_clzll(high);
+    } else {
+        return 64 + __builtin_clzll((unsigned long long)value);
+    }
+#else
+    // Fallback implementation
+    int count = 0;
+    asthra_i128 mask = (asthra_i128)1 << 127;
+    while ((value & mask) == 0 && count < 128) {
+        count++;
+        mask >>= 1;
+    }
+    return count;
+#endif
 }
 
 int asthra_u128_clz(asthra_u128 value) {
-    if (value == 0) return 128;
-    
-    // Use compiler builtin if available
-    #ifdef __GNUC__
-        unsigned long long high = (unsigned long long)(value >> 64);
-        if (high != 0) {
-            return __builtin_clzll(high);
-        } else {
-            return 64 + __builtin_clzll((unsigned long long)value);
-        }
-    #else
-        // Fallback implementation
-        int count = 0;
-        asthra_u128 mask = (asthra_u128)1 << 127;
-        while ((value & mask) == 0 && count < 128) {
-            count++;
-            mask >>= 1;
-        }
-        return count;
-    #endif
+    if (value == 0)
+        return 128;
+
+// Use compiler builtin if available
+#ifdef __GNUC__
+    unsigned long long high = (unsigned long long)(value >> 64);
+    if (high != 0) {
+        return __builtin_clzll(high);
+    } else {
+        return 64 + __builtin_clzll((unsigned long long)value);
+    }
+#else
+    // Fallback implementation
+    int count = 0;
+    asthra_u128 mask = (asthra_u128)1 << 127;
+    while ((value & mask) == 0 && count < 128) {
+        count++;
+        mask >>= 1;
+    }
+    return count;
+#endif
 }
 
 int asthra_i128_ctz(asthra_i128 value) {
-    if (value == 0) return 128;
-    
-    #ifdef __GNUC__
-        unsigned long long low = (unsigned long long)value;
-        if (low != 0) {
-            return __builtin_ctzll(low);
-        } else {
-            return 64 + __builtin_ctzll((unsigned long long)(value >> 64));
-        }
-    #else
-        int count = 0;
-        while ((value & 1) == 0 && count < 128) {
-            count++;
-            value >>= 1;
-        }
-        return count;
-    #endif
+    if (value == 0)
+        return 128;
+
+#ifdef __GNUC__
+    unsigned long long low = (unsigned long long)value;
+    if (low != 0) {
+        return __builtin_ctzll(low);
+    } else {
+        return 64 + __builtin_ctzll((unsigned long long)(value >> 64));
+    }
+#else
+    int count = 0;
+    while ((value & 1) == 0 && count < 128) {
+        count++;
+        value >>= 1;
+    }
+    return count;
+#endif
 }
 
 int asthra_u128_ctz(asthra_u128 value) {
-    if (value == 0) return 128;
-    
-    #ifdef __GNUC__
-        unsigned long long low = (unsigned long long)value;
-        if (low != 0) {
-            return __builtin_ctzll(low);
-        } else {
-            return 64 + __builtin_ctzll((unsigned long long)(value >> 64));
-        }
-    #else
-        int count = 0;
-        while ((value & 1) == 0 && count < 128) {
-            count++;
-            value >>= 1;
-        }
-        return count;
-    #endif
+    if (value == 0)
+        return 128;
+
+#ifdef __GNUC__
+    unsigned long long low = (unsigned long long)value;
+    if (low != 0) {
+        return __builtin_ctzll(low);
+    } else {
+        return 64 + __builtin_ctzll((unsigned long long)(value >> 64));
+    }
+#else
+    int count = 0;
+    while ((value & 1) == 0 && count < 128) {
+        count++;
+        value >>= 1;
+    }
+    return count;
+#endif
 }
 
 int asthra_i128_popcount(asthra_i128 value) {
-    #ifdef __GNUC__
-        return __builtin_popcountll((unsigned long long)value) + 
-               __builtin_popcountll((unsigned long long)(value >> 64));
-    #else
-        int count = 0;
-        while (value) {
-            count += value & 1;
-            value >>= 1;
-        }
-        return count;
-    #endif
+#ifdef __GNUC__
+    return __builtin_popcountll((unsigned long long)value) +
+           __builtin_popcountll((unsigned long long)(value >> 64));
+#else
+    int count = 0;
+    while (value) {
+        count += value & 1;
+        value >>= 1;
+    }
+    return count;
+#endif
 }
 
 int asthra_u128_popcount(asthra_u128 value) {
-    #ifdef __GNUC__
-        return __builtin_popcountll((unsigned long long)value) + 
-               __builtin_popcountll((unsigned long long)(value >> 64));
-    #else
-        int count = 0;
-        while (value) {
-            count += value & 1;
-            value >>= 1;
-        }
-        return count;
-    #endif
+#ifdef __GNUC__
+    return __builtin_popcountll((unsigned long long)value) +
+           __builtin_popcountll((unsigned long long)(value >> 64));
+#else
+    int count = 0;
+    while (value) {
+        count += value & 1;
+        value >>= 1;
+    }
+    return count;
+#endif
 }
 
 #else
@@ -979,8 +1001,9 @@ bool asthra_u128_is_zero(asthra_u128 value) {
 }
 
 int asthra_i128_clz(asthra_i128 value) {
-    if (asthra_i128_is_zero(value)) return 128;
-    
+    if (asthra_i128_is_zero(value))
+        return 128;
+
     if (value.high != 0 && value.high != -1) {
         // Count leading zeros in high part
         int count = 0;
@@ -1004,8 +1027,9 @@ int asthra_i128_clz(asthra_i128 value) {
 }
 
 int asthra_u128_clz(asthra_u128 value) {
-    if (asthra_u128_is_zero(value)) return 128;
-    
+    if (asthra_u128_is_zero(value))
+        return 128;
+
     if (value.high != 0) {
         // Count leading zeros in high part
         int count = 0;
@@ -1028,8 +1052,9 @@ int asthra_u128_clz(asthra_u128 value) {
 }
 
 int asthra_i128_ctz(asthra_i128 value) {
-    if (asthra_i128_is_zero(value)) return 128;
-    
+    if (asthra_i128_is_zero(value))
+        return 128;
+
     if (value.low != 0) {
         // Count trailing zeros in low part
         int count = 0;
@@ -1051,8 +1076,9 @@ int asthra_i128_ctz(asthra_i128 value) {
 }
 
 int asthra_u128_ctz(asthra_u128 value) {
-    if (asthra_u128_is_zero(value)) return 128;
-    
+    if (asthra_u128_is_zero(value))
+        return 128;
+
     if (value.low != 0) {
         // Count trailing zeros in low part
         int count = 0;
@@ -1074,41 +1100,41 @@ int asthra_u128_ctz(asthra_u128 value) {
 
 int asthra_i128_popcount(asthra_i128 value) {
     int count = 0;
-    
+
     // Count bits in low part
     uint64_t low = value.low;
     while (low) {
         count += low & 1;
         low >>= 1;
     }
-    
+
     // Count bits in high part
     uint64_t high = (uint64_t)value.high;
     while (high) {
         count += high & 1;
         high >>= 1;
     }
-    
+
     return count;
 }
 
 int asthra_u128_popcount(asthra_u128 value) {
     int count = 0;
-    
+
     // Count bits in low part
     uint64_t low = value.low;
     while (low) {
         count += low & 1;
         low >>= 1;
     }
-    
+
     // Count bits in high part
     uint64_t high = value.high;
     while (high) {
         count += high & 1;
         high >>= 1;
     }
-    
+
     return count;
 }
 
@@ -1119,48 +1145,51 @@ int asthra_u128_popcount(asthra_u128 value) {
 // =============================================================================
 
 bool asthra_i128_add_overflow(asthra_i128 a, asthra_i128 b, asthra_i128 *result) {
-    if (!result) return false;
-    
+    if (!result)
+        return false;
+
     *result = asthra_i128_add(a, b);
-    
+
     // Check for overflow
     // Positive + Positive = Negative is overflow
     // Negative + Negative = Positive is overflow
     bool a_negative = asthra_i128_lt(a, asthra_i128_from_i64(0));
     bool b_negative = asthra_i128_lt(b, asthra_i128_from_i64(0));
     bool result_negative = asthra_i128_lt(*result, asthra_i128_from_i64(0));
-    
+
     if (a_negative == b_negative && a_negative != result_negative) {
         return false; // Overflow occurred
     }
-    
+
     return true;
 }
 
 bool asthra_i128_sub_overflow(asthra_i128 a, asthra_i128 b, asthra_i128 *result) {
-    if (!result) return false;
-    
+    if (!result)
+        return false;
+
     *result = asthra_i128_sub(a, b);
-    
+
     // Check for overflow
     // Positive - Negative = Negative is overflow
     // Negative - Positive = Positive is overflow
     bool a_negative = asthra_i128_lt(a, asthra_i128_from_i64(0));
     bool b_negative = asthra_i128_lt(b, asthra_i128_from_i64(0));
     bool result_negative = asthra_i128_lt(*result, asthra_i128_from_i64(0));
-    
+
     if (a_negative != b_negative && a_negative != result_negative) {
         return false; // Overflow occurred
     }
-    
+
     return true;
 }
 
 bool asthra_i128_mul_overflow(asthra_i128 a, asthra_i128 b, asthra_i128 *result) {
-    if (!result) return false;
-    
+    if (!result)
+        return false;
+
     *result = asthra_i128_mul(a, b);
-    
+
     // Simple overflow check: if a != 0 and result / a != b, then overflow
     if (!asthra_i128_is_zero(a)) {
         asthra_i128 check = asthra_i128_div(*result, a);
@@ -1168,41 +1197,44 @@ bool asthra_i128_mul_overflow(asthra_i128 a, asthra_i128 b, asthra_i128 *result)
             return false; // Overflow occurred
         }
     }
-    
+
     return true;
 }
 
 bool asthra_u128_add_overflow(asthra_u128 a, asthra_u128 b, asthra_u128 *result) {
-    if (!result) return false;
-    
+    if (!result)
+        return false;
+
     *result = asthra_u128_add(a, b);
-    
+
     // For unsigned, overflow if result < a or result < b
     if (asthra_u128_lt(*result, a) || asthra_u128_lt(*result, b)) {
         return false; // Overflow occurred
     }
-    
+
     return true;
 }
 
 bool asthra_u128_sub_overflow(asthra_u128 a, asthra_u128 b, asthra_u128 *result) {
-    if (!result) return false;
-    
+    if (!result)
+        return false;
+
     *result = asthra_u128_sub(a, b);
-    
+
     // For unsigned, overflow if a < b
     if (asthra_u128_lt(a, b)) {
         return false; // Underflow occurred
     }
-    
+
     return true;
 }
 
 bool asthra_u128_mul_overflow(asthra_u128 a, asthra_u128 b, asthra_u128 *result) {
-    if (!result) return false;
-    
+    if (!result)
+        return false;
+
     *result = asthra_u128_mul(a, b);
-    
+
     // Simple overflow check: if a != 0 and result / a != b, then overflow
     if (!asthra_u128_is_zero(a)) {
         asthra_u128 check = asthra_u128_div(*result, a);
@@ -1210,6 +1242,6 @@ bool asthra_u128_mul_overflow(asthra_u128 a, asthra_u128 b, asthra_u128 *result)
             return false; // Overflow occurred
         }
     }
-    
+
     return true;
 }

@@ -1,6 +1,6 @@
 /**
  * FFI Runtime Header
- * 
+ *
  * This header provides FFI runtime functions and definitions
  * for Asthra language FFI operations.
  */
@@ -8,9 +8,9 @@
 #ifndef ASTHRA_FFI_H
 #define ASTHRA_FFI_H
 
-#include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 // Include other runtime headers
 #include "asthra_ffi_error.h"
@@ -64,7 +64,7 @@ bool asthra_ffi_slice_bounds_check(AsthrFFISlice slice, size_t index);
 
 // Error handling
 void asthra_ffi_set_error(const char *message);
-const char* asthra_ffi_get_error(void);
+const char *asthra_ffi_get_error(void);
 void asthra_ffi_clear_error(void);
 
-#endif // ASTHRA_FFI_H 
+#endif // ASTHRA_FFI_H

@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language LLVM Runtime Interface
  * Implementation of runtime function declarations
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -18,7 +18,7 @@ void declare_runtime_functions(LLVMBackendData *data) {
         data->runtime_malloc_fn = LLVMAddFunction(data->module, "asthra_alloc", fn_type);
         LLVMSetLinkage(data->runtime_malloc_fn, LLVMExternalLinkage);
     }
-    
+
     {
         // void asthra_free(void* ptr, int zone)
         LLVMTypeRef param_types[] = {data->ptr_type, data->i32_type};
@@ -26,7 +26,7 @@ void declare_runtime_functions(LLVMBackendData *data) {
         data->runtime_free_fn = LLVMAddFunction(data->module, "asthra_free", fn_type);
         LLVMSetLinkage(data->runtime_free_fn, LLVMExternalLinkage);
     }
-    
+
     // GC functions
     {
         // void asthra_gc_register_root(void* ptr)
@@ -35,7 +35,7 @@ void declare_runtime_functions(LLVMBackendData *data) {
         LLVMValueRef fn = LLVMAddFunction(data->module, "asthra_gc_register_root", fn_type);
         LLVMSetLinkage(fn, LLVMExternalLinkage);
     }
-    
+
     {
         // void asthra_gc_unregister_root(void* ptr)
         LLVMTypeRef param_types[] = {data->ptr_type};
@@ -43,7 +43,7 @@ void declare_runtime_functions(LLVMBackendData *data) {
         LLVMValueRef fn = LLVMAddFunction(data->module, "asthra_gc_unregister_root", fn_type);
         LLVMSetLinkage(fn, LLVMExternalLinkage);
     }
-    
+
     // Error handling
     {
         // void asthra_panic(const char* message)
@@ -52,7 +52,7 @@ void declare_runtime_functions(LLVMBackendData *data) {
         data->runtime_panic_fn = LLVMAddFunction(data->module, "asthra_panic", fn_type);
         LLVMSetLinkage(data->runtime_panic_fn, LLVMExternalLinkage);
     }
-    
+
     // Logging
     {
         // void asthra_log(int level, const char* format, ...)
@@ -61,7 +61,7 @@ void declare_runtime_functions(LLVMBackendData *data) {
         data->runtime_log_fn = LLVMAddFunction(data->module, "asthra_log", fn_type);
         LLVMSetLinkage(data->runtime_log_fn, LLVMExternalLinkage);
     }
-    
+
     // String operations
     {
         // AsthraString* asthra_string_create(const char* data, size_t length)
@@ -70,7 +70,7 @@ void declare_runtime_functions(LLVMBackendData *data) {
         LLVMValueRef fn = LLVMAddFunction(data->module, "asthra_string_create", fn_type);
         LLVMSetLinkage(fn, LLVMExternalLinkage);
     }
-    
+
     {
         // void asthra_string_free(AsthraString* str)
         LLVMTypeRef param_types[] = {data->ptr_type};
@@ -78,7 +78,7 @@ void declare_runtime_functions(LLVMBackendData *data) {
         LLVMValueRef fn = LLVMAddFunction(data->module, "asthra_string_free", fn_type);
         LLVMSetLinkage(fn, LLVMExternalLinkage);
     }
-    
+
     // Print function for basic output (temporary until proper I/O)
     {
         // int printf(const char* format, ...)

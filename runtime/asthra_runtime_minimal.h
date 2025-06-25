@@ -1,17 +1,17 @@
 /**
  * Asthra Programming Language Runtime v1.2 - Minimal Runtime Header
  * Essential Runtime Components for Basic Applications
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * MINIMAL RUNTIME HEADER
- * 
+ *
  * This header provides only the essential runtime components needed for
  * basic applications. It includes core types, memory management, and
  * error handling, but excludes advanced features like concurrency,
  * cryptography, and complex string operations.
- * 
+ *
  * Use this header for applications that need minimal runtime overhead
  * and faster compilation times.
  */
@@ -53,4 +53,4 @@ ASTHRA_STATIC_ASSERT(ASTHRA_ERROR_NONE == 0, "AsthraErrorCode must be defined");
 }
 #endif
 
-#endif // ASTHRA_RUNTIME_MINIMAL_H 
+#endif // ASTHRA_RUNTIME_MINIMAL_H

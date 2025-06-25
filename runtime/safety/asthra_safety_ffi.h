@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Runtime Safety System
  * FFI Safety and Tracking Module - Foreign Function Interface safety
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -86,14 +86,16 @@ typedef struct {
 /**
  * Verify FFI function annotation compliance
  */
-AsthraFFIAnnotationCheck asthra_safety_verify_ffi_annotation(void *func_ptr, void **args, size_t arg_count, 
-                                                             AsthraTransferType *expected_transfers, bool *is_borrowed);
+AsthraFFIAnnotationCheck asthra_safety_verify_ffi_annotation(void *func_ptr, void **args,
+                                                             size_t arg_count,
+                                                             AsthraTransferType *expected_transfers,
+                                                             bool *is_borrowed);
 
 /**
  * Register FFI pointer for ownership tracking
  */
-int asthra_safety_register_ffi_pointer(void *ptr, size_t size, AsthraTransferType transfer, 
-                                       AsthraOwnershipHint ownership, bool is_borrowed, 
+int asthra_safety_register_ffi_pointer(void *ptr, size_t size, AsthraTransferType transfer,
+                                       AsthraOwnershipHint ownership, bool is_borrowed,
                                        const char *source, int line);
 
 /**
@@ -109,13 +111,16 @@ AsthraFFIPointerTracker *asthra_safety_get_ffi_pointer_info(void *ptr);
 /**
  * Validate variadic function call safety
  */
-AsthraVariadicValidation asthra_safety_validate_variadic_call(void *func_ptr, AsthraVarArg *args, size_t arg_count,
-                                                              AsthraVarArgType *expected_types, size_t expected_count);
+AsthraVariadicValidation asthra_safety_validate_variadic_call(void *func_ptr, AsthraVarArg *args,
+                                                              size_t arg_count,
+                                                              AsthraVarArgType *expected_types,
+                                                              size_t expected_count);
 
 /**
  * Log FFI function call for debugging and safety tracking
  */
-void asthra_safety_log_ffi_call(const char *function_name, void *function_ptr, void **args, size_t arg_count);
+void asthra_safety_log_ffi_call(const char *function_name, void *function_ptr, void **args,
+                                size_t arg_count);
 
 /**
  * Check if FFI pointer is still valid and tracked
@@ -151,4 +156,4 @@ void asthra_safety_cleanup_expired_ffi_pointers(uint64_t max_age_ns);
 }
 #endif
 
-#endif // ASTHRA_SAFETY_FFI_H 
+#endif // ASTHRA_SAFETY_FFI_H

@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language
  * Code formatter tool (using common framework)
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -11,15 +11,16 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "common/cli_framework.h"
-#include "common/statistics_framework.h"
-#include "common/error_framework.h"
 #include "../runtime/asthra_runtime.h"
 #include "../src/compiler.h"
+#include "common/cli_framework.h"
+#include "common/error_framework.h"
+#include "common/statistics_framework.h"
 
 // C17 feature detection and static assertions
 ASTHRA_STATIC_ASSERT(sizeof(int) >= 4, "int must be at least 32 bits for formatter");
-ASTHRA_STATIC_ASSERT(sizeof(size_t) >= sizeof(void*), "size_t must be at least as large as pointer");
+ASTHRA_STATIC_ASSERT(sizeof(size_t) >= sizeof(void *),
+                     "size_t must be at least as large as pointer");
 
 // Formatter-specific options structure
 typedef struct {
@@ -32,17 +33,17 @@ typedef struct {
 } FormatterOptions;
 
 // C17 _Generic for polymorphic formatting operations
-#define format_token(token) _Generic((token), \
-    char*: format_string_token, \
-    const char*: format_string_token, \
-    int: format_integer_token, \
-    default: format_generic_token \
-)(token)
+#define format_token(token)                                                                        \
+    _Generic((token),                                                                              \
+        char *: format_string_token,                                                               \
+        const char *: format_string_token,                                                         \
+        int: format_integer_token,                                                                 \
+        default: format_generic_token)(token)
 
 // Forward declarations for _Generic dispatch
-static char* format_string_token(const char *token);
-static char* format_integer_token(int token);
-static char* format_generic_token(void *token);
+static char *format_string_token(const char *token);
+static char *format_integer_token(int token);
+static char *format_generic_token(void *token);
 
 // Format rule structure
 typedef struct {
@@ -54,41 +55,36 @@ typedef struct {
 
 // Format rules array
 static const FormatRule format_rules[] = {
-    {'{', "{\n", true, false},
-    {'}', "}\n", false, true},
-    {';', ";\n", false, false},
-    {',', ", ", false, false},
-    {'=', " = ", false, false},
-    {'+', " + ", false, false},
-    {'-', " - ", false, false},
-    {'*', " * ", false, false},
-    {'/', " / ", false, false},
-    {'(', "(", false, false},
-    {')', ")", false, false},
-    {0, NULL, false, false}  // Sentinel
+    {'{', "{\n", true, false},  {'}', "}\n", false, true},  {';', ";\n", false, false},
+    {',', ", ", false, false},  {'=', " = ", false, false}, {'+', " + ", false, false},
+    {'-', " - ", false, false}, {'*', " * ", false, false}, {'/', " / ", false, false},
+    {'(', "(", false, false},   {')', ")", false, false},   {0, NULL, false, false} // Sentinel
 };
 
-static char* format_string_token(const char *token) {
-    if (!token) return NULL;
-    
+static char *format_string_token(const char *token) {
+    if (!token)
+        return NULL;
+
     size_t len = strlen(token);
-    char *formatted = malloc(len * 4 + 1);  // Generous allocation for formatting
-    if (!formatted) return NULL;
-    
+    char *formatted = malloc(len * 4 + 1); // Generous allocation for formatting
+    if (!formatted)
+        return NULL;
+
     strcpy(formatted, token);
     return formatted;
 }
 
-static char* format_integer_token(int token) {
+static char *format_integer_token(int token) {
     char *formatted = malloc(32);
-    if (!formatted) return NULL;
-    
+    if (!formatted)
+        return NULL;
+
     snprintf(formatted, 32, "%d", token);
     return formatted;
 }
 
-static char* format_generic_token(void *token) {
-    (void)token;  // Suppress unused parameter warning
+static char *format_generic_token(void *token) {
+    (void)token; // Suppress unused parameter warning
     return NULL;
 }
 
@@ -146,15 +142,15 @@ static int write_file(const char *filename, const char *content, StatsFramework 
     return 0;
 }
 
-static char* format_content(const char *content, const FormatterOptions *options, 
-                           StatsFramework *stats, ErrorFramework *errors) {
+static char *format_content(const char *content, const FormatterOptions *options,
+                            StatsFramework *stats, ErrorFramework *errors) {
     if (!content) {
         ERROR_REPORT_ERROR(errors, "No content to format");
         return NULL;
     }
 
     size_t content_len = strlen(content);
-    size_t output_capacity = content_len * 2;  // Generous allocation
+    size_t output_capacity = content_len * 2; // Generous allocation
     char *output = malloc(output_capacity);
     if (!output) {
         ERROR_REPORT_CRITICAL(errors, "Failed to allocate memory for formatting");
@@ -167,7 +163,7 @@ static char* format_content(const char *content, const FormatterOptions *options
 
     for (size_t i = 0; i < content_len; i++) {
         char c = content[i];
-        
+
         if (c == '\n') {
             line_count++;
         }
@@ -227,16 +223,17 @@ static char* format_content(const char *content, const FormatterOptions *options
 static int setup_cli_config(CliConfig *config) {
     cli_add_option(config, "in-place", 'i', false, false, "Format file in place");
     cli_add_option(config, "output", 'o', true, false, "Output file (default: stdout)");
-    cli_add_option(config, "check", 'c', false, false, "Check if file is formatted (exit code 1 if not)");
+    cli_add_option(config, "check", 'c', false, false,
+                   "Check if file is formatted (exit code 1 if not)");
     cli_add_option(config, "indent-size", 's', true, false, "Indentation size (default: 4)");
     cli_add_option(config, "verbose", 'v', false, false, "Verbose output");
-    
+
     return 0;
 }
 
-static int parse_formatter_options(const CliOptionValue *values, size_t count, 
-                                  const char **remaining_args, size_t remaining_count,
-                                  FormatterOptions *options, ErrorFramework *errors) {
+static int parse_formatter_options(const CliOptionValue *values, size_t count,
+                                   const char **remaining_args, size_t remaining_count,
+                                   FormatterOptions *options, ErrorFramework *errors) {
     // Initialize with defaults
     options->input_file = NULL;
     options->output_file = NULL;
@@ -283,8 +280,8 @@ static int parse_formatter_options(const CliOptionValue *values, size_t count,
 
 int main(int argc, char *argv[]) {
     // Create frameworks
-    CliConfig *cli_config = cli_create_config("Asthra Code Formatter", "[options] <input_file>", 
-                                             "Format Asthra source code files");
+    CliConfig *cli_config = cli_create_config("Asthra Code Formatter", "[options] <input_file>",
+                                              "Format Asthra source code files");
     StatsFramework *stats = stats_create_framework("Asthra Code Formatter");
     ErrorFramework *errors = error_create_framework("Asthra Code Formatter");
 
@@ -321,8 +318,8 @@ int main(int argc, char *argv[]) {
 
     // Parse formatter-specific options
     FormatterOptions options;
-    if (parse_formatter_options(values, CLI_MAX_OPTIONS, parse_result.remaining_args, 
-                               parse_result.remaining_count, &options, errors) != 0) {
+    if (parse_formatter_options(values, CLI_MAX_OPTIONS, parse_result.remaining_args,
+                                parse_result.remaining_count, &options, errors) != 0) {
         error_print_all(errors);
         goto cleanup;
     }
@@ -397,4 +394,4 @@ cleanup_with_error:
     stats_destroy_framework(stats);
     error_destroy_framework(errors);
     return 1;
-} 
+}

@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Runtime v1.2 - Enum Support Module
  * Enum Runtime Support and Tagged Union Operations
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This module provides runtime support for enum variant construction,
  * pattern matching, and Result/Option type operations.
  */
@@ -27,13 +27,13 @@ extern "C" {
  * Generic enum variant structure for tagged unions
  */
 typedef struct {
-    uint32_t tag;              // Variant tag (0-based)
+    uint32_t tag; // Variant tag (0-based)
     union {
         void *value_ptr;       // Pointer to associated data
         uint64_t value_inline; // Inline value for small types
     } data;
-    size_t value_size;         // Size of associated data
-    uint32_t value_type_id;    // Runtime type identifier
+    size_t value_size;             // Size of associated data
+    uint32_t value_type_id;        // Runtime type identifier
     AsthraOwnershipHint ownership; // Memory ownership semantics
 } AsthraEnumVariant;
 
@@ -54,7 +54,7 @@ bool Asthra_enum_is_variant(void *enum_value, uint32_t expected_tag);
  * @param enum_value Pointer to enum variant
  * @return Pointer to associated data or NULL if none
  */
-void* Asthra_enum_get_data(void *enum_value);
+void *Asthra_enum_get_data(void *enum_value);
 
 /**
  * Get variant tag from enum value
@@ -79,8 +79,8 @@ size_t Asthra_enum_get_data_size(void *enum_value);
  * @param ownership Memory ownership semantics
  * @return Created enum variant
  */
-AsthraEnumVariant Asthra_enum_create_variant(uint32_t tag, void *data, size_t data_size, 
-                                            uint32_t type_id, AsthraOwnershipHint ownership);
+AsthraEnumVariant Asthra_enum_create_variant(uint32_t tag, void *data, size_t data_size,
+                                             uint32_t type_id, AsthraOwnershipHint ownership);
 
 /**
  * Free enum variant and associated resources
@@ -111,14 +111,14 @@ bool Asthra_result_is_err(void *result);
  * @param result Pointer to Result enum
  * @return Pointer to Ok value
  */
-void* Asthra_result_unwrap_ok(void *result);
+void *Asthra_result_unwrap_ok(void *result);
 
 /**
  * Unwrap Err value from Result (unsafe - caller must verify it's Err)
  * @param result Pointer to Result enum
  * @return Pointer to Err value
  */
-void* Asthra_result_unwrap_err(void *result);
+void *Asthra_result_unwrap_err(void *result);
 
 /**
  * Create Result.Ok variant
@@ -128,8 +128,8 @@ void* Asthra_result_unwrap_err(void *result);
  * @param ownership Memory ownership
  * @return Result enum with Ok variant
  */
-AsthraEnumVariant Asthra_result_create_ok(void *value, size_t value_size, 
-                                         uint32_t value_type_id, AsthraOwnershipHint ownership);
+AsthraEnumVariant Asthra_result_create_ok(void *value, size_t value_size, uint32_t value_type_id,
+                                          AsthraOwnershipHint ownership);
 
 /**
  * Create Result.Err variant
@@ -139,8 +139,8 @@ AsthraEnumVariant Asthra_result_create_ok(void *value, size_t value_size,
  * @param ownership Memory ownership
  * @return Result enum with Err variant
  */
-AsthraEnumVariant Asthra_result_create_err(void *error, size_t error_size, 
-                                          uint32_t error_type_id, AsthraOwnershipHint ownership);
+AsthraEnumVariant Asthra_result_create_err(void *error, size_t error_size, uint32_t error_type_id,
+                                           AsthraOwnershipHint ownership);
 
 // =============================================================================
 // OPTION<T> SPECIFIC FUNCTIONS
@@ -165,7 +165,7 @@ bool Asthra_option_is_none(void *option);
  * @param option Pointer to Option enum
  * @return Pointer to Some value
  */
-void* Asthra_option_unwrap(void *option);
+void *Asthra_option_unwrap(void *option);
 
 /**
  * Create Option.Some variant
@@ -175,8 +175,8 @@ void* Asthra_option_unwrap(void *option);
  * @param ownership Memory ownership
  * @return Option enum with Some variant
  */
-AsthraEnumVariant Asthra_option_create_some(void *value, size_t value_size, 
-                                           uint32_t value_type_id, AsthraOwnershipHint ownership);
+AsthraEnumVariant Asthra_option_create_some(void *value, size_t value_size, uint32_t value_type_id,
+                                            AsthraOwnershipHint ownership);
 
 /**
  * Create Option.None variant
@@ -200,9 +200,9 @@ typedef int (*AsthraEnumMatchCallback)(AsthraEnumVariant *variant, void *user_da
  * Pattern match arm structure
  */
 typedef struct {
-    uint32_t tag;                      // Tag to match (or UINT32_MAX for wildcard)
-    AsthraEnumMatchCallback callback;  // Callback function for this arm
-    void *user_data;                   // User data passed to callback
+    uint32_t tag;                     // Tag to match (or UINT32_MAX for wildcard)
+    AsthraEnumMatchCallback callback; // Callback function for this arm
+    void *user_data;                  // User data passed to callback
 } AsthraEnumMatchArm;
 
 /**
@@ -212,15 +212,16 @@ typedef struct {
  * @param arm_count Number of match arms
  * @return Result from matched callback or -1 if no match
  */
-int Asthra_enum_pattern_match(AsthraEnumVariant *variant, AsthraEnumMatchArm *arms, size_t arm_count);
+int Asthra_enum_pattern_match(AsthraEnumVariant *variant, AsthraEnumMatchArm *arms,
+                              size_t arm_count);
 
 // =============================================================================
 // ENUM VARIANT CONSTANTS
 // =============================================================================
 
 // Standard Result<T,E> variant tags
-#define ASTHRA_RESULT_TAG_OK   0
-#define ASTHRA_RESULT_TAG_ERR  1
+#define ASTHRA_RESULT_TAG_OK 0
+#define ASTHRA_RESULT_TAG_ERR 1
 
 // Standard Option<T> variant tags
 #define ASTHRA_OPTION_TAG_SOME 0
@@ -253,4 +254,4 @@ size_t Asthra_enum_debug_string(AsthraEnumVariant *variant, char *buffer, size_t
 }
 #endif
 
-#endif // ASTHRA_ENUM_SUPPORT_H 
+#endif // ASTHRA_ENUM_SUPPORT_H

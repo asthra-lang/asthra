@@ -1,9 +1,9 @@
 /**
  * Asthra Programming Language - Concurrency Integration Tests
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Integration tests for the three-tier concurrency system:
  * - Tier progression patterns (1→2)
  * - Real-world usage scenarios
@@ -19,73 +19,72 @@
 
 void test_tier_progression_pattern(void) {
     printf("Testing integration: Tier progression pattern...\n");
-    
-    const char* code = 
-        "package test;\n"
-        "\n"
-        "import \"stdlib/concurrent/channels\";\n"
-        "\n"
-        "// Simple function using only Tier 1 features\n"
-        "pub fn simple_parallel() -> Result<(), string> {\n"
-        "    let handle1 = spawn_with_handle compute_task(1);\n"
-        "    let handle2 = spawn_with_handle compute_task(2);\n"
-        "    \n"
-        "    let result1 = await handle1;\n"
-        "    let result2 = await handle2;\n"
-        "    \n"
-        "    Result.Ok(())\n"
-        "}\n"
-        "\n"
-        "// Advanced function using Tier 2 features\n"
-        "#[non_deterministic]\n"
-        "pub fn coordinated_processing() -> Result<(), string> {\n"
-        "    let (producer_ch, consumer_ch) = channels.channel_pair<i32>(10)?;\n"
-        "    \n"
-        "    // Producer task\n"
-        "    spawn producer_task(producer_ch);\n"
-        "    \n"
-        "    // Consumer task\n"
-        "    spawn consumer_task(consumer_ch);\n"
-        "    \n"
-        "    Result.Ok(())\n"
-        "}\n"
-        "\n"
-        "priv fn compute_task(n: i32) -> Result<i32, string> {\n"
-        "    Result.Ok(n * 2)\n"
-        "}\n"
-        "\n"
-        "priv fn producer_task(ch: ChannelHandle<i32>) -> Result<(), string> {\n"
-        "    Result.Ok(())\n"
-        "}\n"
-        "\n"
-        "priv fn consumer_task(ch: ChannelHandle<i32>) -> Result<(), string> {\n"
-        "    Result.Ok(())\n"
-        "}\n";
-    
+
+    const char *code = "package test;\n"
+                       "\n"
+                       "import \"stdlib/concurrent/channels\";\n"
+                       "\n"
+                       "// Simple function using only Tier 1 features\n"
+                       "pub fn simple_parallel() -> Result<(), string> {\n"
+                       "    let handle1 = spawn_with_handle compute_task(1);\n"
+                       "    let handle2 = spawn_with_handle compute_task(2);\n"
+                       "    \n"
+                       "    let result1 = await handle1;\n"
+                       "    let result2 = await handle2;\n"
+                       "    \n"
+                       "    Result.Ok(())\n"
+                       "}\n"
+                       "\n"
+                       "// Advanced function using Tier 2 features\n"
+                       "#[non_deterministic]\n"
+                       "pub fn coordinated_processing() -> Result<(), string> {\n"
+                       "    let (producer_ch, consumer_ch) = channels.channel_pair<i32>(10)?;\n"
+                       "    \n"
+                       "    // Producer task\n"
+                       "    spawn producer_task(producer_ch);\n"
+                       "    \n"
+                       "    // Consumer task\n"
+                       "    spawn consumer_task(consumer_ch);\n"
+                       "    \n"
+                       "    Result.Ok(())\n"
+                       "}\n"
+                       "\n"
+                       "priv fn compute_task(n: i32) -> Result<i32, string> {\n"
+                       "    Result.Ok(n * 2)\n"
+                       "}\n"
+                       "\n"
+                       "priv fn producer_task(ch: ChannelHandle<i32>) -> Result<(), string> {\n"
+                       "    Result.Ok(())\n"
+                       "}\n"
+                       "\n"
+                       "priv fn consumer_task(ch: ChannelHandle<i32>) -> Result<(), string> {\n"
+                       "    Result.Ok(())\n"
+                       "}\n";
+
     ParseResult result = parse_string(code);
     ASSERT_TRUE(result.success);
-    
+
     SemanticAnalysisResult semantic_result = analyze_semantics(result.ast);
     ASSERT_TRUE(semantic_result.success);
-    
+
     // First function should not need annotation
-    ASTNode* simple_func = find_function_declaration(result.ast, "simple_parallel");
+    ASTNode *simple_func = find_function_declaration(result.ast, "simple_parallel");
     ASSERT_NOT_NULL(simple_func);
     ASSERT_FALSE(has_annotation(simple_func, "non_deterministic"));
-    
+
     // Second function should have annotation
-    ASTNode* coordinated_func = find_function_declaration(result.ast, "coordinated_processing");
+    ASTNode *coordinated_func = find_function_declaration(result.ast, "coordinated_processing");
     ASSERT_NOT_NULL(coordinated_func);
     ASSERT_TRUE(has_annotation(coordinated_func, "non_deterministic"));
-    
+
     cleanup_parse_result(&result);
     cleanup_semantic_result(&semantic_result);
 }
 
 void test_real_world_pattern(void) {
     printf("Testing integration: Real-world usage pattern...\n");
-    
-    const char* code = 
+
+    const char *code =
         "package test;\n"
         "\n"
         "import \"stdlib/concurrent/channels\";\n"
@@ -112,21 +111,21 @@ void test_real_world_pattern(void) {
         "priv fn listen_for_requests(ch: ChannelHandle<Request>) -> Result<(), string> {\n"
         "    Result.Ok(())\n"
         "}\n";
-    
+
     ParseResult result = parse_string(code);
     ASSERT_TRUE(result.success);
-    
+
     SemanticAnalysisResult semantic_result = analyze_semantics(result.ast);
     ASSERT_TRUE(semantic_result.success);
-    
+
     cleanup_parse_result(&result);
     cleanup_semantic_result(&semantic_result);
 }
 
 void test_producer_consumer_pattern(void) {
     printf("Testing integration: Producer-consumer pattern...\n");
-    
-    const char* code = 
+
+    const char *code =
         "package test;\n"
         "\n"
         "import \"stdlib/concurrent/channels\";\n"
@@ -157,7 +156,8 @@ void test_producer_consumer_pattern(void) {
         "    data: string\n"
         "}\n"
         "\n"
-        "priv fn producer(ch: ChannelHandle<WorkItem>, start: i32, end: i32) -> Result<(), string> {\n"
+        "priv fn producer(ch: ChannelHandle<WorkItem>, start: i32, end: i32) -> Result<(), string> "
+        "{\n"
         "    for i in start..end {\n"
         "        let item = WorkItem { id: i, data: format!(\"Item {}\", i) };\n"
         "        channels.send(ch, item)?;\n"
@@ -177,21 +177,21 @@ void test_producer_consumer_pattern(void) {
         "    }\n"
         "    Result.Ok(())\n"
         "}\n";
-    
+
     ParseResult result = parse_string(code);
     ASSERT_TRUE(result.success);
-    
+
     SemanticAnalysisResult semantic_result = analyze_semantics(result.ast);
     ASSERT_TRUE(semantic_result.success);
-    
+
     cleanup_parse_result(&result);
     cleanup_semantic_result(&semantic_result);
 }
 
 void test_map_reduce_pattern(void) {
     printf("Testing integration: Map-reduce pattern...\n");
-    
-    const char* code = 
+
+    const char *code =
         "package test;\n"
         "\n"
         "import \"stdlib/concurrent/channels\";\n"
@@ -227,7 +227,8 @@ void test_map_reduce_pattern(void) {
         "    Result.Ok(())\n"
         "}\n"
         "\n"
-        "priv fn reduce_worker(results: ChannelHandle<i32>, expected_count: i32) -> Result<i32, string> {\n"
+        "priv fn reduce_worker(results: ChannelHandle<i32>, expected_count: i32) -> Result<i32, "
+        "string> {\n"
         "    let total = 0;\n"
         "    for _ in 0..expected_count {\n"
         "        let partial_sum = channels.recv(results)?;\n"
@@ -235,21 +236,21 @@ void test_map_reduce_pattern(void) {
         "    }\n"
         "    Result.Ok(total)\n"
         "}\n";
-    
+
     ParseResult result = parse_string(code);
     ASSERT_TRUE(result.success);
-    
+
     SemanticAnalysisResult semantic_result = analyze_semantics(result.ast);
     ASSERT_TRUE(semantic_result.success);
-    
+
     cleanup_parse_result(&result);
     cleanup_semantic_result(&semantic_result);
 }
 
 void test_pipeline_pattern(void) {
     printf("Testing integration: Pipeline processing pattern...\n");
-    
-    const char* code = 
+
+    const char *code =
         "package test;\n"
         "\n"
         "import \"stdlib/concurrent/channels\";\n"
@@ -285,7 +286,8 @@ void test_pipeline_pattern(void) {
         "    Result.Ok(())\n"
         "}\n"
         "\n"
-        "priv fn data_processor(input: ChannelHandle<RawData>, output: ChannelHandle<ProcessedData>) -> Result<(), string> {\n"
+        "priv fn data_processor(input: ChannelHandle<RawData>, output: "
+        "ChannelHandle<ProcessedData>) -> Result<(), string> {\n"
         "    loop {\n"
         "        match channels.try_recv(input)? {\n"
         "            Some(raw) => {\n"
@@ -299,11 +301,13 @@ void test_pipeline_pattern(void) {
         "    Result.Ok(())\n"
         "}\n"
         "\n"
-        "priv fn data_finalizer(input: ChannelHandle<ProcessedData>, output: ChannelHandle<FinalData>) -> Result<(), string> {\n"
+        "priv fn data_finalizer(input: ChannelHandle<ProcessedData>, output: "
+        "ChannelHandle<FinalData>) -> Result<(), string> {\n"
         "    loop {\n"
         "        match channels.try_recv(input)? {\n"
         "            Option.Some(processed) => {\n"
-        "                let final_data = FinalData { value: processed.value, timestamp: get_timestamp() };\n"
+        "                let final_data = FinalData { value: processed.value, timestamp: "
+        "get_timestamp() };\n"
         "                channels.send(output, final_data)?;\n"
         "            },\n"
         "            Option.None => break\n"
@@ -326,21 +330,21 @@ void test_pipeline_pattern(void) {
         "}\n"
         "\n"
         "priv fn get_timestamp() -> i64 { 0 }\n";
-    
+
     ParseResult result = parse_string(code);
     ASSERT_TRUE(result.success);
-    
+
     SemanticAnalysisResult semantic_result = analyze_semantics(result.ast);
     ASSERT_TRUE(semantic_result.success);
-    
+
     cleanup_parse_result(&result);
     cleanup_semantic_result(&semantic_result);
 }
 
 void test_coordination_pattern(void) {
     printf("Testing integration: Complex coordination pattern...\n");
-    
-    const char* code = 
+
+    const char *code =
         "package test;\n"
         "\n"
         "import \"stdlib/concurrent/channels\";\n"
@@ -387,7 +391,8 @@ void test_coordination_pattern(void) {
         "    Result.Ok(())\n"
         "}\n"
         "\n"
-        "priv fn result_collector(results: ChannelHandle<string>, count: i32) -> Result<(), string> {\n"
+        "priv fn result_collector(results: ChannelHandle<string>, count: i32) -> Result<(), "
+        "string> {\n"
         "    for _ in 0..count {\n"
         "        let result = match channels.recv(results) {\n"
         "            Result.Ok(r) => r,\n"
@@ -397,21 +402,21 @@ void test_coordination_pattern(void) {
         "    }\n"
         "    Result.Ok(())\n"
         "}\n";
-    
+
     ParseResult result = parse_string(code);
     ASSERT_TRUE(result.success);
-    
+
     SemanticAnalysisResult semantic_result = analyze_semantics(result.ast);
     ASSERT_TRUE(semantic_result.success);
-    
+
     cleanup_parse_result(&result);
     cleanup_semantic_result(&semantic_result);
 }
 
 void test_error_propagation_pattern(void) {
     printf("Testing integration: Error propagation across tiers...\n");
-    
-    const char* code = 
+
+    const char *code =
         "package test;\n"
         "\n"
         "import \"stdlib/concurrent/channels\";\n"
@@ -459,13 +464,15 @@ void test_error_propagation_pattern(void) {
         "    }\n"
         "}\n"
         "\n"
-        "priv fn error_prone_worker(results: ChannelHandle<Result<i32, string>>, succeed: bool) -> Result<(), string> {\n"
+        "priv fn error_prone_worker(results: ChannelHandle<Result<i32, string>>, succeed: bool) -> "
+        "Result<(), string> {\n"
         "    let result = fallible_computation(succeed);\n"
         "    channels.send(results, result)?;\n"
         "    Result.Ok(())\n"
         "}\n"
         "\n"
-        "priv fn error_collector(results: ChannelHandle<Result<i32, string>>, count: i32) -> Result<(), string> {\n"
+        "priv fn error_collector(results: ChannelHandle<Result<i32, string>>, count: i32) -> "
+        "Result<(), string> {\n"
         "    for _ in 0..count {\n"
         "        let result = match channels.recv(results) {\n"
         "            Result.Ok(r) => r,\n"
@@ -478,13 +485,13 @@ void test_error_propagation_pattern(void) {
         "    }\n"
         "    Result.Ok(())\n"
         "}\n";
-    
+
     ParseResult result = parse_string(code);
     ASSERT_TRUE(result.success);
-    
+
     SemanticAnalysisResult semantic_result = analyze_semantics(result.ast);
     ASSERT_TRUE(semantic_result.success);
-    
+
     cleanup_parse_result(&result);
     cleanup_semantic_result(&semantic_result);
 }
@@ -496,7 +503,7 @@ void test_error_propagation_pattern(void) {
 void run_integration_tests(void) {
     printf("🔄 INTEGRATION TESTS\n");
     printf("-------------------\n");
-    
+
     test_tier_progression_pattern();
     test_real_world_pattern();
     test_producer_consumer_pattern();
@@ -504,6 +511,6 @@ void run_integration_tests(void) {
     test_pipeline_pattern();
     test_coordination_pattern();
     test_error_propagation_pattern();
-    
+
     printf("\n");
-} 
+}

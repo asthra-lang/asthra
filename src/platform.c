@@ -1,38 +1,38 @@
 /**
  * Asthra Programming Language Compiler
  * Cross-Platform Abstraction Layer Implementation
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
 
 #include "platform.h"
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
 
 #if ASTHRA_PLATFORM_WINDOWS
-    #include <shlwapi.h>
-    #pragma comment(lib, "shlwapi.lib")
+#include <shlwapi.h>
+#pragma comment(lib, "shlwapi.lib")
 #elif ASTHRA_PLATFORM_MACOS
-    #include <sys/stat.h>
-    #include <libgen.h>
-    #include <mach/mach_time.h>
-    #include <sys/sysctl.h>
-    #include <mach/mach.h>
-    #include <time.h>
-    #include <unistd.h>
+#include <libgen.h>
+#include <mach/mach.h>
+#include <mach/mach_time.h>
+#include <sys/stat.h>
+#include <sys/sysctl.h>
+#include <time.h>
+#include <unistd.h>
 #else
-    #include <sys/stat.h>
-    #include <libgen.h>
-    #include <time.h>
+#include <libgen.h>
+#include <sys/stat.h>
+#include <time.h>
 #endif
 
 // =============================================================================
 // PATH UTILITIES
 // =============================================================================
 
-int asthra_build_path(char* buffer, size_t buffer_size, const char** components) {
+int asthra_build_path(char *buffer, size_t buffer_size, const char **components) {
     if (!buffer || !components || buffer_size == 0) {
         return -1;
     }
@@ -63,12 +63,12 @@ int asthra_build_path(char* buffer, size_t buffer_size, const char** components)
     return (int)strlen(buffer);
 }
 
-void asthra_normalize_path(char* path) {
+void asthra_normalize_path(char *path) {
     if (!path) {
         return;
     }
 
-    char* p = path;
+    char *p = path;
     while (*p) {
 #if ASTHRA_PLATFORM_WINDOWS
         if (*p == '/') {
@@ -83,22 +83,21 @@ void asthra_normalize_path(char* path) {
     }
 }
 
-bool asthra_file_exists(const char* path) {
+bool asthra_file_exists(const char *path) {
     if (!path) {
         return false;
     }
 
 #if ASTHRA_PLATFORM_WINDOWS
     DWORD attributes = GetFileAttributesA(path);
-    return (attributes != INVALID_FILE_ATTRIBUTES && 
-            !(attributes & FILE_ATTRIBUTE_DIRECTORY));
+    return (attributes != INVALID_FILE_ATTRIBUTES && !(attributes & FILE_ATTRIBUTE_DIRECTORY));
 #else
     struct stat st;
     return (stat(path, &st) == 0 && S_ISREG(st.st_mode));
 #endif
 }
 
-bool asthra_create_directory(const char* path) {
+bool asthra_create_directory(const char *path) {
     if (!path) {
         return false;
     }
@@ -106,8 +105,7 @@ bool asthra_create_directory(const char* path) {
     // Check if directory already exists
 #if ASTHRA_PLATFORM_WINDOWS
     DWORD attributes = GetFileAttributesA(path);
-    if (attributes != INVALID_FILE_ATTRIBUTES && 
-        (attributes & FILE_ATTRIBUTE_DIRECTORY)) {
+    if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY)) {
         return true; // Already exists
     }
 #else
@@ -118,19 +116,19 @@ bool asthra_create_directory(const char* path) {
 #endif
 
     // Create parent directories first
-    char* path_copy = malloc(strlen(path) + 1);
+    char *path_copy = malloc(strlen(path) + 1);
     if (!path_copy) {
         return false;
     }
     strcpy(path_copy, path);
 
 #if ASTHRA_PLATFORM_WINDOWS
-    char* parent = path_copy;
-    char* last_separator = strrchr(parent, '\\');
+    char *parent = path_copy;
+    char *last_separator = strrchr(parent, '\\');
     if (!last_separator) {
         last_separator = strrchr(parent, '/');
     }
-    
+
     if (last_separator && last_separator != parent) {
         *last_separator = '\0';
         if (!asthra_create_directory(parent)) {
@@ -139,10 +137,9 @@ bool asthra_create_directory(const char* path) {
         }
     }
 
-    bool result = CreateDirectoryA(path, NULL) != 0 || 
-                  GetLastError() == ERROR_ALREADY_EXISTS;
+    bool result = CreateDirectoryA(path, NULL) != 0 || GetLastError() == ERROR_ALREADY_EXISTS;
 #else
-    char* parent = dirname(path_copy);
+    char *parent = dirname(path_copy);
     if (strcmp(parent, ".") != 0 && strcmp(parent, "/") != 0) {
         if (!asthra_create_directory(parent)) {
             free(path_copy);
@@ -187,11 +184,11 @@ asthra_process_id_t asthra_get_current_process_id(void) {
 // MEMORY UTILITIES
 // =============================================================================
 
-void* asthra_realloc_safe(void* ptr, size_t old_size, size_t new_size) {
-    void* new_ptr = realloc(ptr, new_size);
+void *asthra_realloc_safe(void *ptr, size_t old_size, size_t new_size) {
+    void *new_ptr = realloc(ptr, new_size);
     if (new_ptr && new_size > old_size) {
         // Zero the new memory
-        memset((char*)new_ptr + old_size, 0, new_size - old_size);
+        memset((char *)new_ptr + old_size, 0, new_size - old_size);
     }
     return new_ptr;
 }
@@ -200,20 +197,20 @@ void* asthra_realloc_safe(void* ptr, size_t old_size, size_t new_size) {
 // STRING UTILITIES
 // =============================================================================
 
-char* asthra_strdup(const char* str) {
+char *asthra_strdup(const char *str) {
     if (!str) {
         return NULL;
     }
 
     size_t len = strlen(str) + 1;
-    char* copy = malloc(len);
+    char *copy = malloc(len);
     if (copy) {
         memcpy(copy, str, len);
     }
     return copy;
 }
 
-bool asthra_cstring_ends_with(const char* str, const char* suffix) {
+bool asthra_cstring_ends_with(const char *str, const char *suffix) {
     if (!str || !suffix) {
         return false;
     }
@@ -228,7 +225,7 @@ bool asthra_cstring_ends_with(const char* str, const char* suffix) {
     return strcmp(str + str_len - suffix_len, suffix) == 0;
 }
 
-bool asthra_string_starts_with(const char* str, const char* prefix) {
+bool asthra_string_starts_with(const char *str, const char *prefix) {
     if (!str || !prefix) {
         return false;
     }
@@ -240,19 +237,13 @@ bool asthra_string_starts_with(const char* str, const char* prefix) {
 // ERROR HANDLING UTILITIES
 // =============================================================================
 
-const char* asthra_get_error_string(asthra_error_t error) {
+const char *asthra_get_error_string(asthra_error_t error) {
 #if ASTHRA_PLATFORM_WINDOWS
     static char buffer[256];
-    DWORD result = FormatMessageA(
-        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        error,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        buffer,
-        sizeof(buffer),
-        NULL
-    );
-    
+    DWORD result =
+        FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, error,
+                       MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buffer, sizeof(buffer), NULL);
+
     if (result == 0) {
         snprintf(buffer, sizeof(buffer), "Unknown error %lu", error);
     } else {
@@ -265,7 +256,7 @@ const char* asthra_get_error_string(asthra_error_t error) {
             }
         }
     }
-    
+
     return buffer;
 #else
     return strerror(error);
@@ -278,7 +269,7 @@ const char* asthra_get_error_string(asthra_error_t error) {
 
 #if ASTHRA_PLATFORM_WINDOWS
 
-char* asthra_wchar_to_utf8(const wchar_t* wstr) {
+char *asthra_wchar_to_utf8(const wchar_t *wstr) {
     if (!wstr) {
         return NULL;
     }
@@ -288,7 +279,7 @@ char* asthra_wchar_to_utf8(const wchar_t* wstr) {
         return NULL;
     }
 
-    char* utf8_str = malloc(size);
+    char *utf8_str = malloc(size);
     if (!utf8_str) {
         return NULL;
     }
@@ -301,7 +292,7 @@ char* asthra_wchar_to_utf8(const wchar_t* wstr) {
     return utf8_str;
 }
 
-wchar_t* asthra_utf8_to_wchar(const char* utf8_str) {
+wchar_t *asthra_utf8_to_wchar(const char *utf8_str) {
     if (!utf8_str) {
         return NULL;
     }
@@ -311,7 +302,7 @@ wchar_t* asthra_utf8_to_wchar(const char* utf8_str) {
         return NULL;
     }
 
-    wchar_t* wstr = malloc(size * sizeof(wchar_t));
+    wchar_t *wstr = malloc(size * sizeof(wchar_t));
     if (!wstr) {
         return NULL;
     }
@@ -422,4 +413,4 @@ int asthra_get_cpu_count(void) {
 #else
     return (int)sysconf(_SC_NPROCESSORS_ONLN);
 #endif
-} 
+}

@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Runtime v1.2 - Errors Module
  * Error Handling and Reporting
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This module provides error handling functionality including
  * error codes, error structures, and error reporting functions.
  */
@@ -45,22 +45,23 @@ typedef struct {
 } AsthraError;
 
 AsthraError asthra_get_last_error(void);
-void asthra_set_error(AsthraErrorCode code, const char *message, const char *file, int line, const char *function);
+void asthra_set_error(AsthraErrorCode code, const char *message, const char *file, int line,
+                      const char *function);
 void asthra_clear_error(void);
 const char *asthra_error_string(AsthraErrorCode code);
 
 // Error handling macros
-#define ASTHRA_SET_ERROR(code, msg) \
-    asthra_set_error(code, msg, __FILE__, __LINE__, __func__)
+#define ASTHRA_SET_ERROR(code, msg) asthra_set_error(code, msg, __FILE__, __LINE__, __func__)
 
-#define ASTHRA_RETURN_IF_ERROR(expr) \
-    do { \
-        AsthraError _err = asthra_get_last_error(); \
-        if (_err.code != ASTHRA_ERROR_NONE) return (expr); \
-    } while(0)
+#define ASTHRA_RETURN_IF_ERROR(expr)                                                               \
+    do {                                                                                           \
+        AsthraError _err = asthra_get_last_error();                                                \
+        if (_err.code != ASTHRA_ERROR_NONE)                                                        \
+            return (expr);                                                                         \
+    } while (0)
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ASTHRA_RUNTIME_ERRORS_H 
+#endif // ASTHRA_RUNTIME_ERRORS_H

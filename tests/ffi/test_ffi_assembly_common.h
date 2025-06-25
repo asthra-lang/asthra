@@ -1,40 +1,40 @@
 /**
  * Asthra Programming Language Compiler
  * FFI Assembly Generator Tests - Common Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Common definitions and utilities for FFI assembly generator tests
  */
 
 #ifndef ASTHRA_TEST_FFI_ASSEMBLY_COMMON_H
 #define ASTHRA_TEST_FFI_ASSEMBLY_COMMON_H
 
-#include "ffi_assembly_generator.h"
+#include "../framework/semantic_test_utils.h"
 #include "ast.h"
 #include "code_generator.h"
-#include "../framework/semantic_test_utils.h"
+#include "ffi_assembly_generator.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 #include <time.h>
 
 // Test framework macros
-#define TEST_ASSERT(condition, message) \
-    do { \
-        if (!(condition)) { \
-            fprintf(stderr, "FAIL: %s - %s\n", __func__, message); \
-            return false; \
-        } \
-    } while(0)
+#define TEST_ASSERT(condition, message)                                                            \
+    do {                                                                                           \
+        if (!(condition)) {                                                                        \
+            fprintf(stderr, "FAIL: %s - %s\n", __func__, message);                                 \
+            return false;                                                                          \
+        }                                                                                          \
+    } while (0)
 
-#define TEST_SUCCESS() \
-    do { \
-        printf("PASS: %s\n", __func__); \
-        return true; \
-    } while(0)
+#define TEST_SUCCESS()                                                                             \
+    do {                                                                                           \
+        printf("PASS: %s\n", __func__);                                                            \
+        return true;                                                                               \
+    } while (0)
 
 // Test function type
 typedef bool (*test_function_t)(void);
@@ -90,14 +90,18 @@ void free_test_identifier(ASTNode *node);
 
 // String operations
 bool ffi_generate_string_length(FFIAssemblyGenerator *gen, int src_reg, int dest_reg);
-bool ffi_generate_string_comparison(FFIAssemblyGenerator *gen, int left_reg, int right_reg, int result_reg);
+bool ffi_generate_string_comparison(FFIAssemblyGenerator *gen, int left_reg, int right_reg,
+                                    int result_reg);
 bool ffi_generate_string_to_slice(FFIAssemblyGenerator *gen, int src_reg, int dest_reg);
 bool ffi_generate_slice_to_string(FFIAssemblyGenerator *gen, int src_reg, int dest_reg);
 
 // Slice operations
-bool ffi_generate_slice_index_access(FFIAssemblyGenerator *gen, int slice_reg, int index_reg, int result_reg, bool bounds_check);
-bool ffi_generate_slice_subslice(FFIAssemblyGenerator *gen, int slice_reg, int start_reg, int end_reg, int result_reg);
-bool ffi_generate_slice_iteration_setup(FFIAssemblyGenerator *gen, int slice_reg, int iter_reg, int end_reg);
+bool ffi_generate_slice_index_access(FFIAssemblyGenerator *gen, int slice_reg, int index_reg,
+                                     int result_reg, bool bounds_check);
+bool ffi_generate_slice_subslice(FFIAssemblyGenerator *gen, int slice_reg, int start_reg,
+                                 int end_reg, int result_reg);
+bool ffi_generate_slice_iteration_setup(FFIAssemblyGenerator *gen, int slice_reg, int iter_reg,
+                                        int end_reg);
 
 // Security operations
 bool ffi_generate_stack_canary_setup(FFIAssemblyGenerator *gen);
@@ -107,7 +111,8 @@ bool ffi_generate_pic_code(FFIAssemblyGenerator *gen, bool enable);
 // Concurrency operations
 bool ffi_generate_mutex_lock(FFIAssemblyGenerator *gen, int mutex_reg);
 bool ffi_generate_mutex_unlock(FFIAssemblyGenerator *gen, int mutex_reg);
-bool ffi_generate_atomic_cas(FFIAssemblyGenerator *gen, int target_reg, int expected_reg, int desired_reg, int result_reg);
+bool ffi_generate_atomic_cas(FFIAssemblyGenerator *gen, int target_reg, int expected_reg,
+                             int desired_reg, int result_reg);
 bool ffi_generate_atomic_increment(FFIAssemblyGenerator *gen, int target_reg, int result_reg);
 bool ffi_generate_tls_access(FFIAssemblyGenerator *gen, const char *var_name, int result_reg);
 bool ffi_generate_memory_fence(FFIAssemblyGenerator *gen, int fence_type);
@@ -151,4 +156,4 @@ void run_test(test_function_t test_func);
 bool setup_test_suite(void);
 void teardown_test_suite(void);
 
-#endif // ASTHRA_TEST_FFI_ASSEMBLY_COMMON_H 
+#endif // ASTHRA_TEST_FFI_ASSEMBLY_COMMON_H

@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Escape sequence processing functions for Asthra grammar
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -21,4 +21,4 @@
  */
 char process_escape_sequence(Lexer *lexer, char escaped_char, bool *error_occurred);
 
-#endif // LEXER_SCAN_ESCAPE_H 
+#endif // LEXER_SCAN_ESCAPE_H

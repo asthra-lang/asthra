@@ -91,7 +91,8 @@ static AsthraTestResult test_range_assertions(AsthraTestContext *context) {
 
     // Test size_t range
     size_t test_size = 500;
-    if (!ASTHRA_TEST_ASSERT_RANGE(context, test_size, (size_t)0, (size_t)1000, "Size range should pass")) {
+    if (!ASTHRA_TEST_ASSERT_RANGE(context, test_size, (size_t)0, (size_t)1000,
+                                  "Size range should pass")) {
         return ASTHRA_TEST_FAIL;
     }
 
@@ -110,38 +111,32 @@ int main(void) {
     }
 
     // Define test metadata
-    AsthraTestMetadata metadata1 = {
-        .name = "test_basic_assertions",
-        .file = __FILE__,
-        .line = __LINE__,
-        .function = "test_basic_assertions",
-        .severity = ASTHRA_TEST_SEVERITY_HIGH,
-        .timeout_ns = 30000000000ULL,
-        .skip = false,
-        .skip_reason = NULL
-    };
+    AsthraTestMetadata metadata1 = {.name = "test_basic_assertions",
+                                    .file = __FILE__,
+                                    .line = __LINE__,
+                                    .function = "test_basic_assertions",
+                                    .severity = ASTHRA_TEST_SEVERITY_HIGH,
+                                    .timeout_ns = 30000000000ULL,
+                                    .skip = false,
+                                    .skip_reason = NULL};
 
-    AsthraTestMetadata metadata2 = {
-        .name = "test_equality_assertions",
-        .file = __FILE__,
-        .line = __LINE__,
-        .function = "test_equality_assertions",
-        .severity = ASTHRA_TEST_SEVERITY_HIGH,
-        .timeout_ns = 30000000000ULL,
-        .skip = false,
-        .skip_reason = NULL
-    };
+    AsthraTestMetadata metadata2 = {.name = "test_equality_assertions",
+                                    .file = __FILE__,
+                                    .line = __LINE__,
+                                    .function = "test_equality_assertions",
+                                    .severity = ASTHRA_TEST_SEVERITY_HIGH,
+                                    .timeout_ns = 30000000000ULL,
+                                    .skip = false,
+                                    .skip_reason = NULL};
 
-    AsthraTestMetadata metadata3 = {
-        .name = "test_range_assertions",
-        .file = __FILE__,
-        .line = __LINE__,
-        .function = "test_range_assertions",
-        .severity = ASTHRA_TEST_SEVERITY_HIGH,
-        .timeout_ns = 30000000000ULL,
-        .skip = false,
-        .skip_reason = NULL
-    };
+    AsthraTestMetadata metadata3 = {.name = "test_range_assertions",
+                                    .file = __FILE__,
+                                    .line = __LINE__,
+                                    .function = "test_range_assertions",
+                                    .severity = ASTHRA_TEST_SEVERITY_HIGH,
+                                    .timeout_ns = 30000000000ULL,
+                                    .skip = false,
+                                    .skip_reason = NULL};
 
     // Run tests
     AsthraTestContext *context1 = asthra_test_context_create(&metadata1, stats);
@@ -160,12 +155,9 @@ int main(void) {
     AsthraTestResult result3 = test_range_assertions(context3);
 
     // Print results
-    printf("Basic assertions: %s\n",
-           result1 == ASTHRA_TEST_PASS ? "PASS" : "FAIL");
-    printf("Equality assertions: %s\n",
-           result2 == ASTHRA_TEST_PASS ? "PASS" : "FAIL");
-    printf("Range assertions: %s\n",
-           result3 == ASTHRA_TEST_PASS ? "PASS" : "FAIL");
+    printf("Basic assertions: %s\n", result1 == ASTHRA_TEST_PASS ? "PASS" : "FAIL");
+    printf("Equality assertions: %s\n", result2 == ASTHRA_TEST_PASS ? "PASS" : "FAIL");
+    printf("Range assertions: %s\n", result3 == ASTHRA_TEST_PASS ? "PASS" : "FAIL");
 
     // Print final statistics
     printf("\n");

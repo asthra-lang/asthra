@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Statistics and Profiling Module Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Statistics collection and profiling for semantic analysis
  */
 
@@ -40,4 +40,4 @@ void semantic_print_statistics(const SemanticAnalyzer *analyzer);
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_STATISTICS_H 
+#endif // ASTHRA_SEMANTIC_STATISTICS_H

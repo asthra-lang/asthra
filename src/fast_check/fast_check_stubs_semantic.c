@@ -2,10 +2,10 @@
 // when the actual fast_check implementation is not available.
 #ifdef FAST_CHECK_USE_STUBS
 
-#include "fast_check_engine.h"
 #include "../parser/ast_types.h"
-#include <stdlib.h>
+#include "fast_check_engine.h"
 #include <stdbool.h>
+#include <stdlib.h>
 
 // Include the actual header for proper type definitions
 #include "../analysis/semantic_analyzer_core.h"

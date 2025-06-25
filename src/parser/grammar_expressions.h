@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler - Expression Grammar Productions
  * Expression parsing with precedence levels and operators
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -42,8 +42,11 @@ ASTNode *parse_parenthesized_expr(Parser *parser);
 ASTNode *parse_sizeof(Parser *parser);
 ASTNode *parse_await_expr(Parser *parser);
 ASTNode *parse_recv_expr(Parser *parser);
-ASTNode *parse_struct_literal_with_name(Parser *parser, char *struct_name, SourceLocation start_loc);
-ASTNode *parse_struct_literal_with_name_and_type_args(Parser *parser, char *struct_name, ASTNodeList *type_args, SourceLocation start_loc);
+ASTNode *parse_struct_literal_with_name(Parser *parser, char *struct_name,
+                                        SourceLocation start_loc);
+ASTNode *parse_struct_literal_with_name_and_type_args(Parser *parser, char *struct_name,
+                                                      ASTNodeList *type_args,
+                                                      SourceLocation start_loc);
 
 // Helper functions
 bool is_expression_start(Parser *parser);
@@ -52,4 +55,4 @@ bool is_expression_start(Parser *parser);
 }
 #endif
 
-#endif // ASTHRA_GRAMMAR_EXPRESSIONS_H 
+#endif // ASTHRA_GRAMMAR_EXPRESSIONS_H

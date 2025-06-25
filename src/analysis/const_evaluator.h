@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Const Expression Evaluator - Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Phase 2: Semantic Analysis Implementation
  * Interface for compile-time evaluation of constant expressions
  */
@@ -12,11 +12,11 @@
 #ifndef ASTHRA_CONST_EVALUATOR_H
 #define ASTHRA_CONST_EVALUATOR_H
 
-#include "semantic_analyzer_core.h"
 #include "../parser/ast.h"
 #include "../parser/ast_types.h"
-#include <stdint.h>
+#include "semantic_analyzer_core.h"
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -107,7 +107,8 @@ ConstValue *evaluate_literal_as_const(SemanticAnalyzer *analyzer, ASTNode *liter
  * @param const_expr The const expression to check for cycles
  * @return true if no cycles detected, false if cycle found
  */
-bool check_const_dependency_cycle(SemanticAnalyzer *analyzer, const char *const_name, ASTNode *const_expr);
+bool check_const_dependency_cycle(SemanticAnalyzer *analyzer, const char *const_name,
+                                  ASTNode *const_expr);
 
 #ifdef __cplusplus
 }

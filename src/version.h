@@ -1,6 +1,6 @@
 /**
  * Asthra Programming Language Version Information
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -53,10 +53,9 @@
 #endif
 
 // Version comparison macros
-#define ASTHRA_VERSION_ENCODE(major, minor, patch) \
-    (((major) << 16) | ((minor) << 8) | (patch))
+#define ASTHRA_VERSION_ENCODE(major, minor, patch) (((major) << 16) | ((minor) << 8) | (patch))
 
-#define ASTHRA_VERSION_CURRENT \
+#define ASTHRA_VERSION_CURRENT                                                                     \
     ASTHRA_VERSION_ENCODE(ASTHRA_VERSION_MAJOR, ASTHRA_VERSION_MINOR, ASTHRA_VERSION_PATCH)
 
-#endif // ASTHRA_VERSION_H 
+#endif // ASTHRA_VERSION_H

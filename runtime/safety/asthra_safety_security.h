@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Runtime Safety System
  * Security and Performance Monitoring Module - Security enforcement and monitoring
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -10,10 +10,10 @@
 #define ASTHRA_SAFETY_SECURITY_H
 
 #include "asthra_safety_minimal_includes.h"
+#include <pthread.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
-#include <pthread.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -106,9 +106,9 @@ void asthra_safety_remove_stack_canary(void);
 /**
  * Verify constant-time operation
  */
-AsthraConstantTimeVerification asthra_safety_verify_constant_time_operation(const char *operation_name, 
-                                                                            void (*operation)(void), 
-                                                                            uint64_t expected_duration_ns);
+AsthraConstantTimeVerification
+asthra_safety_verify_constant_time_operation(const char *operation_name, void (*operation)(void),
+                                             uint64_t expected_duration_ns);
 
 /**
  * Validate secure memory zeroing
@@ -163,13 +163,15 @@ uint64_t asthra_safety_generate_canary_value(void);
 /**
  * Validate memory access patterns for side-channel resistance
  */
-bool asthra_safety_validate_side_channel_resistance(void *memory_access_pattern, size_t pattern_size);
+bool asthra_safety_validate_side_channel_resistance(void *memory_access_pattern,
+                                                    size_t pattern_size);
 
 /**
  * Check for timing attack vulnerabilities
  */
-bool asthra_safety_check_timing_attack_resistance(const char *operation_name, 
-                                                  void (*operation)(void *), void *data, size_t iterations);
+bool asthra_safety_check_timing_attack_resistance(const char *operation_name,
+                                                  void (*operation)(void *), void *data,
+                                                  size_t iterations);
 
 /**
  * Validate control flow integrity
@@ -180,4 +182,4 @@ bool asthra_safety_validate_control_flow_integrity(void *expected_return_address
 }
 #endif
 
-#endif // ASTHRA_SAFETY_SECURITY_H 
+#endif // ASTHRA_SAFETY_SECURITY_H

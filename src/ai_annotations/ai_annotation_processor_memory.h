@@ -20,4 +20,4 @@ size_t ai_annotation_count_by_type(AICompilationReport *report, AIAnnotationType
 }
 #endif
 
-#endif // ASTHRA_AI_ANNOTATION_PROCESSOR_MEMORY_H 
+#endif // ASTHRA_AI_ANNOTATION_PROCESSOR_MEMORY_H

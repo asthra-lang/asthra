@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Compilation pipeline - file compilation and multi-file handling
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -10,29 +10,31 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../platform.h"
-#include "../compiler.h"
 #include "../codegen/backend_interface.h"
 #include "../codegen/llvm_tools.h"
+#include "../compiler.h"
+#include "../platform.h"
 
 // Platform-specific includes for system() return value handling
 #if ASTHRA_PLATFORM_UNIX
 #include <sys/wait.h>
 #endif
-#include "../parser/lexer.h"
-#include "../parser/parser.h"
 #include "../analysis/semantic_analyzer.h"
 #include "../parser/ast.h"
+#include "../parser/lexer.h"
+#include "../parser/parser.h"
 
 // Forward declarations
 extern int generate_c_code(FILE *output, ASTNode *node);
-static int asthra_compile_file_to_c(AsthraCompilerContext *ctx, const char *input_file, const char *output_c_file);
+static int asthra_compile_file_to_c(AsthraCompilerContext *ctx, const char *input_file,
+                                    const char *output_c_file);
 
 // =============================================================================
 // COMPILATION FUNCTIONS
 // =============================================================================
 
-int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, const char *output_file) {
+int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file,
+                        const char *output_file) {
     if (!ctx || !input_file || !output_file) {
         return -1;
     }
@@ -47,12 +49,12 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
         printf("Error: Cannot open input file '%s'\n", input_file);
         return -1;
     }
-    
+
     // Get file size
     fseek(source_file, 0, SEEK_END);
     long file_size = ftell(source_file);
     fseek(source_file, 0, SEEK_SET);
-    
+
     // Read entire file
     char *source_code = malloc((size_t)(file_size + 1));
     if (!source_code) {
@@ -60,7 +62,7 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
         printf("Error: Memory allocation failed\n");
         return -1;
     }
-    
+
     size_t bytes_read = fread(source_code, 1, (size_t)file_size, source_file);
     source_code[bytes_read] = '\0';
     fclose(source_file);
@@ -99,7 +101,7 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
 
     // Phase 4: Semantic analysis
     printf("  Phase 4: Semantic analysis\n");
-    
+
     // Create semantic analyzer
     SemanticAnalyzer *analyzer = semantic_analyzer_create();
     if (!analyzer) {
@@ -110,7 +112,7 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
         free(source_code);
         return -1;
     }
-    
+
     // Perform semantic analysis on the program
     bool semantic_success = semantic_analyze_program(analyzer, program);
     if (!semantic_success) {
@@ -120,7 +122,8 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
             printf("  Semantic errors:\n");
             SemanticError *error = analyzer->errors;
             while (error) {
-                printf("    Line %d, Col %d: %s\n", error->location.line, error->location.column, error->message);
+                printf("    Line %d, Col %d: %s\n", error->location.line, error->location.column,
+                       error->message);
                 error = error->next;
             }
         }
@@ -131,16 +134,16 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
         free(source_code);
         return -1;
     }
-    
+
     printf("  ✓ Semantic analysis completed successfully\n");
 
     // Phase 5: Code generation
     printf("  Phase 5: Code generation\n");
-    
+
     // Validate backend type and provide helpful error messages
     const char *backend_name = asthra_get_backend_type_string(ctx->options.backend_type);
     printf("    Using %s backend\n", backend_name);
-    
+
     // Create backend based on compiler options
     AsthraBackend *backend = asthra_backend_create(&ctx->options);
     if (!backend) {
@@ -153,23 +156,23 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
         free(source_code);
         return -1;
     }
-    
+
     // Initialize backend with detailed error reporting
     int init_result = asthra_backend_initialize(backend, &ctx->options);
     if (init_result != 0) {
         const char *error_msg = asthra_backend_get_last_error(backend);
         printf("Error: Failed to initialize %s backend: %s\n", backend_name, error_msg);
-        
+
         // Provide specific suggestions based on backend type
         switch (ctx->options.backend_type) {
-            case ASTHRA_BACKEND_LLVM_IR:
-                printf("Suggestion: LLVM backend requires LLVM to be installed and linked.\n");
-                break;
-            default:
-                printf("Suggestion: Check system resources and permissions.\n");
-                break;
+        case ASTHRA_BACKEND_LLVM_IR:
+            printf("Suggestion: LLVM backend requires LLVM to be installed and linked.\n");
+            break;
+        default:
+            printf("Suggestion: Check system resources and permissions.\n");
+            break;
         }
-        
+
         asthra_backend_destroy(backend);
         semantic_analyzer_destroy(analyzer);
         ast_free_node(program);
@@ -178,14 +181,13 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
         free(source_code);
         return -1;
     }
-    
+
     // Determine output filename based on backend
     char *backend_output_file = NULL;
     if (false) {
         // For C backend, generate temporary file for compilation
         backend_output_file = strdup("temp_asthra_output.c");
-    } else if (ctx->options.backend_type == ASTHRA_BACKEND_LLVM_IR && 
-               ctx->options.coverage && 
+    } else if (ctx->options.backend_type == ASTHRA_BACKEND_LLVM_IR && ctx->options.coverage &&
                ctx->options.output_format == ASTHRA_FORMAT_DEFAULT) {
         // For LLVM backend with coverage, always generate a temporary .ll file first
         char temp_name[256];
@@ -193,31 +195,32 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
         backend_output_file = strdup(temp_name);
     } else {
         // For other backends, use the final output file directly
-        backend_output_file = asthra_backend_get_output_filename(ctx->options.backend_type, 
-                                                                 input_file, 
-                                                                 output_file);
+        backend_output_file =
+            asthra_backend_get_output_filename(ctx->options.backend_type, input_file, output_file);
     }
-    
-    printf("Debug: backend_output_file = '%s', output_file = '%s'\n", backend_output_file, output_file);
-    
+
+    printf("Debug: backend_output_file = '%s', output_file = '%s'\n", backend_output_file,
+           output_file);
+
     // Generate code using backend with progress reporting
     printf("    Generating code with %s backend...\n", backend_name);
     int gen_result = asthra_backend_generate(backend, ctx, program, backend_output_file);
     if (gen_result != 0) {
         const char *error_msg = asthra_backend_get_last_error(backend);
         printf("Error: Code generation failed: %s\n", error_msg);
-        
+
         // Provide backend-specific troubleshooting
         switch (ctx->options.backend_type) {
-            case ASTHRA_BACKEND_LLVM_IR:
-                printf("Troubleshooting: LLVM IR generation failed. Check that LLVM is properly installed.\n");
-                break;
-            default:
-                printf("Troubleshooting: Code generation failed. This may indicate an AST issue.\n");
-                printf("  Check: Input file syntax and semantic correctness\n");
-                break;
+        case ASTHRA_BACKEND_LLVM_IR:
+            printf("Troubleshooting: LLVM IR generation failed. Check that LLVM is properly "
+                   "installed.\n");
+            break;
+        default:
+            printf("Troubleshooting: Code generation failed. This may indicate an AST issue.\n");
+            printf("  Check: Input file syntax and semantic correctness\n");
+            break;
         }
-        
+
         free(backend_output_file);
         asthra_backend_destroy(backend);
         semantic_analyzer_destroy(analyzer);
@@ -227,22 +230,21 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
         free(source_code);
         return -1;
     }
-    
+
     // Report backend statistics and success
     size_t lines, functions;
     double time;
     asthra_backend_get_stats(backend, &lines, &functions, &time);
     printf("  ✓ Code generation completed successfully\n");
     if (ctx->options.verbose) {
-        printf("    Statistics: %zu lines, %zu functions, %.3f seconds\n", 
-               lines, functions, time);
-        printf("    Backend: %s version %s\n", 
-               asthra_backend_get_name(backend), asthra_backend_get_version(backend));
+        printf("    Statistics: %zu lines, %zu functions, %.3f seconds\n", lines, functions, time);
+        printf("    Backend: %s version %s\n", asthra_backend_get_name(backend),
+               asthra_backend_get_version(backend));
     }
 
     // Phase 6: Post-processing with LLVM tools (if needed)
     int result = 0;
-    
+
     // Check if we need to use LLVM tools for the output format
     AsthraOutputFormat final_format = ctx->options.output_format;
     if (final_format == ASTHRA_FORMAT_DEFAULT) {
@@ -264,12 +266,13 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
             final_format = ASTHRA_FORMAT_EXECUTABLE;
         }
     }
-    
+
     // If the backend already produced the desired format, we're done
     bool needs_llvm_tools = false;
     if (ctx->options.backend_type == ASTHRA_BACKEND_LLVM_IR) {
         // LLVM backend produces .ll files by default
-        if (final_format == ASTHRA_FORMAT_LLVM_IR && strcmp(backend_output_file, output_file) == 0) {
+        if (final_format == ASTHRA_FORMAT_LLVM_IR &&
+            strcmp(backend_output_file, output_file) == 0) {
             // Already in the right format at the right location
             needs_llvm_tools = false;
         } else {
@@ -277,10 +280,10 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
             needs_llvm_tools = true;
         }
     }
-    
+
     if (needs_llvm_tools) {
         printf("  Phase 6: LLVM tools pipeline\n");
-        
+
         // Check if LLVM tools are available
         if (!asthra_llvm_tools_available()) {
             printf("Error: LLVM tools (llc, opt, clang) not found in PATH\n");
@@ -289,12 +292,8 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
         } else {
             // Run LLVM compilation pipeline
             AsthraLLVMToolResult tool_result = asthra_llvm_compile_pipeline(
-                backend_output_file, 
-                output_file,
-                final_format,
-                &ctx->options
-            );
-            
+                backend_output_file, output_file, final_format, &ctx->options);
+
             if (!tool_result.success) {
                 printf("Error: LLVM tools pipeline failed\n");
                 if (tool_result.stderr_output) {
@@ -304,14 +303,14 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
             } else {
                 printf("  ✓ Output generated successfully: %s\n", output_file);
                 if (ctx->options.verbose && tool_result.execution_time_ms > 0) {
-                    printf("    LLVM tools execution time: %.3f seconds\n", 
+                    printf("    LLVM tools execution time: %.3f seconds\n",
                            tool_result.execution_time_ms / 1000.0);
                 }
             }
-            
+
             asthra_llvm_tool_result_free(&tool_result);
         }
-        
+
         // Clean up temporary IR file if different from output
         if (strcmp(backend_output_file, output_file) != 0) {
             unlink(backend_output_file);
@@ -319,7 +318,7 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
     } else {
         printf("  Phase 6: Output ready (no post-processing needed)\n");
     }
-    
+
     // Clean up
     free(backend_output_file);
     asthra_backend_destroy(backend);
@@ -328,7 +327,7 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
     parser_destroy(parser);
     lexer_destroy(lexer);
     free(source_code);
-    
+
     if (result != 0) {
         return -1;
     }
@@ -337,7 +336,8 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
     return 0;
 }
 
-int asthra_compile_files(AsthraCompilerContext *ctx, const char **input_files, size_t file_count, const char *output_file) {
+int asthra_compile_files(AsthraCompilerContext *ctx, const char **input_files, size_t file_count,
+                         const char *output_file) {
     if (!ctx || !input_files || file_count == 0 || !output_file) {
         return -1;
     }
@@ -346,16 +346,16 @@ int asthra_compile_files(AsthraCompilerContext *ctx, const char **input_files, s
 
     // For now, implement multi-file compilation by compiling each file to C
     // and then linking them together
-    
+
     // Phase 1: Compile each file to C
     printf("  Phase 1: Compiling source files to C\n");
-    
-    char **temp_c_files = malloc(file_count * sizeof(char*));
+
+    char **temp_c_files = malloc(file_count * sizeof(char *));
     if (!temp_c_files) {
         printf("Error: Memory allocation failed\n");
         return -1;
     }
-    
+
     for (size_t i = 0; i < file_count; i++) {
         temp_c_files[i] = malloc(256);
         if (!temp_c_files[i]) {
@@ -366,15 +366,15 @@ int asthra_compile_files(AsthraCompilerContext *ctx, const char **input_files, s
             printf("Error: Memory allocation failed\n");
             return -1;
         }
-        
+
         snprintf(temp_c_files[i], 256, "temp_asthra_%zu.c", i);
-        
+
         printf("    Compiling %s to %s\n", input_files[i], temp_c_files[i]);
-        
+
         // Use the single file compilation logic
         if (asthra_compile_file_to_c(ctx, input_files[i], temp_c_files[i]) != 0) {
             printf("Error: Failed to compile %s\n", input_files[i]);
-            
+
             // Clean up
             for (size_t j = 0; j <= i; j++) {
                 remove(temp_c_files[j]);
@@ -387,33 +387,34 @@ int asthra_compile_files(AsthraCompilerContext *ctx, const char **input_files, s
             return -1;
         }
     }
-    
+
     // Phase 2: Link all C files together
     printf("  Phase 2: Linking object files\n");
-    
+
     // Build the compile command
     char compile_cmd[4096];
     int offset = snprintf(compile_cmd, sizeof(compile_cmd), "cc -o %s", output_file);
-    
+
     for (size_t i = 0; i < file_count; i++) {
-        offset += snprintf(compile_cmd + offset, sizeof(compile_cmd) - offset, " %s", temp_c_files[i]);
+        offset +=
+            snprintf(compile_cmd + offset, sizeof(compile_cmd) - offset, " %s", temp_c_files[i]);
     }
-    
+
     // Execute the linking command
     int result = system(compile_cmd);
-    
+
     // Clean up temporary files
     for (size_t i = 0; i < file_count; i++) {
         remove(temp_c_files[i]);
         free(temp_c_files[i]);
     }
     free(temp_c_files);
-    
+
     if (result == -1) {
         printf("Error: Failed to execute linking command\n");
         return -1;
     }
-    
+
 #if ASTHRA_PLATFORM_UNIX
     if (!WIFEXITED(result) || WEXITSTATUS(result) != 0) {
         printf("Error: Linking failed\n");
@@ -426,25 +427,26 @@ int asthra_compile_files(AsthraCompilerContext *ctx, const char **input_files, s
         return -1;
     }
 #endif
-    
+
     printf("Multi-file compilation completed successfully\n");
     return 0;
 }
 
 // Helper function to compile a single file to C
-static int asthra_compile_file_to_c(AsthraCompilerContext *ctx, const char *input_file, const char *output_c_file) {
+static int asthra_compile_file_to_c(AsthraCompilerContext *ctx, const char *input_file,
+                                    const char *output_c_file) {
     // Read source file
     FILE *source_file = fopen(input_file, "r");
     if (!source_file) {
         printf("Error: Cannot open input file '%s'\n", input_file);
         return -1;
     }
-    
+
     // Get file size
     fseek(source_file, 0, SEEK_END);
     long file_size = ftell(source_file);
     fseek(source_file, 0, SEEK_SET);
-    
+
     // Read entire file
     char *source_code = malloc((size_t)(file_size + 1));
     if (!source_code) {
@@ -452,7 +454,7 @@ static int asthra_compile_file_to_c(AsthraCompilerContext *ctx, const char *inpu
         printf("Error: Memory allocation failed\n");
         return -1;
     }
-    
+
     size_t bytes_read = fread(source_code, 1, (size_t)file_size, source_file);
     source_code[bytes_read] = '\0';
     fclose(source_file);
@@ -497,7 +499,7 @@ static int asthra_compile_file_to_c(AsthraCompilerContext *ctx, const char *inpu
         free(source_code);
         return -1;
     }
-    
+
     bool semantic_success = semantic_analyze_program(analyzer, program);
     if (!semantic_success) {
         printf("Error: Semantic analysis failed\n");
@@ -505,7 +507,8 @@ static int asthra_compile_file_to_c(AsthraCompilerContext *ctx, const char *inpu
             printf("  Semantic errors:\n");
             SemanticError *error = analyzer->errors;
             while (error) {
-                printf("    Line %d, Col %d: %s\n", error->location.line, error->location.column, error->message);
+                printf("    Line %d, Col %d: %s\n", error->location.line, error->location.column,
+                       error->message);
                 error = error->next;
             }
         }
@@ -528,7 +531,7 @@ static int asthra_compile_file_to_c(AsthraCompilerContext *ctx, const char *inpu
         free(source_code);
         return -1;
     }
-    
+
     // Write C header (only for the first file to avoid duplicates)
     static bool headers_written = false;
     if (!headers_written) {
@@ -557,25 +560,32 @@ static int asthra_compile_file_to_c(AsthraCompilerContext *ctx, const char *inpu
         fprintf(output_file, "} AsthraSliceHeader;\n");
         fprintf(output_file, "\n");
         fprintf(output_file, "// Slice operation functions\n");
-        fprintf(output_file, "static inline size_t asthra_slice_get_len(AsthraSliceHeader slice) { return slice.len; }\n");
-        fprintf(output_file, "static inline void* asthra_slice_get_element(AsthraSliceHeader slice, size_t index) {\n");
+        fprintf(output_file, "static inline size_t asthra_slice_get_len(AsthraSliceHeader slice) { "
+                             "return slice.len; }\n");
+        fprintf(output_file, "static inline void* asthra_slice_get_element(AsthraSliceHeader "
+                             "slice, size_t index) {\n");
         fprintf(output_file, "    if (index >= slice.len) return NULL;\n");
         fprintf(output_file, "    return (char*)slice.ptr + index * slice.element_size;\n");
         fprintf(output_file, "}\n");
-        fprintf(output_file, "static inline AsthraSliceHeader asthra_slice_subslice(AsthraSliceHeader slice, size_t start, size_t end) {\n");
+        fprintf(output_file,
+                "static inline AsthraSliceHeader asthra_slice_subslice(AsthraSliceHeader slice, "
+                "size_t start, size_t end) {\n");
         fprintf(output_file, "    if (start > slice.len) start = slice.len;\n");
         fprintf(output_file, "    if (end > slice.len) end = slice.len;\n");
         fprintf(output_file, "    if (start > end) end = start;\n");
-        fprintf(output_file, "    return (AsthraSliceHeader){.ptr = (char*)slice.ptr + start * slice.element_size,\n");
-        fprintf(output_file, "                               .len = end - start, .cap = end - start,\n");
-        fprintf(output_file, "                               .element_size = slice.element_size,\n");
+        fprintf(output_file, "    return (AsthraSliceHeader){.ptr = (char*)slice.ptr + start * "
+                             "slice.element_size,\n");
+        fprintf(output_file,
+                "                               .len = end - start, .cap = end - start,\n");
+        fprintf(output_file,
+                "                               .element_size = slice.element_size,\n");
         fprintf(output_file, "                               .ownership = slice.ownership,\n");
         fprintf(output_file, "                               .is_mutable = slice.is_mutable,\n");
         fprintf(output_file, "                               .type_id = slice.type_id};\n");
         fprintf(output_file, "}\n\n");
         headers_written = true;
     }
-    
+
     // Generate code from AST
     if (generate_c_code(output_file, program) != 0) {
         printf("Error: Code generation failed\n");
@@ -588,16 +598,16 @@ static int asthra_compile_file_to_c(AsthraCompilerContext *ctx, const char *inpu
         free(source_code);
         return -1;
     }
-    
+
     fclose(output_file);
-    
+
     // Clean up
     semantic_analyzer_destroy(analyzer);
     ast_free_node(program);
     parser_destroy(parser);
     lexer_destroy(lexer);
     free(source_code);
-    
+
     return 0;
 }
 
@@ -607,4 +617,4 @@ static int asthra_compile_file_to_c(AsthraCompilerContext *ctx, const char *inpu
 
 // TODO: These compilation phase stubs will be implemented when the modular
 // pipeline orchestrator is fully integrated. For now, the main compilation
-// logic is handled directly in asthra_compile_file(). 
+// logic is handled directly in asthra_compile_file().

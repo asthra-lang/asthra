@@ -26,7 +26,8 @@ bool asthra_test_assert_size(AsthraTestContext *context, size_t value, const cha
     return asthra_test_assert_bool(context, value != 0, message);
 }
 
-bool asthra_test_assert_string(AsthraTestContext *context, const char *value, const char *message, ...) {
+bool asthra_test_assert_string(AsthraTestContext *context, const char *value, const char *message,
+                               ...) {
     return asthra_test_assert_bool(context, value != NULL && strlen(value) > 0, message);
 }
 
@@ -38,9 +39,11 @@ bool asthra_test_assert_generic(AsthraTestContext *context, void *value, const c
     return asthra_test_assert_bool(context, value != NULL, message);
 }
 
-bool asthra_test_assert_not_null(AsthraTestContext *context, void *value, const char *message, ...) {
-    if (!context) return false;
-    
+bool asthra_test_assert_not_null(AsthraTestContext *context, void *value, const char *message,
+                                 ...) {
+    if (!context)
+        return false;
+
     context->assertions_in_test++;
     if (context->global_stats) {
         asthra_test_increment_stat(&context->global_stats->assertions_checked, 1);
@@ -56,10 +59,10 @@ bool asthra_test_assert_not_null(AsthraTestContext *context, void *value, const 
             va_start(args, message);
             char *error_msg = malloc(1024);
             if (error_msg) {
-                #pragma GCC diagnostic push
-                #pragma GCC diagnostic ignored "-Wformat-nonliteral"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                 vsnprintf(error_msg, 1024, message, args);
-                #pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
                 context->error_message = error_msg;
                 context->error_message_allocated = true;
             }
@@ -71,8 +74,9 @@ bool asthra_test_assert_not_null(AsthraTestContext *context, void *value, const 
 }
 
 bool asthra_test_assert_null(AsthraTestContext *context, void *value, const char *message, ...) {
-    if (!context) return false;
-    
+    if (!context)
+        return false;
+
     context->assertions_in_test++;
     if (context->global_stats) {
         asthra_test_increment_stat(&context->global_stats->assertions_checked, 1);
@@ -88,10 +92,10 @@ bool asthra_test_assert_null(AsthraTestContext *context, void *value, const char
             va_start(args, message);
             char *error_msg = malloc(1024);
             if (error_msg) {
-                #pragma GCC diagnostic push
-                #pragma GCC diagnostic ignored "-Wformat-nonliteral"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
                 vsnprintf(error_msg, 1024, message, args);
-                #pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
                 context->error_message = error_msg;
                 context->error_message_allocated = true;
             }
@@ -100,4 +104,4 @@ bool asthra_test_assert_null(AsthraTestContext *context, void *value, const char
         return false;
     }
     return true;
-} 
+}

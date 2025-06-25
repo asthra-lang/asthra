@@ -62,13 +62,15 @@ AsthraTestResult test_pattern_matching_zero_cost(AsthraV12TestContext *ctx) {
     double overhead_ratio = (double)pattern_matching_time / (double)conditional_time;
 
     if (!ASTHRA_TEST_ASSERT(&ctx->base, overhead_ratio <= 1.1, // Allow 10% overhead
-                           "Pattern matching overhead too high: %.2f", overhead_ratio)) {
+                            "Pattern matching overhead too high: %.2f", overhead_ratio)) {
         return ASTHRA_TEST_FAIL;
     }
 
     // Record performance metrics
-    ctx->benchmark.min_duration_ns = conditional_time < pattern_matching_time ? conditional_time : pattern_matching_time;
-    ctx->benchmark.max_duration_ns = conditional_time > pattern_matching_time ? conditional_time : pattern_matching_time;
+    ctx->benchmark.min_duration_ns =
+        conditional_time < pattern_matching_time ? conditional_time : pattern_matching_time;
+    ctx->benchmark.max_duration_ns =
+        conditional_time > pattern_matching_time ? conditional_time : pattern_matching_time;
     ctx->benchmark.avg_duration_ns = (conditional_time + pattern_matching_time) / 2;
     ctx->benchmark.iterations = iterations * 2;
 
@@ -132,19 +134,20 @@ AsthraTestResult test_pattern_matching_benchmark(AsthraV12TestContext *ctx) {
     // Calculate performance metrics
     ctx->benchmark.iterations = iterations * test_cases;
     ctx->benchmark.avg_duration_ns = total_duration;
-    ctx->benchmark.throughput_ops_per_sec = (double)(iterations * test_cases) / ((double)total_duration / 1e9);
+    ctx->benchmark.throughput_ops_per_sec =
+        (double)(iterations * test_cases) / ((double)total_duration / 1e9);
 
     // Verify we processed all cases
     if (!ASTHRA_TEST_ASSERT(&ctx->base, processed_count > 0,
-                           "Pattern matching should process all cases")) {
+                            "Pattern matching should process all cases")) {
         free(test_data);
         return ASTHRA_TEST_FAIL;
     }
 
     // Performance should be reasonable (> 1M ops/sec)
     if (!ASTHRA_TEST_ASSERT(&ctx->base, ctx->benchmark.throughput_ops_per_sec > 1000000.0,
-                           "Pattern matching throughput too low: %.0f ops/sec",
-                           ctx->benchmark.throughput_ops_per_sec)) {
+                            "Pattern matching throughput too low: %.0f ops/sec",
+                            ctx->benchmark.throughput_ops_per_sec)) {
         free(test_data);
         return ASTHRA_TEST_FAIL;
     }
@@ -170,17 +173,39 @@ AsthraTestResult test_pattern_matching_optimization(AsthraV12TestContext *ctx) {
                 int value = result.data.ok_value;
                 // Simulate jump table optimization
                 switch (value) {
-                    case 0: jump_table_result += 1; break;
-                    case 1: jump_table_result += 2; break;
-                    case 2: jump_table_result += 3; break;
-                    case 3: jump_table_result += 4; break;
-                    case 4: jump_table_result += 5; break;
-                    case 5: jump_table_result += 6; break;
-                    case 6: jump_table_result += 7; break;
-                    case 7: jump_table_result += 8; break;
-                    case 8: jump_table_result += 9; break;
-                    case 9: jump_table_result += 10; break;
-                    default: jump_table_result += 0; break;
+                case 0:
+                    jump_table_result += 1;
+                    break;
+                case 1:
+                    jump_table_result += 2;
+                    break;
+                case 2:
+                    jump_table_result += 3;
+                    break;
+                case 3:
+                    jump_table_result += 4;
+                    break;
+                case 4:
+                    jump_table_result += 5;
+                    break;
+                case 5:
+                    jump_table_result += 6;
+                    break;
+                case 6:
+                    jump_table_result += 7;
+                    break;
+                case 7:
+                    jump_table_result += 8;
+                    break;
+                case 8:
+                    jump_table_result += 9;
+                    break;
+                case 9:
+                    jump_table_result += 10;
+                    break;
+                default:
+                    jump_table_result += 0;
+                    break;
                 }
             }
         }
@@ -224,7 +249,7 @@ AsthraTestResult test_pattern_matching_optimization(AsthraV12TestContext *ctx) {
 
     // Jump table should be faster for dense patterns
     if (!ASTHRA_TEST_ASSERT(&ctx->base, jump_table_time <= binary_search_time,
-                           "Jump table optimization should be faster for dense patterns")) {
+                            "Jump table optimization should be faster for dense patterns")) {
         return ASTHRA_TEST_FAIL;
     }
 
@@ -233,4 +258,4 @@ AsthraTestResult test_pattern_matching_optimization(AsthraV12TestContext *ctx) {
     ctx->benchmark.max_duration_ns = binary_search_time;
 
     return ASTHRA_TEST_PASS;
-} 
+}

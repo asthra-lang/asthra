@@ -26,8 +26,8 @@ static _Atomic(size_t) g_deallocations_count = 0;
 // PERFORMANCE TESTING UTILITIES
 // =============================================================================
 
-PerformanceMetrics* start_performance_measurement(void) {
-    PerformanceMetrics* metrics = malloc(sizeof(PerformanceMetrics));
+PerformanceMetrics *start_performance_measurement(void) {
+    PerformanceMetrics *metrics = malloc(sizeof(PerformanceMetrics));
     if (!metrics) {
         return NULL;
     }
@@ -43,7 +43,7 @@ PerformanceMetrics* start_performance_measurement(void) {
     return metrics;
 }
 
-void end_performance_measurement(PerformanceMetrics* metrics) {
+void end_performance_measurement(PerformanceMetrics *metrics) {
     if (!metrics) {
         return;
     }
@@ -55,7 +55,7 @@ void end_performance_measurement(PerformanceMetrics* metrics) {
     }
 }
 
-void report_performance(const PerformanceMetrics* metrics, const char* test_name) {
+void report_performance(const PerformanceMetrics *metrics, const char *test_name) {
     if (!metrics || !test_name) {
         return;
     }

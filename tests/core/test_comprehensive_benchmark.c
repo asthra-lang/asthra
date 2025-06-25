@@ -8,23 +8,25 @@
  */
 
 #include "test_comprehensive_benchmark.h"
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
 // =============================================================================
 // BENCHMARK UTILITIES
 // =============================================================================
 
 void asthra_benchmark_start(AsthraV12TestContext *ctx) {
-    if (!ctx) return;
+    if (!ctx)
+        return;
 
     ctx->base.start_time_ns = asthra_test_get_time_ns();
     ctx->benchmark.iterations = 0;
 }
 
 void asthra_benchmark_end(AsthraV12TestContext *ctx) {
-    if (!ctx) return;
+    if (!ctx)
+        return;
 
     ctx->base.end_time_ns = asthra_test_get_time_ns();
     ctx->base.duration_ns = ctx->base.end_time_ns - ctx->base.start_time_ns;
@@ -46,14 +48,17 @@ void asthra_benchmark_end(AsthraV12TestContext *ctx) {
 }
 
 void asthra_benchmark_iteration(AsthraV12TestContext *ctx) {
-    if (!ctx) return;
+    if (!ctx)
+        return;
 
     ctx->benchmark.iterations++;
     ctx->iteration_count++;
 }
 
-void asthra_benchmark_calculate_stats(AsthraV12TestContext *ctx, uint64_t *durations, size_t count) {
-    if (!ctx || !durations || count == 0) return;
+void asthra_benchmark_calculate_stats(AsthraV12TestContext *ctx, uint64_t *durations,
+                                      size_t count) {
+    if (!ctx || !durations || count == 0)
+        return;
 
     // Calculate min, max, and average
     uint64_t min = durations[0];
@@ -61,8 +66,10 @@ void asthra_benchmark_calculate_stats(AsthraV12TestContext *ctx, uint64_t *durat
     uint64_t sum = 0;
 
     for (size_t i = 0; i < count; i++) {
-        if (durations[i] < min) min = durations[i];
-        if (durations[i] > max) max = durations[i];
+        if (durations[i] < min)
+            min = durations[i];
+        if (durations[i] > max)
+            max = durations[i];
         sum += durations[i];
     }
 
@@ -73,27 +80,28 @@ void asthra_benchmark_calculate_stats(AsthraV12TestContext *ctx, uint64_t *durat
     // Calculate median
     // Note: This assumes durations array is already sorted
     if (count % 2 == 0) {
-        ctx->benchmark.median_duration_ns = (durations[count/2 - 1] + durations[count/2]) / 2;
+        ctx->benchmark.median_duration_ns = (durations[count / 2 - 1] + durations[count / 2]) / 2;
     } else {
-        ctx->benchmark.median_duration_ns = durations[count/2];
+        ctx->benchmark.median_duration_ns = durations[count / 2];
     }
 
     // Calculate standard deviation
     double mean = (double)ctx->benchmark.avg_duration_ns;
     double variance = 0.0;
-    
+
     for (size_t i = 0; i < count; i++) {
         double diff = (double)durations[i] - mean;
         variance += diff * diff;
     }
     variance /= (double)count;
-    
+
     ctx->benchmark.std_deviation_ns = (uint64_t)sqrt(variance);
     ctx->benchmark.iterations = count;
 }
 
 void asthra_benchmark_calculate_throughput(AsthraV12TestContext *ctx, size_t operations_count) {
-    if (!ctx || ctx->benchmark.avg_duration_ns == 0) return;
+    if (!ctx || ctx->benchmark.avg_duration_ns == 0)
+        return;
 
     // Calculate operations per second
     double duration_seconds = (double)ctx->benchmark.avg_duration_ns / 1e9;
@@ -101,7 +109,8 @@ void asthra_benchmark_calculate_throughput(AsthraV12TestContext *ctx, size_t ope
 }
 
 void asthra_benchmark_print_results(const AsthraV12TestContext *ctx) {
-    if (!ctx) return;
+    if (!ctx)
+        return;
 
     printf("\n=== Benchmark Results ===\n");
     printf("Iterations: %zu\n", ctx->benchmark.iterations);
@@ -113,4 +122,4 @@ void asthra_benchmark_print_results(const AsthraV12TestContext *ctx) {
     printf("Throughput: %.0f ops/sec\n", ctx->benchmark.throughput_ops_per_sec);
     printf("Memory Peak: %zu bytes\n", ctx->benchmark.memory_peak_bytes);
     printf("Memory Avg: %zu bytes\n", ctx->benchmark.memory_avg_bytes);
-} 
+}

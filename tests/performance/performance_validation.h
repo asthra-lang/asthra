@@ -1,17 +1,17 @@
 /**
  * Asthra Programming Language - Performance Validation Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Header for comprehensive performance measurement and regression testing
  */
 
 #ifndef ASTHRA_PERFORMANCE_VALIDATION_H
 #define ASTHRA_PERFORMANCE_VALIDATION_H
 
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -70,12 +70,13 @@ bool performance_validation_check_targets(TestPerformanceComparison comparison);
 /**
  * Generate comprehensive performance report
  */
-void performance_validation_generate_report(TestPerformanceComparison comparison, const char* test_name);
+void performance_validation_generate_report(TestPerformanceComparison comparison,
+                                            const char *test_name);
 
 /**
  * Run complete performance validation (convenience function)
  */
-bool performance_validation_run_complete(const char* test_name);
+bool performance_validation_run_complete(const char *test_name);
 
 #ifdef __cplusplus
 }

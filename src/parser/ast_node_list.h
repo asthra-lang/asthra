@@ -1,19 +1,19 @@
 /**
  * Asthra Programming Language Compiler
  * AST Node List Operations
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * AST node list management functions with C17 flexible arrays
  */
 
 #ifndef ASTHRA_AST_NODE_LIST_H
 #define ASTHRA_AST_NODE_LIST_H
 
-#include <stddef.h>
-#include <stdbool.h>
 #include "ast_types.h"
+#include <stdbool.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,4 +57,4 @@ ASTNodeList *ast_node_list_clone_deep(const ASTNodeList *list);
 }
 #endif
 
-#endif // ASTHRA_AST_NODE_LIST_H 
+#endif // ASTHRA_AST_NODE_LIST_H

@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Main compiler file - entry point for compiler functionality
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -17,4 +17,4 @@
 // - code_generation.c: AST to C code generation
 
 // These modules are compiled separately by the build system and linked together.
-// This file serves as the main entry point and includes only the necessary headers. 
+// This file serves as the main entry point and includes only the necessary headers.

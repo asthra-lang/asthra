@@ -30,7 +30,8 @@ extern "C" {
  * @param ... Variable arguments for message formatting
  * @return true if values are equal
  */
-bool asthra_test_assert_bool_eq(AsthraTestContext *context, bool actual, bool expected, const char *message, ...);
+bool asthra_test_assert_bool_eq(AsthraTestContext *context, bool actual, bool expected,
+                                const char *message, ...);
 
 /**
  * Assert that two integer values are equal
@@ -41,7 +42,8 @@ bool asthra_test_assert_bool_eq(AsthraTestContext *context, bool actual, bool ex
  * @param ... Variable arguments for message formatting
  * @return true if values are equal
  */
-bool asthra_test_assert_int_eq(AsthraTestContext *context, int actual, int expected, const char *message, ...);
+bool asthra_test_assert_int_eq(AsthraTestContext *context, int actual, int expected,
+                               const char *message, ...);
 
 /**
  * Assert that two long values are equal
@@ -52,7 +54,8 @@ bool asthra_test_assert_int_eq(AsthraTestContext *context, int actual, int expec
  * @param ... Variable arguments for message formatting
  * @return true if values are equal
  */
-bool asthra_test_assert_long_eq(AsthraTestContext *context, long actual, long expected, const char *message, ...);
+bool asthra_test_assert_long_eq(AsthraTestContext *context, long actual, long expected,
+                                const char *message, ...);
 
 /**
  * Assert that two size_t values are equal
@@ -63,7 +66,8 @@ bool asthra_test_assert_long_eq(AsthraTestContext *context, long actual, long ex
  * @param ... Variable arguments for message formatting
  * @return true if values are equal
  */
-bool asthra_test_assert_size_eq(AsthraTestContext *context, size_t actual, size_t expected, const char *message, ...);
+bool asthra_test_assert_size_eq(AsthraTestContext *context, size_t actual, size_t expected,
+                                const char *message, ...);
 
 /**
  * Assert that two strings are equal
@@ -74,7 +78,8 @@ bool asthra_test_assert_size_eq(AsthraTestContext *context, size_t actual, size_
  * @param ... Variable arguments for message formatting
  * @return true if strings are equal
  */
-bool asthra_test_assert_string_eq(AsthraTestContext *context, const char *actual, const char *expected, const char *message, ...);
+bool asthra_test_assert_string_eq(AsthraTestContext *context, const char *actual,
+                                  const char *expected, const char *message, ...);
 
 /**
  * Assert that two pointers are equal
@@ -85,7 +90,8 @@ bool asthra_test_assert_string_eq(AsthraTestContext *context, const char *actual
  * @param ... Variable arguments for message formatting
  * @return true if pointers are equal
  */
-bool asthra_test_assert_pointer_eq(AsthraTestContext *context, void *actual, void *expected, const char *message, ...);
+bool asthra_test_assert_pointer_eq(AsthraTestContext *context, void *actual, void *expected,
+                                   const char *message, ...);
 
 /**
  * Assert that two generic pointers are equal
@@ -96,7 +102,8 @@ bool asthra_test_assert_pointer_eq(AsthraTestContext *context, void *actual, voi
  * @param ... Variable arguments for message formatting
  * @return true if pointers are equal
  */
-bool asthra_test_assert_generic_eq(AsthraTestContext *context, void *actual, void *expected, const char *message, ...);
+bool asthra_test_assert_generic_eq(AsthraTestContext *context, void *actual, void *expected,
+                                   const char *message, ...);
 
 /**
  * Assert that two strings are equal (alias for compatibility)
@@ -107,7 +114,8 @@ bool asthra_test_assert_generic_eq(AsthraTestContext *context, void *actual, voi
  * @param ... Variable arguments for message formatting
  * @return true if strings are equal
  */
-bool asthra_test_assert_str_eq(AsthraTestContext *context, const char *actual, const char *expected, const char *message, ...);
+bool asthra_test_assert_str_eq(AsthraTestContext *context, const char *actual, const char *expected,
+                               const char *message, ...);
 
 /**
  * Assert that two pointers are equal (alias for compatibility)
@@ -118,7 +126,8 @@ bool asthra_test_assert_str_eq(AsthraTestContext *context, const char *actual, c
  * @param ... Variable arguments for message formatting
  * @return true if pointers are equal
  */
-bool asthra_test_assert_ptr_eq(AsthraTestContext *context, void *actual, void *expected, const char *message, ...);
+bool asthra_test_assert_ptr_eq(AsthraTestContext *context, void *actual, void *expected,
+                               const char *message, ...);
 
 /**
  * Assert that two pointers are not equal
@@ -129,10 +138,11 @@ bool asthra_test_assert_ptr_eq(AsthraTestContext *context, void *actual, void *e
  * @param ... Variable arguments for message formatting
  * @return true if pointers are not equal
  */
-bool asthra_test_assert_ptr_ne(AsthraTestContext *context, void *actual, void *expected, const char *message, ...);
+bool asthra_test_assert_ptr_ne(AsthraTestContext *context, void *actual, void *expected,
+                               const char *message, ...);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ASTHRA_TEST_ASSERTIONS_EQUALITY_H 
+#endif // ASTHRA_TEST_ASSERTIONS_EQUALITY_H

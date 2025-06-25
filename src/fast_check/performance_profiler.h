@@ -1,7 +1,7 @@
 /*
  * Asthra Fast Check Performance Profiler
  * Week 16: Performance Optimization & Testing
- * 
+ *
  * Provides comprehensive performance monitoring, profiling, and optimization
  * tools for the fast check system to achieve target performance metrics.
  */
@@ -9,10 +9,10 @@
 #ifndef ASTHRA_FAST_CHECK_PERFORMANCE_PROFILER_H
 #define ASTHRA_FAST_CHECK_PERFORMANCE_PROFILER_H
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <time.h>
 #include <pthread.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <time.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -79,18 +79,18 @@ typedef struct {
     CachePerformanceStats cache_stats;
     FileProcessingStats file_stats;
     ParallelProcessingStats parallel_stats;
-    
+
     // Target performance metrics
     double target_single_file_ms;    // < 100ms target
-    double target_medium_project_ms; // < 500ms target  
+    double target_medium_project_ms; // < 500ms target
     double target_large_project_ms;  // < 2s target
-    
+
     // Performance flags
     bool meets_single_file_target;
     bool meets_medium_project_target;
     bool meets_large_project_target;
     bool overall_performance_acceptable;
-    
+
     pthread_mutex_t stats_mutex;
 
     // Historical data for regression detection (last N runs)
@@ -127,7 +127,7 @@ typedef struct {
 // =============================================================================
 
 // Profiler lifecycle
-PerformanceProfile* performance_profiler_create(void);
+PerformanceProfile *performance_profiler_create(void);
 void performance_profiler_destroy(PerformanceProfile *profile);
 void performance_profiler_reset(PerformanceProfile *profile);
 void performance_profiler_record_history(PerformanceProfile *profile); // New function
@@ -149,8 +149,8 @@ void performance_record_cache_eviction(PerformanceProfile *profile);
 
 // File processing metrics
 void performance_record_file_start(PerformanceProfile *profile, const char *filename);
-void performance_record_file_complete(PerformanceProfile *profile, const char *filename, 
-                                     uint32_t lines, uint32_t symbols, double duration_ms);
+void performance_record_file_complete(PerformanceProfile *profile, const char *filename,
+                                      uint32_t lines, uint32_t symbols, double duration_ms);
 
 // Parallel processing metrics
 void performance_record_thread_start(PerformanceProfile *profile);
@@ -164,11 +164,14 @@ void performance_record_task_completed(PerformanceProfile *profile);
 
 // Performance target validation
 bool performance_meets_single_file_target(const PerformanceProfile *profile, double actual_time_ms);
-bool performance_meets_medium_project_target(const PerformanceProfile *profile, double actual_time_ms);
-bool performance_meets_large_project_target(const PerformanceProfile *profile, double actual_time_ms);
+bool performance_meets_medium_project_target(const PerformanceProfile *profile,
+                                             double actual_time_ms);
+bool performance_meets_large_project_target(const PerformanceProfile *profile,
+                                            double actual_time_ms);
 
 // Bottleneck detection
-BottleneckAnalysis* performance_analyze_bottlenecks(const PerformanceProfile *profile, size_t *bottleneck_count);
+BottleneckAnalysis *performance_analyze_bottlenecks(const PerformanceProfile *profile,
+                                                    size_t *bottleneck_count);
 void performance_bottleneck_analysis_destroy(BottleneckAnalysis *analysis, size_t count);
 
 // Optimization recommendations
@@ -180,9 +183,11 @@ typedef struct {
     char implementation_steps[1024];
 } OptimizationRecommendation;
 
-OptimizationRecommendation* performance_get_optimization_recommendations(
-    const PerformanceProfile *profile, size_t *recommendation_count);
-void performance_optimization_recommendations_destroy(OptimizationRecommendation *recommendations, size_t count);
+OptimizationRecommendation *
+performance_get_optimization_recommendations(const PerformanceProfile *profile,
+                                             size_t *recommendation_count);
+void performance_optimization_recommendations_destroy(OptimizationRecommendation *recommendations,
+                                                      size_t count);
 
 // =============================================================================
 // Internal Utility Functions (used across split files)
@@ -193,10 +198,13 @@ double timespec_diff_ms(const struct timespec *start, const struct timespec *end
 size_t get_memory_usage_kb(void);
 double calculate_historical_average_double(const double history_array[], int count);
 size_t calculate_historical_average_size_t(const size_t history_array[], int count);
-bool performance_detect_regression(const PerformanceProfile *profile, BottleneckAnalysis *bottleneck);
+bool performance_detect_regression(const PerformanceProfile *profile,
+                                   BottleneckAnalysis *bottleneck);
 bool performance_meets_single_file_target(const PerformanceProfile *profile, double actual_time_ms);
-bool performance_meets_medium_project_target(const PerformanceProfile *profile, double actual_time_ms);
-bool performance_meets_large_project_target(const PerformanceProfile *profile, double actual_time_ms);
+bool performance_meets_medium_project_target(const PerformanceProfile *profile,
+                                             double actual_time_ms);
+bool performance_meets_large_project_target(const PerformanceProfile *profile,
+                                            double actual_time_ms);
 
 // =============================================================================
 // Benchmarking & Testing
@@ -224,14 +232,14 @@ typedef struct {
 } BenchmarkResult;
 
 // Benchmark execution
-BenchmarkResult* performance_run_benchmark(const BenchmarkConfig *config, const char **test_files);
+BenchmarkResult *performance_run_benchmark(const BenchmarkConfig *config, const char **test_files);
 void performance_benchmark_result_destroy(BenchmarkResult *result);
 
 // Standard benchmark suites
-BenchmarkResult* performance_run_single_file_benchmark(void);
-BenchmarkResult* performance_run_medium_project_benchmark(void);
-BenchmarkResult* performance_run_large_project_benchmark(void);
-BenchmarkResult* performance_run_comprehensive_benchmark_suite(size_t *result_count);
+BenchmarkResult *performance_run_single_file_benchmark(void);
+BenchmarkResult *performance_run_medium_project_benchmark(void);
+BenchmarkResult *performance_run_large_project_benchmark(void);
+BenchmarkResult *performance_run_comprehensive_benchmark_suite(size_t *result_count);
 
 // =============================================================================
 // Reporting & Visualization
@@ -257,7 +265,8 @@ typedef struct {
     char comparison_summary[512];
 } PerformanceComparison;
 
-PerformanceComparison* performance_compare_profiles(PerformanceProfile *baseline, PerformanceProfile *current);
+PerformanceComparison *performance_compare_profiles(PerformanceProfile *baseline,
+                                                    PerformanceProfile *current);
 void performance_comparison_destroy(PerformanceComparison *comparison);
 void performance_print_comparison(const PerformanceComparison *comparison);
 
@@ -268,10 +277,11 @@ void performance_print_comparison(const PerformanceComparison *comparison);
 // Real-time monitoring
 typedef void (*PerformanceAlertCallback)(const char *alert_message, double severity);
 
-void performance_enable_real_time_monitoring(PerformanceProfile *profile, PerformanceAlertCallback callback);
+void performance_enable_real_time_monitoring(PerformanceProfile *profile,
+                                             PerformanceAlertCallback callback);
 void performance_disable_real_time_monitoring(PerformanceProfile *profile);
-void performance_set_alert_thresholds(PerformanceProfile *profile, 
-                                     double memory_threshold_mb, double response_time_threshold_ms);
+void performance_set_alert_thresholds(PerformanceProfile *profile, double memory_threshold_mb,
+                                      double response_time_threshold_ms);
 
 // =============================================================================
 // Integration with Fast Check Engine
@@ -281,13 +291,14 @@ void performance_set_alert_thresholds(PerformanceProfile *profile,
 // FastCheckEngine forward declaration (defined in fast_check_engine.h)
 
 // Enhanced engine operations with profiling
-struct FastCheckEngine* performance_fast_check_engine_create_with_profiling(void);
-PerformanceProfile* performance_get_engine_profile(struct FastCheckEngine *engine);
-void performance_fast_check_file_with_profiling(struct FastCheckEngine *engine, const char *file_path, 
-                                               bool *success, double *duration_ms);
+struct FastCheckEngine *performance_fast_check_engine_create_with_profiling(void);
+PerformanceProfile *performance_get_engine_profile(struct FastCheckEngine *engine);
+void performance_fast_check_file_with_profiling(struct FastCheckEngine *engine,
+                                                const char *file_path, bool *success,
+                                                double *duration_ms);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ASTHRA_FAST_CHECK_PERFORMANCE_PROFILER_H 
+#endif // ASTHRA_FAST_CHECK_PERFORMANCE_PROFILER_H

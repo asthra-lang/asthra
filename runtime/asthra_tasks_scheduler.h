@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Task System Scheduler v1.2
  * Task Scheduling and Management Functions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -35,4 +35,4 @@ void asthra_scheduler_run(AsthraScheduler *scheduler);
  */
 void asthra_scheduler_stop(AsthraScheduler *scheduler);
 
-#endif // ASTHRA_TASKS_SCHEDULER_H 
+#endif // ASTHRA_TASKS_SCHEDULER_H

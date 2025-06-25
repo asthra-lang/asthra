@@ -1,18 +1,18 @@
 /**
  * Asthra Programming Language Compiler
  * AST Traditional Operations
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Traditional AST interface maintained for compatibility
  */
 
 #ifndef ASTHRA_AST_OPERATIONS_H
 #define ASTHRA_AST_OPERATIONS_H
 
-#include <stdbool.h>
 #include "ast_types.h"
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,4 +56,4 @@ void ast_node_unref(ASTNode *node);
 }
 #endif
 
-#endif // ASTHRA_AST_OPERATIONS_H 
+#endif // ASTHRA_AST_OPERATIONS_H

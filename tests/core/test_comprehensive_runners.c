@@ -8,10 +8,10 @@
  */
 
 #include "test_comprehensive_runners.h"
-#include "test_comprehensive_core.h"
 #include "test_comprehensive_benchmark.h"
-#include "test_comprehensive_security.h"
+#include "test_comprehensive_core.h"
 #include "test_comprehensive_reporting.h"
+#include "test_comprehensive_security.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -96,119 +96,124 @@ AsthraTestResult run_v1_2_category_tests(AsthraV12TestCategory category) {
     AsthraTestResult result = ASTHRA_TEST_PASS;
 
     switch (category) {
-        case ASTHRA_V1_2_CATEGORY_GRAMMAR: {
-            // Run grammar tests
-            AsthraV12TestMetadata metadata = {
-                .base = {
-                    .name = "Grammar Tests",
-                    .file = __FILE__,
-                    .line = __LINE__,
-                    .function = __func__,
-                    .severity = ASTHRA_TEST_SEVERITY_HIGH,
-                    .timeout_ns = ASTHRA_V1_2_TEST_TIMEOUT_DEFAULT_NS,
-                    .skip = false,
-                    .skip_reason = NULL
-                },
-                .category = ASTHRA_V1_2_CATEGORY_GRAMMAR,
-                .complexity = ASTHRA_V1_2_COMPLEXITY_BASIC,
-                .mode = ASTHRA_V1_2_MODE_UNIT,
-                .feature_description = "Grammar disambiguation and parsing validation",
-                .ai_feedback_notes = "Critical for AI code generation accuracy",
-                .requires_c17_compliance = true,
-                .requires_security_validation = false,
-                .requires_performance_benchmark = false,
-                .expected_max_duration_ns = 1000000000ULL, // 1 second
-                .memory_limit_bytes = 1024 * 1024 // 1MB
-            };
+    case ASTHRA_V1_2_CATEGORY_GRAMMAR: {
+        // Run grammar tests
+        AsthraV12TestMetadata metadata = {
+            .base = {.name = "Grammar Tests",
+                     .file = __FILE__,
+                     .line = __LINE__,
+                     .function = __func__,
+                     .severity = ASTHRA_TEST_SEVERITY_HIGH,
+                     .timeout_ns = ASTHRA_V1_2_TEST_TIMEOUT_DEFAULT_NS,
+                     .skip = false,
+                     .skip_reason = NULL},
+            .category = ASTHRA_V1_2_CATEGORY_GRAMMAR,
+            .complexity = ASTHRA_V1_2_COMPLEXITY_BASIC,
+            .mode = ASTHRA_V1_2_MODE_UNIT,
+            .feature_description = "Grammar disambiguation and parsing validation",
+            .ai_feedback_notes = "Critical for AI code generation accuracy",
+            .requires_c17_compliance = true,
+            .requires_security_validation = false,
+            .requires_performance_benchmark = false,
+            .expected_max_duration_ns = 1000000000ULL, // 1 second
+            .memory_limit_bytes = 1024 * 1024          // 1MB
+        };
 
-            AsthraV12TestContext *ctx = asthra_test_context_create(&metadata);
-            if (!ctx) return ASTHRA_TEST_ERROR;
+        AsthraV12TestContext *ctx = asthra_test_context_create(&metadata);
+        if (!ctx)
+            return ASTHRA_TEST_ERROR;
 
-            // Run individual grammar tests
-            if (test_grammar_postfix_expr_disambiguation(ctx) != ASTHRA_TEST_PASS) result = ASTHRA_TEST_FAIL;
-            if (test_grammar_precedence_rules(ctx) != ASTHRA_TEST_PASS) result = ASTHRA_TEST_FAIL;
-            if (test_grammar_zero_parsing_conflicts(ctx) != ASTHRA_TEST_PASS) result = ASTHRA_TEST_FAIL;
+        // Run individual grammar tests
+        if (test_grammar_postfix_expr_disambiguation(ctx) != ASTHRA_TEST_PASS)
+            result = ASTHRA_TEST_FAIL;
+        if (test_grammar_precedence_rules(ctx) != ASTHRA_TEST_PASS)
+            result = ASTHRA_TEST_FAIL;
+        if (test_grammar_zero_parsing_conflicts(ctx) != ASTHRA_TEST_PASS)
+            result = ASTHRA_TEST_FAIL;
 
-            asthra_v12_test_context_destroy(ctx);
-            break;
-        }
+        asthra_v12_test_context_destroy(ctx);
+        break;
+    }
 
-        case ASTHRA_V1_2_CATEGORY_PATTERN_MATCHING: {
-            // Run pattern matching tests
-            AsthraV12TestMetadata metadata = {
-                .base = {
-                    .name = "Pattern Matching Tests",
-                    .file = __FILE__,
-                    .line = __LINE__,
-                    .function = __func__,
-                    .severity = ASTHRA_TEST_SEVERITY_HIGH,
-                    .timeout_ns = ASTHRA_V1_2_TEST_TIMEOUT_DEFAULT_NS,
-                    .skip = false,
-                    .skip_reason = NULL
-                },
-                .category = ASTHRA_V1_2_CATEGORY_PATTERN_MATCHING,
-                .complexity = ASTHRA_V1_2_COMPLEXITY_INTERMEDIATE,
-                .mode = ASTHRA_V1_2_MODE_UNIT,
-                .feature_description = "Result<T,E> pattern matching and error handling",
-                .ai_feedback_notes = "Essential for robust error handling patterns",
-                .requires_c17_compliance = true,
-                .requires_security_validation = false,
-                .requires_performance_benchmark = true,
-                .expected_max_duration_ns = 2000000000ULL, // 2 seconds
-                .memory_limit_bytes = 2 * 1024 * 1024 // 2MB
-            };
+    case ASTHRA_V1_2_CATEGORY_PATTERN_MATCHING: {
+        // Run pattern matching tests
+        AsthraV12TestMetadata metadata = {
+            .base = {.name = "Pattern Matching Tests",
+                     .file = __FILE__,
+                     .line = __LINE__,
+                     .function = __func__,
+                     .severity = ASTHRA_TEST_SEVERITY_HIGH,
+                     .timeout_ns = ASTHRA_V1_2_TEST_TIMEOUT_DEFAULT_NS,
+                     .skip = false,
+                     .skip_reason = NULL},
+            .category = ASTHRA_V1_2_CATEGORY_PATTERN_MATCHING,
+            .complexity = ASTHRA_V1_2_COMPLEXITY_INTERMEDIATE,
+            .mode = ASTHRA_V1_2_MODE_UNIT,
+            .feature_description = "Result<T,E> pattern matching and error handling",
+            .ai_feedback_notes = "Essential for robust error handling patterns",
+            .requires_c17_compliance = true,
+            .requires_security_validation = false,
+            .requires_performance_benchmark = true,
+            .expected_max_duration_ns = 2000000000ULL, // 2 seconds
+            .memory_limit_bytes = 2 * 1024 * 1024      // 2MB
+        };
 
-            AsthraV12TestContext *ctx = asthra_test_context_create(&metadata);
-            if (!ctx) return ASTHRA_TEST_ERROR;
+        AsthraV12TestContext *ctx = asthra_test_context_create(&metadata);
+        if (!ctx)
+            return ASTHRA_TEST_ERROR;
 
-            // Run pattern matching tests
-            if (test_result_exhaustive_matching(ctx) != ASTHRA_TEST_PASS) result = ASTHRA_TEST_FAIL;
-            if (test_pattern_matching_zero_cost(ctx) != ASTHRA_TEST_PASS) result = ASTHRA_TEST_FAIL;
+        // Run pattern matching tests
+        if (test_result_exhaustive_matching(ctx) != ASTHRA_TEST_PASS)
+            result = ASTHRA_TEST_FAIL;
+        if (test_pattern_matching_zero_cost(ctx) != ASTHRA_TEST_PASS)
+            result = ASTHRA_TEST_FAIL;
 
-            asthra_v12_test_context_destroy(ctx);
-            break;
-        }
+        asthra_v12_test_context_destroy(ctx);
+        break;
+    }
 
-        case ASTHRA_V1_2_CATEGORY_SECURITY: {
-            // Run security tests
-            AsthraV12TestMetadata metadata = {
-                .base = {
-                    .name = "Security Tests",
-                    .file = __FILE__,
-                    .line = __LINE__,
-                    .function = __func__,
-                    .severity = ASTHRA_TEST_SEVERITY_CRITICAL,
-                    .timeout_ns = ASTHRA_V1_2_TEST_TIMEOUT_LONG_NS,
-                    .skip = false,
-                    .skip_reason = NULL
-                },
-                .category = ASTHRA_V1_2_CATEGORY_SECURITY,
-                .complexity = ASTHRA_V1_2_COMPLEXITY_ADVANCED,
-                .mode = ASTHRA_V1_2_MODE_SECURITY,
-                .feature_description = "Constant-time operations and side-channel resistance",
-                .ai_feedback_notes = "Critical for cryptographic and security-sensitive code",
-                .requires_c17_compliance = true,
-                .requires_security_validation = true,
-                .requires_performance_benchmark = true,
-                .expected_max_duration_ns = 10000000000ULL, // 10 seconds
-                .memory_limit_bytes = 10 * 1024 * 1024 // 10MB
-            };
+    case ASTHRA_V1_2_CATEGORY_SECURITY: {
+        // Run security tests
+        AsthraV12TestMetadata metadata = {
+            .base = {.name = "Security Tests",
+                     .file = __FILE__,
+                     .line = __LINE__,
+                     .function = __func__,
+                     .severity = ASTHRA_TEST_SEVERITY_CRITICAL,
+                     .timeout_ns = ASTHRA_V1_2_TEST_TIMEOUT_LONG_NS,
+                     .skip = false,
+                     .skip_reason = NULL},
+            .category = ASTHRA_V1_2_CATEGORY_SECURITY,
+            .complexity = ASTHRA_V1_2_COMPLEXITY_ADVANCED,
+            .mode = ASTHRA_V1_2_MODE_SECURITY,
+            .feature_description = "Constant-time operations and side-channel resistance",
+            .ai_feedback_notes = "Critical for cryptographic and security-sensitive code",
+            .requires_c17_compliance = true,
+            .requires_security_validation = true,
+            .requires_performance_benchmark = true,
+            .expected_max_duration_ns = 10000000000ULL, // 10 seconds
+            .memory_limit_bytes = 10 * 1024 * 1024      // 10MB
+        };
 
-            AsthraV12TestContext *ctx = asthra_test_context_create(&metadata);
-            if (!ctx) return ASTHRA_TEST_ERROR;
+        AsthraV12TestContext *ctx = asthra_test_context_create(&metadata);
+        if (!ctx)
+            return ASTHRA_TEST_ERROR;
 
-            // Run security tests
-            if (test_security_constant_time_verification(ctx) != ASTHRA_TEST_PASS) result = ASTHRA_TEST_FAIL;
-            if (test_security_memory_zeroing(ctx) != ASTHRA_TEST_PASS) result = ASTHRA_TEST_FAIL;
-            if (test_security_csprng_functionality(ctx) != ASTHRA_TEST_PASS) result = ASTHRA_TEST_FAIL;
+        // Run security tests
+        if (test_security_constant_time_verification(ctx) != ASTHRA_TEST_PASS)
+            result = ASTHRA_TEST_FAIL;
+        if (test_security_memory_zeroing(ctx) != ASTHRA_TEST_PASS)
+            result = ASTHRA_TEST_FAIL;
+        if (test_security_csprng_functionality(ctx) != ASTHRA_TEST_PASS)
+            result = ASTHRA_TEST_FAIL;
 
-            asthra_v12_test_context_destroy(ctx);
-            break;
-        }
+        asthra_v12_test_context_destroy(ctx);
+        break;
+    }
 
-        default:
-            printf("Warning: Test category %d not implemented yet\n", category);
-            break;
+    default:
+        printf("Warning: Test category %d not implemented yet\n", category);
+        break;
     }
 
     return result;
@@ -218,16 +223,14 @@ AsthraTestResult run_v1_2_performance_benchmarks(void) {
     printf("=== Performance Benchmarks ===\n");
 
     AsthraV12TestMetadata metadata = {
-        .base = {
-            .name = "Performance Benchmarks",
-            .file = __FILE__,
-            .line = __LINE__,
-            .function = __func__,
-            .severity = ASTHRA_TEST_SEVERITY_MEDIUM,
-            .timeout_ns = ASTHRA_V1_2_TEST_TIMEOUT_LONG_NS,
-            .skip = false,
-            .skip_reason = NULL
-        },
+        .base = {.name = "Performance Benchmarks",
+                 .file = __FILE__,
+                 .line = __LINE__,
+                 .function = __func__,
+                 .severity = ASTHRA_TEST_SEVERITY_MEDIUM,
+                 .timeout_ns = ASTHRA_V1_2_TEST_TIMEOUT_LONG_NS,
+                 .skip = false,
+                 .skip_reason = NULL},
         .category = ASTHRA_V1_2_CATEGORY_PERFORMANCE,
         .complexity = ASTHRA_V1_2_COMPLEXITY_STRESS,
         .mode = ASTHRA_V1_2_MODE_PERFORMANCE,
@@ -237,11 +240,12 @@ AsthraTestResult run_v1_2_performance_benchmarks(void) {
         .requires_security_validation = false,
         .requires_performance_benchmark = true,
         .expected_max_duration_ns = 30000000000ULL, // 30 seconds
-        .memory_limit_bytes = 100 * 1024 * 1024 // 100MB
+        .memory_limit_bytes = 100 * 1024 * 1024     // 100MB
     };
 
     AsthraV12TestContext *ctx = asthra_test_context_create(&metadata);
-    if (!ctx) return ASTHRA_TEST_ERROR;
+    if (!ctx)
+        return ASTHRA_TEST_ERROR;
 
     AsthraTestResult result = ASTHRA_TEST_PASS;
 
@@ -257,7 +261,7 @@ AsthraTestResult run_v1_2_performance_benchmarks(void) {
     }
 
     // Print benchmark results
-            asthra_benchmark_print_results(ctx);
+    asthra_benchmark_print_results(ctx);
 
     asthra_v12_test_context_destroy(ctx);
     return result;
@@ -267,16 +271,14 @@ AsthraTestResult run_v1_2_security_validation(void) {
     printf("=== Security Validation ===\n");
 
     AsthraV12TestMetadata metadata = {
-        .base = {
-            .name = "Security Validation",
-            .file = __FILE__,
-            .line = __LINE__,
-            .function = __func__,
-            .severity = ASTHRA_TEST_SEVERITY_CRITICAL,
-            .timeout_ns = ASTHRA_V1_2_TEST_TIMEOUT_LONG_NS,
-            .skip = false,
-            .skip_reason = NULL
-        },
+        .base = {.name = "Security Validation",
+                 .file = __FILE__,
+                 .line = __LINE__,
+                 .function = __func__,
+                 .severity = ASTHRA_TEST_SEVERITY_CRITICAL,
+                 .timeout_ns = ASTHRA_V1_2_TEST_TIMEOUT_LONG_NS,
+                 .skip = false,
+                 .skip_reason = NULL},
         .category = ASTHRA_V1_2_CATEGORY_SECURITY,
         .complexity = ASTHRA_V1_2_COMPLEXITY_ADVANCED,
         .mode = ASTHRA_V1_2_MODE_SECURITY,
@@ -286,11 +288,12 @@ AsthraTestResult run_v1_2_security_validation(void) {
         .requires_security_validation = true,
         .requires_performance_benchmark = false,
         .expected_max_duration_ns = 60000000000ULL, // 60 seconds
-        .memory_limit_bytes = 50 * 1024 * 1024 // 50MB
+        .memory_limit_bytes = 50 * 1024 * 1024      // 50MB
     };
 
     AsthraV12TestContext *ctx = asthra_test_context_create(&metadata);
-    if (!ctx) return ASTHRA_TEST_ERROR;
+    if (!ctx)
+        return ASTHRA_TEST_ERROR;
 
     AsthraTestResult result = ASTHRA_TEST_PASS;
 
@@ -315,4 +318,4 @@ AsthraTestResult run_v1_2_security_validation(void) {
 
     asthra_v12_test_context_destroy(ctx);
     return result;
-} 
+}

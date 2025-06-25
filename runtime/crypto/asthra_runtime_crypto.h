@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Runtime v1.2 - Cryptographic Module
  * Cryptographic Support and Secure Operations
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This module provides cryptographic functionality including
  * CSPRNG operations, secure memory, and constant-time operations.
  */
@@ -20,18 +20,14 @@ extern "C" {
 // asthra_crypto_random_string
 ;
 
-
 // asthra_crypto_random_bytes
 ;
-
 
 // asthra_hash_bytes
 ;
 
-
 // asthra_hash_string
 ;
-
 
 // asthra_crypto_string_equals
 ;
@@ -74,7 +70,8 @@ uint64_t asthra_random_uint64(void);
 
 // Constant-time operations
 int asthra_constant_time_memcmp(const void *a, const void *b, size_t len);
-void asthra_constant_time_select(void *dest, const void *a, const void *b, size_t len, int condition);
+void asthra_constant_time_select(void *dest, const void *a, const void *b, size_t len,
+                                 int condition);
 int asthra_constant_time_is_zero(const void *data, size_t len);
 
 // =============================================================================
@@ -97,4 +94,4 @@ void asthra_secure_buffer_unlock(AsthraSecureBuffer *buffer);
 }
 #endif
 
-#endif // ASTHRA_RUNTIME_CRYPTO_H 
+#endif // ASTHRA_RUNTIME_CRYPTO_H

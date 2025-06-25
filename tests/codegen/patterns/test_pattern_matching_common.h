@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Pattern Matching Engine Tests - Common Definitions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Shared definitions and utilities for pattern matching engine tests
  */
 
@@ -12,11 +12,11 @@
 #define TEST_PATTERN_MATCHING_COMMON_H
 
 #include "../framework/test_framework_minimal.h"
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <stdint.h>
 
 // Variant type definitions (subset for pattern matching)
 typedef enum {
@@ -36,11 +36,11 @@ typedef struct VariantValue {
     union {
         int int_value;
         double float_value;
-        char* string_value;
-        struct VariantValue* option_value;
+        char *string_value;
+        struct VariantValue *option_value;
         struct {
-            struct VariantValue* ok_value;
-            struct VariantValue* error_value;
+            struct VariantValue *ok_value;
+            struct VariantValue *error_value;
         } result;
     } data;
     size_t size;
@@ -49,30 +49,30 @@ typedef struct VariantValue {
 
 // Pattern matching structures
 typedef enum {
-    PATTERN_WILDCARD,      // _
-    PATTERN_LITERAL,       // 42, "hello", true
-    PATTERN_VARIABLE,      // x, name
-    PATTERN_CONSTRUCTOR,   // Some(x), Ok(value)
-    PATTERN_TUPLE,         // (x, y, z)
-    PATTERN_LIST,          // [head | tail]
-    PATTERN_GUARD,         // pattern if condition
+    PATTERN_WILDCARD,    // _
+    PATTERN_LITERAL,     // 42, "hello", true
+    PATTERN_VARIABLE,    // x, name
+    PATTERN_CONSTRUCTOR, // Some(x), Ok(value)
+    PATTERN_TUPLE,       // (x, y, z)
+    PATTERN_LIST,        // [head | tail]
+    PATTERN_GUARD,       // pattern if condition
     PATTERN_COUNT
 } PatternType;
 
 typedef struct Pattern {
     PatternType type;
-    const char* name;      // For variables and constructors
-    VariantValue* literal; // For literal patterns
-    struct Pattern* sub_patterns[8]; // For nested patterns
+    const char *name;                // For variables and constructors
+    VariantValue *literal;           // For literal patterns
+    struct Pattern *sub_patterns[8]; // For nested patterns
     int sub_pattern_count;
-    bool (*guard_function)(const VariantValue*); // For guards
-    VariantTag expected_tag; // For constructor patterns
+    bool (*guard_function)(const VariantValue *); // For guards
+    VariantTag expected_tag;                      // For constructor patterns
     uint64_t pattern_id;
 } Pattern;
 
 typedef struct {
-    Pattern* pattern;
-    void (*action)(const VariantValue*, void* context);
+    Pattern *pattern;
+    void (*action)(const VariantValue *, void *context);
     bool is_catch_all;
     int action_count;
     uint64_t case_id;
@@ -85,7 +85,7 @@ typedef struct {
     VariantTag covered_tags[VARIANT_TAG_COUNT];
     int covered_count;
     uint64_t match_expression_id;
-    
+
     // Statistics
     int total_executions;
     int successful_matches;
@@ -100,17 +100,17 @@ typedef struct {
     int pattern_count;
     MatchExpression matches[32];
     int match_count;
-    
+
     // Pattern compilation state
     bool compilation_successful;
-    const char* compilation_error;
-    
+    const char *compilation_error;
+
     // Runtime state
-    VariantValue* current_match_value;
-    void* match_context;
+    VariantValue *current_match_value;
+    void *match_context;
     bool match_found;
     int executed_case;
-    
+
     // Statistics
     uint64_t next_pattern_id;
     uint64_t next_case_id;
@@ -122,42 +122,45 @@ typedef struct {
 // Function declarations
 
 // Context management
-void init_pattern_matching_context(PatternMatchingContext* ctx);
+void init_pattern_matching_context(PatternMatchingContext *ctx);
 
 // Variant creation functions
-VariantValue* create_variant_int(PatternMatchingContext* ctx, int value);
-VariantValue* create_variant_string(PatternMatchingContext* ctx, const char* value);
-VariantValue* create_variant_option_some(PatternMatchingContext* ctx, VariantValue* inner);
-VariantValue* create_variant_option_none(PatternMatchingContext* ctx);
-VariantValue* create_variant_result_ok(PatternMatchingContext* ctx, VariantValue* ok_value);
-VariantValue* create_variant_result_error(PatternMatchingContext* ctx, VariantValue* error_value);
+VariantValue *create_variant_int(PatternMatchingContext *ctx, int value);
+VariantValue *create_variant_string(PatternMatchingContext *ctx, const char *value);
+VariantValue *create_variant_option_some(PatternMatchingContext *ctx, VariantValue *inner);
+VariantValue *create_variant_option_none(PatternMatchingContext *ctx);
+VariantValue *create_variant_result_ok(PatternMatchingContext *ctx, VariantValue *ok_value);
+VariantValue *create_variant_result_error(PatternMatchingContext *ctx, VariantValue *error_value);
 
 // Pattern creation functions
-Pattern* create_pattern_wildcard(PatternMatchingContext* ctx);
-Pattern* create_pattern_literal_int(PatternMatchingContext* ctx, int value);
-Pattern* create_pattern_constructor(PatternMatchingContext* ctx, VariantTag tag, const char* name, Pattern* sub_pattern);
-Pattern* create_pattern_variable(PatternMatchingContext* ctx, const char* name);
-Pattern* create_pattern_with_guard(PatternMatchingContext* ctx, Pattern* base_pattern, bool (*guard_fn)(const VariantValue*));
+Pattern *create_pattern_wildcard(PatternMatchingContext *ctx);
+Pattern *create_pattern_literal_int(PatternMatchingContext *ctx, int value);
+Pattern *create_pattern_constructor(PatternMatchingContext *ctx, VariantTag tag, const char *name,
+                                    Pattern *sub_pattern);
+Pattern *create_pattern_variable(PatternMatchingContext *ctx, const char *name);
+Pattern *create_pattern_with_guard(PatternMatchingContext *ctx, Pattern *base_pattern,
+                                   bool (*guard_fn)(const VariantValue *));
 
 // Pattern matching logic
-bool match_pattern(const Pattern* pattern, const VariantValue* value);
+bool match_pattern(const Pattern *pattern, const VariantValue *value);
 
 // Guard functions
-bool positive_guard(const VariantValue* value);
-bool even_guard(const VariantValue* value);
-bool large_number_guard(const VariantValue* value);
+bool positive_guard(const VariantValue *value);
+bool even_guard(const VariantValue *value);
+bool large_number_guard(const VariantValue *value);
 
 // Match expression functions
-MatchExpression* create_match_expression(PatternMatchingContext* ctx);
-void dummy_action(const VariantValue* value, void* context);
-void specific_action(const VariantValue* value, void* context);
-void add_match_case(MatchExpression* match, Pattern* pattern, void (*action)(const VariantValue*, void*));
-bool execute_match(PatternMatchingContext* ctx, MatchExpression* match, const VariantValue* value);
+MatchExpression *create_match_expression(PatternMatchingContext *ctx);
+void dummy_action(const VariantValue *value, void *context);
+void specific_action(const VariantValue *value, void *context);
+void add_match_case(MatchExpression *match, Pattern *pattern,
+                    void (*action)(const VariantValue *, void *));
+bool execute_match(PatternMatchingContext *ctx, MatchExpression *match, const VariantValue *value);
 
 // Test function declarations
-AsthraTestResult test_pattern_creation_and_matching(AsthraTestContext* context);
-AsthraTestResult test_nested_pattern_matching(AsthraTestContext* context);
-AsthraTestResult test_pattern_guards(AsthraTestContext* context);
-AsthraTestResult test_match_expression_exhaustiveness(AsthraTestContext* context);
+AsthraTestResult test_pattern_creation_and_matching(AsthraTestContext *context);
+AsthraTestResult test_nested_pattern_matching(AsthraTestContext *context);
+AsthraTestResult test_pattern_guards(AsthraTestContext *context);
+AsthraTestResult test_match_expression_exhaustiveness(AsthraTestContext *context);
 
-#endif // TEST_PATTERN_MATCHING_COMMON_H 
+#endif // TEST_PATTERN_MATCHING_COMMON_H

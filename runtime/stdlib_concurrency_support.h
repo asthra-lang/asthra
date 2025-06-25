@@ -1,9 +1,9 @@
 /**
  * Asthra Runtime - Standard Library Concurrency Support
- * 
+ *
  * This header provides runtime support functions for the concurrent stdlib modules
  * created as part of Phase 6: Standard Library Migration.
- * 
+ *
  * These functions implement the FFI layer between Asthra stdlib concurrency modules
  * and the underlying C runtime system.
  */
@@ -11,12 +11,12 @@
 #ifndef ASTHRA_STDLIB_CONCURRENCY_SUPPORT_H
 #define ASTHRA_STDLIB_CONCURRENCY_SUPPORT_H
 
-#include "asthra_runtime.h"
 #include "asthra_concurrency_bridge_modular.h"
+#include "asthra_runtime.h"
 #include "asthra_safety_modular.h"
 #include "errors/asthra_runtime_errors.h"
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,19 +80,19 @@ typedef AsthraResult AsthraConcurrencyResult;
 #define asthra_barrier_thread_count(barrier) asthra_barrier_thread_count_impl(barrier)
 #define asthra_barrier_waiting_count(barrier) Asthra_barrier_waiting_count(barrier)
 
-// Semaphore compatibility  
+// Semaphore compatibility
 #define asthra_semaphore_create(permits) Asthra_semaphore_create(permits)
 #define asthra_semaphore_acquire(sem) Asthra_semaphore_acquire(sem)
 #define asthra_semaphore_release(sem) Asthra_semaphore_release(sem)
 #define asthra_semaphore_destroy(sem) Asthra_semaphore_destroy(sem)
 
 // Stats compatibility - use existing bridge stats
-static inline AsthraConcurrencyResult asthra_concurrency_get_stats(AsthraConcurrencyStats* stats) {
+static inline AsthraConcurrencyResult asthra_concurrency_get_stats(AsthraConcurrencyStats *stats) {
     if (stats) {
         *stats = Asthra_get_concurrency_stats();
-        return (AsthraResult){ .tag = ASTHRA_RESULT_OK };
+        return (AsthraResult){.tag = ASTHRA_RESULT_OK};
     }
-    return (AsthraResult){ .tag = ASTHRA_RESULT_ERR };
+    return (AsthraResult){.tag = ASTHRA_RESULT_ERR};
 }
 
 // Result comparison compatibility - since AsthraResult is a struct, we need to compare the tag
@@ -113,31 +113,32 @@ static inline bool asthra_result_equals_error(AsthraResult result) {
 #define ASTHRA_CONCURRENCY_ERROR_OUT_OF_MEMORY 5
 
 // Barrier thread count compatibility function
-static inline size_t asthra_barrier_thread_count_impl(const AsthraConcurrencyBarrier* barrier) {
-    if (!barrier) return 0;
+static inline size_t asthra_barrier_thread_count_impl(const AsthraConcurrencyBarrier *barrier) {
+    if (!barrier)
+        return 0;
     return barrier->party_count;
 }
 
 // Barrier destroy wrapper that returns a result
-static inline AsthraResult asthra_barrier_destroy_impl(AsthraConcurrencyBarrier* barrier) {
+static inline AsthraResult asthra_barrier_destroy_impl(AsthraConcurrencyBarrier *barrier) {
     if (!barrier) {
-        return (AsthraResult){ 
-            .tag = ASTHRA_RESULT_ERR,
-            .data.err.error = &(int){ASTHRA_CONCURRENCY_ERROR_NULL_POINTER},
-            .data.err.error_size = sizeof(int),
-            .data.err.error_type_id = 0
-        };
+        return (AsthraResult){.tag = ASTHRA_RESULT_ERR,
+                              .data.err.error = &(int){ASTHRA_CONCURRENCY_ERROR_NULL_POINTER},
+                              .data.err.error_size = sizeof(int),
+                              .data.err.error_type_id = 0};
     }
     Asthra_barrier_destroy(barrier);
-    return (AsthraResult){ .tag = ASTHRA_RESULT_OK };
+    return (AsthraResult){.tag = ASTHRA_RESULT_OK};
 }
 
 // Helper function to get error code from AsthraResult for integer comparisons
 static inline int asthra_result_error_code(AsthraResult result) {
-    if (result.tag == ASTHRA_RESULT_ERR && result.data.err.error && result.data.err.error_size == sizeof(int)) {
-        return *(int*)result.data.err.error;
+    if (result.tag == ASTHRA_RESULT_ERR && result.data.err.error &&
+        result.data.err.error_size == sizeof(int)) {
+        return *(int *)result.data.err.error;
     }
-    return result.tag == ASTHRA_RESULT_OK ? ASTHRA_CONCURRENCY_SUCCESS : ASTHRA_CONCURRENCY_ERROR_TIMEOUT;
+    return result.tag == ASTHRA_RESULT_OK ? ASTHRA_CONCURRENCY_SUCCESS
+                                          : ASTHRA_CONCURRENCY_ERROR_TIMEOUT;
 }
 
 // Helper macros for result comparisons in tests
@@ -161,10 +162,11 @@ static inline int asthra_result_error_code(AsthraResult result) {
 
 // Override function calls to return simple boolean for easier comparison
 #undef asthra_channel_send
-#undef asthra_semaphore_acquire  
+#undef asthra_semaphore_acquire
 #undef asthra_semaphore_release
 
-#define asthra_channel_send(ch, val, sz) asthra_result_equals_success(Asthra_channel_send(ch, val, 0))
+#define asthra_channel_send(ch, val, sz)                                                           \
+    asthra_result_equals_success(Asthra_channel_send(ch, val, 0))
 #define asthra_semaphore_acquire(sem) asthra_result_equals_success(Asthra_semaphore_acquire(sem))
 #define asthra_semaphore_release(sem) asthra_result_equals_success(Asthra_semaphore_release(sem))
 
@@ -174,78 +176,72 @@ static inline bool asthra_concurrency_result_is_success(AsthraConcurrencyResult 
 }
 
 // Initialization and cleanup compatibility
-#define asthra_concurrency_initialize() (AsthraResult){ .tag = ASTHRA_RESULT_OK }
+#define asthra_concurrency_initialize()                                                            \
+    (AsthraResult) {                                                                               \
+        .tag = ASTHRA_RESULT_OK                                                                    \
+    }
 #define asthra_concurrency_cleanup() Asthra_concurrency_bridge_cleanup()
 
 /**
  * Create a new channel (matches existing signature)
  */
-AsthraConcurrencyChannel* Asthra_stdlib_channel_create(size_t element_size, size_t buffer_capacity, const char* name);
+AsthraConcurrencyChannel *Asthra_stdlib_channel_create(size_t element_size, size_t buffer_capacity,
+                                                       const char *name);
 
 /**
  * Create a new unbuffered channel (convenience wrapper)
  */
-AsthraConcurrencyChannel* Asthra_stdlib_channel_create_unbuffered(size_t element_size);
+AsthraConcurrencyChannel *Asthra_stdlib_channel_create_unbuffered(size_t element_size);
 
 /**
  * Create a new buffered channel with specified capacity (convenience wrapper)
  */
-AsthraConcurrencyChannel* Asthra_stdlib_channel_create_buffered(size_t element_size, size_t capacity);
+AsthraConcurrencyChannel *Asthra_stdlib_channel_create_buffered(size_t element_size,
+                                                                size_t capacity);
 
 /**
  * Send a value through the channel (blocking, stdlib interface)
  */
-AsthraResult Asthra_stdlib_channel_send(
-    AsthraConcurrencyChannel* channel,
-    const void* value,
-    uint64_t timeout_ms
-);
+AsthraResult Asthra_stdlib_channel_send(AsthraConcurrencyChannel *channel, const void *value,
+                                        uint64_t timeout_ms);
 
 /**
  * Send a value through the channel (non-blocking, stdlib interface)
  */
-AsthraResult Asthra_stdlib_channel_try_send(
-    AsthraConcurrencyChannel* channel,
-    const void* value
-);
+AsthraResult Asthra_stdlib_channel_try_send(AsthraConcurrencyChannel *channel, const void *value);
 
 /**
  * Receive a value from the channel (blocking, stdlib interface)
  */
-AsthraResult Asthra_stdlib_channel_recv(
-    AsthraConcurrencyChannel* channel,
-    void* value_out,
-    uint64_t timeout_ms
-);
+AsthraResult Asthra_stdlib_channel_recv(AsthraConcurrencyChannel *channel, void *value_out,
+                                        uint64_t timeout_ms);
 
 /**
  * Receive a value from the channel (non-blocking, stdlib interface)
  */
-AsthraResult Asthra_stdlib_channel_try_recv(
-    AsthraConcurrencyChannel* channel,
-    void* value_out
-);
+AsthraResult Asthra_stdlib_channel_try_recv(AsthraConcurrencyChannel *channel, void *value_out);
 
 /**
  * Close the channel (stdlib interface)
  */
-void Asthra_stdlib_channel_close(AsthraConcurrencyChannel* channel);
+void Asthra_stdlib_channel_close(AsthraConcurrencyChannel *channel);
 
 /**
  * Check if channel is closed (stdlib interface)
  */
-bool Asthra_stdlib_channel_is_closed(const AsthraConcurrencyChannel* channel);
+bool Asthra_stdlib_channel_is_closed(const AsthraConcurrencyChannel *channel);
 
 /**
  * Get channel statistics (stdlib interface)
  */
-bool Asthra_stdlib_channel_get_stats(const AsthraConcurrencyChannel* channel, 
-                                     size_t* count, size_t* capacity);
+bool Asthra_stdlib_channel_get_stats(const AsthraConcurrencyChannel *channel, size_t *count,
+                                     size_t *capacity);
 
 /**
  * Get channel information for monitoring (stdlib interface)
  */
-AsthraConcurrencyChannelInfo Asthra_stdlib_channel_get_info(const AsthraConcurrencyChannel* channel);
+AsthraConcurrencyChannelInfo
+Asthra_stdlib_channel_get_info(const AsthraConcurrencyChannel *channel);
 
 // =============================================================================
 // SELECT OPERATION SUPPORT
@@ -266,8 +262,8 @@ typedef enum {
  */
 typedef struct {
     asthra_stdlib_select_op_type_t type;
-    AsthraConcurrencyChannel* channel;
-    void* data;
+    AsthraConcurrencyChannel *channel;
+    void *data;
     size_t data_size;
     int64_t timeout_ms;
 } asthra_stdlib_select_op_t;
@@ -289,7 +285,7 @@ typedef enum {
 typedef struct {
     asthra_stdlib_select_result_type_t type;
     size_t channel_index;
-    void* received_data;
+    void *received_data;
     size_t received_size;
     char error_message[256];
 } asthra_stdlib_select_result_t;
@@ -297,12 +293,9 @@ typedef struct {
 /**
  * Execute a select operation (stdlib interface)
  */
-asthra_stdlib_select_result_t Asthra_stdlib_select_execute(
-    asthra_stdlib_select_op_t* operations,
-    size_t op_count,
-    int64_t timeout_ms,
-    bool has_default
-);
+asthra_stdlib_select_result_t Asthra_stdlib_select_execute(asthra_stdlib_select_op_t *operations,
+                                                           size_t op_count, int64_t timeout_ms,
+                                                           bool has_default);
 
 // =============================================================================
 // BARRIER SUPPORT
@@ -311,28 +304,28 @@ asthra_stdlib_select_result_t Asthra_stdlib_select_execute(
 /**
  * Create a new barrier for N parties
  */
-AsthraConcurrencyBarrier* Asthra_stdlib_barrier_create(size_t party_count);
+AsthraConcurrencyBarrier *Asthra_stdlib_barrier_create(size_t party_count);
 
 /**
  * Wait at the barrier until all parties arrive
  * Returns true if this thread is the "leader" (last to arrive)
  */
-AsthraResult Asthra_stdlib_barrier_wait(AsthraConcurrencyBarrier* barrier, bool* is_leader);
+AsthraResult Asthra_stdlib_barrier_wait(AsthraConcurrencyBarrier *barrier, bool *is_leader);
 
 /**
  * Get the number of parties currently waiting at the barrier
  */
-size_t Asthra_stdlib_barrier_waiting_count(const AsthraConcurrencyBarrier* barrier);
+size_t Asthra_stdlib_barrier_waiting_count(const AsthraConcurrencyBarrier *barrier);
 
 /**
  * Reset the barrier to be reused
  */
-AsthraResult Asthra_stdlib_barrier_reset(AsthraConcurrencyBarrier* barrier);
+AsthraResult Asthra_stdlib_barrier_reset(AsthraConcurrencyBarrier *barrier);
 
 /**
  * Destroy a barrier
  */
-void Asthra_stdlib_barrier_destroy(AsthraConcurrencyBarrier* barrier);
+void Asthra_stdlib_barrier_destroy(AsthraConcurrencyBarrier *barrier);
 
 // =============================================================================
 // SEMAPHORE SUPPORT
@@ -341,43 +334,40 @@ void Asthra_stdlib_barrier_destroy(AsthraConcurrencyBarrier* barrier);
 /**
  * Create a new semaphore with specified permits
  */
-AsthraConcurrencySemaphore* Asthra_stdlib_semaphore_create(size_t permits);
+AsthraConcurrencySemaphore *Asthra_stdlib_semaphore_create(size_t permits);
 
 /**
  * Acquire a permit from the semaphore (blocking)
  */
-AsthraResult Asthra_stdlib_semaphore_acquire(AsthraConcurrencySemaphore* semaphore);
+AsthraResult Asthra_stdlib_semaphore_acquire(AsthraConcurrencySemaphore *semaphore);
 
 /**
  * Try to acquire a permit (non-blocking)
  * Returns true if acquired, false if not available
  */
-bool Asthra_stdlib_semaphore_try_acquire(AsthraConcurrencySemaphore* semaphore);
+bool Asthra_stdlib_semaphore_try_acquire(AsthraConcurrencySemaphore *semaphore);
 
 /**
  * Acquire a permit with timeout
  * Returns true if acquired, false if timeout occurred
  */
-AsthraResult Asthra_stdlib_semaphore_acquire_timeout(
-    AsthraConcurrencySemaphore* semaphore,
-    int64_t timeout_ms,
-    bool* acquired
-);
+AsthraResult Asthra_stdlib_semaphore_acquire_timeout(AsthraConcurrencySemaphore *semaphore,
+                                                     int64_t timeout_ms, bool *acquired);
 
 /**
  * Release a permit back to the semaphore
  */
-AsthraResult Asthra_stdlib_semaphore_release(AsthraConcurrencySemaphore* semaphore);
+AsthraResult Asthra_stdlib_semaphore_release(AsthraConcurrencySemaphore *semaphore);
 
 /**
  * Get the current number of available permits
  */
-size_t Asthra_stdlib_semaphore_available_permits(const AsthraConcurrencySemaphore* semaphore);
+size_t Asthra_stdlib_semaphore_available_permits(const AsthraConcurrencySemaphore *semaphore);
 
 /**
  * Destroy a semaphore
  */
-void Asthra_stdlib_semaphore_destroy(AsthraConcurrencySemaphore* semaphore);
+void Asthra_stdlib_semaphore_destroy(AsthraConcurrencySemaphore *semaphore);
 
 // =============================================================================
 // MUTEX SUPPORT
@@ -386,28 +376,28 @@ void Asthra_stdlib_semaphore_destroy(AsthraConcurrencySemaphore* semaphore);
 /**
  * Create a new mutex
  */
-AsthraConcurrencyMutex* Asthra_stdlib_mutex_create(void);
+AsthraConcurrencyMutex *Asthra_stdlib_mutex_create(void);
 
 /**
  * Lock the mutex (blocking)
  */
-AsthraResult Asthra_stdlib_mutex_lock(AsthraConcurrencyMutex* mutex);
+AsthraResult Asthra_stdlib_mutex_lock(AsthraConcurrencyMutex *mutex);
 
 /**
  * Try to lock the mutex (non-blocking)
  * Returns true if locked, false if already locked
  */
-bool Asthra_stdlib_mutex_try_lock(AsthraConcurrencyMutex* mutex);
+bool Asthra_stdlib_mutex_try_lock(AsthraConcurrencyMutex *mutex);
 
 /**
  * Unlock the mutex
  */
-AsthraResult Asthra_stdlib_mutex_unlock(AsthraConcurrencyMutex* mutex);
+AsthraResult Asthra_stdlib_mutex_unlock(AsthraConcurrencyMutex *mutex);
 
 /**
  * Destroy a mutex
  */
-void Asthra_stdlib_mutex_destroy(AsthraConcurrencyMutex* mutex);
+void Asthra_stdlib_mutex_destroy(AsthraConcurrencyMutex *mutex);
 
 // =============================================================================
 // CONDITION VARIABLE SUPPORT
@@ -416,41 +406,36 @@ void Asthra_stdlib_mutex_destroy(AsthraConcurrencyMutex* mutex);
 /**
  * Create a new condition variable
  */
-AsthraConcurrencyCondVar* Asthra_stdlib_condvar_create(void);
+AsthraConcurrencyCondVar *Asthra_stdlib_condvar_create(void);
 
 /**
  * Wait on the condition variable with a mutex
  */
-AsthraResult Asthra_stdlib_condvar_wait(
-    AsthraConcurrencyCondVar* condvar,
-    AsthraConcurrencyMutex* mutex
-);
+AsthraResult Asthra_stdlib_condvar_wait(AsthraConcurrencyCondVar *condvar,
+                                        AsthraConcurrencyMutex *mutex);
 
 /**
  * Wait on the condition variable with timeout
  * Returns true if notified, false if timeout occurred
  */
-AsthraResult Asthra_stdlib_condvar_wait_timeout(
-    AsthraConcurrencyCondVar* condvar,
-    AsthraConcurrencyMutex* mutex,
-    int64_t timeout_ms,
-    bool* notified
-);
+AsthraResult Asthra_stdlib_condvar_wait_timeout(AsthraConcurrencyCondVar *condvar,
+                                                AsthraConcurrencyMutex *mutex, int64_t timeout_ms,
+                                                bool *notified);
 
 /**
  * Notify one waiting thread
  */
-AsthraResult Asthra_stdlib_condvar_notify_one(AsthraConcurrencyCondVar* condvar);
+AsthraResult Asthra_stdlib_condvar_notify_one(AsthraConcurrencyCondVar *condvar);
 
 /**
  * Notify all waiting threads
  */
-AsthraResult Asthra_stdlib_condvar_notify_all(AsthraConcurrencyCondVar* condvar);
+AsthraResult Asthra_stdlib_condvar_notify_all(AsthraConcurrencyCondVar *condvar);
 
 /**
  * Destroy a condition variable
  */
-void Asthra_stdlib_condvar_destroy(AsthraConcurrencyCondVar* condvar);
+void Asthra_stdlib_condvar_destroy(AsthraConcurrencyCondVar *condvar);
 
 // =============================================================================
 // UTILITY FUNCTIONS
@@ -474,21 +459,18 @@ size_t Asthra_stdlib_get_cpu_count(void);
 /**
  * Create a task handle for spawn_with_handle operations
  */
-AsthraConcurrencyTaskHandle* Asthra_stdlib_create_task_handle(void);
+AsthraConcurrencyTaskHandle *Asthra_stdlib_create_task_handle(void);
 
 /**
  * Check if a task has completed
  */
-bool Asthra_stdlib_task_is_complete(const AsthraConcurrencyTaskHandle* handle);
+bool Asthra_stdlib_task_is_complete(const AsthraConcurrencyTaskHandle *handle);
 
 /**
  * Wait for a task to complete and get its result
  */
-AsthraResult Asthra_stdlib_task_await(
-    AsthraConcurrencyTaskHandle* handle,
-    void* result_out,
-    size_t result_size
-);
+AsthraResult Asthra_stdlib_task_await(AsthraConcurrencyTaskHandle *handle, void *result_out,
+                                      size_t result_size);
 
 // =============================================================================
 // ERROR HANDLING AND DIAGNOSTICS
@@ -497,12 +479,12 @@ AsthraResult Asthra_stdlib_task_await(
 /**
  * Get the last error message for the current thread
  */
-const char* Asthra_stdlib_get_last_concurrency_error(void);
+const char *Asthra_stdlib_get_last_concurrency_error(void);
 
 /**
  * Set an error message for the current thread
  */
-void Asthra_stdlib_set_concurrency_error(const char* error_message);
+void Asthra_stdlib_set_concurrency_error(const char *error_message);
 
 /**
  * Clear the error state for the current thread
@@ -566,7 +548,7 @@ bool Asthra_stdlib_is_concurrency_initialized(void);
 #define ASTHRA_RESULT_IS_OK(result) ((result).tag == ASTHRA_RESULT_OK)
 #define ASTHRA_RESULT_IS_ERR(result) ((result).tag == ASTHRA_RESULT_ERR)
 
-// Statistics field access helpers  
+// Statistics field access helpers
 #undef ASTHRA_STATS_ACTIVE_CHANNELS
 #define ASTHRA_STATS_ACTIVE_CHANNELS(stats) ((stats)->active_channels)
 #define ASTHRA_STATS_TOTAL_MESSAGES(stats) ((stats)->total_messages_sent)
@@ -575,4 +557,4 @@ bool Asthra_stdlib_is_concurrency_initialized(void);
 // Additional result constants for compatibility
 #define ASTHRA_RESULT_ALREADY_INITIALIZED ASTHRA_RESULT_OK
 
-#endif // ASTHRA_STDLIB_CONCURRENCY_SUPPORT_H 
+#endif // ASTHRA_STDLIB_CONCURRENCY_SUPPORT_H

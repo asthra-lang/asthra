@@ -13,10 +13,7 @@
 // =============================================================================
 
 BridgeState bridge_state = {
-    .initialized = false,
-    .mutex = PTHREAD_MUTEX_INITIALIZER,
-    .next_task_id = 1
-};
+    .initialized = false, .mutex = PTHREAD_MUTEX_INITIALIZER, .next_task_id = 1};
 
 // =============================================================================
 // BRIDGE INITIALIZATION
@@ -24,37 +21,37 @@ BridgeState bridge_state = {
 
 AsthraResult Asthra_concurrency_bridge_init(size_t task_pool_size, size_t queue_size) {
     pthread_mutex_lock(&bridge_state.mutex);
-    
+
     if (bridge_state.initialized) {
         pthread_mutex_unlock(&bridge_state.mutex);
         return create_ok();
     }
-    
+
     // Initialize configuration
     bridge_state.task_pool_size = task_pool_size;
     bridge_state.queue_size = queue_size;
-    
+
     // Initialize registries
     bridge_state.task_registry = NULL;
     bridge_state.callback_queue_head = NULL;
     bridge_state.callback_queue_tail = NULL;
     bridge_state.callback_queue_count = 0;
     bridge_state.thread_registry = NULL;
-    
+
     // Initialize callback condition variable
     pthread_cond_init(&bridge_state.callback_available, NULL);
-    
+
     // Initialize mutex registry
     bridge_state.mutex_registry.capacity = 100;
     bridge_state.mutex_registry.count = 0;
-    bridge_state.mutex_registry.mutexes = calloc(bridge_state.mutex_registry.capacity, 
-                                                  sizeof(AsthraConcurrencyMutex*));
-    
+    bridge_state.mutex_registry.mutexes =
+        calloc(bridge_state.mutex_registry.capacity, sizeof(AsthraConcurrencyMutex *));
+
     // Initialize statistics
     memset(&bridge_state.stats, 0, sizeof(AsthraConcurrencyStats));
-    
+
     bridge_state.initialized = true;
-    
+
     pthread_mutex_unlock(&bridge_state.mutex);
     return create_ok();
 }
@@ -65,12 +62,12 @@ AsthraResult Asthra_concurrency_bridge_init_default(void) {
 
 void Asthra_concurrency_bridge_cleanup(void) {
     pthread_mutex_lock(&bridge_state.mutex);
-    
+
     if (!bridge_state.initialized) {
         pthread_mutex_unlock(&bridge_state.mutex);
         return;
     }
-    
+
     // Clean up task registry
     TaskRegistryEntry *task_entry = bridge_state.task_registry;
     while (task_entry) {
@@ -79,7 +76,7 @@ void Asthra_concurrency_bridge_cleanup(void) {
         free(task_entry);
         task_entry = next;
     }
-    
+
     // Clean up callback queue
     CallbackEntry *callback_entry = bridge_state.callback_queue_head;
     while (callback_entry) {
@@ -90,7 +87,7 @@ void Asthra_concurrency_bridge_cleanup(void) {
         free(callback_entry);
         callback_entry = next;
     }
-    
+
     // Clean up thread registry
     ThreadRegistryEntry *thread_entry = bridge_state.thread_registry;
     while (thread_entry) {
@@ -98,7 +95,7 @@ void Asthra_concurrency_bridge_cleanup(void) {
         free(thread_entry);
         thread_entry = next;
     }
-    
+
     // Clean up mutex registry
     if (bridge_state.mutex_registry.mutexes) {
         for (size_t i = 0; i < bridge_state.mutex_registry.count; i++) {
@@ -109,11 +106,11 @@ void Asthra_concurrency_bridge_cleanup(void) {
         }
         free(bridge_state.mutex_registry.mutexes);
     }
-    
+
     pthread_cond_destroy(&bridge_state.callback_available);
-    
+
     bridge_state.initialized = false;
-    
+
     pthread_mutex_unlock(&bridge_state.mutex);
 }
 

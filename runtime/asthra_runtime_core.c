@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Runtime Core v1.2
  * Core Runtime Initialization and Global State Management
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * IMPLEMENTATION FEATURES:
  * - Runtime initialization and cleanup
  * - Global state management with C17 atomics
@@ -13,22 +13,22 @@
  * - Utility functions
  */
 
+#include <assert.h>
+#include <errno.h>
+#include <inttypes.h>
+#include <pthread.h>
+#include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
-#include <time.h>
-#include <errno.h>
-#include <unistd.h>
 #include <sys/time.h>
-#include <pthread.h>
-#include <assert.h>
-#include <inttypes.h>
-#include <stdint.h>
+#include <time.h>
+#include <unistd.h>
 
 // C17 modernization includes
-#include <stdatomic.h>
 #include <stdalign.h>
+#include <stdatomic.h>
 
 // Only include threads.h if available
 #if ASTHRA_HAS_C11_THREADS
@@ -43,47 +43,47 @@
 
 // Atomic operation wrappers for compatibility
 #if ASTHRA_HAS_ATOMICS
-    #define ASTHRA_ATOMIC_LOAD(ptr) atomic_load(ptr)
-    #define ASTHRA_ATOMIC_STORE(ptr, val) atomic_store(ptr, val)
-    #define ASTHRA_ATOMIC_FETCH_ADD(ptr, val) atomic_fetch_add(ptr, val)
-    #define ASTHRA_ATOMIC_FETCH_SUB(ptr, val) atomic_fetch_sub(ptr, val)
-    #define ASTHRA_ATOMIC_COMPARE_EXCHANGE(ptr, expected, desired) \
-        atomic_compare_exchange_weak(ptr, expected, desired)
-    #define ASTHRA_ATOMIC_FLAG_TEST_AND_SET(flag) atomic_flag_test_and_set(flag)
-    #define ASTHRA_ATOMIC_FLAG_CLEAR(flag) atomic_flag_clear(flag)
-    #define ASTHRA_MEMORY_ORDER_RELAXED memory_order_relaxed
-    #define ASTHRA_MEMORY_ORDER_ACQUIRE memory_order_acquire
-    #define ASTHRA_MEMORY_ORDER_RELEASE memory_order_release
+#define ASTHRA_ATOMIC_LOAD(ptr) atomic_load(ptr)
+#define ASTHRA_ATOMIC_STORE(ptr, val) atomic_store(ptr, val)
+#define ASTHRA_ATOMIC_FETCH_ADD(ptr, val) atomic_fetch_add(ptr, val)
+#define ASTHRA_ATOMIC_FETCH_SUB(ptr, val) atomic_fetch_sub(ptr, val)
+#define ASTHRA_ATOMIC_COMPARE_EXCHANGE(ptr, expected, desired)                                     \
+    atomic_compare_exchange_weak(ptr, expected, desired)
+#define ASTHRA_ATOMIC_FLAG_TEST_AND_SET(flag) atomic_flag_test_and_set(flag)
+#define ASTHRA_ATOMIC_FLAG_CLEAR(flag) atomic_flag_clear(flag)
+#define ASTHRA_MEMORY_ORDER_RELAXED memory_order_relaxed
+#define ASTHRA_MEMORY_ORDER_ACQUIRE memory_order_acquire
+#define ASTHRA_MEMORY_ORDER_RELEASE memory_order_release
 #else
-    // Fallback implementations for non-C17 compilers
-    #define ASTHRA_ATOMIC_LOAD(ptr) (*(ptr))
-    #define ASTHRA_ATOMIC_STORE(ptr, val) (*(ptr) = (val))
-    #define ASTHRA_ATOMIC_FETCH_ADD(ptr, val) (__sync_fetch_and_add(ptr, val))
-    #define ASTHRA_ATOMIC_FETCH_SUB(ptr, val) (__sync_fetch_and_sub(ptr, val))
-    #define ASTHRA_ATOMIC_COMPARE_EXCHANGE(ptr, expected, desired) \
-        (__sync_bool_compare_and_swap(ptr, *(expected), desired))
-    #define ASTHRA_ATOMIC_FLAG_TEST_AND_SET(flag) (__sync_lock_test_and_set(&(flag)->flag, true))
-    #define ASTHRA_ATOMIC_FLAG_CLEAR(flag) (__sync_lock_release(&(flag)->flag))
-    #define ASTHRA_MEMORY_ORDER_RELAXED 0
-    #define ASTHRA_MEMORY_ORDER_ACQUIRE 0
-    #define ASTHRA_MEMORY_ORDER_RELEASE 0
+// Fallback implementations for non-C17 compilers
+#define ASTHRA_ATOMIC_LOAD(ptr) (*(ptr))
+#define ASTHRA_ATOMIC_STORE(ptr, val) (*(ptr) = (val))
+#define ASTHRA_ATOMIC_FETCH_ADD(ptr, val) (__sync_fetch_and_add(ptr, val))
+#define ASTHRA_ATOMIC_FETCH_SUB(ptr, val) (__sync_fetch_and_sub(ptr, val))
+#define ASTHRA_ATOMIC_COMPARE_EXCHANGE(ptr, expected, desired)                                     \
+    (__sync_bool_compare_and_swap(ptr, *(expected), desired))
+#define ASTHRA_ATOMIC_FLAG_TEST_AND_SET(flag) (__sync_lock_test_and_set(&(flag)->flag, true))
+#define ASTHRA_ATOMIC_FLAG_CLEAR(flag) (__sync_lock_release(&(flag)->flag))
+#define ASTHRA_MEMORY_ORDER_RELAXED 0
+#define ASTHRA_MEMORY_ORDER_ACQUIRE 0
+#define ASTHRA_MEMORY_ORDER_RELEASE 0
 #endif
 
 // Aligned allocation wrapper
 #if ASTHRA_HAS_ALIGNED_ALLOC
-    #define ASTHRA_ALIGNED_ALLOC(alignment, size) aligned_alloc(alignment, size)
-    #define ASTHRA_ALIGNED_FREE(ptr) free(ptr)
+#define ASTHRA_ALIGNED_ALLOC(alignment, size) aligned_alloc(alignment, size)
+#define ASTHRA_ALIGNED_FREE(ptr) free(ptr)
 #else
-    // Fallback using posix_memalign
-    static inline void* asthra_fallback_aligned_alloc(size_t alignment, size_t size) {
-        void *ptr = NULL;
-        if (posix_memalign(&ptr, alignment, size) != 0) {
-            return NULL;
-        }
-        return ptr;
+// Fallback using posix_memalign
+static inline void *asthra_fallback_aligned_alloc(size_t alignment, size_t size) {
+    void *ptr = NULL;
+    if (posix_memalign(&ptr, alignment, size) != 0) {
+        return NULL;
     }
-    #define ASTHRA_ALIGNED_ALLOC(alignment, size) asthra_fallback_aligned_alloc(alignment, size)
-    #define ASTHRA_ALIGNED_FREE(ptr) free(ptr)
+    return ptr;
+}
+#define ASTHRA_ALIGNED_ALLOC(alignment, size) asthra_fallback_aligned_alloc(alignment, size)
+#define ASTHRA_ALIGNED_FREE(ptr) free(ptr)
 #endif
 
 // =============================================================================
@@ -96,14 +96,14 @@ typedef struct {
     AsthraCsprng *global_csprng;
     AsthraScheduler *global_scheduler;
     AsthraError last_error;
-    AsthraAtomicMemoryStats atomic_stats;  // C17 atomic statistics
+    AsthraAtomicMemoryStats atomic_stats; // C17 atomic statistics
     pthread_mutex_t error_mutex;
-    
+
     // Command-line arguments storage
     int argc;
     char **argv;
-    AsthraSliceHeader args_slice;  // Cached slice of strings for args() function
-    bool args_slice_initialized;    // Whether args_slice has been created
+    AsthraSliceHeader args_slice; // Cached slice of strings for args() function
+    bool args_slice_initialized;  // Whether args_slice has been created
 } AsthraRuntimeState;
 
 static AsthraRuntimeState g_runtime = {0};
@@ -117,16 +117,13 @@ static void init_thread_gc_state(void) {
     if (asthra_thread_gc_state == NULL) {
         asthra_thread_gc_state = malloc(sizeof(AsthraThreadGCState));
         if (asthra_thread_gc_state) {
-            *asthra_thread_gc_state = (AsthraThreadGCState){
-                .gc_roots = NULL,
-                .root_count = 0,
-                .root_capacity = 0
-            };
-            #if ASTHRA_HAS_ATOMICS
+            *asthra_thread_gc_state =
+                (AsthraThreadGCState){.gc_roots = NULL, .root_count = 0, .root_capacity = 0};
+#if ASTHRA_HAS_ATOMICS
             atomic_init(&asthra_thread_gc_state->allocations_since_gc, 0);
-            #else
+#else
             asthra_thread_gc_state->allocations_since_gc = 0;
-            #endif
+#endif
         }
     }
 }
@@ -159,14 +156,14 @@ int asthra_runtime_init_with_args(AsthraGCConfig *gc_config, int argc, char **ar
     } else {
         g_runtime.gc_config = ASTHRA_DEFAULT_GC_CONFIG;
     }
-    
+
     // Store command-line arguments
     g_runtime.argc = argc;
     g_runtime.argv = argv;
-    g_runtime.args_slice_initialized = false;  // Will be created lazily when needed
+    g_runtime.args_slice_initialized = false; // Will be created lazily when needed
 
-    // Initialize atomic statistics with C17 atomic initialization
-    #if ASTHRA_HAS_ATOMICS
+// Initialize atomic statistics with C17 atomic initialization
+#if ASTHRA_HAS_ATOMICS
     atomic_init(&g_runtime.atomic_stats.total_allocations, 0);
     atomic_init(&g_runtime.atomic_stats.total_deallocations, 0);
     atomic_init(&g_runtime.atomic_stats.current_memory_usage, 0);
@@ -177,7 +174,7 @@ int asthra_runtime_init_with_args(AsthraGCConfig *gc_config, int argc, char **ar
     atomic_init(&g_runtime.atomic_stats.tasks_completed, 0);
     atomic_init(&g_runtime.atomic_stats.ffi_calls, 0);
     atomic_init(&g_runtime.atomic_stats.gc_running, false);
-    #else
+#else
     g_runtime.atomic_stats.total_allocations = 0;
     g_runtime.atomic_stats.total_deallocations = 0;
     g_runtime.atomic_stats.current_memory_usage = 0;
@@ -188,7 +185,7 @@ int asthra_runtime_init_with_args(AsthraGCConfig *gc_config, int argc, char **ar
     g_runtime.atomic_stats.tasks_completed = 0;
     g_runtime.atomic_stats.ffi_calls = 0;
     g_runtime.atomic_stats.gc_running = false;
-    #endif
+#endif
 
     // Initialize global mutexes
     if (pthread_mutex_init(&g_runtime.error_mutex, NULL) != 0) {
@@ -200,12 +197,12 @@ int asthra_runtime_init_with_args(AsthraGCConfig *gc_config, int argc, char **ar
         return -1;
     }
 
-    // Initialize thread-local GC state if supported
-    #if ASTHRA_HAS_THREAD_LOCAL
+// Initialize thread-local GC state if supported
+#if ASTHRA_HAS_THREAD_LOCAL
     if (g_runtime.gc_config.use_thread_local_roots) {
         init_thread_gc_state();
     }
-    #endif
+#endif
 
     g_runtime.initialized = true;
     return 0;
@@ -222,10 +219,10 @@ void asthra_runtime_cleanup(void) {
         g_runtime.args_slice_initialized = false;
     }
 
-    // Cleanup thread-local GC state
-    #if ASTHRA_HAS_THREAD_LOCAL
+// Cleanup thread-local GC state
+#if ASTHRA_HAS_THREAD_LOCAL
     cleanup_thread_gc_state();
-    #endif
+#endif
 
     // Stop scheduler if running
     if (g_runtime.global_scheduler) {
@@ -250,10 +247,12 @@ void asthra_runtime_cleanup(void) {
 // ERROR HANDLING IMPLEMENTATION
 // =============================================================================
 
-void asthra_set_error(AsthraErrorCode code, const char *message, const char *file, int line, const char *function) {
+void asthra_set_error(AsthraErrorCode code, const char *message, const char *file, int line,
+                      const char *function) {
     pthread_mutex_lock(&g_runtime.error_mutex);
     g_runtime.last_error.code = code;
-    strncpy(g_runtime.last_error.message, message ? message : "", sizeof(g_runtime.last_error.message) - 1);
+    strncpy(g_runtime.last_error.message, message ? message : "",
+            sizeof(g_runtime.last_error.message) - 1);
     g_runtime.last_error.file = file;
     g_runtime.last_error.line = line;
     g_runtime.last_error.function = function;
@@ -288,8 +287,7 @@ AsthraRuntimeStats asthra_get_runtime_stats(void) {
         .gc_time_ms = ASTHRA_ATOMIC_LOAD(&g_runtime.atomic_stats.gc_time_ms),
         .tasks_spawned = ASTHRA_ATOMIC_LOAD(&g_runtime.atomic_stats.tasks_spawned),
         .tasks_completed = ASTHRA_ATOMIC_LOAD(&g_runtime.atomic_stats.tasks_completed),
-        .ffi_calls = ASTHRA_ATOMIC_LOAD(&g_runtime.atomic_stats.ffi_calls)
-    };
+        .ffi_calls = ASTHRA_ATOMIC_LOAD(&g_runtime.atomic_stats.ffi_calls)};
     pthread_mutex_unlock(&g_runtime.error_mutex);
     return stats;
 }
@@ -317,18 +315,14 @@ uint64_t asthra_get_timestamp_ms(void) {
 }
 
 void asthra_sleep_ms(uint64_t milliseconds) {
-    struct timespec ts = {
-        .tv_sec = (time_t)(milliseconds / 1000),
-        .tv_nsec = (long)((milliseconds % 1000) * 1000000)
-    };
+    struct timespec ts = {.tv_sec = (time_t)(milliseconds / 1000),
+                          .tv_nsec = (long)((milliseconds % 1000) * 1000000)};
     nanosleep(&ts, NULL);
 }
 
 void asthra_sleep_ns(uint64_t nanoseconds) {
-    struct timespec ts = {
-        .tv_sec = (time_t)(nanoseconds / 1000000000ULL),
-        .tv_nsec = (long)(nanoseconds % 1000000000ULL)
-    };
+    struct timespec ts = {.tv_sec = (time_t)(nanoseconds / 1000000000ULL),
+                          .tv_nsec = (long)(nanoseconds % 1000000000ULL)};
     nanosleep(&ts, NULL);
 }
 
@@ -408,34 +402,37 @@ void asthra_atomic_stats_update_ffi_call(void) {
 
 #if ASTHRA_HAS_THREAD_LOCAL
 void asthra_gc_register_thread_local_root(void *ptr) {
-    if (!ptr) return;
-    
+    if (!ptr)
+        return;
+
     init_thread_gc_state();
-    if (!asthra_thread_gc_state) return;
-    
+    if (!asthra_thread_gc_state)
+        return;
+
     // Expand capacity if needed
     if (asthra_thread_gc_state->root_count >= asthra_thread_gc_state->root_capacity) {
-        size_t new_capacity = asthra_thread_gc_state->root_capacity ? 
-                             asthra_thread_gc_state->root_capacity * 2 : 16;
-        void **new_roots = realloc(asthra_thread_gc_state->gc_roots, 
-                                  new_capacity * sizeof(void*));
-        if (!new_roots) return;
-        
+        size_t new_capacity =
+            asthra_thread_gc_state->root_capacity ? asthra_thread_gc_state->root_capacity * 2 : 16;
+        void **new_roots = realloc(asthra_thread_gc_state->gc_roots, new_capacity * sizeof(void *));
+        if (!new_roots)
+            return;
+
         asthra_thread_gc_state->gc_roots = new_roots;
         asthra_thread_gc_state->root_capacity = new_capacity;
     }
-    
+
     asthra_thread_gc_state->gc_roots[asthra_thread_gc_state->root_count++] = ptr;
 }
 
 void asthra_gc_unregister_thread_local_root(void *ptr) {
-    if (!ptr || !asthra_thread_gc_state) return;
-    
+    if (!ptr || !asthra_thread_gc_state)
+        return;
+
     for (size_t i = 0; i < asthra_thread_gc_state->root_count; i++) {
         if (asthra_thread_gc_state->gc_roots[i] == ptr) {
             // Move last element to this position
             asthra_thread_gc_state->root_count--;
-            asthra_thread_gc_state->gc_roots[i] = 
+            asthra_thread_gc_state->gc_roots[i] =
                 asthra_thread_gc_state->gc_roots[asthra_thread_gc_state->root_count];
             break;
         }
@@ -443,17 +440,18 @@ void asthra_gc_unregister_thread_local_root(void *ptr) {
 }
 
 void asthra_gc_flush_thread_local_roots(void) {
-    if (!asthra_thread_gc_state) return;
-    
+    if (!asthra_thread_gc_state)
+        return;
+
     // Register all thread-local roots with global GC
     for (size_t i = 0; i < asthra_thread_gc_state->root_count; i++) {
         asthra_gc_register_root(asthra_thread_gc_state->gc_roots[i]);
     }
-    
+
     // Clear thread-local roots
     asthra_thread_gc_state->root_count = 0;
 }
-#endif 
+#endif
 
 // =============================================================================
 // COMMAND-LINE ARGUMENTS ACCESS
@@ -464,26 +462,27 @@ AsthraSliceHeader asthra_runtime_get_args(void) {
         // Return empty slice
         return (AsthraSliceHeader){0};
     }
-    
+
     // Create args slice lazily on first access
     if (!g_runtime.args_slice_initialized && g_runtime.argc > 0 && g_runtime.argv != NULL) {
         // Allocate array for strings
-        AsthraString *strings = (AsthraString*)asthra_alloc(sizeof(AsthraString) * g_runtime.argc, ASTHRA_ZONE_GC);
+        AsthraString *strings =
+            (AsthraString *)asthra_alloc(sizeof(AsthraString) * g_runtime.argc, ASTHRA_ZONE_GC);
         if (!strings) {
             return (AsthraSliceHeader){0};
         }
-        
+
         // Convert each C string to AsthraString
         for (int i = 0; i < g_runtime.argc; i++) {
             strings[i] = asthra_string_from_cstr(g_runtime.argv[i]);
         }
-        
+
         // Create slice from the array
-        g_runtime.args_slice = asthra_slice_from_raw_parts(strings, g_runtime.argc, sizeof(AsthraString), 
-                                                           false, ASTHRA_OWNERSHIP_GC);
+        g_runtime.args_slice = asthra_slice_from_raw_parts(
+            strings, g_runtime.argc, sizeof(AsthraString), false, ASTHRA_OWNERSHIP_GC);
         g_runtime.args_slice_initialized = true;
     }
-    
+
     return g_runtime.args_slice_initialized ? g_runtime.args_slice : (AsthraSliceHeader){0};
 }
 
@@ -496,13 +495,12 @@ AsthraSliceHeader asthra_infinite_iterator(void) {
     // The slice has a NULL data pointer and SIZE_MAX length to indicate infinity
     AsthraSliceHeader infinite_slice = {
         .ptr = NULL,
-        .len = SIZE_MAX,  // Use maximum size_t value to represent infinity
-        .cap = SIZE_MAX,  // Infinite capacity
-        .element_size = sizeof(size_t),  // Each element is a counter value
-        .ownership = ASTHRA_OWNERSHIP_GC,  // GC managed (though no actual memory)
+        .len = SIZE_MAX,                  // Use maximum size_t value to represent infinity
+        .cap = SIZE_MAX,                  // Infinite capacity
+        .element_size = sizeof(size_t),   // Each element is a counter value
+        .ownership = ASTHRA_OWNERSHIP_GC, // GC managed (though no actual memory)
         .is_mutable = false,
-        .type_id = ASTHRA_TYPE_SLICE
-    };
-    
+        .type_id = ASTHRA_TYPE_SLICE};
+
     return infinite_slice;
 }

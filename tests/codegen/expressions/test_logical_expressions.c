@@ -6,10 +6,10 @@
 /**
  * Asthra Programming Language Compiler
  * Logical Expression Generation Tests
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Test code generation for logical expressions including AND, OR, and NOT operations
  */
 
@@ -21,9 +21,10 @@
 /**
  * Test logical expression generation
  */
-AsthraTestResult test_generate_logical_expressions(AsthraTestContext* context) {
+AsthraTestResult test_generate_logical_expressions(AsthraTestContext *context) {
     // Simplified test due to implementation limitations
-    return ASTHRA_TEST_SKIP;;
+    return ASTHRA_TEST_SKIP;
+    ;
     return ASTHRA_TEST_PASS;
 }
 
@@ -94,4 +95,4 @@ AsthraTestResult test_generate_logical_expressions_original(AsthraTestContext* c
     cleanup_codegen_fixture(fixture);
     return ASTHRA_TEST_PASS;
 }
-#endif 
+#endif

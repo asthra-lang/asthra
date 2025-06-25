@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Result Type v1.2
  * Pattern Matching Engine for Result<T,E> Types
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * IMPLEMENTATION FEATURES:
  * - Result<T,E> type operations
  * - Pattern matching engine with custom handlers
@@ -12,10 +12,10 @@
  * - C17 compound literal initialization
  */
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 
 #include "asthra_runtime.h"
 
@@ -23,30 +23,22 @@
 // RESULT TYPE OPERATIONS
 // =============================================================================
 
-AsthraResult asthra_result_ok(void *value, size_t value_size, uint32_t type_id, AsthraOwnershipHint ownership) {
+AsthraResult asthra_result_ok(void *value, size_t value_size, uint32_t type_id,
+                              AsthraOwnershipHint ownership) {
     // Use C17 compound literal with designated initializers
     return (AsthraResult){
         .tag = ASTHRA_RESULT_OK,
-        .data.ok = {
-            .value = value,
-            .value_size = value_size,
-            .value_type_id = type_id
-        },
-        .ownership = ownership
-    };
+        .data.ok = {.value = value, .value_size = value_size, .value_type_id = type_id},
+        .ownership = ownership};
 }
 
-AsthraResult asthra_result_err(void *error, size_t error_size, uint32_t type_id, AsthraOwnershipHint ownership) {
+AsthraResult asthra_result_err(void *error, size_t error_size, uint32_t type_id,
+                               AsthraOwnershipHint ownership) {
     // Use C17 compound literal with designated initializers
     return (AsthraResult){
         .tag = ASTHRA_RESULT_ERR,
-        .data.err = {
-            .error = error,
-            .error_size = error_size,
-            .error_type_id = type_id
-        },
-        .ownership = ownership
-    };
+        .data.err = {.error = error, .error_size = error_size, .error_type_id = type_id},
+        .ownership = ownership};
 }
 
 bool asthra_result_is_ok(AsthraResult result) {
@@ -79,26 +71,26 @@ int asthra_result_match(AsthraResult result, AsthraMatchArm *arms, size_t arm_co
         bool matches = false;
 
         switch (arm->pattern) {
-            case ASTHRA_MATCH_OK:
-                matches = (result.tag == ASTHRA_RESULT_OK);
-                if (matches && arm->expected_type_id != 0) {
-                    matches = (result.data.ok.value_type_id == arm->expected_type_id);
-                }
-                break;
-            case ASTHRA_MATCH_ERR:
-                matches = (result.tag == ASTHRA_RESULT_ERR);
-                if (matches && arm->expected_type_id != 0) {
-                    matches = (result.data.err.error_type_id == arm->expected_type_id);
-                }
-                break;
-            case ASTHRA_MATCH_WILDCARD:
-                matches = true;
-                break;
+        case ASTHRA_MATCH_OK:
+            matches = (result.tag == ASTHRA_RESULT_OK);
+            if (matches && arm->expected_type_id != 0) {
+                matches = (result.data.ok.value_type_id == arm->expected_type_id);
+            }
+            break;
+        case ASTHRA_MATCH_ERR:
+            matches = (result.tag == ASTHRA_RESULT_ERR);
+            if (matches && arm->expected_type_id != 0) {
+                matches = (result.data.err.error_type_id == arm->expected_type_id);
+            }
+            break;
+        case ASTHRA_MATCH_WILDCARD:
+            matches = true;
+            break;
         }
 
         if (matches && arm->handler) {
-            void *data = (result.tag == ASTHRA_RESULT_OK) ? 
-                         result.data.ok.value : result.data.err.error;
+            void *data =
+                (result.tag == ASTHRA_RESULT_OK) ? result.data.ok.value : result.data.err.error;
             arm->handler(data, arm->context);
             return (int)i;
         }
@@ -189,10 +181,12 @@ AsthraResult asthra_result_err_cstr(const char *error_msg) {
     if (!error_ptr) {
         // Fallback error if we can't allocate memory for the error itself
         static AsthraString fallback_error = {0};
-        return asthra_result_err(&fallback_error, sizeof(AsthraString), ASTHRA_TYPE_STRING, ASTHRA_OWNERSHIP_C);
+        return asthra_result_err(&fallback_error, sizeof(AsthraString), ASTHRA_TYPE_STRING,
+                                 ASTHRA_OWNERSHIP_C);
     }
     *error_ptr = error_str;
-    return asthra_result_err(error_ptr, sizeof(AsthraString), ASTHRA_TYPE_STRING, ASTHRA_OWNERSHIP_GC);
+    return asthra_result_err(error_ptr, sizeof(AsthraString), ASTHRA_TYPE_STRING,
+                             ASTHRA_OWNERSHIP_GC);
 }
 
 AsthraResult asthra_result_err_string(AsthraString error_str) {
@@ -200,10 +194,12 @@ AsthraResult asthra_result_err_string(AsthraString error_str) {
     if (!error_ptr) {
         // Fallback error if we can't allocate memory for the error itself
         static AsthraString fallback_error = {0};
-        return asthra_result_err(&fallback_error, sizeof(AsthraString), ASTHRA_TYPE_STRING, ASTHRA_OWNERSHIP_C);
+        return asthra_result_err(&fallback_error, sizeof(AsthraString), ASTHRA_TYPE_STRING,
+                                 ASTHRA_OWNERSHIP_C);
     }
     *error_ptr = error_str;
-    return asthra_result_err(error_ptr, sizeof(AsthraString), ASTHRA_TYPE_STRING, ASTHRA_OWNERSHIP_GC);
+    return asthra_result_err(error_ptr, sizeof(AsthraString), ASTHRA_TYPE_STRING,
+                             ASTHRA_OWNERSHIP_GC);
 }
 
 // =============================================================================
@@ -212,85 +208,97 @@ AsthraResult asthra_result_err_string(AsthraString error_str) {
 
 int64_t asthra_result_unwrap_int64(AsthraResult result) {
     void *value = asthra_result_unwrap_ok(result);
-    if (!value) return 0;
-    return *(int64_t*)value;
+    if (!value)
+        return 0;
+    return *(int64_t *)value;
 }
 
 uint64_t asthra_result_unwrap_uint64(AsthraResult result) {
     void *value = asthra_result_unwrap_ok(result);
-    if (!value) return 0;
-    return *(uint64_t*)value;
+    if (!value)
+        return 0;
+    return *(uint64_t *)value;
 }
 
 double asthra_result_unwrap_double(AsthraResult result) {
     void *value = asthra_result_unwrap_ok(result);
-    if (!value) return 0.0;
-    return *(double*)value;
+    if (!value)
+        return 0.0;
+    return *(double *)value;
 }
 
 bool asthra_result_unwrap_bool(AsthraResult result) {
     void *value = asthra_result_unwrap_ok(result);
-    if (!value) return false;
-    return *(bool*)value;
+    if (!value)
+        return false;
+    return *(bool *)value;
 }
 
 AsthraString asthra_result_unwrap_string(AsthraResult result) {
     void *value = asthra_result_unwrap_ok(result);
-    if (!value) return (AsthraString){0};
-    return *(AsthraString*)value;
+    if (!value)
+        return (AsthraString){0};
+    return *(AsthraString *)value;
 }
 
 AsthraString asthra_result_unwrap_err_string(AsthraResult result) {
     void *error = asthra_result_unwrap_err(result);
-    if (!error) return (AsthraString){0};
-    return *(AsthraString*)error;
+    if (!error)
+        return (AsthraString){0};
+    return *(AsthraString *)error;
 }
 
 // =============================================================================
 // RESULT TRANSFORMATION FUNCTIONS
 // =============================================================================
 
-AsthraResult asthra_result_map_ok(AsthraResult result, void *(*mapper)(void *value, void *context), void *context) {
+AsthraResult asthra_result_map_ok(AsthraResult result, void *(*mapper)(void *value, void *context),
+                                  void *context) {
     if (result.tag != ASTHRA_RESULT_OK) {
         return result; // Pass through errors unchanged
     }
-    
+
     void *mapped_value = mapper(result.data.ok.value, context);
     if (!mapped_value) {
         return asthra_result_err_cstr("Mapping function returned NULL");
     }
-    
-    return asthra_result_ok(mapped_value, result.data.ok.value_size, 
-                           result.data.ok.value_type_id, result.ownership);
+
+    return asthra_result_ok(mapped_value, result.data.ok.value_size, result.data.ok.value_type_id,
+                            result.ownership);
 }
 
-AsthraResult asthra_result_map_err(AsthraResult result, void *(*mapper)(void *error, void *context), void *context) {
+AsthraResult asthra_result_map_err(AsthraResult result, void *(*mapper)(void *error, void *context),
+                                   void *context) {
     if (result.tag != ASTHRA_RESULT_ERR) {
         return result; // Pass through Ok values unchanged
     }
-    
+
     void *mapped_error = mapper(result.data.err.error, context);
     if (!mapped_error) {
         return asthra_result_err_cstr("Error mapping function returned NULL");
     }
-    
-    return asthra_result_err(mapped_error, result.data.err.error_size, 
-                            result.data.err.error_type_id, result.ownership);
+
+    return asthra_result_err(mapped_error, result.data.err.error_size,
+                             result.data.err.error_type_id, result.ownership);
 }
 
-AsthraResult asthra_result_and_then(AsthraResult result, AsthraResult (*func)(void *value, void *context), void *context) {
+AsthraResult asthra_result_and_then(AsthraResult result,
+                                    AsthraResult (*func)(void *value, void *context),
+                                    void *context) {
     if (result.tag != ASTHRA_RESULT_OK) {
         return result; // Pass through errors unchanged
     }
-    
+
     return func(result.data.ok.value, context);
 }
 
-AsthraResult asthra_result_or_else(AsthraResult result, AsthraResult (*func)(void *error, void *context), void *context) {
+AsthraResult asthra_result_or_else(AsthraResult result,
+                                   AsthraResult (*func)(void *error, void *context),
+                                   void *context) {
     if (result.tag != ASTHRA_RESULT_ERR) {
         return result; // Pass through Ok values unchanged
     }
-    
+
     return func(result.data.err.error, context);
 }
 
@@ -298,19 +306,21 @@ AsthraResult asthra_result_or_else(AsthraResult result, AsthraResult (*func)(voi
 // RESULT UTILITY FUNCTIONS
 // =============================================================================
 
-bool asthra_result_is_ok_and(AsthraResult result, bool (*predicate)(void *value, void *context), void *context) {
+bool asthra_result_is_ok_and(AsthraResult result, bool (*predicate)(void *value, void *context),
+                             void *context) {
     if (result.tag != ASTHRA_RESULT_OK) {
         return false;
     }
-    
+
     return predicate ? predicate(result.data.ok.value, context) : true;
 }
 
-bool asthra_result_is_err_and(AsthraResult result, bool (*predicate)(void *error, void *context), void *context) {
+bool asthra_result_is_err_and(AsthraResult result, bool (*predicate)(void *error, void *context),
+                              void *context) {
     if (result.tag != ASTHRA_RESULT_ERR) {
         return false;
     }
-    
+
     return predicate ? predicate(result.data.err.error, context) : true;
 }
 
@@ -321,7 +331,8 @@ void *asthra_result_unwrap_or(AsthraResult result, void *default_value) {
     return default_value;
 }
 
-void *asthra_result_unwrap_or_else(AsthraResult result, void *(*func)(void *error, void *context), void *context) {
+void *asthra_result_unwrap_or_else(AsthraResult result, void *(*func)(void *error, void *context),
+                                   void *context) {
     if (result.tag == ASTHRA_RESULT_OK) {
         return result.data.ok.value;
     }

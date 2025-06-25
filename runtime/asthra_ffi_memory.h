@@ -1,10 +1,10 @@
 /**
  * Asthra Safe C Memory Interface v1.0
  * Enhanced FFI Memory Management with Slice Support and Pattern Matching
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * DESIGN GOALS:
  * - Safe boundary between Asthra GC and C manual memory
  * - Formalized slice management with SliceHeader<T> structure
@@ -17,10 +17,11 @@
 #ifndef ASTHRA_FFI_MEMORY_H
 #define ASTHRA_FFI_MEMORY_H
 
+#include <stdarg.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
-#include <stdarg.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,20 +35,20 @@ extern "C" {
  * Memory zone hints for allocation strategy
  */
 typedef enum {
-    ASTHRA_ZONE_HINT_GC,           // Prefer GC-managed heap
-    ASTHRA_ZONE_HINT_MANUAL,       // Prefer manual memory zone
-    ASTHRA_ZONE_HINT_PINNED,       // Prefer pinned memory zone
-    ASTHRA_ZONE_HINT_STACK,        // Stack-allocated (temporary)
-    ASTHRA_ZONE_HINT_SECURE        // Secure memory (locked, zeroed on free)
+    ASTHRA_ZONE_HINT_GC,     // Prefer GC-managed heap
+    ASTHRA_ZONE_HINT_MANUAL, // Prefer manual memory zone
+    ASTHRA_ZONE_HINT_PINNED, // Prefer pinned memory zone
+    ASTHRA_ZONE_HINT_STACK,  // Stack-allocated (temporary)
+    ASTHRA_ZONE_HINT_SECURE  // Secure memory (locked, zeroed on free)
 } AsthraMemoryZoneHint;
 
 /**
  * Ownership transfer semantics for FFI operations
  */
 typedef enum {
-    ASTHRA_OWNERSHIP_TRANSFER_FULL,    // Full ownership transfer
-    ASTHRA_OWNERSHIP_TRANSFER_NONE,    // No ownership transfer (borrowed)
-    ASTHRA_OWNERSHIP_TRANSFER_SHARED   // Shared ownership (reference counted)
+    ASTHRA_OWNERSHIP_TRANSFER_FULL,  // Full ownership transfer
+    ASTHRA_OWNERSHIP_TRANSFER_NONE,  // No ownership transfer (borrowed)
+    ASTHRA_OWNERSHIP_TRANSFER_SHARED // Shared ownership (reference counted)
 } AsthraOwnershipTransfer;
 
 /**
@@ -66,15 +67,12 @@ typedef struct {
     uint32_t magic;                    // Magic number for validation
 } AsthraFFISliceHeader;
 
-#define ASTHRA_SLICE_MAGIC 0x534C4943  // "SLIC" in hex
+#define ASTHRA_SLICE_MAGIC 0x534C4943 // "SLIC" in hex
 
 /**
  * Result type for FFI operations with enhanced error information
  */
-typedef enum {
-    ASTHRA_FFI_RESULT_OK,
-    ASTHRA_FFI_RESULT_ERR
-} AsthraFFIResultTag;
+typedef enum { ASTHRA_FFI_RESULT_OK, ASTHRA_FFI_RESULT_ERR } AsthraFFIResultTag;
 
 typedef struct {
     AsthraFFIResultTag tag;
@@ -111,11 +109,16 @@ typedef struct {
 typedef enum {
     ASTHRA_VARIANT_NULL,
     ASTHRA_VARIANT_BOOL,
-    ASTHRA_VARIANT_I8, ASTHRA_VARIANT_U8,
-    ASTHRA_VARIANT_I16, ASTHRA_VARIANT_U16,
-    ASTHRA_VARIANT_I32, ASTHRA_VARIANT_U32,
-    ASTHRA_VARIANT_I64, ASTHRA_VARIANT_U64,
-    ASTHRA_VARIANT_F32, ASTHRA_VARIANT_F64,
+    ASTHRA_VARIANT_I8,
+    ASTHRA_VARIANT_U8,
+    ASTHRA_VARIANT_I16,
+    ASTHRA_VARIANT_U16,
+    ASTHRA_VARIANT_I32,
+    ASTHRA_VARIANT_U32,
+    ASTHRA_VARIANT_I64,
+    ASTHRA_VARIANT_U64,
+    ASTHRA_VARIANT_F32,
+    ASTHRA_VARIANT_F64,
     ASTHRA_VARIANT_PTR,
     ASTHRA_VARIANT_STRING,
     ASTHRA_VARIANT_SLICE
@@ -125,11 +128,16 @@ typedef struct {
     AsthraVariantType type;
     union {
         bool bool_val;
-        int8_t i8_val; uint8_t u8_val;
-        int16_t i16_val; uint16_t u16_val;
-        int32_t i32_val; uint32_t u32_val;
-        int64_t i64_val; uint64_t u64_val;
-        float f32_val; double f64_val;
+        int8_t i8_val;
+        uint8_t u8_val;
+        int16_t i16_val;
+        uint16_t u16_val;
+        int32_t i32_val;
+        uint32_t u32_val;
+        int64_t i64_val;
+        uint64_t u64_val;
+        float f32_val;
+        double f64_val;
         void *ptr_val;
         AsthraFFIString string_val;
         AsthraFFISliceHeader slice_val;
@@ -152,14 +160,14 @@ typedef struct {
  * zone_hint Preferred memory zone
  * Pointer to allocated memory or NULL on failure
  */
-void* Asthra_ffi_alloc(size_t size, AsthraMemoryZoneHint zone_hint);
+void *Asthra_ffi_alloc(size_t size, AsthraMemoryZoneHint zone_hint);
 
 /**
  * Free memory with zone hint and ownership validation
  * ptr Pointer to memory to free
  * current_zone_hint Current zone hint for validation
  */
-void Asthra_ffi_free(void* ptr, AsthraMemoryZoneHint current_zone_hint);
+void Asthra_ffi_free(void *ptr, AsthraMemoryZoneHint current_zone_hint);
 
 /**
  * Reallocate memory with zone migration support
@@ -168,7 +176,7 @@ void Asthra_ffi_free(void* ptr, AsthraMemoryZoneHint current_zone_hint);
  * zone_hint Target zone hint
  * Pointer to reallocated memory or NULL on failure
  */
-void* Asthra_ffi_realloc(void* ptr, size_t new_size, AsthraMemoryZoneHint zone_hint);
+void *Asthra_ffi_realloc(void *ptr, size_t new_size, AsthraMemoryZoneHint zone_hint);
 
 /**
  * Allocate zeroed memory
@@ -176,7 +184,7 @@ void* Asthra_ffi_realloc(void* ptr, size_t new_size, AsthraMemoryZoneHint zone_h
  * zone_hint Preferred memory zone
  * Pointer to zeroed memory or NULL on failure
  */
-void* Asthra_ffi_alloc_zeroed(size_t size, AsthraMemoryZoneHint zone_hint);
+void *Asthra_ffi_alloc_zeroed(size_t size, AsthraMemoryZoneHint zone_hint);
 
 // =============================================================================
 // FORMALIZED SLICE MANAGEMENT
@@ -191,9 +199,9 @@ void* Asthra_ffi_alloc_zeroed(size_t size, AsthraMemoryZoneHint zone_hint);
  * ownership Ownership transfer semantics
  * Initialized slice header
  */
-AsthraFFISliceHeader Asthra_slice_from_raw_parts(void* c_array_ptr, size_t len, 
-                                              size_t element_size, bool is_mutable, 
-                                              AsthraOwnershipTransfer ownership);
+AsthraFFISliceHeader Asthra_slice_from_raw_parts(void *c_array_ptr, size_t len, size_t element_size,
+                                                 bool is_mutable,
+                                                 AsthraOwnershipTransfer ownership);
 
 /**
  * Create new slice with specified capacity
@@ -203,15 +211,15 @@ AsthraFFISliceHeader Asthra_slice_from_raw_parts(void* c_array_ptr, size_t len,
  * zone_hint Memory zone hint
  * Initialized slice header
  */
-AsthraFFISliceHeader Asthra_slice_new(size_t element_size, size_t len, size_t cap, 
-                                   AsthraMemoryZoneHint zone_hint);
+AsthraFFISliceHeader Asthra_slice_new(size_t element_size, size_t len, size_t cap,
+                                      AsthraMemoryZoneHint zone_hint);
 
 /**
  * Get pointer from slice with bounds validation
  * slice Slice header
  * Pointer to slice data or NULL if invalid
  */
-void* Asthra_slice_get_ptr(AsthraFFISliceHeader slice);
+void *Asthra_slice_get_ptr(AsthraFFISliceHeader slice);
 
 /**
  * Get length from slice
@@ -249,7 +257,8 @@ AsthraFFIResult Asthra_slice_bounds_check(AsthraFFISliceHeader slice, size_t ind
  * out_element Output buffer for element (must be element_size bytes)
  * Result indicating success or error
  */
-AsthraFFIResult Asthra_slice_get_element(AsthraFFISliceHeader slice, size_t index, void* out_element);
+AsthraFFIResult Asthra_slice_get_element(AsthraFFISliceHeader slice, size_t index,
+                                         void *out_element);
 
 /**
  * Set element in slice with bounds checking
@@ -258,7 +267,8 @@ AsthraFFIResult Asthra_slice_get_element(AsthraFFISliceHeader slice, size_t inde
  * element Element data to set (must be element_size bytes)
  * Result indicating success or error
  */
-AsthraFFIResult Asthra_slice_set_element(AsthraFFISliceHeader slice, size_t index, const void* element);
+AsthraFFIResult Asthra_slice_set_element(AsthraFFISliceHeader slice, size_t index,
+                                         const void *element);
 
 /**
  * Create subslice from existing slice
@@ -292,7 +302,7 @@ bool Asthra_slice_is_valid(AsthraFFISliceHeader slice);
  * ownership Ownership transfer semantics
  * FFI string structure
  */
-AsthraFFIString Asthra_string_from_cstr(const char* cstr, AsthraOwnershipTransfer ownership);
+AsthraFFIString Asthra_string_from_cstr(const char *cstr, AsthraOwnershipTransfer ownership);
 
 /**
  * Concatenate two FFI strings
@@ -308,7 +318,7 @@ AsthraFFIResult Asthra_string_concat(AsthraFFIString a, AsthraFFIString b);
  * args Array of variant arguments
  * Result containing interpolated string or error
  */
-AsthraFFIResult Asthra_string_interpolate(const char* template, AsthraVariantArray args);
+AsthraFFIResult Asthra_string_interpolate(const char *template, AsthraVariantArray args);
 
 /**
  * Convert FFI string to C string
@@ -316,7 +326,7 @@ AsthraFFIResult Asthra_string_interpolate(const char* template, AsthraVariantArr
  * transfer_ownership Whether to transfer ownership to caller
  * C string (caller must free if transfer_ownership is true)
  */
-char* Asthra_string_to_cstr(AsthraFFIString s, bool transfer_ownership);
+char *Asthra_string_to_cstr(AsthraFFIString s, bool transfer_ownership);
 
 /**
  * Convert FFI string to slice
@@ -343,8 +353,8 @@ void Asthra_string_free(AsthraFFIString s);
  * ownership Ownership transfer semantics
  * Result structure with OK status
  */
-AsthraFFIResult Asthra_result_ok(void* value, size_t value_size, uint32_t type_id, 
-                                AsthraOwnershipTransfer ownership);
+AsthraFFIResult Asthra_result_ok(void *value, size_t value_size, uint32_t type_id,
+                                 AsthraOwnershipTransfer ownership);
 
 /**
  * Create error result
@@ -354,8 +364,8 @@ AsthraFFIResult Asthra_result_ok(void* value, size_t value_size, uint32_t type_i
  * error_context Additional error context
  * Result structure with ERR status
  */
-AsthraFFIResult Asthra_result_err(int error_code, const char* error_message, 
-                                 const char* error_source, void* error_context);
+AsthraFFIResult Asthra_result_err(int error_code, const char *error_message,
+                                  const char *error_source, void *error_context);
 
 /**
  * Check if result is OK
@@ -376,7 +386,7 @@ bool Asthra_result_is_err(AsthraFFIResult result);
  * result Result to unwrap
  * Pointer to value data
  */
-void* Asthra_result_unwrap_ok(AsthraFFIResult result);
+void *Asthra_result_unwrap_ok(AsthraFFIResult result);
 
 /**
  * Get error code from result (unsafe - check is_err first)
@@ -390,7 +400,7 @@ int Asthra_result_get_error_code(AsthraFFIResult result);
  * result Result to get error from
  * Error message string
  */
-const char* Asthra_result_get_error_message(AsthraFFIResult result);
+const char *Asthra_result_get_error_message(AsthraFFIResult result);
 
 /**
  * Free result and its contained data
@@ -415,7 +425,7 @@ AsthraVariantArray Asthra_variant_array_new(size_t initial_capacity);
  * variant Variant to add
  * Result indicating success or error
  */
-AsthraFFIResult Asthra_variant_array_push(AsthraVariantArray* array, AsthraVariant variant);
+AsthraFFIResult Asthra_variant_array_push(AsthraVariantArray *array, AsthraVariant variant);
 
 /**
  * Get variant from array
@@ -446,21 +456,21 @@ void Asthra_secure_zero_slice(AsthraFFISliceHeader slice_ref);
  * ptr Pointer to memory
  * size Size in bytes
  */
-void Asthra_secure_zero(void* ptr, size_t size);
+void Asthra_secure_zero(void *ptr, size_t size);
 
 /**
  * Allocate secure memory (locked, zeroed on free)
  * size Size in bytes
  * Pointer to secure memory or NULL on failure
  */
-void* Asthra_secure_alloc(size_t size);
+void *Asthra_secure_alloc(size_t size);
 
 /**
  * Free secure memory with automatic zeroing
  * ptr Pointer to secure memory
  * size Size in bytes (for verification)
  */
-void Asthra_secure_free(void* ptr, size_t size);
+void Asthra_secure_free(void *ptr, size_t size);
 
 // =============================================================================
 // OWNERSHIP TRACKING AND VALIDATION
@@ -474,16 +484,15 @@ void Asthra_secure_free(void* ptr, size_t size);
  * cleanup Cleanup function (can be NULL)
  * Result indicating success or error
  */
-AsthraFFIResult Asthra_ownership_register(void* ptr, size_t size, 
-                                         AsthraOwnershipTransfer ownership,
-                                         void (*cleanup)(void*));
+AsthraFFIResult Asthra_ownership_register(void *ptr, size_t size, AsthraOwnershipTransfer ownership,
+                                          void (*cleanup)(void *));
 
 /**
  * Unregister external pointer
  * ptr Pointer to unregister
  * Result indicating success or error
  */
-AsthraFFIResult Asthra_ownership_unregister(void* ptr);
+AsthraFFIResult Asthra_ownership_unregister(void *ptr);
 
 /**
  * Transfer ownership of pointer
@@ -491,14 +500,14 @@ AsthraFFIResult Asthra_ownership_unregister(void* ptr);
  * new_ownership New ownership semantics
  * Result indicating success or error
  */
-AsthraFFIResult Asthra_ownership_transfer(void* ptr, AsthraOwnershipTransfer new_ownership);
+AsthraFFIResult Asthra_ownership_transfer(void *ptr, AsthraOwnershipTransfer new_ownership);
 
 /**
  * Query ownership of pointer
  * ptr Pointer to query
  * Result containing ownership information or error
  */
-AsthraFFIResult Asthra_ownership_query(void* ptr);
+AsthraFFIResult Asthra_ownership_query(void *ptr);
 
 // =============================================================================
 // DEBUGGING AND DIAGNOSTICS
@@ -539,10 +548,10 @@ AsthraFFIResult Asthra_ffi_validate_all_pointers(void);
  * Dump memory state for debugging
  * output_file File to write debug output (NULL for stderr)
  */
-void Asthra_ffi_dump_memory_state(FILE* output_file);
+void Asthra_ffi_dump_memory_state(FILE *output_file);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ASTHRA_FFI_MEMORY_H 
+#endif // ASTHRA_FFI_MEMORY_H

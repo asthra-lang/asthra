@@ -1,32 +1,34 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Analyzer Core
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Main semantic analyzer structure and core operation declarations
  */
 
 #ifndef ASTHRA_SEMANTIC_ANALYZER_CORE_H
 #define ASTHRA_SEMANTIC_ANALYZER_CORE_H
 
-#include "semantic_types_defs.h"
-#include "semantic_symbols_defs.h"
-#include "semantic_errors_defs.h"
 #include "../parser/ast.h"
 #include "../parser/ast_types.h"
+#include "semantic_errors_defs.h"
+#include "semantic_symbols_defs.h"
+#include "semantic_types_defs.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 // C17 static assertions for semantic analysis assumptions
-_Static_assert(sizeof(size_t) >= sizeof(uint32_t), "size_t must be at least 32-bit for symbol table");
-_Static_assert(__STDC_VERSION__ >= 201710L, "C17 standard required for semantic analysis modernization");
+_Static_assert(sizeof(size_t) >= sizeof(uint32_t),
+               "size_t must be at least 32-bit for symbol table");
+_Static_assert(__STDC_VERSION__ >= 201710L,
+               "C17 standard required for semantic analysis modernization");
 
 // =============================================================================
 // SEMANTIC ANALYZER STRUCTURE
@@ -37,27 +39,27 @@ typedef struct SemanticAnalyzer {
     SymbolTable *current_scope;
     TypeDescriptor **builtin_types;
     size_t builtin_type_count;
-    
+
     // Predeclared identifiers (log, range, etc.)
     PredeclaredIdentifier *predeclared_identifiers;
     size_t predeclared_count;
-    
+
     // Error handling
     SemanticError *errors;
     SemanticError *last_error;
     size_t error_count;
     size_t max_errors;
-    
+
     // Statistics
     SemanticStatistics stats;
-    
+
     // Context tracking
-    bool in_unsafe_context;  // Track if we're currently inside an unsafe block
-    SymbolEntry *current_function;  // Track the function currently being analyzed
-    size_t loop_depth;  // Track nesting depth of loops for break/continue validation
-    bool in_unreachable_code;  // Track if we're analyzing unreachable code
-    TypeDescriptor *expected_type;  // Track expected type for context-based type inference
-    
+    bool in_unsafe_context;        // Track if we're currently inside an unsafe block
+    SymbolEntry *current_function; // Track the function currently being analyzed
+    size_t loop_depth;             // Track nesting depth of loops for break/continue validation
+    bool in_unreachable_code;      // Track if we're analyzing unreachable code
+    TypeDescriptor *expected_type; // Track expected type for context-based type inference
+
     // Configuration
     struct {
         bool strict_mode;
@@ -65,7 +67,7 @@ typedef struct SemanticAnalyzer {
         bool check_ownership;
         bool validate_ffi;
         bool enable_warnings;
-        bool test_mode;  // More permissive mode for test contexts
+        bool test_mode; // More permissive mode for test contexts
     } config;
 } SemanticAnalyzer;
 
@@ -89,20 +91,14 @@ bool semantic_analyze_expression(SemanticAnalyzer *analyzer, ASTNode *expr);
 
 // Type checking
 TypeDescriptor *semantic_get_expression_type(SemanticAnalyzer *analyzer, ASTNode *expr);
-bool semantic_check_type_compatibility(SemanticAnalyzer *analyzer, 
-                                      TypeDescriptor *expected, 
-                                      TypeDescriptor *actual);
-bool semantic_can_cast(SemanticAnalyzer *analyzer, 
-                      TypeDescriptor *from, 
-                      TypeDescriptor *to);
+bool semantic_check_type_compatibility(SemanticAnalyzer *analyzer, TypeDescriptor *expected,
+                                       TypeDescriptor *actual);
+bool semantic_can_cast(SemanticAnalyzer *analyzer, TypeDescriptor *from, TypeDescriptor *to);
 
 // Symbol resolution
 SymbolEntry *semantic_resolve_identifier(SemanticAnalyzer *analyzer, const char *name);
-bool semantic_declare_symbol(SemanticAnalyzer *analyzer, 
-                            const char *name, 
-                            SymbolKind kind, 
-                            TypeDescriptor *type, 
-                            ASTNode *declaration);
+bool semantic_declare_symbol(SemanticAnalyzer *analyzer, const char *name, SymbolKind kind,
+                             TypeDescriptor *type, ASTNode *declaration);
 
 // Scope management
 void semantic_enter_scope(SemanticAnalyzer *analyzer);
@@ -120,7 +116,8 @@ TypeDescriptor *type_descriptor_create_slice(TypeDescriptor *element_type);
 TypeDescriptor *type_descriptor_create_result(TypeDescriptor *ok_type, TypeDescriptor *err_type);
 TypeDescriptor *type_descriptor_create_pointer(TypeDescriptor *pointee_type);
 TypeDescriptor *type_descriptor_create_function(void);
-TypeDescriptor *type_descriptor_create_function_with_params(TypeDescriptor *return_type, size_t param_count);
+TypeDescriptor *type_descriptor_create_function_with_params(TypeDescriptor *return_type,
+                                                            size_t param_count);
 void type_descriptor_retain(TypeDescriptor *type);
 void type_descriptor_release(TypeDescriptor *type);
 bool type_descriptor_equals(const TypeDescriptor *type1, const TypeDescriptor *type2);
@@ -148,10 +145,8 @@ SymbolEntry *symbol_table_lookup_safe(SymbolTable *table, const char *name);
 bool symbol_table_remove_safe(SymbolTable *table, const char *name);
 
 // Symbol entry management
-SymbolEntry *symbol_entry_create(const char *name, 
-                                SymbolKind kind, 
-                                TypeDescriptor *type, 
-                                ASTNode *declaration);
+SymbolEntry *symbol_entry_create(const char *name, SymbolKind kind, TypeDescriptor *type,
+                                 ASTNode *declaration);
 void symbol_entry_destroy(SymbolEntry *entry);
 
 // =============================================================================
@@ -159,8 +154,8 @@ void symbol_entry_destroy(SymbolEntry *entry);
 // =============================================================================
 
 // Alias management functions
-bool symbol_table_add_alias(SymbolTable *table, const char *alias_name, 
-                           const char *module_path, SymbolTable *module_symbols);
+bool symbol_table_add_alias(SymbolTable *table, const char *alias_name, const char *module_path,
+                            SymbolTable *module_symbols);
 SymbolTable *symbol_table_resolve_alias(SymbolTable *table, const char *alias_name);
 void symbol_table_clear_aliases(SymbolTable *table);
 
@@ -169,13 +164,10 @@ void symbol_table_clear_aliases(SymbolTable *table);
 // =============================================================================
 
 // Error management
-void semantic_report_error(SemanticAnalyzer *analyzer, 
-                          SemanticErrorCode code, 
-                          SourceLocation location, 
-                          const char *format, ...);
-void semantic_report_warning(SemanticAnalyzer *analyzer, 
-                            SourceLocation location, 
-                            const char *format, ...);
+void semantic_report_error(SemanticAnalyzer *analyzer, SemanticErrorCode code,
+                           SourceLocation location, const char *format, ...);
+void semantic_report_warning(SemanticAnalyzer *analyzer, SourceLocation location,
+                             const char *format, ...);
 
 // Error retrieval
 const SemanticError *semantic_get_errors(const SemanticAnalyzer *analyzer);
@@ -202,14 +194,16 @@ bool semantic_validate_extern_function(SemanticAnalyzer *analyzer, ASTNode *exte
 
 // Security annotation validation
 bool semantic_check_security_annotations(SemanticAnalyzer *analyzer, ASTNodeList *annotations);
-bool semantic_validate_security_annotation_context(SemanticAnalyzer *analyzer, ASTNode *node, SecurityType security_type);
+bool semantic_validate_security_annotation_context(SemanticAnalyzer *analyzer, ASTNode *node,
+                                                   SecurityType security_type);
 bool semantic_validate_constant_time_function(SemanticAnalyzer *analyzer, ASTNode *func_decl);
 bool semantic_validate_constant_time_block(SemanticAnalyzer *analyzer, ASTNode *block);
 bool semantic_validate_constant_time_statement(SemanticAnalyzer *analyzer, ASTNode *stmt);
 bool semantic_validate_constant_time_call(SemanticAnalyzer *analyzer, ASTNode *call_expr);
 bool semantic_validate_constant_time_expression(SemanticAnalyzer *analyzer, ASTNode *expr);
 bool semantic_validate_ffi_constant_time_safety(SemanticAnalyzer *analyzer, ASTNode *extern_decl);
-bool semantic_validate_ffi_parameter_constant_time_safety(SemanticAnalyzer *analyzer, ASTNode *param);
+bool semantic_validate_ffi_parameter_constant_time_safety(SemanticAnalyzer *analyzer,
+                                                          ASTNode *param);
 bool semantic_validate_volatile_memory_access(SemanticAnalyzer *analyzer, ASTNode *node);
 bool semantic_validate_ffi_volatile_memory_safety(SemanticAnalyzer *analyzer, ASTNode *call_expr);
 bool semantic_validate_volatile_memory_argument(SemanticAnalyzer *analyzer, ASTNode *arg);
@@ -221,7 +215,8 @@ bool semantic_has_constant_time_annotation(ASTNode *declaration);
 
 // Pattern matching analysis
 bool semantic_check_pattern_exhaustiveness(SemanticAnalyzer *analyzer, ASTNode *match_stmt);
-bool semantic_validate_pattern_types(SemanticAnalyzer *analyzer, ASTNode *pattern, TypeDescriptor *expected);
+bool semantic_validate_pattern_types(SemanticAnalyzer *analyzer, ASTNode *pattern,
+                                     TypeDescriptor *expected);
 
 // Expression analysis
 bool semantic_is_lvalue(SemanticAnalyzer *analyzer, ASTNode *expr);
@@ -249,4 +244,4 @@ double semantic_get_analysis_time(const SemanticAnalyzer *analyzer);
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_ANALYZER_CORE_H 
+#endif // ASTHRA_SEMANTIC_ANALYZER_CORE_H

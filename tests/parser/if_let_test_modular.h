@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language
  * If-Let Statement Testing - Modular Interface
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Umbrella header providing 100% backward compatibility with the original
  * test_if_let_phase4_comprehensive.c interface while using modular architecture
  */
@@ -13,11 +13,11 @@
 #define IF_LET_TEST_MODULAR_H
 
 // Include all modular components
+#include "if_let_test_codegen.h"
 #include "if_let_test_common.h"
+#include "if_let_test_integration.h"
 #include "if_let_test_parser.h"
 #include "if_let_test_semantic.h"
-#include "if_let_test_codegen.h"
-#include "if_let_test_integration.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,4 +45,4 @@ int if_let_test_main(void);
 }
 #endif
 
-#endif // IF_LET_TEST_MODULAR_H 
+#endif // IF_LET_TEST_MODULAR_H

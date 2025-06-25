@@ -1,9 +1,9 @@
 /**
  * Real Program Validation Tests - Main Test Runner
- * 
+ *
  * Phase 3: Real Testing Infrastructure Implementation
  * Day 2: Complete Program Test Cases
- * 
+ *
  * Copyright (c) 2025 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -11,10 +11,10 @@
 #include "real_program_validation_common.h"
 
 // Include all test implementation files
-#include "real_program_validation_valid_tests.c"
+#include "real_program_validation_feature_tests.c"
 #include "real_program_validation_invalid_tests.c"
 #include "real_program_validation_performance_tests.c"
-#include "real_program_validation_feature_tests.c"
+#include "real_program_validation_valid_tests.c"
 
 // =============================================================================
 // MAIN EXECUTION FUNCTIONS
@@ -27,16 +27,16 @@ int run_comprehensive_validation(bool verbose) {
     TestSuiteConfig config = create_default_config();
     config.verbose_output = verbose;
     config.stop_on_first_failure = false;
-    
+
     printf("=== ASTHRA REAL PROGRAM VALIDATION SUITE ===\n");
     printf("Phase 3: Real Testing Infrastructure Implementation\n");
     printf("Testing complete programs to prevent false positives\n\n");
-    
+
     int total_failures = 0;
-    
+
     // Test 1: Valid Programs
     printf("1. Running Valid Program Tests...\n");
-    RealProgramTestSuite* valid_suite = create_valid_program_test_suite();
+    RealProgramTestSuite *valid_suite = create_valid_program_test_suite();
     if (valid_suite) {
         bool valid_success = run_test_suite(valid_suite, &config);
         if (!valid_success) {
@@ -51,10 +51,10 @@ int run_comprehensive_validation(bool verbose) {
         printf("❌ Failed to create valid program test suite\n");
         total_failures++;
     }
-    
+
     // Test 2: Invalid Programs
     printf("\n2. Running Invalid Program Tests...\n");
-    RealProgramTestSuite* invalid_suite = create_invalid_program_test_suite();
+    RealProgramTestSuite *invalid_suite = create_invalid_program_test_suite();
     if (invalid_suite) {
         bool invalid_success = run_test_suite(invalid_suite, &config);
         if (!invalid_success) {
@@ -69,10 +69,10 @@ int run_comprehensive_validation(bool verbose) {
         printf("❌ Failed to create invalid program test suite\n");
         total_failures++;
     }
-    
+
     // Test 3: Performance Tests
     printf("\n3. Running Performance Tests...\n");
-    RealProgramTestSuite* perf_suite = create_performance_test_suite();
+    RealProgramTestSuite *perf_suite = create_performance_test_suite();
     if (perf_suite) {
         bool perf_success = run_test_suite(perf_suite, &config);
         if (!perf_success) {
@@ -87,29 +87,29 @@ int run_comprehensive_validation(bool verbose) {
         printf("❌ Failed to create performance test suite\n");
         total_failures++;
     }
-    
+
     // Test 4: Feature Validation
     printf("\n4. Running Feature Validation Tests...\n");
-    
+
     bool multiline_ok = validate_multiline_strings_feature(&config);
     bool types_ok = validate_type_system_feature(&config);
     bool functions_ok = validate_function_declarations_feature(&config);
     bool if_let_ok = validate_if_let_feature(&config);
-    
+
     printf("Feature validation results:\n");
     printf("  Multi-line strings: %s\n", multiline_ok ? "✅ WORKING" : "❌ BROKEN");
     printf("  Type system: %s\n", types_ok ? "✅ WORKING" : "❌ BROKEN");
     printf("  Function declarations: %s\n", functions_ok ? "✅ WORKING" : "❌ BROKEN");
     printf("  If-let statements: %s\n", if_let_ok ? "✅ WORKING" : "❌ BROKEN");
-    
+
     int working_features = multiline_ok + types_ok + functions_ok + if_let_ok;
-    printf("  Overall feature health: %d/4 features working (%.1f%%)\n", 
-           working_features, (double)working_features / 4.0 * 100.0);
-    
+    printf("  Overall feature health: %d/4 features working (%.1f%%)\n", working_features,
+           (double)working_features / 4.0 * 100.0);
+
     if (working_features < 4) {
         total_failures += (4 - working_features);
     }
-    
+
     // Final Summary
     printf("\n=== FINAL VALIDATION RESULTS ===\n");
     if (total_failures == 0) {
@@ -130,9 +130,9 @@ int run_comprehensive_validation(bool verbose) {
 // MAIN FUNCTION
 // =============================================================================
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     bool verbose = false;
-    
+
     // Parse command line arguments
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--verbose") == 0 || strcmp(argv[i], "-v") == 0) {
@@ -152,10 +152,10 @@ int main(int argc, char* argv[]) {
             return 1;
         }
     }
-    
+
     printf("Asthra Real Program Validation Test Suite\n");
     printf("Phase 3: Real Testing Infrastructure Implementation\n");
     printf("Verbose output: %s\n\n", verbose ? "enabled" : "disabled");
-    
+
     return run_comprehensive_validation(verbose);
 }

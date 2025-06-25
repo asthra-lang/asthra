@@ -1,6 +1,6 @@
 /**
  * Minimal FFI Assembly Generator Test - Core Implementation
- * 
+ *
  * This file contains the core implementation functions for the minimal
  * FFI assembly generator test suite.
  */
@@ -11,14 +11,16 @@
 // CORE GENERATOR IMPLEMENTATION
 // =============================================================================
 
-MinimalFFIAssemblyGenerator *minimal_ffi_generator_create(TargetArchitecture arch, CallingConvention conv) {
+MinimalFFIAssemblyGenerator *minimal_ffi_generator_create(TargetArchitecture arch,
+                                                          CallingConvention conv) {
     MinimalFFIAssemblyGenerator *generator = malloc(sizeof(MinimalFFIAssemblyGenerator));
-    if (!generator) return NULL;
-    
+    if (!generator)
+        return NULL;
+
     // Initialize basic fields
     generator->target_arch = arch;
     generator->calling_conv = conv;
-    
+
     // Initialize configuration with defaults
     generator->config.enable_bounds_checking = true;
     generator->config.enable_security_features = true;
@@ -27,7 +29,7 @@ MinimalFFIAssemblyGenerator *minimal_ffi_generator_create(TargetArchitecture arc
     generator->config.optimize_pattern_matching = false;
     generator->config.max_variadic_args = 8;
     generator->config.pic_mode = false;
-    
+
     // Initialize runtime function names
     generator->runtime_functions.gc_alloc = strdup("asthra_gc_alloc");
     generator->runtime_functions.gc_free = strdup("asthra_gc_free");
@@ -38,7 +40,7 @@ MinimalFFIAssemblyGenerator *minimal_ffi_generator_create(TargetArchitecture arc
     generator->runtime_functions.result_create_err = strdup("asthra_result_create_err");
     generator->runtime_functions.spawn_task = strdup("asthra_spawn_task");
     generator->runtime_functions.secure_zero = strdup("asthra_secure_zero");
-    
+
     // Initialize atomic counters
     atomic_init(&generator->ffi_calls_generated, 0);
     atomic_init(&generator->pattern_matches_generated, 0);
@@ -46,13 +48,14 @@ MinimalFFIAssemblyGenerator *minimal_ffi_generator_create(TargetArchitecture arc
     atomic_init(&generator->slice_operations_generated, 0);
     atomic_init(&generator->security_operations_generated, 0);
     atomic_init(&generator->spawn_statements_generated, 0);
-    
+
     return generator;
 }
 
 void minimal_ffi_generator_destroy(MinimalFFIAssemblyGenerator *generator) {
-    if (!generator) return;
-    
+    if (!generator)
+        return;
+
     // Free runtime function names
     free(generator->runtime_functions.gc_alloc);
     free(generator->runtime_functions.gc_free);
@@ -63,7 +66,7 @@ void minimal_ffi_generator_destroy(MinimalFFIAssemblyGenerator *generator) {
     free(generator->runtime_functions.result_create_err);
     free(generator->runtime_functions.spawn_task);
     free(generator->runtime_functions.secure_zero);
-    
+
     free(generator);
 }
 
@@ -71,14 +74,18 @@ void minimal_ffi_generator_destroy(MinimalFFIAssemblyGenerator *generator) {
 // STRING OPERATIONS IMPLEMENTATION
 // =============================================================================
 
-bool minimal_generate_string_concatenation(MinimalFFIAssemblyGenerator *generator, Register left_reg, Register right_reg, Register result_reg) {
-    if (!generator) return false;
-    
+bool minimal_generate_string_concatenation(MinimalFFIAssemblyGenerator *generator,
+                                           Register left_reg, Register right_reg,
+                                           Register result_reg) {
+    if (!generator)
+        return false;
+
     atomic_fetch_add(&generator->string_operations_generated, 1);
-    
-    printf("  Generated string concatenation: concat(r%d, r%d) -> r%d\n", left_reg, right_reg, result_reg);
+
+    printf("  Generated string concatenation: concat(r%d, r%d) -> r%d\n", left_reg, right_reg,
+           result_reg);
     printf("  Assembly: call %s\n", generator->runtime_functions.string_concat);
-    
+
     return true;
 }
 
@@ -86,28 +93,30 @@ bool minimal_generate_string_concatenation(MinimalFFIAssemblyGenerator *generato
 // SECURITY OPERATIONS IMPLEMENTATION
 // =============================================================================
 
-bool minimal_generate_volatile_memory_access(MinimalFFIAssemblyGenerator *generator, Register memory_reg, size_t size, bool is_read) {
-    if (!generator) return false;
-    
+bool minimal_generate_volatile_memory_access(MinimalFFIAssemblyGenerator *generator,
+                                             Register memory_reg, size_t size, bool is_read) {
+    if (!generator)
+        return false;
+
     atomic_fetch_add(&generator->security_operations_generated, 1);
-    
-    printf("  Generated volatile memory %s: %s r%d, %zu bytes\n", 
-           is_read ? "read" : "write", 
-           is_read ? "mov rax," : "mov",
-           memory_reg, size);
+
+    printf("  Generated volatile memory %s: %s r%d, %zu bytes\n", is_read ? "read" : "write",
+           is_read ? "mov rax," : "mov", memory_reg, size);
     printf("  Assembly: %s [r%d]\n", is_read ? "mov rax," : "mov [r%d], rax", memory_reg);
-    
+
     return true;
 }
 
-bool minimal_generate_secure_zero(MinimalFFIAssemblyGenerator *generator, Register memory_reg, Register size_reg) {
-    if (!generator) return false;
-    
+bool minimal_generate_secure_zero(MinimalFFIAssemblyGenerator *generator, Register memory_reg,
+                                  Register size_reg) {
+    if (!generator)
+        return false;
+
     atomic_fetch_add(&generator->security_operations_generated, 1);
-    
+
     printf("  Generated secure zero: zero(r%d, r%d)\n", memory_reg, size_reg);
     printf("  Assembly: call %s\n", generator->runtime_functions.secure_zero);
-    
+
     return true;
 }
 
@@ -115,18 +124,21 @@ bool minimal_generate_secure_zero(MinimalFFIAssemblyGenerator *generator, Regist
 // CONCURRENCY OPERATIONS IMPLEMENTATION
 // =============================================================================
 
-bool minimal_generate_task_creation(MinimalFFIAssemblyGenerator *generator, const char *function_name, Register *arg_regs, size_t arg_count, Register handle_reg) {
-    if (!generator) return false;
-    
+bool minimal_generate_task_creation(MinimalFFIAssemblyGenerator *generator,
+                                    const char *function_name, Register *arg_regs, size_t arg_count,
+                                    Register handle_reg) {
+    if (!generator)
+        return false;
+
     atomic_fetch_add(&generator->spawn_statements_generated, 1);
-    
+
     printf("  Generated task creation: spawn %s(", function_name);
     for (size_t i = 0; i < arg_count; i++) {
         printf("r%d%s", arg_regs[i], (i < arg_count - 1) ? ", " : "");
     }
     printf(") -> r%d\n", handle_reg);
     printf("  Assembly: call %s\n", generator->runtime_functions.spawn_task);
-    
+
     return true;
 }
 
@@ -135,25 +147,29 @@ bool minimal_generate_task_creation(MinimalFFIAssemblyGenerator *generator, cons
 // =============================================================================
 
 bool minimal_validate_generated_assembly(MinimalFFIAssemblyGenerator *generator) {
-    if (!generator) return false;
-    
+    if (!generator)
+        return false;
+
     // Simple validation - just check that some operations were generated
     size_t total_ops = atomic_load(&generator->string_operations_generated) +
-                      atomic_load(&generator->slice_operations_generated) +
-                      atomic_load(&generator->security_operations_generated) +
-                      atomic_load(&generator->spawn_statements_generated);
-    
+                       atomic_load(&generator->slice_operations_generated) +
+                       atomic_load(&generator->security_operations_generated) +
+                       atomic_load(&generator->spawn_statements_generated);
+
     printf("  Validating %zu total operations...\n", total_ops);
     printf("  Assembly validation: PASSED\n");
-    
+
     return total_ops > 0;
 }
 
-bool minimal_print_nasm_assembly(MinimalFFIAssemblyGenerator *generator, char *output_buffer, size_t buffer_size) {
-    if (!generator || !output_buffer) return false;
-    
+bool minimal_print_nasm_assembly(MinimalFFIAssemblyGenerator *generator, char *output_buffer,
+                                 size_t buffer_size) {
+    if (!generator || !output_buffer)
+        return false;
+
     // Generate a simple NASM assembly snippet
-    int written = snprintf(output_buffer, buffer_size,
+    int written = snprintf(
+        output_buffer, buffer_size,
         "; Generated assembly for %s calling convention\n"
         "section .text\n"
         "global _start\n"
@@ -166,7 +182,7 @@ bool minimal_print_nasm_assembly(MinimalFFIAssemblyGenerator *generator, char *o
         "    ; Instruction 5\n"
         "...\n",
         (generator->calling_conv == CALLING_CONV_SYSTEM_V_AMD64) ? "System V AMD64" : "Unknown");
-    
+
     return written > 0 && written < (int)buffer_size;
 }
 
@@ -174,18 +190,25 @@ bool minimal_print_nasm_assembly(MinimalFFIAssemblyGenerator *generator, char *o
 // STATISTICS IMPLEMENTATION
 // =============================================================================
 
-void minimal_get_generation_statistics(MinimalFFIAssemblyGenerator *generator,
-                                      size_t *ffi_calls, size_t *pattern_matches,
-                                      size_t *string_ops, size_t *slice_ops,
-                                      size_t *security_ops, size_t *spawn_stmts) {
-    if (!generator) return;
-    
-    if (ffi_calls) *ffi_calls = atomic_load(&generator->ffi_calls_generated);
-    if (pattern_matches) *pattern_matches = atomic_load(&generator->pattern_matches_generated);
-    if (string_ops) *string_ops = atomic_load(&generator->string_operations_generated);
-    if (slice_ops) *slice_ops = atomic_load(&generator->slice_operations_generated);
-    if (security_ops) *security_ops = atomic_load(&generator->security_operations_generated);
-    if (spawn_stmts) *spawn_stmts = atomic_load(&generator->spawn_statements_generated);
+void minimal_get_generation_statistics(MinimalFFIAssemblyGenerator *generator, size_t *ffi_calls,
+                                       size_t *pattern_matches, size_t *string_ops,
+                                       size_t *slice_ops, size_t *security_ops,
+                                       size_t *spawn_stmts) {
+    if (!generator)
+        return;
+
+    if (ffi_calls)
+        *ffi_calls = atomic_load(&generator->ffi_calls_generated);
+    if (pattern_matches)
+        *pattern_matches = atomic_load(&generator->pattern_matches_generated);
+    if (string_ops)
+        *string_ops = atomic_load(&generator->string_operations_generated);
+    if (slice_ops)
+        *slice_ops = atomic_load(&generator->slice_operations_generated);
+    if (security_ops)
+        *security_ops = atomic_load(&generator->security_operations_generated);
+    if (spawn_stmts)
+        *spawn_stmts = atomic_load(&generator->spawn_statements_generated);
 }
 
 // =============================================================================
@@ -195,21 +218,23 @@ void minimal_get_generation_statistics(MinimalFFIAssemblyGenerator *generator,
 #ifndef SKIP_MAIN
 static bool test_generator_basic_operations(void) {
     printf("Testing generator basic operations...\n");
-    
-    MinimalFFIAssemblyGenerator *generator = minimal_ffi_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
+
+    MinimalFFIAssemblyGenerator *generator =
+        minimal_ffi_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
     if (!generator) {
         printf("Failed to create generator\n");
         return false;
     }
-    
+
     // Test string operation
-    bool result = minimal_generate_string_concatenation(generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI, ASTHRA_REG_RAX);
+    bool result = minimal_generate_string_concatenation(generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI,
+                                                        ASTHRA_REG_RAX);
     if (!result) {
         printf("String concatenation generation failed\n");
         minimal_ffi_generator_destroy(generator);
         return false;
     }
-    
+
     // Test security operation
     result = minimal_generate_secure_zero(generator, ASTHRA_REG_RDI, ASTHRA_REG_RSI);
     if (!result) {
@@ -217,7 +242,7 @@ static bool test_generator_basic_operations(void) {
         minimal_ffi_generator_destroy(generator);
         return false;
     }
-    
+
     // Test validation
     result = minimal_validate_generated_assembly(generator);
     if (!result) {
@@ -225,7 +250,7 @@ static bool test_generator_basic_operations(void) {
         minimal_ffi_generator_destroy(generator);
         return false;
     }
-    
+
     minimal_ffi_generator_destroy(generator);
     return true;
 }
@@ -233,7 +258,7 @@ static bool test_generator_basic_operations(void) {
 int main(void) {
     printf("Minimal FFI Core Operations Test\n");
     printf("=================================\n");
-    
+
     if (test_generator_basic_operations()) {
         printf("✅ Core operations test passed\n");
         return 0;
@@ -242,4 +267,4 @@ int main(void) {
         return 1;
     }
 }
-#endif 
+#endif

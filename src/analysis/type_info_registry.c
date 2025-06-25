@@ -1,8 +1,8 @@
-#include "type_info.h"
 #include "semantic_analyzer.h"
+#include "type_info.h"
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
 
 // =============================================================================
 // GLOBAL TYPE REGISTRY
@@ -31,11 +31,11 @@ uint32_t type_info_allocate_id(void) {
 
 static bool add_to_registry(TypeInfo *type_info) {
     pthread_mutex_lock(&g_type_registry_mutex);
-    
+
     // Expand registry if needed
     if (g_type_registry_size >= g_type_registry_capacity) {
         size_t new_capacity = g_type_registry_capacity == 0 ? 64 : g_type_registry_capacity * 2;
-        TypeInfo **new_registry = realloc(g_type_registry, new_capacity * sizeof(TypeInfo*));
+        TypeInfo **new_registry = realloc(g_type_registry, new_capacity * sizeof(TypeInfo *));
         if (!new_registry) {
             pthread_mutex_unlock(&g_type_registry_mutex);
             return false;
@@ -43,22 +43,24 @@ static bool add_to_registry(TypeInfo *type_info) {
         g_type_registry = new_registry;
         g_type_registry_capacity = new_capacity;
     }
-    
+
     g_type_registry[g_type_registry_size++] = type_info;
     type_info_retain(type_info); // Registry holds a reference
-    
+
     pthread_mutex_unlock(&g_type_registry_mutex);
     return true;
 }
 
 bool type_info_register(TypeInfo *type_info) {
-    if (!type_info) return false;
+    if (!type_info)
+        return false;
     return add_to_registry(type_info);
 }
 
 TypeInfo *type_info_lookup_by_name(const char *name) {
-    if (!name) return NULL;
-    
+    if (!name)
+        return NULL;
+
     pthread_mutex_lock(&g_type_registry_mutex);
     for (size_t i = 0; i < g_type_registry_size; i++) {
         if (g_type_registry[i] && strcmp(g_type_registry[i]->name, name) == 0) {
@@ -98,4 +100,4 @@ void type_info_registry_cleanup(void) {
         g_type_registry_capacity = 0;
     }
     pthread_mutex_unlock(&g_type_registry_mutex);
-} 
+}

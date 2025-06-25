@@ -1,11 +1,11 @@
 #ifndef CODE_GENERATION_H
 #define CODE_GENERATION_H
 
+#include "../parser/ast.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdio.h>
-#include "../parser/ast.h"
 
 #ifdef __cplusplus
 extern "C" {

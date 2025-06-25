@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Runtime Safety Checks & Debugging Aids v1.2
  * Comprehensive Safety Mechanisms with v1.2 Feature Integration
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * DESIGN GOALS:
  * - Enhanced Grammar and Type Safety validation
  * - Memory and FFI Safety with annotation verification
@@ -20,13 +20,13 @@
 #define ASTHRA_SAFETY_H
 
 #include "asthra_runtime.h"
+#include <pthread.h>
+#include <stdalign.h>
+#include <stdarg.h>
+#include <stdatomic.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
-#include <stdarg.h>
-#include <pthread.h>
-#include <stdatomic.h>
-#include <stdalign.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,11 +37,11 @@ extern "C" {
 // =============================================================================
 
 typedef enum {
-    ASTHRA_SAFETY_LEVEL_NONE = 0,        // No safety checks (production)
-    ASTHRA_SAFETY_LEVEL_BASIC = 1,       // Basic bounds and null checks
-    ASTHRA_SAFETY_LEVEL_STANDARD = 2,    // Standard safety checks
-    ASTHRA_SAFETY_LEVEL_ENHANCED = 3,    // Enhanced debugging aids
-    ASTHRA_SAFETY_LEVEL_PARANOID = 4     // Maximum safety validation
+    ASTHRA_SAFETY_LEVEL_NONE = 0,     // No safety checks (production)
+    ASTHRA_SAFETY_LEVEL_BASIC = 1,    // Basic bounds and null checks
+    ASTHRA_SAFETY_LEVEL_STANDARD = 2, // Standard safety checks
+    ASTHRA_SAFETY_LEVEL_ENHANCED = 3, // Enhanced debugging aids
+    ASTHRA_SAFETY_LEVEL_PARANOID = 4  // Maximum safety validation
 } AsthraSafetyLevel;
 
 typedef struct {
@@ -121,9 +121,13 @@ typedef struct {
 
 // Function declarations for grammar and type safety
 AsthraGrammarValidation asthra_safety_validate_grammar(const char *source_code, size_t code_length);
-AsthraPatternCompletenessCheck asthra_safety_check_pattern_completeness(AsthraMatchArm *arms, size_t arm_count, uint32_t result_type_id);
-AsthraTypeSafetyCheck asthra_safety_validate_result_type_usage(AsthraResult result, uint32_t expected_type_id);
-AsthraTypeSafetyCheck asthra_safety_validate_slice_type_safety(AsthraSliceHeader slice, uint32_t expected_element_type_id);
+AsthraPatternCompletenessCheck asthra_safety_check_pattern_completeness(AsthraMatchArm *arms,
+                                                                        size_t arm_count,
+                                                                        uint32_t result_type_id);
+AsthraTypeSafetyCheck asthra_safety_validate_result_type_usage(AsthraResult result,
+                                                               uint32_t expected_type_id);
+AsthraTypeSafetyCheck asthra_safety_validate_slice_type_safety(AsthraSliceHeader slice,
+                                                               uint32_t expected_element_type_id);
 
 // =============================================================================
 // MEMORY AND FFI SAFETY
@@ -186,16 +190,20 @@ typedef struct {
 } AsthraVariadicValidation;
 
 // Function declarations for memory and FFI safety
-AsthraFFIAnnotationCheck asthra_safety_verify_ffi_annotation(void *func_ptr, void **args, size_t arg_count, 
-                                                             AsthraTransferType *expected_transfers, bool *is_borrowed);
+AsthraFFIAnnotationCheck asthra_safety_verify_ffi_annotation(void *func_ptr, void **args,
+                                                             size_t arg_count,
+                                                             AsthraTransferType *expected_transfers,
+                                                             bool *is_borrowed);
 AsthraBoundaryCheck asthra_safety_enhanced_boundary_check(AsthraSliceHeader slice, size_t index);
-int asthra_safety_register_ffi_pointer(void *ptr, size_t size, AsthraTransferType transfer, 
-                                       AsthraOwnershipHint ownership, bool is_borrowed, 
+int asthra_safety_register_ffi_pointer(void *ptr, size_t size, AsthraTransferType transfer,
+                                       AsthraOwnershipHint ownership, bool is_borrowed,
                                        const char *source, int line);
 int asthra_safety_unregister_ffi_pointer(void *ptr);
 AsthraFFIPointerTracker *asthra_safety_get_ffi_pointer_info(void *ptr);
-AsthraVariadicValidation asthra_safety_validate_variadic_call(void *func_ptr, AsthraVarArg *args, size_t arg_count,
-                                                              AsthraVarArgType *expected_types, size_t expected_count);
+AsthraVariadicValidation asthra_safety_validate_variadic_call(void *func_ptr, AsthraVarArg *args,
+                                                              size_t arg_count,
+                                                              AsthraVarArgType *expected_types,
+                                                              size_t expected_count);
 
 // =============================================================================
 // STRING AND SLICE SAFETY
@@ -224,7 +232,8 @@ typedef struct {
 } AsthraMemoryLayoutValidation;
 
 // Function declarations for string and slice safety
-AsthraStringOperationValidation asthra_safety_validate_string_concatenation(AsthraString *strings, size_t count);
+AsthraStringOperationValidation asthra_safety_validate_string_concatenation(AsthraString *strings,
+                                                                            size_t count);
 AsthraBoundaryCheck asthra_safety_slice_bounds_check(AsthraSliceHeader slice, size_t index);
 AsthraMemoryLayoutValidation asthra_safety_validate_slice_header(AsthraSliceHeader slice);
 
@@ -302,14 +311,17 @@ typedef struct {
 } AsthraResultTracker;
 
 // Function declarations for concurrency and error handling
-void asthra_safety_log_task_lifecycle_event(uint64_t task_id, AsthraTaskEvent event, const char *details);
+void asthra_safety_log_task_lifecycle_event(uint64_t task_id, AsthraTaskEvent event,
+                                            const char *details);
 void asthra_safety_log_scheduler_event(AsthraSchedulerEvent event, const char *details);
-void asthra_safety_log_c_task_interaction(uint64_t asthra_task_id, pthread_t c_thread_id, 
-                                          const char *interaction_type, void *data, size_t data_size);
+void asthra_safety_log_c_task_interaction(uint64_t asthra_task_id, pthread_t c_thread_id,
+                                          const char *interaction_type, void *data,
+                                          size_t data_size);
 int asthra_safety_register_result_tracker(AsthraResult result, const char *location);
 int asthra_safety_mark_result_handled(uint64_t result_id, const char *location);
 void asthra_safety_check_unhandled_results(void);
-AsthraPatternCompletenessCheck asthra_safety_verify_match_exhaustiveness(AsthraMatchArm *arms, size_t arm_count, 
+AsthraPatternCompletenessCheck asthra_safety_verify_match_exhaustiveness(AsthraMatchArm *arms,
+                                                                         size_t arm_count,
                                                                          uint32_t result_type_id);
 
 // =============================================================================
@@ -368,10 +380,11 @@ typedef struct {
 int asthra_safety_install_stack_canary(void);
 int asthra_safety_check_stack_canary(void);
 void asthra_safety_remove_stack_canary(void);
-void asthra_safety_log_ffi_call(const char *function_name, void *function_ptr, void **args, size_t arg_count);
-AsthraConstantTimeVerification asthra_safety_verify_constant_time_operation(const char *operation_name, 
-                                                                            void (*operation)(void), 
-                                                                            uint64_t expected_duration_ns);
+void asthra_safety_log_ffi_call(const char *function_name, void *function_ptr, void **args,
+                                size_t arg_count);
+AsthraConstantTimeVerification
+asthra_safety_verify_constant_time_operation(const char *operation_name, void (*operation)(void),
+                                             uint64_t expected_duration_ns);
 AsthraSecureZeroingValidation asthra_safety_validate_secure_zeroing(void *ptr, size_t size);
 
 // =============================================================================
@@ -455,54 +468,54 @@ typedef struct {
     size_t context_size;
 } AsthraSafetyViolation;
 
-void asthra_safety_report_violation(AsthraViolationType type, AsthraSafetyLevel severity, 
-                                   const char *message, const char *location, int line, 
-                                   const char *function, void *context, size_t context_size);
+void asthra_safety_report_violation(AsthraViolationType type, AsthraSafetyLevel severity,
+                                    const char *message, const char *location, int line,
+                                    const char *function, void *context, size_t context_size);
 
 // Safety macros for convenient usage
-#define ASTHRA_SAFETY_CHECK(condition, violation_type, message) \
-    do { \
-        if (!(condition)) { \
-            asthra_safety_report_violation(violation_type, ASTHRA_SAFETY_LEVEL_STANDARD, \
-                                         message, __FILE__, __LINE__, __func__, NULL, 0); \
-        } \
+#define ASTHRA_SAFETY_CHECK(condition, violation_type, message)                                    \
+    do {                                                                                           \
+        if (!(condition)) {                                                                        \
+            asthra_safety_report_violation(violation_type, ASTHRA_SAFETY_LEVEL_STANDARD, message,  \
+                                           __FILE__, __LINE__, __func__, NULL, 0);                 \
+        }                                                                                          \
     } while (0)
 
-#define ASTHRA_SAFETY_ASSERT(condition, message) \
+#define ASTHRA_SAFETY_ASSERT(condition, message)                                                   \
     ASTHRA_SAFETY_CHECK(condition, ASTHRA_VIOLATION_GRAMMAR, message)
 
-#define ASTHRA_SAFETY_FFI_CHECK(condition, message) \
+#define ASTHRA_SAFETY_FFI_CHECK(condition, message)                                                \
     ASTHRA_SAFETY_CHECK(condition, ASTHRA_VIOLATION_FFI_SAFETY, message)
 
-#define ASTHRA_SAFETY_MEMORY_CHECK(condition, message) \
+#define ASTHRA_SAFETY_MEMORY_CHECK(condition, message)                                             \
     ASTHRA_SAFETY_CHECK(condition, ASTHRA_VIOLATION_MEMORY_SAFETY, message)
 
-#define ASTHRA_SAFETY_TYPE_CHECK(condition, message) \
+#define ASTHRA_SAFETY_TYPE_CHECK(condition, message)                                               \
     ASTHRA_SAFETY_CHECK(condition, ASTHRA_VIOLATION_TYPE_SAFETY, message)
 
-#define ASTHRA_SAFETY_CONCURRENCY_CHECK(condition, message) \
+#define ASTHRA_SAFETY_CONCURRENCY_CHECK(condition, message)                                        \
     ASTHRA_SAFETY_CHECK(condition, ASTHRA_VIOLATION_CONCURRENCY, message)
 
-#define ASTHRA_SAFETY_SECURITY_CHECK(condition, message) \
+#define ASTHRA_SAFETY_SECURITY_CHECK(condition, message)                                           \
     ASTHRA_SAFETY_CHECK(condition, ASTHRA_VIOLATION_SECURITY, message)
 
 // Conditional compilation for safety checks based on build configuration
 #ifdef ASTHRA_ENABLE_SAFETY_CHECKS
-    #define ASTHRA_SAFETY_ENABLED 1
+#define ASTHRA_SAFETY_ENABLED 1
 #else
-    #define ASTHRA_SAFETY_ENABLED 0
+#define ASTHRA_SAFETY_ENABLED 0
 #endif
 
 #if ASTHRA_SAFETY_ENABLED
-    #define ASTHRA_SAFETY_CALL(func) func
-    #define ASTHRA_SAFETY_CONDITIONAL(code) code
+#define ASTHRA_SAFETY_CALL(func) func
+#define ASTHRA_SAFETY_CONDITIONAL(code) code
 #else
-    #define ASTHRA_SAFETY_CALL(func) ((void)0)
-    #define ASTHRA_SAFETY_CONDITIONAL(code) ((void)0)
+#define ASTHRA_SAFETY_CALL(func) ((void)0)
+#define ASTHRA_SAFETY_CONDITIONAL(code) ((void)0)
 #endif
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ASTHRA_SAFETY_H 
+#endif // ASTHRA_SAFETY_H

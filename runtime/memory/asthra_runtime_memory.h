@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Runtime v1.2 - Memory Management Module
  * Memory Allocation, Garbage Collection, and Memory Zone Management
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This module provides memory management functionality including
  * garbage collection, memory zones, and allocation functions.
  */
@@ -12,8 +12,8 @@
 #ifndef ASTHRA_RUNTIME_MEMORY_H
 #define ASTHRA_RUNTIME_MEMORY_H
 
-#include "../core/asthra_runtime_core.h"
 #include "../collections/asthra_runtime_slices.h"
+#include "../core/asthra_runtime_core.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,8 +25,8 @@ extern "C" {
 
 // C17 aligned allocation support
 #if ASTHRA_HAS_ALIGNED_ALLOC
-    void *asthra_aligned_alloc(size_t alignment, size_t size, AsthraMemoryZone zone);
-    void asthra_aligned_free(void *ptr, AsthraMemoryZone zone);
+void *asthra_aligned_alloc(size_t alignment, size_t size, AsthraMemoryZone zone);
+void asthra_aligned_free(void *ptr, AsthraMemoryZone zone);
 #endif
 
 // Thread-local GC state for performance optimization
@@ -38,7 +38,7 @@ typedef struct {
 } AsthraThreadGCState;
 
 #if ASTHRA_HAS_THREAD_LOCAL
-    extern ASTHRA_THREAD_LOCAL AsthraThreadGCState *asthra_thread_gc_state;
+extern ASTHRA_THREAD_LOCAL AsthraThreadGCState *asthra_thread_gc_state;
 #endif
 
 // C17 atomic memory statistics
@@ -63,21 +63,20 @@ typedef struct {
 typedef struct {
     size_t initial_heap_size;
     size_t max_heap_size;
-    double gc_threshold;      // Trigger GC when heap usage exceeds this ratio
-    bool conservative_mode;   // Use conservative scanning
-    bool concurrent_gc;       // Enable concurrent garbage collection
+    double gc_threshold;         // Trigger GC when heap usage exceeds this ratio
+    bool conservative_mode;      // Use conservative scanning
+    bool concurrent_gc;          // Enable concurrent garbage collection
     bool use_thread_local_roots; // Use thread-local GC roots for performance
 } AsthraGCConfig;
 
 // Default GC configuration using C17 compound literal
-#define ASTHRA_DEFAULT_GC_CONFIG ((AsthraGCConfig){ \
-    .initial_heap_size = 1024 * 1024, \
-    .max_heap_size = 64 * 1024 * 1024, \
-    .gc_threshold = 0.8, \
-    .conservative_mode = true, \
-    .concurrent_gc = false, \
-    .use_thread_local_roots = ASTHRA_HAS_THREAD_LOCAL \
-})
+#define ASTHRA_DEFAULT_GC_CONFIG                                                                   \
+    ((AsthraGCConfig){.initial_heap_size = 1024 * 1024,                                            \
+                      .max_heap_size = 64 * 1024 * 1024,                                           \
+                      .gc_threshold = 0.8,                                                         \
+                      .conservative_mode = true,                                                   \
+                      .concurrent_gc = false,                                                      \
+                      .use_thread_local_roots = ASTHRA_HAS_THREAD_LOCAL})
 
 // =============================================================================
 // RUNTIME INITIALIZATION AND CLEANUP
@@ -88,7 +87,7 @@ int asthra_runtime_init(AsthraGCConfig *gc_config);
 int asthra_runtime_init_with_args(AsthraGCConfig *gc_config, int argc, char **argv);
 void asthra_runtime_cleanup(void);
 
-// Command-line arguments access  
+// Command-line arguments access
 AsthraSliceHeader asthra_runtime_get_args(void);
 
 // =============================================================================
@@ -152,4 +151,4 @@ void asthra_atomic_stats_update_ffi_call(void);
 }
 #endif
 
-#endif // ASTHRA_RUNTIME_MEMORY_H 
+#endif // ASTHRA_RUNTIME_MEMORY_H

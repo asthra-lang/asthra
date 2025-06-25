@@ -1,15 +1,15 @@
 /**
  * Asthra Programming Language Compiler
  * Lexical analyzer utility functions for Asthra grammar
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
 
 #include "lexer_internal.h"
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 // =============================================================================
 // UTILITY FUNCTIONS
@@ -33,9 +33,7 @@ bool is_whitespace(char c) {
 
 // Additional character checking for numeric literals (Phase 2)
 bool is_hex_digit(char c) {
-    return (c >= '0' && c <= '9') || 
-           (c >= 'a' && c <= 'f') || 
-           (c >= 'A' && c <= 'F');
+    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
 
 bool is_binary_digit(char c) {
@@ -58,7 +56,7 @@ char advance_char(Lexer *lexer) {
     if (lexer->position >= lexer->source_length) {
         return '\0';
     }
-    
+
     char c = lexer->source[lexer->position++];
     if (c == '\n') {
         // Unix line ending (LF) or second part of Windows line ending (CRLF)
@@ -82,12 +80,10 @@ char advance_char(Lexer *lexer) {
 }
 
 SourceLocation current_location(Lexer *lexer) {
-    SourceLocation loc = {
-        .filename = (char*)lexer->filename,
-        .line = (int)lexer->line,
-        .column = (int)lexer->column,
-        .offset = (int)lexer->position
-    };
+    SourceLocation loc = {.filename = (char *)lexer->filename,
+                          .line = (int)lexer->line,
+                          .column = (int)lexer->column,
+                          .offset = (int)lexer->position};
     return loc;
 }
 
@@ -112,12 +108,12 @@ bool skip_whitespace(Lexer *lexer) {
             // Skip block comment with nested comment support
             advance_char(lexer); // consume '/'
             advance_char(lexer); // consume '*'
-            
+
             int nesting_level = 1;
             while (lexer->position < lexer->source_length && nesting_level > 0) {
                 char current = peek_char(lexer, 0);
                 char next = peek_char(lexer, 1);
-                
+
                 if (current == '/' && next == '*') {
                     // Found nested comment start
                     nesting_level++;
@@ -132,7 +128,7 @@ bool skip_whitespace(Lexer *lexer) {
                     advance_char(lexer);
                 }
             }
-            
+
             // Check for unterminated comment
             if (nesting_level > 0) {
                 set_error(lexer, "Unterminated multi-line comment");
@@ -143,4 +139,4 @@ bool skip_whitespace(Lexer *lexer) {
         }
     }
     return true; // Success
-} 
+}

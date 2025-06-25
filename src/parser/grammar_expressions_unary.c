@@ -1,24 +1,25 @@
 /**
  * Asthra Programming Language Compiler - Unary and Postfix Expressions
  * Unary operators and postfix operations (field access, array indexing, function calls)
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
 
 #include "grammar_expressions.h"
 #include "parser_token.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 // =============================================================================
 // UNARY AND POSTFIX EXPRESSIONS
 // =============================================================================
 
 ASTNode *parse_unary(Parser *parser) {
-    if (!parser) return NULL;
-    
+    if (!parser)
+        return NULL;
+
     // Handle special unary expressions first
     if (match_token(parser, TOKEN_SIZEOF)) {
         return parse_sizeof(parser);
@@ -28,19 +29,21 @@ ASTNode *parse_unary(Parser *parser) {
     // else if (match_token(parser, TOKEN_RECV)) {
     //     return parse_recv_expr(parser);
     // }
-    
+
     // Parse UnaryPrefix PostfixExpr according to new grammar
     return parse_unary_prefix(parser);
 }
 
 ASTNode *parse_unary_prefix(Parser *parser) {
-    if (!parser) return NULL;
-    
+    if (!parser)
+        return NULL;
+
     // Parse optional LogicalPrefix
-    if (match_token(parser, TOKEN_MINUS) || match_token(parser, TOKEN_LOGICAL_NOT) || match_token(parser, TOKEN_BITWISE_NOT)) {
+    if (match_token(parser, TOKEN_MINUS) || match_token(parser, TOKEN_LOGICAL_NOT) ||
+        match_token(parser, TOKEN_BITWISE_NOT)) {
         SourceLocation op_loc = parser->current_token.location;
         UnaryOperator logical_op;
-        
+
         // Determine which operator based on current token
         if (parser->current_token.type == TOKEN_MINUS) {
             logical_op = UNOP_MINUS;
@@ -49,51 +52,53 @@ ASTNode *parse_unary_prefix(Parser *parser) {
         } else { // TOKEN_BITWISE_NOT
             logical_op = UNOP_BITWISE_NOT;
         }
-        
+
         advance_token(parser);
-        
+
         // Parse optional PointerPrefix or PostfixExpr
         ASTNode *operand = parse_pointer_prefix_or_postfix(parser);
-        if (!operand) return NULL;
-        
+        if (!operand)
+            return NULL;
+
         ASTNode *logical_expr = ast_create_node(AST_UNARY_EXPR, op_loc);
         if (!logical_expr) {
             ast_free_node(operand);
             return NULL;
         }
-        
-        logical_expr->data.unary_expr.operator = logical_op;
+
+        logical_expr->data.unary_expr.operator= logical_op;
         logical_expr->data.unary_expr.operand = operand;
-        
+
         return logical_expr;
     }
-    
+
     // No logical prefix, try pointer prefix or postfix
     return parse_pointer_prefix_or_postfix(parser);
 }
 
 ASTNode *parse_pointer_prefix_or_postfix(Parser *parser) {
-    if (!parser) return NULL;
-    
+    if (!parser)
+        return NULL;
+
     // Parse optional PointerPrefix
     if (match_token(parser, TOKEN_MULTIPLY) || match_token(parser, TOKEN_BITWISE_AND)) {
         SourceLocation op_loc = parser->current_token.location;
         UnaryOperator pointer_op;
-        
+
         // Determine which operator based on current token
         if (parser->current_token.type == TOKEN_MULTIPLY) {
             pointer_op = UNOP_DEREF;
         } else { // TOKEN_BITWISE_AND
             pointer_op = UNOP_ADDRESS_OF;
         }
-        
+
         advance_token(parser);
-        
+
         // Special case: if the next token is also a unary operator, we need to parse it as such
         // This handles cases like *&var where & is also a unary operator
         ASTNode *operand = NULL;
         if (match_token(parser, TOKEN_BITWISE_AND) || match_token(parser, TOKEN_MULTIPLY) ||
-            match_token(parser, TOKEN_MINUS) || match_token(parser, TOKEN_LOGICAL_NOT) || 
+            match_token(parser, TOKEN_MINUS) || match_token(parser, TOKEN_LOGICAL_NOT) ||
             match_token(parser, TOKEN_BITWISE_NOT)) {
             // Recursively parse the nested unary expression
             operand = parse_unary_prefix(parser);
@@ -101,41 +106,43 @@ ASTNode *parse_pointer_prefix_or_postfix(Parser *parser) {
             // Parse PostfixExpr for non-unary operands
             operand = parse_postfix_expr(parser);
         }
-        
+
         if (!operand) {
             report_error(parser, "Expected expression after unary operator");
             return NULL;
         }
-        
+
         ASTNode *pointer_expr = ast_create_node(AST_UNARY_EXPR, op_loc);
         if (!pointer_expr) {
             ast_free_node(operand);
             return NULL;
         }
-        
-        pointer_expr->data.unary_expr.operator = pointer_op;
+
+        pointer_expr->data.unary_expr.operator= pointer_op;
         pointer_expr->data.unary_expr.operand = operand;
-        
+
         return pointer_expr;
     }
-    
+
     // No pointer prefix, parse PostfixExpr directly
     return parse_postfix_expr(parser);
 }
 
 ASTNode *parse_postfix_expr(Parser *parser) {
-    if (!parser) return NULL;
-    
+    if (!parser)
+        return NULL;
+
     ASTNode *expr = parse_primary(parser);
-    if (!expr) return NULL;
-    
+    if (!expr)
+        return NULL;
+
     while (true) {
         if (match_token(parser, TOKEN_DOT)) {
             SourceLocation op_loc = parser->current_token.location;
             advance_token(parser);
-            
+
             char *field_name = NULL;
-            
+
             // Check for tuple element access (.0, .1, etc.) or regular field access
             if (match_token(parser, TOKEN_INTEGER)) {
                 // Tuple element access: convert integer to string
@@ -145,7 +152,7 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                     ast_free_node(expr);
                     return NULL;
                 }
-                
+
                 // Convert integer to string for field_name
                 field_name = malloc(32); // More than enough for any integer
                 if (!field_name) {
@@ -158,47 +165,47 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                 // Check if this is actually a tuple index that was misparsed as a float
                 // For example, .1 might be parsed as FLOAT(0.1) in nested tuple access
                 double float_val = parser->current_token.data.float_val.value;
-                
+
                 // Check if this is a float like 0.X, 0.XY, etc. that represents nested tuple access
                 if (float_val >= 0.0 && float_val < 1.0) {
                     // This represents nested tuple access like .0.1 tokenized as FLOAT(0.1)
                     // We need to create the intermediate field access for .0
-                    
+
                     // First, create field access for .0
                     field_name = strdup("0");
                     if (!field_name) {
                         ast_free_node(expr);
                         return NULL;
                     }
-                    
+
                     ASTNode *first_access = ast_create_node(AST_FIELD_ACCESS, op_loc);
                     if (!first_access) {
                         free(field_name);
                         ast_free_node(expr);
                         return NULL;
                     }
-                    
+
                     first_access->data.field_access.object = expr;
                     first_access->data.field_access.field_name = field_name;
-                    
+
                     // Now handle the remaining decimal part
                     // For 0.1, we want to extract "1"
                     // For 0.12, we want to extract "12", etc.
                     char float_str[32];
                     snprintf(float_str, sizeof(float_str), "%.10f", float_val);
-                    
+
                     // Find the decimal point and extract digits after it
                     char *decimal_part = strchr(float_str, '.');
                     if (decimal_part && *(decimal_part + 1) != '\0') {
                         decimal_part++; // Skip the decimal point
-                        
+
                         // Remove trailing zeros
                         int len = strlen(decimal_part);
                         while (len > 0 && decimal_part[len - 1] == '0') {
                             decimal_part[len - 1] = '\0';
                             len--;
                         }
-                        
+
                         // The remaining digits are the tuple index
                         field_name = strdup(decimal_part);
                         if (!field_name) {
@@ -211,9 +218,9 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                         ast_free_node(first_access);
                         return NULL;
                     }
-                    
+
                     advance_token(parser);
-                    
+
                     // Update expr to be the intermediate access
                     expr = first_access;
                 } else {
@@ -230,31 +237,31 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                 ast_free_node(expr);
                 return NULL;
             }
-            
+
             if (!field_name) {
                 ast_free_node(expr);
                 return NULL;
             }
-            
+
             ASTNode *field_access = ast_create_node(AST_FIELD_ACCESS, op_loc);
             if (!field_access) {
                 free(field_name);
                 ast_free_node(expr);
                 return NULL;
             }
-            
+
             field_access->data.field_access.object = expr;
             field_access->data.field_access.field_name = field_name;
-            
+
             expr = field_access;
         } else if (match_token(parser, TOKEN_LEFT_BRACKET)) {
             SourceLocation op_loc = parser->current_token.location;
             advance_token(parser);
-            
+
             // Check for slice syntax (colon without expression for full slice [:])
             if (match_token(parser, TOKEN_COLON)) {
                 advance_token(parser); // consume ':'
-                
+
                 // Parse end expression if present
                 ASTNode *end = NULL;
                 if (!match_token(parser, TOKEN_RIGHT_BRACKET)) {
@@ -264,25 +271,27 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                         return NULL;
                     }
                 }
-                
+
                 if (!expect_token(parser, TOKEN_RIGHT_BRACKET)) {
                     ast_free_node(expr);
-                    if (end) ast_free_node(end);
+                    if (end)
+                        ast_free_node(end);
                     return NULL;
                 }
-                
+
                 // Create slice expression with NULL start
                 ASTNode *slice = ast_create_node(AST_SLICE_EXPR, op_loc);
                 if (!slice) {
                     ast_free_node(expr);
-                    if (end) ast_free_node(end);
+                    if (end)
+                        ast_free_node(end);
                     return NULL;
                 }
-                
+
                 slice->data.slice_expr.array = expr;
                 slice->data.slice_expr.start = NULL;
                 slice->data.slice_expr.end = end;
-                
+
                 expr = slice;
             } else {
                 // Parse first expression (could be index or slice start)
@@ -291,11 +300,11 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                     ast_free_node(expr);
                     return NULL;
                 }
-                
+
                 // Check if this is a slice operation
                 if (match_token(parser, TOKEN_COLON)) {
                     advance_token(parser); // consume ':'
-                    
+
                     // Parse end expression if present
                     ASTNode *end = NULL;
                     if (!match_token(parser, TOKEN_RIGHT_BRACKET)) {
@@ -306,27 +315,29 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                             return NULL;
                         }
                     }
-                    
+
                     if (!expect_token(parser, TOKEN_RIGHT_BRACKET)) {
                         ast_free_node(expr);
                         ast_free_node(first);
-                        if (end) ast_free_node(end);
+                        if (end)
+                            ast_free_node(end);
                         return NULL;
                     }
-                    
+
                     // Create slice expression
                     ASTNode *slice = ast_create_node(AST_SLICE_EXPR, op_loc);
                     if (!slice) {
                         ast_free_node(expr);
                         ast_free_node(first);
-                        if (end) ast_free_node(end);
+                        if (end)
+                            ast_free_node(end);
                         return NULL;
                     }
-                    
+
                     slice->data.slice_expr.array = expr;
                     slice->data.slice_expr.start = first;
                     slice->data.slice_expr.end = end;
-                    
+
                     expr = slice;
                 } else {
                     // Regular array indexing
@@ -335,29 +346,30 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                         ast_free_node(first);
                         return NULL;
                     }
-                    
+
                     ASTNode *array_access = ast_create_node(AST_INDEX_ACCESS, op_loc);
                     if (!array_access) {
                         ast_free_node(expr);
                         ast_free_node(first);
                         return NULL;
                     }
-                    
+
                     array_access->data.index_access.array = expr;
                     array_access->data.index_access.index = first;
-                    
+
                     expr = array_access;
                 }
             }
         } else if (match_token(parser, TOKEN_LEFT_PAREN)) {
-            // Function call - Parse according to current grammar: ArgList <- Expr (',' Expr)* / 'none'
+            // Function call - Parse according to current grammar: ArgList <- Expr (',' Expr)* /
+            // 'none'
             SourceLocation op_loc = parser->current_token.location;
             advance_token(parser);
-            
+
             ASTNode **args = NULL;
             size_t arg_count = 0;
             size_t arg_capacity = 4;
-            
+
             // Check for explicit 'none' marker for empty argument lists
             if (match_token(parser, TOKEN_NONE)) {
                 // Explicit none for empty argument list (semantic clarity)
@@ -366,40 +378,42 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                 arg_count = 0;
             } else if (match_token(parser, TOKEN_VOID)) {
                 // Legacy compatibility error with helpful message
-                report_error(parser, "Unexpected 'void' in function arguments. Use 'none' for empty argument lists");
+                report_error(
+                    parser,
+                    "Unexpected 'void' in function arguments. Use 'none' for empty argument lists");
                 ast_free_node(expr);
                 return NULL;
             } else {
                 // Parse actual function arguments
-                args = malloc(arg_capacity * sizeof(ASTNode*));
+                args = malloc(arg_capacity * sizeof(ASTNode *));
                 if (!args) {
                     ast_free_node(expr);
                     return NULL;
                 }
-                
+
                 while (!match_token(parser, TOKEN_RIGHT_PAREN) && !at_end(parser)) {
-                ASTNode *arg = parse_expr(parser);
-                if (!arg) {
-                    for (size_t i = 0; i < arg_count; i++) {
-                        ast_free_node(args[i]);
-                    }
-                    free(args);
-                    ast_free_node(expr);
-                    return NULL;
-                }
-                
-                if (arg_count >= arg_capacity) {
-                    arg_capacity *= 2;
-                    args = realloc(args, arg_capacity * sizeof(ASTNode*));
-                    if (!args) {
-                        ast_free_node(arg);
+                    ASTNode *arg = parse_expr(parser);
+                    if (!arg) {
+                        for (size_t i = 0; i < arg_count; i++) {
+                            ast_free_node(args[i]);
+                        }
+                        free(args);
                         ast_free_node(expr);
                         return NULL;
                     }
-                }
-                
-                args[arg_count++] = arg;
-                
+
+                    if (arg_count >= arg_capacity) {
+                        arg_capacity *= 2;
+                        args = realloc(args, arg_capacity * sizeof(ASTNode *));
+                        if (!args) {
+                            ast_free_node(arg);
+                            ast_free_node(expr);
+                            return NULL;
+                        }
+                    }
+
+                    args[arg_count++] = arg;
+
                     if (!match_token(parser, TOKEN_COMMA)) {
                         break;
                     } else {
@@ -407,7 +421,7 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                     }
                 }
             }
-            
+
             if (!expect_token(parser, TOKEN_RIGHT_PAREN)) {
                 if (args) {
                     for (size_t i = 0; i < arg_count; i++) {
@@ -418,7 +432,7 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                 ast_free_node(expr);
                 return NULL;
             }
-            
+
             ASTNode *call = ast_create_node(AST_CALL_EXPR, op_loc);
             if (!call) {
                 if (args) {
@@ -430,7 +444,7 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                 ast_free_node(expr);
                 return NULL;
             }
-            
+
             // Special handling for associated function calls
             if (expr->type == AST_ASSOCIATED_FUNC_CALL) {
                 // For associated function calls, populate the arguments directly
@@ -446,14 +460,14 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                 } else {
                     expr->data.associated_func_call.args = NULL;
                 }
-                
+
                 // Free the call node we don't need
                 ast_free_node(call);
                 // expr remains the same but now has arguments
             } else {
                 // Regular function call
                 call->data.call_expr.function = expr;
-                
+
                 // Convert args array to ASTNodeList
                 if (args && arg_count > 0) {
                     call->data.call_expr.args = ast_node_list_create(arg_count);
@@ -466,21 +480,22 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                 } else {
                     call->data.call_expr.args = NULL;
                 }
-                
+
                 expr = call;
             }
-        } else if (match_token(parser, TOKEN_LEFT_BRACE) && 
-                   (expr->type == AST_IDENTIFIER || expr->type == AST_STRUCT_TYPE || expr->type == AST_ENUM_TYPE)) {
+        } else if (match_token(parser, TOKEN_LEFT_BRACE) &&
+                   (expr->type == AST_IDENTIFIER || expr->type == AST_STRUCT_TYPE ||
+                    expr->type == AST_ENUM_TYPE)) {
             // Struct literal: Identifier { ... }, StructType<T> { ... }, or EnumType<T> { ... }
             // Use safer lookahead to distinguish from blocks that happen to follow identifiers
-            
+
             bool is_struct_literal = false;
-            
+
             // Look ahead to check if this is actually a struct literal
             // A struct literal has the pattern: field_name : expression
             // Use peek to avoid consuming tokens
             Token peek1 = peek_token(parser); // This should be the token after '{'
-            
+
             if (peek1.type == TOKEN_RIGHT_BRACE) {
                 // Empty braces {} - not a struct literal in this context
                 is_struct_literal = false;
@@ -489,7 +504,7 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                 // We need to peek further ahead, but we only have single token lookahead
                 // So we'll use a conservative heuristic: assume it's a struct literal
                 // only if we're parsing a known struct type expression
-                
+
                 // For now, be conservative and only treat it as struct literal if
                 // the expression is a struct type (not just any identifier)
                 if (expr->type == AST_STRUCT_TYPE || expr->type == AST_ENUM_TYPE) {
@@ -512,13 +527,13 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                 // Not starting with identifier, definitely not a struct literal
                 is_struct_literal = false;
             }
-            
+
             if (is_struct_literal) {
                 // Parse as struct literal
                 SourceLocation struct_loc = expr->location;
                 char *struct_name = NULL;
                 ASTNodeList *type_args = NULL;
-                
+
                 if (expr->type == AST_IDENTIFIER) {
                     // Simple struct literal: StructName { ... }
                     struct_name = strdup(expr->data.identifier.name);
@@ -534,16 +549,17 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                     type_args = expr->data.enum_type.type_args;
                     expr->data.enum_type.type_args = NULL; // Transfer ownership
                 }
-                
+
                 // Free the original expression since we're replacing it
                 ast_free_node(expr);
-                
+
                 // Parse the struct literal with the extracted name and type args
-                ASTNode *struct_literal = parse_struct_literal_with_name_and_type_args(parser, struct_name, type_args, struct_loc);
+                ASTNode *struct_literal = parse_struct_literal_with_name_and_type_args(
+                    parser, struct_name, type_args, struct_loc);
                 if (!struct_literal) {
                     return NULL;
                 }
-                
+
                 expr = struct_literal;
             } else {
                 // Not a struct literal - stop postfix parsing and let the caller handle the brace
@@ -551,13 +567,15 @@ ASTNode *parse_postfix_expr(Parser *parser) {
             }
         } else if (match_token(parser, TOKEN_DOUBLE_COLON)) {
             // Reject postfix :: usage - this violates current grammar
-            report_error(parser, "Invalid postfix '::' usage. Use '::' only for type-level associated functions like 'Type::function()' or 'Type<T>::function()'");
+            report_error(parser,
+                         "Invalid postfix '::' usage. Use '::' only for type-level associated "
+                         "functions like 'Type::function()' or 'Type<T>::function()'");
             ast_free_node(expr);
             return NULL;
         } else {
             break;
         }
     }
-    
+
     return expr;
-} 
+}

@@ -1,7 +1,7 @@
 /*
  * Stdlib Concurrent Coordination Tests - Common Definitions
  * Shared types, utilities, and framework for coordination primitive tests
- * 
+ *
  * Phase 8: Testing and Validation
  * Focus: Select operations, barriers, semaphores, and coordination primitives
  */
@@ -9,18 +9,18 @@
 #ifndef TEST_CONCURRENT_COORDINATION_COMMON_H
 #define TEST_CONCURRENT_COORDINATION_COMMON_H
 
+#include "../../runtime/stdlib_concurrency_support.h"
+#include "../framework/test_framework.h"
+#include <assert.h>
+#include <pthread.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include <pthread.h>
-#include <unistd.h>
 #include <time.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include "../framework/test_framework.h"
-#include "../../runtime/stdlib_concurrency_support.h"
+#include <unistd.h>
 
 // ============================================================================
 // Test Framework Macros
@@ -29,16 +29,16 @@
 extern size_t tests_run;
 extern size_t tests_passed;
 
-#define ASSERT_TRUE(condition) \
-    do { \
-        tests_run++; \
-        if (condition) { \
-            tests_passed++; \
-            printf("  ✅ PASS: %s\n", #condition); \
-        } else { \
-            printf("  ❌ FAIL: %s:%d - %s\n", __FILE__, __LINE__, #condition); \
-        } \
-    } while(0)
+#define ASSERT_TRUE(condition)                                                                     \
+    do {                                                                                           \
+        tests_run++;                                                                               \
+        if (condition) {                                                                           \
+            tests_passed++;                                                                        \
+            printf("  ✅ PASS: %s\n", #condition);                                                 \
+        } else {                                                                                   \
+            printf("  ❌ FAIL: %s:%d - %s\n", __FILE__, __LINE__, #condition);                     \
+        }                                                                                          \
+    } while (0)
 
 #define ASSERT_FALSE(condition) ASSERT_TRUE(!(condition))
 #define ASSERT_NULL(ptr) ASSERT_TRUE((ptr) == NULL)
@@ -50,11 +50,11 @@ extern size_t tests_passed;
 // ============================================================================
 
 typedef struct {
-    AsthraConcurrencyBarrierHandle* barrier;
+    AsthraConcurrencyBarrierHandle *barrier;
     int thread_id;
-    int* execution_order;
-    int* next_position;
-    pthread_mutex_t* order_mutex;
+    int *execution_order;
+    int *next_position;
+    pthread_mutex_t *order_mutex;
 } BarrierTestData;
 
 // ============================================================================
@@ -62,12 +62,12 @@ typedef struct {
 // ============================================================================
 
 typedef struct {
-    AsthraConcurrencySemaphoreHandle* semaphore;
+    AsthraConcurrencySemaphoreHandle *semaphore;
     int thread_id;
     int work_duration_ms;
-    int* completion_order;
-    int* next_position;
-    pthread_mutex_t* order_mutex;
+    int *completion_order;
+    int *next_position;
+    pthread_mutex_t *order_mutex;
 } SemaphoreTestData;
 
 // ============================================================================
@@ -79,14 +79,14 @@ typedef struct {
  * @param arg Pointer to BarrierTestData structure
  * @return Thread result (leader status or error code)
  */
-void* barrier_thread(void* arg);
+void *barrier_thread(void *arg);
 
 /**
  * Thread function for semaphore worker tests
  * @param arg Pointer to SemaphoreTestData structure
  * @return Thread result (success or error code)
  */
-void* semaphore_worker_thread(void* arg);
+void *semaphore_worker_thread(void *arg);
 
 // ============================================================================
 // Utility Functions
@@ -101,7 +101,7 @@ void init_test_framework(void);
  * Print test results summary
  * @param category Test category name
  */
-void print_test_results(const char* category);
+void print_test_results(const char *category);
 
 /**
  * Get the current number of tests run
@@ -121,7 +121,7 @@ size_t get_tests_passed(void);
  * @param local_tests_run Number of local tests run
  * @param local_tests_passed Number of local tests passed
  */
-void print_test_summary(const char* test_name, size_t local_tests_run, size_t local_tests_passed);
+void print_test_summary(const char *test_name, size_t local_tests_run, size_t local_tests_passed);
 
 /**
  * Validate timing with tolerance
@@ -141,17 +141,15 @@ bool validate_timing(double elapsed_ms, uint64_t expected_ms, double tolerance_f
  * @param order_mutex Mutex for order tracking
  * @return Allocated and initialized test data array
  */
-BarrierTestData* create_barrier_test_data(int num_threads, 
-                                         AsthraConcurrencyBarrierHandle* barrier,
-                                         int* execution_order,
-                                         int* next_position,
-                                         pthread_mutex_t* order_mutex);
+BarrierTestData *create_barrier_test_data(int num_threads, AsthraConcurrencyBarrierHandle *barrier,
+                                          int *execution_order, int *next_position,
+                                          pthread_mutex_t *order_mutex);
 
 /**
  * Clean up barrier test data array
  * @param thread_data Array of BarrierTestData to clean up
  */
-void cleanup_barrier_test_data(BarrierTestData* thread_data);
+void cleanup_barrier_test_data(BarrierTestData *thread_data);
 
 /**
  * Create and initialize semaphore test data array
@@ -163,18 +161,16 @@ void cleanup_barrier_test_data(BarrierTestData* thread_data);
  * @param order_mutex Mutex for order tracking
  * @return Allocated and initialized test data array
  */
-SemaphoreTestData* create_semaphore_test_data(int num_threads,
-                                             AsthraConcurrencySemaphoreHandle* semaphore,
-                                             int work_duration_ms,
-                                             int* completion_order,
-                                             int* next_position,
-                                             pthread_mutex_t* order_mutex);
+SemaphoreTestData *create_semaphore_test_data(int num_threads,
+                                              AsthraConcurrencySemaphoreHandle *semaphore,
+                                              int work_duration_ms, int *completion_order,
+                                              int *next_position, pthread_mutex_t *order_mutex);
 
 /**
  * Clean up semaphore test data array
  * @param thread_data Array of SemaphoreTestData to clean up
  */
-void cleanup_semaphore_test_data(SemaphoreTestData* thread_data);
+void cleanup_semaphore_test_data(SemaphoreTestData *thread_data);
 
 /**
  * Start multiple threads with barrier test data
@@ -183,7 +179,7 @@ void cleanup_semaphore_test_data(SemaphoreTestData* thread_data);
  * @param num_threads Number of threads to start
  * @return 0 on success, error code on failure
  */
-int start_barrier_threads(pthread_t* threads, BarrierTestData* thread_data, int num_threads);
+int start_barrier_threads(pthread_t *threads, BarrierTestData *thread_data, int num_threads);
 
 /**
  * Start multiple threads with semaphore test data
@@ -192,7 +188,7 @@ int start_barrier_threads(pthread_t* threads, BarrierTestData* thread_data, int 
  * @param num_threads Number of threads to start
  * @return 0 on success, error code on failure
  */
-int start_semaphore_threads(pthread_t* threads, SemaphoreTestData* thread_data, int num_threads);
+int start_semaphore_threads(pthread_t *threads, SemaphoreTestData *thread_data, int num_threads);
 
 /**
  * Wait for all threads to complete and validate results
@@ -201,7 +197,7 @@ int start_semaphore_threads(pthread_t* threads, SemaphoreTestData* thread_data, 
  * @param expect_success Whether to expect success results
  * @return Number of successful threads
  */
-int wait_for_threads(pthread_t* threads, int num_threads, bool expect_success);
+int wait_for_threads(pthread_t *threads, int num_threads, bool expect_success);
 
 /**
  * Count leader threads from barrier test results
@@ -209,7 +205,7 @@ int wait_for_threads(pthread_t* threads, int num_threads, bool expect_success);
  * @param num_threads Number of threads
  * @return Number of threads that became leaders
  */
-int count_leader_threads(pthread_t* threads, int num_threads);
+int count_leader_threads(pthread_t *threads, int num_threads);
 
 // ============================================================================
 // Test Categories
@@ -241,4 +237,4 @@ void test_select_coordination_integration(void);
 // Error Handling Tests
 void test_coordination_null_pointer_handling(void);
 
-#endif // TEST_CONCURRENT_COORDINATION_COMMON_H 
+#endif // TEST_CONCURRENT_COORDINATION_COMMON_H

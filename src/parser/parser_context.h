@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Parser context-sensitive parsing functions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -33,4 +33,4 @@ ParseContext current_parse_context(Parser *parser);
 }
 #endif
 
-#endif // ASTHRA_PARSER_CONTEXT_H 
+#endif // ASTHRA_PARSER_CONTEXT_H

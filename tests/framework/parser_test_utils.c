@@ -16,39 +16,39 @@
 // PARSER TEST UTILITIES
 // =============================================================================
 
-Parser* create_test_parser(const char* source) {
+Parser *create_test_parser(const char *source) {
     if (!source) {
         return NULL;
     }
 
     // Create lexer first, then parser
-    Lexer* lexer = lexer_create(source, strlen(source), "test.astra");
+    Lexer *lexer = lexer_create(source, strlen(source), "test.astra");
     if (!lexer) {
         return NULL;
     }
 
-    Parser* parser = parser_create(lexer);
+    Parser *parser = parser_create(lexer);
     if (parser) {
         track_memory_allocation(sizeof(Parser));
     }
     return parser;
 }
 
-void destroy_test_parser(Parser* parser) {
+void destroy_test_parser(Parser *parser) {
     if (parser) {
         track_memory_deallocation(sizeof(Parser));
         parser_destroy(parser);
     }
 }
 
-ASTNode* parse_test_source(const char* source, const char* filename) {
-    Parser* parser = create_test_parser(source);
+ASTNode *parse_test_source(const char *source, const char *filename) {
+    Parser *parser = create_test_parser(source);
     if (!parser) {
         return NULL;
     }
 
     // Parse the source and create AST
-    ASTNode* ast = parse_program(parser);
+    ASTNode *ast = parse_program(parser);
     if (ast) {
         track_memory_allocation(sizeof(ASTNode));
     }

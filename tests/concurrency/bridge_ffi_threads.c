@@ -12,15 +12,15 @@
 // THREAD REGISTRATION
 // =============================================================================
 
-AsthraResult Asthra_register_thread(const char* name) {
+AsthraResult Asthra_register_thread(const char *name) {
     if (!asthra_concurrency_is_initialized()) {
         return create_error("Bridge not initialized");
     }
-    
+
     pthread_mutex_lock(&bridge_state.mutex);
-    
+
     pthread_t current_thread = pthread_self();
-    
+
     // Check if already registered
     ThreadRegistryEntry *entry = bridge_state.thread_registry;
     while (entry) {
@@ -30,14 +30,14 @@ AsthraResult Asthra_register_thread(const char* name) {
         }
         entry = entry->next;
     }
-    
+
     // Create new entry
     entry = malloc(sizeof(ThreadRegistryEntry));
     if (!entry) {
         pthread_mutex_unlock(&bridge_state.mutex);
         return create_error("Memory allocation failed");
     }
-    
+
     entry->thread_id = current_thread;
     entry->is_registered = true;
     if (name) {
@@ -46,12 +46,12 @@ AsthraResult Asthra_register_thread(const char* name) {
     } else {
         snprintf(entry->name, sizeof(entry->name), "thread_%lu", (unsigned long)current_thread);
     }
-    
+
     entry->next = bridge_state.thread_registry;
     bridge_state.thread_registry = entry;
-    
+
     atomic_fetch_add(&bridge_state.stats.threads_registered, 1);
-    
+
     pthread_mutex_unlock(&bridge_state.mutex);
     return create_ok();
 }
@@ -60,13 +60,13 @@ void Asthra_unregister_thread(void) {
     if (!asthra_concurrency_is_initialized()) {
         return;
     }
-    
+
     pthread_mutex_lock(&bridge_state.mutex);
-    
+
     pthread_t current_thread = pthread_self();
     ThreadRegistryEntry **prev_ptr = &bridge_state.thread_registry;
     ThreadRegistryEntry *entry = bridge_state.thread_registry;
-    
+
     while (entry) {
         if (pthread_equal(entry->thread_id, current_thread)) {
             *prev_ptr = entry->next;
@@ -77,7 +77,7 @@ void Asthra_unregister_thread(void) {
         prev_ptr = &entry->next;
         entry = entry->next;
     }
-    
+
     pthread_mutex_unlock(&bridge_state.mutex);
 }
 
@@ -93,13 +93,13 @@ bool Asthra_is_thread_registered(void) {
     if (!asthra_concurrency_is_initialized()) {
         return false;
     }
-    
+
     pthread_mutex_lock(&bridge_state.mutex);
-    
+
     pthread_t current_thread = pthread_self();
     ThreadRegistryEntry *entry = bridge_state.thread_registry;
     bool found = false;
-    
+
     while (entry) {
         if (pthread_equal(entry->thread_id, current_thread)) {
             found = true;
@@ -107,7 +107,7 @@ bool Asthra_is_thread_registered(void) {
         }
         entry = entry->next;
     }
-    
+
     pthread_mutex_unlock(&bridge_state.mutex);
     return found;
 }

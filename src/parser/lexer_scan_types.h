@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Shared types and constants for modular lexer scanning
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */

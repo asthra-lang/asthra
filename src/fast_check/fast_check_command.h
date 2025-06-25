@@ -1,10 +1,10 @@
 #ifndef FAST_CHECK_COMMAND_H
 #define FAST_CHECK_COMMAND_H
 
-#include <stddef.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include "fast_check_engine.h"
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,15 +15,15 @@ extern "C" {
  * Aggregated results from checking multiple files
  */
 typedef struct {
-    size_t files_checked;      // Total files processed
-    size_t total_errors;       // Total error count across all files
-    size_t total_warnings;     // Total warning count across all files
-    double total_time_ms;      // Total check time in milliseconds
-    double avg_time_per_file;  // Average time per file
-    size_t cache_hits;         // Number of cache hits
-    size_t cache_misses;       // Number of cache misses
-    bool success;              // Overall success status
-    char *summary_message;     // Human-readable summary
+    size_t files_checked;     // Total files processed
+    size_t total_errors;      // Total error count across all files
+    size_t total_warnings;    // Total warning count across all files
+    double total_time_ms;     // Total check time in milliseconds
+    double avg_time_per_file; // Average time per file
+    size_t cache_hits;        // Number of cache hits
+    size_t cache_misses;      // Number of cache misses
+    bool success;             // Overall success status
+    char *summary_message;    // Human-readable summary
 } FastCheckCommandResult;
 
 /**
@@ -31,13 +31,13 @@ typedef struct {
  * Status for individual file checking
  */
 typedef enum {
-    FILE_STATUS_OK,            // No issues found
-    FILE_STATUS_WARNING,       // Warnings found
-    FILE_STATUS_ERROR,         // Errors found
-    FILE_STATUS_TIMEOUT,       // Check timed out
-    FILE_STATUS_NOT_FOUND,     // File not found
-    FILE_STATUS_PERMISSION,    // Permission denied
-    FILE_STATUS_CACHE_ERROR    // Cache operation failed
+    FILE_STATUS_OK,         // No issues found
+    FILE_STATUS_WARNING,    // Warnings found
+    FILE_STATUS_ERROR,      // Errors found
+    FILE_STATUS_TIMEOUT,    // Check timed out
+    FILE_STATUS_NOT_FOUND,  // File not found
+    FILE_STATUS_PERMISSION, // Permission denied
+    FILE_STATUS_CACHE_ERROR // Cache operation failed
 } FileCheckStatus;
 
 /**
@@ -45,13 +45,13 @@ typedef enum {
  * Result for checking a single file
  */
 typedef struct {
-    char *file_path;           // Path to the checked file
-    FileCheckStatus status;    // Check status
-    size_t error_count;        // Number of errors
-    size_t warning_count;      // Number of warnings
-    double check_time_ms;      // Time taken to check this file
-    bool was_cached;           // Whether result came from cache
-    char *error_message;       // Error message if check failed
+    char *file_path;        // Path to the checked file
+    FileCheckStatus status; // Check status
+    size_t error_count;     // Number of errors
+    size_t warning_count;   // Number of warnings
+    double check_time_ms;   // Time taken to check this file
+    bool was_cached;        // Whether result came from cache
+    char *error_message;    // Error message if check failed
 } FileCheckResult;
 
 // Configuration Management
@@ -65,53 +65,33 @@ void fast_check_config_add_include_pattern(FastCheckConfig *config, const char *
 void fast_check_config_add_exclude_pattern(FastCheckConfig *config, const char *pattern);
 
 // Command Interface
-FastCheckCommandResult *fast_check_run_command(
-    FastCheckEngine *engine, 
-    const char **files, 
-    size_t file_count,
-    const FastCheckConfig *config
-);
+FastCheckCommandResult *fast_check_run_command(FastCheckEngine *engine, const char **files,
+                                               size_t file_count, const FastCheckConfig *config);
 
-FastCheckCommandResult *fast_check_run_on_directory(
-    FastCheckEngine *engine,
-    const char *directory_path,
-    const FastCheckConfig *config
-);
+FastCheckCommandResult *fast_check_run_on_directory(FastCheckEngine *engine,
+                                                    const char *directory_path,
+                                                    const FastCheckConfig *config);
 
-FileCheckResult *fast_check_single_file_detailed(
-    FastCheckEngine *engine,
-    const char *file_path,
-    const FastCheckConfig *config
-);
+FileCheckResult *fast_check_single_file_detailed(FastCheckEngine *engine, const char *file_path,
+                                                 const FastCheckConfig *config);
 
 // Watch Mode Support
-typedef void (*FastCheckWatchCallback)(const char *file_path, FileCheckResult *result, void *user_data);
+typedef void (*FastCheckWatchCallback)(const char *file_path, FileCheckResult *result,
+                                       void *user_data);
 
-int fast_check_start_watch_mode(
-    FastCheckEngine *engine,
-    const char **watch_paths,
-    size_t path_count,
-    FastCheckWatchCallback callback,
-    void *user_data
-);
+int fast_check_start_watch_mode(FastCheckEngine *engine, const char **watch_paths,
+                                size_t path_count, FastCheckWatchCallback callback,
+                                void *user_data);
 
 void fast_check_stop_watch_mode(void);
 
 // File Discovery
-char **fast_check_discover_files(
-    const char *directory_path,
-    const char **include_patterns,
-    size_t include_count,
-    const char **exclude_patterns,
-    size_t exclude_count,
-    size_t *file_count
-);
+char **fast_check_discover_files(const char *directory_path, const char **include_patterns,
+                                 size_t include_count, const char **exclude_patterns,
+                                 size_t exclude_count, size_t *file_count);
 
-char **fast_check_get_modified_files(
-    const char *directory_path,
-    int64_t since_timestamp,
-    size_t *file_count
-);
+char **fast_check_get_modified_files(const char *directory_path, int64_t since_timestamp,
+                                     size_t *file_count);
 
 // Output Formatting
 char *fast_check_format_result_human(const FileCheckResult *result);
@@ -149,4 +129,4 @@ void fast_check_statistics_destroy(FastCheckStatistics *stats);
 }
 #endif
 
-#endif // FAST_CHECK_COMMAND_H 
+#endif // FAST_CHECK_COMMAND_H

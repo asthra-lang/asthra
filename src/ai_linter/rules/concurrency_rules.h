@@ -14,4 +14,4 @@ bool check_blocking_in_async(ASTNode *node, AsthraSemanticsAPI *api, AILintResul
 // Registration function
 void register_concurrency_rules(AILinter *linter);
 
-#endif // ASTHRA_AI_CONCURRENCY_RULES_H 
+#endif // ASTHRA_AI_CONCURRENCY_RULES_H

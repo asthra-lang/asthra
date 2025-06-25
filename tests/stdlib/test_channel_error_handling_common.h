@@ -1,7 +1,7 @@
 /*
  * Common Header for Channel Error Handling Tests
  * Shared definitions, types, and function declarations for error handling tests
- * 
+ *
  * Part of test_channel_error_handling.c split (716 lines -> 7 focused modules)
  * Provides comprehensive error handling test infrastructure
  */
@@ -89,23 +89,22 @@ ErrorTestResults init_error_test_results(void);
 /**
  * Update error test results with operation outcome
  */
-void update_error_test_results(ErrorTestResults* results, 
-                              AsthraConcurrencyResult operation_result);
+void update_error_test_results(ErrorTestResults *results, AsthraConcurrencyResult operation_result);
 
 /**
  * Calculate final error test statistics
  */
-void finalize_error_test_results(ErrorTestResults* results, uint64_t start_time);
+void finalize_error_test_results(ErrorTestResults *results, uint64_t start_time);
 
 /**
  * Print error test results summary
  */
-void print_error_test_summary(const char* test_name, const ErrorTestResults* results);
+void print_error_test_summary(const char *test_name, const ErrorTestResults *results);
 
 /**
  * Print error handling report
  */
-void print_error_handling_report(const char* category, size_t tests_run, size_t tests_passed);
+void print_error_handling_report(const char *category, size_t tests_run, size_t tests_passed);
 
 // ============================================================================
 // ERROR INJECTION AND SIMULATION FUNCTIONS
@@ -114,12 +113,12 @@ void print_error_handling_report(const char* category, size_t tests_run, size_t 
 /**
  * Simulate memory exhaustion by creating many channels
  */
-int simulate_memory_exhaustion(AsthraConcurrencyChannelHandle** channels, int max_channels);
+int simulate_memory_exhaustion(AsthraConcurrencyChannelHandle **channels, int max_channels);
 
 /**
  * Test channel overflow pattern by filling to capacity
  */
-bool test_channel_overflow_pattern(AsthraConcurrencyChannelHandle* channel, int capacity);
+bool test_channel_overflow_pattern(AsthraConcurrencyChannelHandle *channel, int capacity);
 
 /**
  * Inject random errors into channel operations
@@ -129,7 +128,7 @@ AsthraConcurrencyResult inject_operation_error(double error_rate);
 /**
  * Test retry pattern with recovery logic
  */
-bool test_retry_pattern(AsthraConcurrencyChannelHandle* channel, int max_retries);
+bool test_retry_pattern(AsthraConcurrencyChannelHandle *channel, int max_retries);
 
 // ============================================================================
 // BOUNDARY CONDITION TEST FUNCTIONS
@@ -138,22 +137,22 @@ bool test_retry_pattern(AsthraConcurrencyChannelHandle* channel, int max_retries
 /**
  * Test zero capacity channel edge cases
  */
-bool test_zero_capacity_edge_cases(AsthraConcurrencyChannelHandle* channel);
+bool test_zero_capacity_edge_cases(AsthraConcurrencyChannelHandle *channel);
 
 /**
  * Test maximum capacity scenarios
  */
-bool test_maximum_capacity_scenarios(AsthraConcurrencyChannelHandle* channel, size_t capacity);
+bool test_maximum_capacity_scenarios(AsthraConcurrencyChannelHandle *channel, size_t capacity);
 
 /**
  * Test data size boundaries pattern
  */
-bool test_data_size_boundaries_pattern(AsthraConcurrencyChannelHandle* channel);
+bool test_data_size_boundaries_pattern(AsthraConcurrencyChannelHandle *channel);
 
 /**
  * Validate large data transfer
  */
-bool validate_large_data_transfer(AsthraConcurrencyChannelHandle* channel, size_t data_size);
+bool validate_large_data_transfer(AsthraConcurrencyChannelHandle *channel, size_t data_size);
 
 // ============================================================================
 // CONCURRENT ERROR TEST FUNCTIONS
@@ -162,21 +161,18 @@ bool validate_large_data_transfer(AsthraConcurrencyChannelHandle* channel, size_
 /**
  * Run concurrent error tests with multiple threads
  */
-int run_concurrent_error_tests(AsthraConcurrencyChannelHandle* channel, 
-                              int num_threads, 
-                              ErrorTestResults* results);
+int run_concurrent_error_tests(AsthraConcurrencyChannelHandle *channel, int num_threads,
+                               ErrorTestResults *results);
 
 /**
  * Test destruction with active threads
  */
-bool test_destruction_with_active_threads(AsthraConcurrencyChannelHandle* channel, 
-                                         int num_threads);
+bool test_destruction_with_active_threads(AsthraConcurrencyChannelHandle *channel, int num_threads);
 
 /**
  * Monitor thread completion and collect results
  */
-int monitor_thread_completion(pthread_t* threads, int num_threads, 
-                             ThreadTestData** thread_data);
+int monitor_thread_completion(pthread_t *threads, int num_threads, ThreadTestData **thread_data);
 
 // ============================================================================
 // RECOVERY AND RESILIENCE TEST FUNCTIONS
@@ -185,13 +181,12 @@ int monitor_thread_completion(pthread_t* threads, int num_threads,
 /**
  * Test error recovery patterns
  */
-bool test_error_recovery_patterns(AsthraConcurrencyChannelHandle* channel);
+bool test_error_recovery_patterns(AsthraConcurrencyChannelHandle *channel);
 
 /**
  * Test graceful degradation pattern
  */
-bool test_graceful_degradation_pattern(AsthraConcurrencyChannelHandle** channels, 
-                                      int num_channels);
+bool test_graceful_degradation_pattern(AsthraConcurrencyChannelHandle **channels, int num_channels);
 
 /**
  * Validate success rate meets minimum threshold
@@ -205,22 +200,22 @@ bool validate_success_rate(int successful, int total, double min_rate);
 /**
  * Producer thread that intentionally generates errors
  */
-void* error_producer_thread(void* arg);
+void *error_producer_thread(void *arg);
 
 /**
  * Consumer thread that handles errors gracefully
  */
-void* error_consumer_thread(void* arg);
+void *error_consumer_thread(void *arg);
 
 /**
  * Thread that tests timeout scenarios
  */
-void* timeout_test_thread(void* arg);
+void *timeout_test_thread(void *arg);
 
 /**
  * Thread that tests channel destruction scenarios
  */
-void* destruction_test_thread(void* arg);
+void *destruction_test_thread(void *arg);
 
 // ============================================================================
 // ERROR VALIDATION AND REPORTING FUNCTIONS
@@ -234,16 +229,16 @@ bool validate_null_pointer_errors(void);
 /**
  * Validate invalid data error handling
  */
-bool validate_invalid_data_errors(AsthraConcurrencyChannelHandle* channel);
+bool validate_invalid_data_errors(AsthraConcurrencyChannelHandle *channel);
 
 /**
  * Validate timeout error handling
  */
-bool validate_timeout_errors(AsthraConcurrencyChannelHandle* channel);
+bool validate_timeout_errors(AsthraConcurrencyChannelHandle *channel);
 
 /**
  * Validate invalid handle error handling
  */
 bool validate_invalid_handle_errors(void);
 
-#endif // TEST_CHANNEL_ERROR_HANDLING_COMMON_H 
+#endif // TEST_CHANNEL_ERROR_HANDLING_COMMON_H

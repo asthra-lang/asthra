@@ -11,11 +11,11 @@
 /**
  * Test code generation for array/slice expressions
  */
-AsthraTestResult test_generate_array_slice_expressions(AsthraTestContext* context) {
+AsthraTestResult test_generate_array_slice_expressions(AsthraTestContext *context) {
     // For now, return SKIP since array/slice code generation is not yet implemented
     // This follows the pattern of other expression tests that are not yet complete
     return ASTHRA_TEST_SKIP;
-    
+
     // TODO: Once array/slice code generation is implemented, test the following:
     // 1. Repeated element arrays: [0; 10]
     // 2. Basic array literals: [1, 2, 3]
@@ -24,7 +24,7 @@ AsthraTestResult test_generate_array_slice_expressions(AsthraTestContext* contex
     // 5. Multi-dimensional arrays: [3][4]i32
     // 6. Array bounds checking
     // 7. Memory management for arrays and slices
-    
+
 #if 0
     // Example implementation once code generation is ready:
     CodeGenTestFixture* fixture = setup_codegen_fixture();

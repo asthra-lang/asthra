@@ -2,12 +2,12 @@
  * =============================================================================
  * PATTERN OPTIMIZATION TEST COMMON UTILITIES
  * =============================================================================
- * 
+ *
  * This header contains shared types, macros, and utility functions used
  * across all pattern optimization test files.
- * 
+ *
  * Part of Phase 3.3: Advanced Pattern Matching
- * 
+ *
  * =============================================================================
  */
 
@@ -15,8 +15,8 @@
 #define TEST_OPTIMIZATION_COMMON_H
 
 #include "test_pattern_common.h"
-#include <time.h>
 #include <sys/resource.h>
+#include <time.h>
 
 // =============================================================================
 // OPTIMIZATION-SPECIFIC TYPES (using base types from test_pattern_common.h)
@@ -60,18 +60,18 @@ static void cleanup_performance_profiler(void);
 
 // Performance measurement
 static PerformanceMeasurement start_performance_measurement(void);
-static void end_performance_measurement(PerformanceMeasurement* measurement);
-static double get_cpu_time_ms(const PerformanceMeasurement* measurement);
-static long get_memory_usage_kb(const PerformanceMeasurement* measurement);
+static void end_performance_measurement(PerformanceMeasurement *measurement);
+static double get_cpu_time_ms(const PerformanceMeasurement *measurement);
+static long get_memory_usage_kb(const PerformanceMeasurement *measurement);
 
 // Pattern compilation with optimization
-static PatternCompilationResult* compile_patterns(ASTNode* ast, OptimizationLevel level);
+static PatternCompilationResult *compile_patterns(ASTNode *ast, OptimizationLevel level);
 
 // Performance profiling
-static void enable_pattern_profiling(PatternCompilationResult* result);
-static PatternPerformanceProfile* get_pattern_performance_profile(PatternCompilationResult* result);
-static void cleanup_pattern_performance_profile(PatternPerformanceProfile* profile);
+static void enable_pattern_profiling(PatternCompilationResult *result);
+static PatternPerformanceProfile *get_pattern_performance_profile(PatternCompilationResult *result);
+static void cleanup_pattern_performance_profile(PatternPerformanceProfile *profile);
 
 // Cleanup functions (using base implementation from test_pattern_common.h)
 
-#endif // TEST_OPTIMIZATION_COMMON_H 
+#endif // TEST_OPTIMIZATION_COMMON_H

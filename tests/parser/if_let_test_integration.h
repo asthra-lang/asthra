@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language
  * If-Let Statement Testing - Integration and Performance Tests
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Phase 4.4: Integration tests and Phase 4.5: Performance and edge case tests
  */
 
@@ -69,4 +69,4 @@ bool run_performance_tests(void);
 }
 #endif
 
-#endif // IF_LET_TEST_INTEGRATION_H 
+#endif // IF_LET_TEST_INTEGRATION_H

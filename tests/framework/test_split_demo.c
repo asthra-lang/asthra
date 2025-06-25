@@ -33,36 +33,23 @@ int main(void) {
 
     // Configure test suite
     AsthraTestSuiteConfig config = asthra_test_suite_config_create(
-        "Split Framework Demo Suite",
-        "Demonstration of the split test framework modules"
-    );
+        "Split Framework Demo Suite", "Demonstration of the split test framework modules");
     config.statistics = stats;
     config.verbose_output = true;
-    config.stop_on_failure = false;  // Continue even if tests fail
+    config.stop_on_failure = false; // Continue even if tests fail
 
     // Set up test arrays
-    AsthraTestFunction tests[] = {
-        test_basic_functionality,
-        test_failure_case,
-        test_skip_case
-    };
+    AsthraTestFunction tests[] = {test_basic_functionality, test_failure_case, test_skip_case};
 
-    AsthraTestMetadata metadata[] = {
-        test_basic_functionality_metadata,
-        test_failure_case_metadata,
-        test_skip_case_metadata
-    };
+    AsthraTestMetadata metadata[] = {test_basic_functionality_metadata, test_failure_case_metadata,
+                                     test_skip_case_metadata};
 
     // Run the test suite
     printf("Running test suite: %s\n", config.name);
     printf("Description: %s\n\n", config.description);
 
-    AsthraTestResult suite_result = asthra_test_run_suite(
-        tests,
-        metadata,
-        sizeof(tests) / sizeof(tests[0]),
-        &config
-    );
+    AsthraTestResult suite_result =
+        asthra_test_run_suite(tests, metadata, sizeof(tests) / sizeof(tests[0]), &config);
 
     // Print detailed statistics
     printf("\n");
@@ -75,8 +62,7 @@ int main(void) {
     // Clean up
     asthra_test_statistics_destroy(stats);
 
-    printf("\nSuite result: %s\n",
-           (suite_result == ASTHRA_TEST_PASS) ? "PASS" : "FAIL");
+    printf("\nSuite result: %s\n", (suite_result == ASTHRA_TEST_PASS) ? "PASS" : "FAIL");
 
     printf("\n=== Demo Complete ===\n");
     return 0;

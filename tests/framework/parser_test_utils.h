@@ -11,12 +11,12 @@
 #ifndef ASTHRA_PARSER_TEST_UTILS_H
 #define ASTHRA_PARSER_TEST_UTILS_H
 
+#include "ast.h"
 #include "lexer.h"
 #include "parser.h"
-#include "ast.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,8 +30,8 @@ extern "C" {
  * Test parser configuration
  */
 typedef struct {
-    const char* source_code;
-    const char* filename;
+    const char *source_code;
+    const char *filename;
     bool enable_error_recovery;
     bool enable_ast_validation;
     size_t max_errors;
@@ -42,7 +42,7 @@ typedef struct {
  */
 typedef struct {
     ASTNodeType type;
-    const char* name;
+    const char *name;
     size_t child_count;
     bool has_annotations;
 } AstExpectation;
@@ -56,20 +56,20 @@ typedef struct {
  * @param source The source code to parse
  * @return A new parser state for testing
  */
-Parser* create_test_parser(const char* source);
+Parser *create_test_parser(const char *source);
 
 /**
  * Create a test parser with custom configuration
  * @param config Test parser configuration
  * @return A new parser state for testing
  */
-Parser* create_test_parser_with_config(const TestParserConfig* config);
+Parser *create_test_parser_with_config(const TestParserConfig *config);
 
 /**
  * Destroy a test parser and clean up resources
  * @param parser The parser to destroy
  */
-void destroy_test_parser(Parser* parser);
+void destroy_test_parser(Parser *parser);
 
 /**
  * Parse source and return the AST
@@ -77,7 +77,7 @@ void destroy_test_parser(Parser* parser);
  * @param filename The filename for error reporting
  * @return The root AST node (caller must free)
  */
-ASTNode* parse_test_source(const char* source, const char* filename);
+ASTNode *parse_test_source(const char *source, const char *filename);
 
 #ifdef __cplusplus
 }

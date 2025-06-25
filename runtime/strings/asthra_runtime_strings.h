@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Runtime v1.2 - Strings Module
  * String Operations and UTF-8 Support
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This module provides string management functionality including
  * creation, concatenation, interpolation, and UTF-8 support.
  */
@@ -12,9 +12,9 @@
 #ifndef ASTHRA_RUNTIME_STRINGS_H
 #define ASTHRA_RUNTIME_STRINGS_H
 
+#include "../collections/asthra_runtime_slices.h"
 #include "../core/asthra_runtime_core.h"
 #include "../types/asthra_runtime_result.h"
-#include "../collections/asthra_runtime_slices.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,10 +26,10 @@ extern "C" {
 
 // String type with UTF-8 support and C17 flexible array member
 typedef struct {
-    char * restrict data;     // C17 restrict for UTF-8 encoded string data
-    size_t len;               // Length in bytes
-    size_t cap;               // Capacity in bytes
-    size_t char_count;        // Number of UTF-8 characters
+    char *restrict data; // C17 restrict for UTF-8 encoded string data
+    size_t len;          // Length in bytes
+    size_t cap;          // Capacity in bytes
+    size_t char_count;   // Number of UTF-8 characters
     AsthraOwnershipHint ownership;
     bool is_mutable;
 } AsthraString;
@@ -43,9 +43,9 @@ ASTHRA_STATIC_ASSERT(sizeof(AsthraString) <= 48, "String header should be compac
 // =============================================================================
 
 // String creation and management with C17 compound literals
-AsthraString asthra_string_new(const char * restrict cstr);
+AsthraString asthra_string_new(const char *restrict cstr);
 AsthraString asthra_string_with_capacity(size_t capacity);
-AsthraString asthra_string_from_utf8(const uint8_t * restrict bytes, size_t len);
+AsthraString asthra_string_from_utf8(const uint8_t *restrict bytes, size_t len);
 void asthra_string_free(AsthraString str);
 
 // =============================================================================
@@ -54,8 +54,8 @@ void asthra_string_free(AsthraString str);
 
 // Deterministic string concatenation with restrict pointers
 AsthraString asthra_string_concat(AsthraString a, AsthraString b);
-AsthraString asthra_string_concat_cstr(AsthraString str, const char * restrict cstr);
-AsthraString asthra_string_concat_multiple(AsthraString * restrict strings, size_t count);
+AsthraString asthra_string_concat_cstr(AsthraString str, const char *restrict cstr);
+AsthraString asthra_string_concat_multiple(AsthraString *restrict strings, size_t count);
 
 // =============================================================================
 // STRING INTERPOLATION ENGINE
@@ -74,7 +74,7 @@ typedef enum {
 typedef struct {
     AsthraInterpolationType type;
     union {
-        const char * restrict str_val;
+        const char *restrict str_val;
         int64_t int_val;
         uint64_t uint_val;
         double float_val;
@@ -86,8 +86,8 @@ typedef struct {
     } value;
 } AsthraInterpolationArg;
 
-AsthraString asthra_string_interpolate(const char * restrict template, 
-                                     AsthraInterpolationArg * restrict args, size_t arg_count);
+AsthraString asthra_string_interpolate(const char *restrict template,
+                                       AsthraInterpolationArg *restrict args, size_t arg_count);
 
 // =============================================================================
 // STRING UTILITY OPERATIONS
@@ -140,7 +140,6 @@ AsthraString asthra_uint_to_string(uint64_t value);
 #ifdef __cplusplus
 }
 #endif
-
 
 // Missing function prototypes
 AsthraString asthra_string_replace(AsthraString str, AsthraString old_str, AsthraString new_str);

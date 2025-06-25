@@ -11,14 +11,14 @@
 #ifndef ASTHRA_SEMANTIC_TEST_UTILS_H
 #define ASTHRA_SEMANTIC_TEST_UTILS_H
 
+#include "ast.h"
 #include "semantic_analyzer.h"
 #include "semantic_enums.h"
 #include "type_info.h"
-#include "ast.h"
+#include <stdatomic.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
-#include <stdatomic.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,13 +32,13 @@ extern "C" {
  * Setup a semantic analyzer for testing
  * @return A new semantic analyzer for testing
  */
-SemanticAnalyzer* setup_semantic_analyzer(void);
+SemanticAnalyzer *setup_semantic_analyzer(void);
 
 /**
  * Destroy a test semantic analyzer
  * @param analyzer The analyzer to destroy
  */
-void destroy_semantic_analyzer(SemanticAnalyzer* analyzer);
+void destroy_semantic_analyzer(SemanticAnalyzer *analyzer);
 
 /**
  * Analyze an AST and return semantic information
@@ -46,7 +46,7 @@ void destroy_semantic_analyzer(SemanticAnalyzer* analyzer);
  * @param ast The AST to analyze
  * @return true if analysis succeeded, false otherwise
  */
-bool analyze_test_ast(SemanticAnalyzer* analyzer, ASTNode* ast);
+bool analyze_test_ast(SemanticAnalyzer *analyzer, ASTNode *ast);
 
 // =============================================================================
 // ENHANCED SEMANTIC VALIDATION UTILITIES
@@ -59,7 +59,8 @@ bool analyze_test_ast(SemanticAnalyzer* analyzer, ASTNode* ast);
  * @param expected_name Expected enum name
  * @return true if validation passed, false otherwise
  */
-bool validate_enum_semantic_analysis(SemanticAnalyzer* analyzer, ASTNode* enum_ast, const char* expected_name);
+bool validate_enum_semantic_analysis(SemanticAnalyzer *analyzer, ASTNode *enum_ast,
+                                     const char *expected_name);
 
 /**
  * Validate type inference for expressions
@@ -68,7 +69,8 @@ bool validate_enum_semantic_analysis(SemanticAnalyzer* analyzer, ASTNode* enum_a
  * @param expected_type_name Expected type name
  * @return true if type inference is correct, false otherwise
  */
-bool validate_type_inference(SemanticAnalyzer* analyzer, ASTNode* expr_ast, const char* expected_type_name);
+bool validate_type_inference(SemanticAnalyzer *analyzer, ASTNode *expr_ast,
+                             const char *expected_type_name);
 
 /**
  * Validate pattern matching exhaustiveness
@@ -77,7 +79,8 @@ bool validate_type_inference(SemanticAnalyzer* analyzer, ASTNode* expr_ast, cons
  * @param should_be_exhaustive Expected exhaustiveness state
  * @return true if exhaustiveness check matches expectation, false otherwise
  */
-bool semantic_test_validate_pattern_exhaustiveness(SemanticAnalyzer* analyzer, ASTNode* match_ast, bool should_be_exhaustive);
+bool semantic_test_validate_pattern_exhaustiveness(SemanticAnalyzer *analyzer, ASTNode *match_ast,
+                                                   bool should_be_exhaustive);
 
 /**
  * Validate symbol resolution and visibility
@@ -86,7 +89,8 @@ bool semantic_test_validate_pattern_exhaustiveness(SemanticAnalyzer* analyzer, A
  * @param should_be_visible Expected visibility
  * @return true if visibility matches expectation, false otherwise
  */
-bool validate_symbol_visibility(SemanticAnalyzer* analyzer, const char* symbol_name, bool should_be_visible);
+bool validate_symbol_visibility(SemanticAnalyzer *analyzer, const char *symbol_name,
+                                bool should_be_visible);
 
 /**
  * Validate error reporting and collection
@@ -95,7 +99,8 @@ bool validate_symbol_visibility(SemanticAnalyzer* analyzer, const char* symbol_n
  * @param expected_error_types Array of expected error types (can be NULL)
  * @return true if error reporting matches expectation, false otherwise
  */
-bool validate_error_reporting(SemanticAnalyzer* analyzer, size_t expected_error_count, int* expected_error_types);
+bool validate_error_reporting(SemanticAnalyzer *analyzer, size_t expected_error_count,
+                              int *expected_error_types);
 
 /**
  * Validate generic type parameter constraints
@@ -104,7 +109,8 @@ bool validate_error_reporting(SemanticAnalyzer* analyzer, size_t expected_error_
  * @param expected_constraint_count Expected number of constraints
  * @return true if constraints are valid, false otherwise
  */
-bool validate_generic_constraints(SemanticAnalyzer* analyzer, ASTNodeList* type_params, size_t expected_constraint_count);
+bool validate_generic_constraints(SemanticAnalyzer *analyzer, ASTNodeList *type_params,
+                                  size_t expected_constraint_count);
 
 /**
  * Validate FFI semantic compatibility
@@ -113,7 +119,8 @@ bool validate_generic_constraints(SemanticAnalyzer* analyzer, ASTNodeList* type_
  * @param expected_abi Expected ABI type
  * @return true if FFI semantics are valid, false otherwise
  */
-bool validate_ffi_semantics(SemanticAnalyzer* analyzer, ASTNode* decl_ast, const char* expected_abi);
+bool validate_ffi_semantics(SemanticAnalyzer *analyzer, ASTNode *decl_ast,
+                            const char *expected_abi);
 
 /**
  * Validate memory safety analysis
@@ -122,7 +129,8 @@ bool validate_ffi_semantics(SemanticAnalyzer* analyzer, ASTNode* decl_ast, const
  * @param expected_safety_level Expected safety level
  * @return true if memory safety analysis is correct, false otherwise
  */
-bool validate_memory_safety(SemanticAnalyzer* analyzer, ASTNode* expr_ast, int expected_safety_level);
+bool validate_memory_safety(SemanticAnalyzer *analyzer, ASTNode *expr_ast,
+                            int expected_safety_level);
 
 /**
  * Get semantic analysis statistics for validation
@@ -139,13 +147,13 @@ typedef struct {
     bool memory_tracking_enabled;
 } SemanticAnalysisStats;
 
-SemanticAnalysisStats get_semantic_analysis_stats(SemanticAnalyzer* analyzer);
+SemanticAnalysisStats get_semantic_analysis_stats(SemanticAnalyzer *analyzer);
 
 /**
  * Reset semantic analyzer state for fresh testing
  * @param analyzer The semantic analyzer
  */
-void reset_semantic_analyzer(SemanticAnalyzer* analyzer);
+void reset_semantic_analyzer(SemanticAnalyzer *analyzer);
 
 #ifdef __cplusplus
 }

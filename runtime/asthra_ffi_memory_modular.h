@@ -1,10 +1,10 @@
 /**
  * Asthra Safe C Memory Interface v1.0 - Modular Umbrella Header
  * Provides backward compatibility by including all modularized memory components
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This header maintains backward compatibility with the original asthra_ffi_memory.h
  * while using the new modular structure internally.
  */
@@ -56,17 +56,11 @@ typedef struct {
  * @return Module information structure
  */
 static inline AsthraFFIMemoryModularInfo asthra_ffi_memory_get_modular_info(void) {
-    AsthraFFIMemoryModularInfo info = {
-        .version = ASTHRA_FFI_MEMORY_MODULAR_VERSION,
-        .component_count = ASTHRA_FFI_MEMORY_MODULAR_COMPONENTS,
-        .components = {
-            "asthra_ffi_memory_core",
-            "asthra_ffi_slice", 
-            "asthra_ffi_string",
-            "asthra_ffi_result",
-            "asthra_ffi_ownership"
-        }
-    };
+    AsthraFFIMemoryModularInfo info = {.version = ASTHRA_FFI_MEMORY_MODULAR_VERSION,
+                                       .component_count = ASTHRA_FFI_MEMORY_MODULAR_COMPONENTS,
+                                       .components = {"asthra_ffi_memory_core", "asthra_ffi_slice",
+                                                      "asthra_ffi_string", "asthra_ffi_result",
+                                                      "asthra_ffi_ownership"}};
     return info;
 }
 
@@ -93,4 +87,4 @@ static inline void asthra_ffi_memory_cleanup_all(void) {
 }
 #endif
 
-#endif // ASTHRA_FFI_MEMORY_MODULAR_H 
+#endif // ASTHRA_FFI_MEMORY_MODULAR_H

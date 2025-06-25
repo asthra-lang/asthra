@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler - Top-Level Grammar Productions
  * Package declarations, imports, and top-level constructs
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -50,4 +50,4 @@ bool is_declaration_start(Parser *parser);
 }
 #endif
 
-#endif // ASTHRA_GRAMMAR_TOPLEVEL_H 
+#endif // ASTHRA_GRAMMAR_TOPLEVEL_H

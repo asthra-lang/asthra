@@ -31,7 +31,7 @@ AsthraBenchmarkStatus setup_large_buffer(void **context) {
 }
 
 void teardown_large_buffer(void *context) {
-    BenchmarkContext *ctx = (BenchmarkContext*)context;
+    BenchmarkContext *ctx = (BenchmarkContext *)context;
     if (ctx) {
         free(ctx->large_buffer);
         free(ctx);

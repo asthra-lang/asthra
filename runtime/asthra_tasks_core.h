@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Task System Core v1.2
  * Core Task Management Functions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -23,7 +23,8 @@ AsthraTaskHandle asthra_spawn_task(AsthraTaskFunction func, void *args, size_t a
 /**
  * Spawn a new task with specified stack size
  */
-AsthraTaskHandle asthra_spawn_task_with_stack(AsthraTaskFunction func, void *args, size_t args_size, size_t stack_size);
+AsthraTaskHandle asthra_spawn_task_with_stack(AsthraTaskFunction func, void *args, size_t args_size,
+                                              size_t stack_size);
 
 /**
  * Wait for a task to complete and get its result
@@ -59,4 +60,4 @@ void asthra_log_task_stats(void);
  */
 void *task_runner(void *arg);
 
-#endif // ASTHRA_TASKS_CORE_H 
+#endif // ASTHRA_TASKS_CORE_H

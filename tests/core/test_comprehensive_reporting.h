@@ -21,15 +21,14 @@ extern "C" {
 // =============================================================================
 
 // AI feedback recording
-void asthra_record_ai_feedback(AsthraExtendedTestContext *ctx,
-                              const char *feedback_type,
-                              const char *feedback_message);
+void asthra_record_ai_feedback(AsthraExtendedTestContext *ctx, const char *feedback_type,
+                               const char *feedback_message);
 
 // Report generation
 void asthra_generate_test_report(const char *output_file);
-void asthra_generate_detailed_report(const char *output_file, 
-                                   const AsthraExtendedTestContext *contexts,
-                                   size_t context_count);
+void asthra_generate_detailed_report(const char *output_file,
+                                     const AsthraExtendedTestContext *contexts,
+                                     size_t context_count);
 
 // C17 compliance validation
 bool asthra_verify_c17_compliance(const char *source_file);
@@ -54,4 +53,4 @@ void asthra_print_comprehensive_summary(void);
 }
 #endif
 
-#endif // ASTHRA_TEST_COMPREHENSIVE_REPORTING_H 
+#endif // ASTHRA_TEST_COMPREHENSIVE_REPORTING_H

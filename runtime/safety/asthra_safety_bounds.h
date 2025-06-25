@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Runtime Safety System
  * Boundary and Memory Validation Module - Memory safety and bounds checking
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -10,9 +10,9 @@
 #define ASTHRA_SAFETY_BOUNDS_H
 
 #include "asthra_safety_minimal_includes.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -99,4 +99,4 @@ bool asthra_safety_validate_capacity_consistency(size_t length, size_t capacity)
 }
 #endif
 
-#endif // ASTHRA_SAFETY_BOUNDS_H 
+#endif // ASTHRA_SAFETY_BOUNDS_H

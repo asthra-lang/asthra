@@ -1,30 +1,30 @@
 /**
  * Asthra Programming Language Compiler
  * Generic Structs Testing - Common Utilities
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Shared test framework and utilities for generic structs validation
  */
 
 #ifndef GENERIC_STRUCTS_TEST_COMMON_H
 #define GENERIC_STRUCTS_TEST_COMMON_H
 
+#include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include <stdbool.h>
 
 // Include all necessary headers
-#include "parser.h"
 #include "ast.h"
-#include "lexer.h"
-#include "semantic_analyzer.h"
-#include "semantic_core.h"
 #include "backend_interface.h"
 #include "generic_instantiation.h"
+#include "lexer.h"
+#include "parser.h"
+#include "semantic_analyzer.h"
+#include "semantic_core.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,21 +37,23 @@ extern "C" {
 extern size_t tests_run;
 extern size_t tests_passed;
 
-#define TEST_ASSERT(condition, message) do { \
-    tests_run++; \
-    if (condition) { \
-        tests_passed++; \
-        printf("  ✅ PASS: %s\n", message); \
-    } else { \
-        printf("  ❌ FAIL: %s\n", message); \
-        return false; \
-    } \
-} while(0)
+#define TEST_ASSERT(condition, message)                                                            \
+    do {                                                                                           \
+        tests_run++;                                                                               \
+        if (condition) {                                                                           \
+            tests_passed++;                                                                        \
+            printf("  ✅ PASS: %s\n", message);                                                    \
+        } else {                                                                                   \
+            printf("  ❌ FAIL: %s\n", message);                                                    \
+            return false;                                                                          \
+        }                                                                                          \
+    } while (0)
 
-#define TEST_SUCCESS() do { \
-    printf("  🎉 Test completed successfully!\n"); \
-    return true; \
-} while(0)
+#define TEST_SUCCESS()                                                                             \
+    do {                                                                                           \
+        printf("  🎉 Test completed successfully!\n");                                             \
+        return true;                                                                               \
+    } while (0)
 
 // =============================================================================
 // VALIDATION HELPER FUNCTIONS
@@ -96,4 +98,4 @@ int print_test_summary(void);
 }
 #endif
 
-#endif // GENERIC_STRUCTS_TEST_COMMON_H 
+#endif // GENERIC_STRUCTS_TEST_COMMON_H

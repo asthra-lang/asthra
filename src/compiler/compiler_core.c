@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Core compiler functionality - context management and main compilation
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -10,12 +10,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../compiler.h"
-#include "../version.h"
 #include "../../runtime/asthra_runtime.h"
+#include "../compiler.h"
+#include "../parser/ast.h"
 #include "../parser/lexer.h"
 #include "../parser/parser.h"
-#include "../parser/ast.h"
+#include "../version.h"
 
 // =============================================================================
 // COMPILER CONTEXT MANAGEMENT
@@ -33,7 +33,7 @@ AsthraCompilerContext *asthra_compiler_create(const AsthraCompilerOptions *optio
 
     // Copy options using C17 compound literal for temporary structure
     ctx->options = *options;
-    
+
     // Initialize error tracking with C17 designated initializer pattern
     ctx->error_capacity = 64;
     ctx->errors = calloc(ctx->error_capacity, sizeof(AsthraCompilerError));
@@ -90,8 +90,7 @@ const char *asthra_compiler_get_version(void) {
 
 const char *asthra_compiler_get_build_info(void) {
     static char build_info[256];
-    snprintf(build_info, sizeof(build_info), 
-             "Asthra Compiler v%s (built %s %s)",
+    snprintf(build_info, sizeof(build_info), "Asthra Compiler v%s (built %s %s)",
              ASTHRA_VERSION_STRING, ASTHRA_BUILD_DATE, ASTHRA_BUILD_TIME);
     return build_info;
-} 
+}

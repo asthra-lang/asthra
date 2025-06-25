@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Parser token manipulation and lookahead functions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -10,8 +10,8 @@
 #define ASTHRA_PARSER_TOKEN_H
 
 #include "lexer.h"
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,4 +42,4 @@ void push_token_back(Parser *parser, Token token);
 }
 #endif
 
-#endif // ASTHRA_PARSER_TOKEN_H 
+#endif // ASTHRA_PARSER_TOKEN_H

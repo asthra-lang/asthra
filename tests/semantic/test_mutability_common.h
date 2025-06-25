@@ -16,7 +16,7 @@ struct SemanticAnalyzer;
 typedef struct SemanticAnalyzer SemanticAnalyzer;
 
 // Test helper function declarations
-bool test_mutability_success(const char* source, const char* test_name);
-bool test_mutability_error(const char* source, int expected_error, const char* test_name);
+bool test_mutability_success(const char *source, const char *test_name);
+bool test_mutability_error(const char *source, int expected_error, const char *test_name);
 
 #endif // TEST_MUTABILITY_COMMON_H

@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Parser validation and semantic check functions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -9,9 +9,9 @@
 #ifndef ASTHRA_PARSER_VALIDATION_H
 #define ASTHRA_PARSER_VALIDATION_H
 
-#include "parser_core.h"
 #include "ast.h"
 #include "lexer.h"
+#include "parser_core.h"
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -87,4 +87,4 @@ bool validate_result_type_usage(Parser *parser, ASTNode *result_type);
 }
 #endif
 
-#endif // ASTHRA_PARSER_VALIDATION_H 
+#endif // ASTHRA_PARSER_VALIDATION_H

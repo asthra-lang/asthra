@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * AST Node Destruction - Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This header declares destruction functions for different categories of AST nodes
  */
 
@@ -34,4 +34,4 @@ void ast_free_pattern_nodes(ASTNode *node);
 // Literal and annotation destruction functions
 void ast_free_literal_nodes(ASTNode *node);
 
-#endif // AST_DESTRUCTION_H 
+#endif // AST_DESTRUCTION_H

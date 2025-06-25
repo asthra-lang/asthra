@@ -1,7 +1,8 @@
 /**
  * Asthra Programming Language Runtime Safety - Security & Performance Monitoring
- * Header file for constant-time verification, secure zeroing, stack canaries, fault injection, and performance monitoring
- * 
+ * Header file for constant-time verification, secure zeroing, stack canaries, fault injection, and
+ * performance monitoring
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -10,8 +11,8 @@
 #define ASTHRA_SAFETY_SECURITY_PERFORMANCE_H
 
 #include "asthra_safety.h"
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,9 +29,9 @@ extern "C" {
  * @param expected_duration_ns Expected duration in nanoseconds
  * @return Constant-time verification result with timing analysis
  */
-AsthraConstantTimeVerification asthra_safety_verify_constant_time_operation(const char *operation_name, 
-                                                                            void (*operation)(void), 
-                                                                            uint64_t expected_duration_ns);
+AsthraConstantTimeVerification
+asthra_safety_verify_constant_time_operation(const char *operation_name, void (*operation)(void),
+                                             uint64_t expected_duration_ns);
 
 /**
  * Validates that memory has been securely zeroed
@@ -102,4 +103,4 @@ AsthraSafetyConfig asthra_safety_get_config(void);
 }
 #endif
 
-#endif // ASTHRA_SAFETY_SECURITY_PERFORMANCE_H 
+#endif // ASTHRA_SAFETY_SECURITY_PERFORMANCE_H

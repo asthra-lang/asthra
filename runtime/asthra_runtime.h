@@ -1,16 +1,16 @@
 /**
  * Asthra Programming Language Runtime v1.2
  * Portable Runtime with Robust C Interop, Pattern Matching, String Operations, and Slice Management
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * BACKWARD COMPATIBILITY HEADER
- * 
+ *
  * This header has been refactored to use the modular runtime architecture while
  * maintaining complete backward compatibility. All functionality from the original
  * monolithic header is preserved through the modular includes.
- * 
+ *
  * DESIGN GOALS:
  * - Zero dependencies except libc
  * - POSIX-compliant implementation
@@ -20,7 +20,7 @@
  * - Formalized slice management with SliceHeader<T>
  * - Lightweight task concurrency with spawn support
  * - Cryptographic readiness with CSPRNG and secure operations
- * 
+ *
  * MODULAR ARCHITECTURE:
  * This header now uses the modular runtime structure for better maintainability
  * and reduced compilation dependencies. All original APIs are preserved.
@@ -72,23 +72,23 @@ ASTHRA_STATIC_ASSERT(ASTHRA_RUNTIME_VERSION_MAJOR >= 1, "Version constants must 
 
 /*
  * REFACTORING COMPLETED: Monolithic to Modular Architecture
- * 
+ *
  * This header has been successfully refactored from a 734-line monolithic file
  * to use the modular runtime architecture. All functionality is preserved through
  * the asthra_runtime_modular.h umbrella header.
- * 
+ *
  * BENEFITS:
  * - Eliminated ~700 lines of duplicate code
  * - Maintained 100% backward compatibility
  * - Improved maintainability through modular structure
  * - Reduced compilation overhead for focused applications
  * - Enhanced debugging through isolated modules
- * 
+ *
  * USAGE:
  * - Existing code: No changes required, all APIs preserved
  * - New code: Consider using specific modules from runtime/ directory
  * - Build system: No changes required, all includes work correctly
- * 
+ *
  * MODULAR COMPONENTS:
  * - Core types and C17 features: core/asthra_runtime_core.h
  * - Memory management and GC: memory/asthra_runtime_memory.h
@@ -104,4 +104,4 @@ ASTHRA_STATIC_ASSERT(ASTHRA_RUNTIME_VERSION_MAJOR >= 1, "Version constants must 
  * - Utility functions: utils/asthra_runtime_utils.h
  */
 
-#endif // ASTHRA_RUNTIME_H 
+#endif // ASTHRA_RUNTIME_H

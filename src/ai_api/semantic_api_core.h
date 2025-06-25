@@ -17,7 +17,7 @@ typedef struct ASTNode ASTNode;
 typedef struct {
     char *name;
     char *type_name;
-    char *kind;              // "variable", "function", "struct", "enum"
+    char *kind; // "variable", "function", "struct", "enum"
     bool is_public;
     bool is_mutable;
     char *documentation;
@@ -50,18 +50,18 @@ typedef struct {
     char *file_path;
     size_t line;
     size_t column;
-    char *context_code;      // Surrounding code for context
+    char *context_code; // Surrounding code for context
 } AICodeLocation;
 
 // Main API structure with performance caching
 typedef struct {
     SemanticAnalyzer *analyzer;
     SymbolTable *cached_symbols;
-    SemanticCache *performance_cache;  // Week 7: Performance optimization cache
+    SemanticCache *performance_cache; // Week 7: Performance optimization cache
     char *source_file_path;
     bool is_initialized;
     pthread_mutex_t api_mutex;
-    
+
     // Performance monitoring (Week 7)
     size_t total_queries;
     double total_query_time_ms;
@@ -77,13 +77,16 @@ void asthra_ai_destroy_api(AsthraSemanticsAPI *api);
 // Symbol information queries
 AISymbolInfo *asthra_ai_get_symbol_info(AsthraSemanticsAPI *api, const char *symbol_name);
 AIStructInfo *asthra_ai_get_struct_info(AsthraSemanticsAPI *api, const char *struct_name);
-char **asthra_ai_get_available_methods(AsthraSemanticsAPI *api, const char *type_name, size_t *count);
-AIFieldInfo **asthra_ai_get_struct_fields(AsthraSemanticsAPI *api, const char *struct_name, size_t *count);
+char **asthra_ai_get_available_methods(AsthraSemanticsAPI *api, const char *type_name,
+                                       size_t *count);
+AIFieldInfo **asthra_ai_get_struct_fields(AsthraSemanticsAPI *api, const char *struct_name,
+                                          size_t *count);
 char **asthra_ai_get_enum_variants(AsthraSemanticsAPI *api, const char *enum_name, size_t *count);
 
 // Type system queries
 char *asthra_ai_infer_expression_type(AsthraSemanticsAPI *api, const char *expression);
-bool asthra_ai_check_type_compatibility(AsthraSemanticsAPI *api, const char *expected, const char *actual);
+bool asthra_ai_check_type_compatibility(AsthraSemanticsAPI *api, const char *expected,
+                                        const char *actual);
 char **asthra_ai_get_compatible_types(AsthraSemanticsAPI *api, const char *context, size_t *count);
 AITypeInfo *asthra_ai_get_type_info(AsthraSemanticsAPI *api, const char *type_name);
 
@@ -91,7 +94,8 @@ AITypeInfo *asthra_ai_get_type_info(AsthraSemanticsAPI *api, const char *type_na
 ASTNode *asthra_ai_find_declaration(AsthraSemanticsAPI *api, const char *symbol_name);
 // Moved to ast_navigation.h as asthra_ai_find_symbol_usages
 char *asthra_ai_get_symbol_documentation(AsthraSemanticsAPI *api, const char *symbol_name);
-AICodeLocation **asthra_ai_get_symbol_locations(AsthraSemanticsAPI *api, const char *symbol_name, size_t *count);
+AICodeLocation **asthra_ai_get_symbol_locations(AsthraSemanticsAPI *api, const char *symbol_name,
+                                                size_t *count);
 
 // Memory management for AI data structures
 void asthra_ai_free_symbol_info(AISymbolInfo *info);

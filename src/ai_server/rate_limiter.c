@@ -9,14 +9,18 @@
 // ============================================================================
 
 // Get or create a client's rate limit entry
-ClientRateLimit* asthra_dev_server_get_or_create_rate_limit(AsthraDevelopmentServer *server, const char *client_id, double capacity, double refill_rate) {
-    if (!server || !client_id) return NULL;
+ClientRateLimit *asthra_dev_server_get_or_create_rate_limit(AsthraDevelopmentServer *server,
+                                                            const char *client_id, double capacity,
+                                                            double refill_rate) {
+    if (!server || !client_id)
+        return NULL;
 
     pthread_mutex_lock(&server->client_rate_limit_mutex);
 
     // Try to find existing entry
     for (size_t i = 0; i < server->client_rate_limit_count; i++) {
-        if (server->client_rate_limits[i] && strcmp(server->client_rate_limits[i]->client_id, client_id) == 0) {
+        if (server->client_rate_limits[i] &&
+            strcmp(server->client_rate_limits[i]->client_id, client_id) == 0) {
             pthread_mutex_unlock(&server->client_rate_limit_mutex);
             return server->client_rate_limits[i];
         }
@@ -46,7 +50,8 @@ ClientRateLimit* asthra_dev_server_get_or_create_rate_limit(AsthraDevelopmentSer
     // Add to server's list
     if (server->client_rate_limit_count >= server->client_rate_limit_capacity) {
         size_t new_capacity = server->client_rate_limit_capacity * 2;
-        ClientRateLimit **new_array = realloc(server->client_rate_limits, sizeof(ClientRateLimit*) * new_capacity);
+        ClientRateLimit **new_array =
+            realloc(server->client_rate_limits, sizeof(ClientRateLimit *) * new_capacity);
         if (!new_array) {
             fprintf(stderr, "Error: Failed to reallocate client rate limits array.\n");
             asthra_dev_server_destroy_client_rate_limit(new_limit);
@@ -65,7 +70,8 @@ ClientRateLimit* asthra_dev_server_get_or_create_rate_limit(AsthraDevelopmentSer
 
 // Check and consume tokens from a client's rate limit bucket
 bool asthra_dev_server_check_rate_limit(ClientRateLimit *limit, double tokens_needed) {
-    if (!limit) return true; // No limit, allow
+    if (!limit)
+        return true; // No limit, allow
 
     pthread_mutex_lock(&limit->mutex);
 
@@ -92,7 +98,8 @@ bool asthra_dev_server_check_rate_limit(ClientRateLimit *limit, double tokens_ne
 
 // Destroy a client rate limit entry
 void asthra_dev_server_destroy_client_rate_limit(ClientRateLimit *limit) {
-    if (!limit) return;
+    if (!limit)
+        return;
     pthread_mutex_destroy(&limit->mutex);
     free(limit->client_id);
     free(limit);

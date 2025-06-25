@@ -1,8 +1,8 @@
 /**
  * FFI Test Stubs - Test Suite
- * 
+ *
  * Header file for FFI test suite functions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */

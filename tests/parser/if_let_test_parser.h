@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language
  * If-Let Statement Testing - Parser Tests
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Phase 4.1: Parser implementation tests for if-let statements
  */
 
@@ -73,4 +73,4 @@ bool run_parser_tests(void);
 }
 #endif
 
-#endif // IF_LET_TEST_PARSER_H 
+#endif // IF_LET_TEST_PARSER_H

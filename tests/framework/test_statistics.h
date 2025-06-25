@@ -12,10 +12,10 @@
 #ifndef ASTHRA_TEST_STATISTICS_H
 #define ASTHRA_TEST_STATISTICS_H
 
-#include <stdio.h>
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdatomic.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,7 +38,7 @@ typedef struct {
     _Atomic(uint64_t) min_duration_ns;
     _Atomic(uint64_t) assertions_checked;
     _Atomic(uint64_t) assertions_failed;
-    
+
     // Compatibility fields for simple access (NEW for Phase 1)
     // These provide non-atomic access for simple test suites
     union {
@@ -71,11 +71,10 @@ static inline void asthra_test_set_stat(_Atomic(uint64_t) *counter, uint64_t val
     atomic_store_explicit(counter, value, memory_order_release);
 }
 
-static inline bool asthra_test_compare_and_swap_stat(_Atomic(uint64_t) *counter,
-                                                    uint64_t *expected,
-                                                    uint64_t desired) {
-    return atomic_compare_exchange_weak_explicit(counter, expected, desired,
-                                               memory_order_acq_rel, memory_order_acquire);
+static inline bool asthra_test_compare_and_swap_stat(_Atomic(uint64_t) *counter, uint64_t *expected,
+                                                     uint64_t desired) {
+    return atomic_compare_exchange_weak_explicit(counter, expected, desired, memory_order_acq_rel,
+                                                 memory_order_acquire);
 }
 
 // =============================================================================
@@ -83,7 +82,7 @@ static inline bool asthra_test_compare_and_swap_stat(_Atomic(uint64_t) *counter,
 // =============================================================================
 
 // Test statistics management
-AsthraTestStatistics* asthra_test_statistics_create(void);
+AsthraTestStatistics *asthra_test_statistics_create(void);
 void asthra_test_statistics_destroy(AsthraTestStatistics *stats);
 void asthra_test_statistics_reset(AsthraTestStatistics *stats);
 void asthra_test_statistics_print(const AsthraTestStatistics *stats, bool json_format);

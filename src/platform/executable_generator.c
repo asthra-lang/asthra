@@ -5,34 +5,38 @@
 #include <string.h>
 
 // Create a new executable generator instance
-Asthra_ExecutableGenerator *asthra_executable_generator_create(Asthra_ExecutableFormatType target_format) {
+Asthra_ExecutableGenerator *
+asthra_executable_generator_create(Asthra_ExecutableFormatType target_format) {
     Asthra_ExecutableGenerator *generator = calloc(1, sizeof(Asthra_ExecutableGenerator));
-    if (!generator) return NULL;
-    
+    if (!generator)
+        return NULL;
+
     generator->target_format = target_format;
-    
+
     return generator;
 }
 
 // Destroy executable generator
 void asthra_executable_generator_destroy(Asthra_ExecutableGenerator *generator) {
-    if (!generator) return;
+    if (!generator)
+        return;
     free(generator);
 }
 
 // Validate an executable file
 bool asthra_executable_generator_validate(Asthra_ExecutableGenerator *generator,
-                                        const char *executable_path,
-                                        Asthra_ExecutableValidation *validation) {
-    if (!generator || !executable_path || !validation) return false;
-    
+                                          const char *executable_path,
+                                          Asthra_ExecutableValidation *validation) {
+    if (!generator || !executable_path || !validation)
+        return false;
+
     // Basic stub implementation
     memset(validation, 0, sizeof(Asthra_ExecutableValidation));
     validation->is_valid = true;
     validation->is_executable_file = true;
     validation->format_compliant = true;
     validation->file_size = 0;
-    
+
     return true;
 }
 
@@ -50,33 +54,34 @@ Asthra_ExecutableFormatType asthra_executable_get_default_format(void) {
 // Check if format is supported on current platform
 bool asthra_executable_format_supported(Asthra_ExecutableFormatType format) {
     switch (format) {
-        case ASTHRA_EXEC_FORMAT_ELF:
+    case ASTHRA_EXEC_FORMAT_ELF:
 #ifdef __linux__
-            return true;
+        return true;
 #else
-            return false;
+        return false;
 #endif
-        case ASTHRA_EXEC_FORMAT_MACH_O:
+    case ASTHRA_EXEC_FORMAT_MACH_O:
 #ifdef __APPLE__
-            return true;
+        return true;
 #else
-            return false;
+        return false;
 #endif
-        case ASTHRA_EXEC_FORMAT_PE:
+    case ASTHRA_EXEC_FORMAT_PE:
 #ifdef _WIN32
-            return true;
+        return true;
 #else
-            return false;
+        return false;
 #endif
-        default:
-            return false;
+    default:
+        return false;
     }
 }
 
 // Clean up validation results
 void asthra_executable_validation_cleanup(Asthra_ExecutableValidation *validation) {
-    if (!validation) return;
-    
+    if (!validation)
+        return;
+
     if (validation->error_messages) {
         for (size_t i = 0; i < validation->error_count; i++) {
             if (validation->error_messages[i]) {
@@ -85,6 +90,6 @@ void asthra_executable_validation_cleanup(Asthra_ExecutableValidation *validatio
         }
         free(validation->error_messages);
     }
-    
+
     memset(validation, 0, sizeof(Asthra_ExecutableValidation));
 }

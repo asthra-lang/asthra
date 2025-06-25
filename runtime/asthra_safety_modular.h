@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Runtime Safety System
  * Modular Safety System - Umbrella Header for Backward Compatibility
- * 
+ *
  * This header provides a unified interface to all safety modules while
  * maintaining backward compatibility with existing code.
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -15,7 +15,7 @@
 /**
  * Asthra Safety System - Modular Umbrella Header
  * Provides full backward compatibility with the original asthra_safety.h
- * 
+ *
  * This header includes all modular safety components and provides
  * a unified interface identical to the original monolithic implementation.
  */
@@ -98,28 +98,31 @@ int asthra_safety_init_all_modules(const AsthraSafetyConfig *config);
 // =============================================================================
 
 // Enhanced safety check macros that route to appropriate modules
-#define ASTHRA_SAFETY_TYPE_CHECK(slice, expected_type, message) \
-    do { \
-        AsthraTypeSafetyCheck check = asthra_safety_validate_slice_type_safety(slice, expected_type); \
-        if (!check.is_valid) { \
-            asthra_safety_report_violation(ASTHRA_VIOLATION_TYPE_SAFETY, ASTHRA_SAFETY_LEVEL_STANDARD, \
-                                         message ": " check.type_error_message, __FILE__, __LINE__, __func__, NULL, 0); \
-        } \
+#define ASTHRA_SAFETY_TYPE_CHECK(slice, expected_type, message)                                    \
+    do {                                                                                           \
+        AsthraTypeSafetyCheck check =                                                              \
+            asthra_safety_validate_slice_type_safety(slice, expected_type);                        \
+        if (!check.is_valid) {                                                                     \
+            asthra_safety_report_violation(                                                        \
+                ASTHRA_VIOLATION_TYPE_SAFETY, ASTHRA_SAFETY_LEVEL_STANDARD,                        \
+                message ": " check.type_error_message, __FILE__, __LINE__, __func__, NULL, 0);     \
+        }                                                                                          \
     } while (0)
 
-#define ASTHRA_SAFETY_BOUNDS_CHECK(slice, index, message) \
-    do { \
-        AsthraBoundaryCheck check = asthra_safety_enhanced_boundary_check(slice, index); \
-        if (!check.is_valid) { \
-            asthra_safety_report_violation(ASTHRA_VIOLATION_MEMORY_SAFETY, ASTHRA_SAFETY_LEVEL_STANDARD, \
-                                         message ": " check.error_details, __FILE__, __LINE__, __func__, NULL, 0); \
-        } \
+#define ASTHRA_SAFETY_BOUNDS_CHECK(slice, index, message)                                          \
+    do {                                                                                           \
+        AsthraBoundaryCheck check = asthra_safety_enhanced_boundary_check(slice, index);           \
+        if (!check.is_valid) {                                                                     \
+            asthra_safety_report_violation(                                                        \
+                ASTHRA_VIOLATION_MEMORY_SAFETY, ASTHRA_SAFETY_LEVEL_STANDARD,                      \
+                message ": " check.error_details, __FILE__, __LINE__, __func__, NULL, 0);          \
+        }                                                                                          \
     } while (0)
 
-#define ASTHRA_SAFETY_FFI_REGISTER(ptr, size, transfer, ownership, borrowed) \
+#define ASTHRA_SAFETY_FFI_REGISTER(ptr, size, transfer, ownership, borrowed)                       \
     asthra_safety_register_ffi_pointer(ptr, size, transfer, ownership, borrowed, __FILE__, __LINE__)
 
-#define ASTHRA_SAFETY_RESULT_TRACK(result) \
+#define ASTHRA_SAFETY_RESULT_TRACK(result)                                                         \
     asthra_safety_register_result_tracker(result, __FILE__ ":" ASTHRA_STRINGIFY(__LINE__))
 
 // Helper macro for stringification
@@ -149,4 +152,4 @@ static inline void asthra_safety_cleanup_all_modules(void) {
 }
 #endif
 
-#endif // ASTHRA_SAFETY_MODULAR_H 
+#endif // ASTHRA_SAFETY_MODULAR_H

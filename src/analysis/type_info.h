@@ -1,11 +1,11 @@
 #ifndef ASTHRA_TYPE_INFO_H
 #define ASTHRA_TYPE_INFO_H
 
+#include <pthread.h>
+#include <stdatomic.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
-#include <stdatomic.h>
-#include <pthread.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,143 +27,156 @@ typedef struct SymbolEntry SymbolEntry;
  */
 typedef struct TypeInfo {
     // Core type identification
-    uint32_t type_id;                    // Unique runtime type identifier
-    char *name;                          // Type name (e.g., "i32", "Point", "Result<string, Error>")
-    
+    uint32_t type_id; // Unique runtime type identifier
+    char *name;       // Type name (e.g., "i32", "Point", "Result<string, Error>")
+
     // Type categorization
     enum {
-        TYPE_INFO_PRIMITIVE,             // Built-in primitive types
-        TYPE_INFO_STRUCT,                // User-defined struct types
-        TYPE_INFO_SLICE,                 // Slice types []T
-        TYPE_INFO_POINTER,               // Pointer types *T, *mut T
-        TYPE_INFO_RESULT,                // Result<T, E> types
-        TYPE_INFO_OPTION,                // Option<T> types
-        TYPE_INFO_FUNCTION,              // Function types
-        TYPE_INFO_ENUM,                  // Enum types (future)
-        TYPE_INFO_TUPLE,                 // Tuple types (T1, T2, ...)
-        TYPE_INFO_MODULE,                // Module types (for module access)
-        TYPE_INFO_UNKNOWN,               // Unknown/unresolved types
-        TYPE_INFO_ERROR                  // Error types (for error reporting)
+        TYPE_INFO_PRIMITIVE, // Built-in primitive types
+        TYPE_INFO_STRUCT,    // User-defined struct types
+        TYPE_INFO_SLICE,     // Slice types []T
+        TYPE_INFO_POINTER,   // Pointer types *T, *mut T
+        TYPE_INFO_RESULT,    // Result<T, E> types
+        TYPE_INFO_OPTION,    // Option<T> types
+        TYPE_INFO_FUNCTION,  // Function types
+        TYPE_INFO_ENUM,      // Enum types (future)
+        TYPE_INFO_TUPLE,     // Tuple types (T1, T2, ...)
+        TYPE_INFO_MODULE,    // Module types (for module access)
+        TYPE_INFO_UNKNOWN,   // Unknown/unresolved types
+        TYPE_INFO_ERROR      // Error types (for error reporting)
     } category;
-    
+
     // Memory layout information
-    size_t size;                         // Size in bytes
-    size_t alignment;                    // Alignment requirements
-    
+    size_t size;      // Size in bytes
+    size_t alignment; // Alignment requirements
+
     // Type properties
     struct {
-        bool is_mutable : 1;             // Can be modified
-        bool is_owned : 1;               // Owned by current scope
-        bool is_borrowed : 1;            // Borrowed reference
-        bool is_constant : 1;            // Compile-time constant
-        bool is_volatile : 1;            // Volatile memory access
-        bool is_atomic : 1;              // Atomic operations
-        bool is_ffi_compatible : 1;      // Safe for FFI
-        bool is_copyable : 1;            // Can be copied
-        bool is_movable : 1;             // Can be moved
-        bool is_droppable : 1;           // Has destructor
-        bool is_zero_sized : 1;          // Zero-sized type
-        bool is_unsized : 1;             // Dynamically sized
-        uint8_t reserved : 4;            // Reserved for future use
+        bool is_mutable : 1;        // Can be modified
+        bool is_owned : 1;          // Owned by current scope
+        bool is_borrowed : 1;       // Borrowed reference
+        bool is_constant : 1;       // Compile-time constant
+        bool is_volatile : 1;       // Volatile memory access
+        bool is_atomic : 1;         // Atomic operations
+        bool is_ffi_compatible : 1; // Safe for FFI
+        bool is_copyable : 1;       // Can be copied
+        bool is_movable : 1;        // Can be moved
+        bool is_droppable : 1;      // Has destructor
+        bool is_zero_sized : 1;     // Zero-sized type
+        bool is_unsized : 1;        // Dynamically sized
+        uint8_t reserved : 4;       // Reserved for future use
     } flags;
-    
+
     // Ownership and memory management
     enum {
-        OWNERSHIP_INFO_GC,               // Garbage collected
-        OWNERSHIP_INFO_C,                // C-managed memory
-        OWNERSHIP_INFO_PINNED,           // Pinned memory
-        OWNERSHIP_INFO_STACK,            // Stack allocated
-        OWNERSHIP_INFO_STATIC            // Static/global memory
+        OWNERSHIP_INFO_GC,     // Garbage collected
+        OWNERSHIP_INFO_C,      // C-managed memory
+        OWNERSHIP_INFO_PINNED, // Pinned memory
+        OWNERSHIP_INFO_STACK,  // Stack allocated
+        OWNERSHIP_INFO_STATIC  // Static/global memory
     } ownership;
-    
+
     // Type-specific data
     union {
         // Primitive types
         struct {
             enum PrimitiveInfoKind {
-                PRIMITIVE_INFO_I8, PRIMITIVE_INFO_I16, PRIMITIVE_INFO_I32, PRIMITIVE_INFO_I64, PRIMITIVE_INFO_I128,
-                PRIMITIVE_INFO_U8, PRIMITIVE_INFO_U16, PRIMITIVE_INFO_U32, PRIMITIVE_INFO_U64, PRIMITIVE_INFO_U128,
-                PRIMITIVE_INFO_F32, PRIMITIVE_INFO_F64,
-                PRIMITIVE_INFO_BOOL, PRIMITIVE_INFO_CHAR, PRIMITIVE_INFO_STRING,
-                PRIMITIVE_INFO_VOID, PRIMITIVE_INFO_USIZE, PRIMITIVE_INFO_ISIZE,
+                PRIMITIVE_INFO_I8,
+                PRIMITIVE_INFO_I16,
+                PRIMITIVE_INFO_I32,
+                PRIMITIVE_INFO_I64,
+                PRIMITIVE_INFO_I128,
+                PRIMITIVE_INFO_U8,
+                PRIMITIVE_INFO_U16,
+                PRIMITIVE_INFO_U32,
+                PRIMITIVE_INFO_U64,
+                PRIMITIVE_INFO_U128,
+                PRIMITIVE_INFO_F32,
+                PRIMITIVE_INFO_F64,
+                PRIMITIVE_INFO_BOOL,
+                PRIMITIVE_INFO_CHAR,
+                PRIMITIVE_INFO_STRING,
+                PRIMITIVE_INFO_VOID,
+                PRIMITIVE_INFO_USIZE,
+                PRIMITIVE_INFO_ISIZE,
                 PRIMITIVE_INFO_NEVER
             } kind;
-            bool is_signed;              // For numeric types
-            bool is_integer;             // Integer vs floating point
+            bool is_signed;  // For numeric types
+            bool is_integer; // Integer vs floating point
         } primitive;
-        
+
         // Struct types
         struct {
-            SymbolEntry **fields;        // Field symbol entries
-            size_t field_count;          // Number of fields
-            size_t *field_offsets;       // Field memory offsets
-            bool is_packed;              // Packed struct layout
-            bool has_methods;            // Has impl block methods
+            SymbolEntry **fields;  // Field symbol entries
+            size_t field_count;    // Number of fields
+            size_t *field_offsets; // Field memory offsets
+            bool is_packed;        // Packed struct layout
+            bool has_methods;      // Has impl block methods
         } struct_info;
-        
+
         // Slice types
         struct {
-            struct TypeInfo *element_type;      // Element type information
-            bool is_mutable;             // Mutable slice
+            struct TypeInfo *element_type; // Element type information
+            bool is_mutable;               // Mutable slice
         } slice;
-        
+
         // Pointer types
         struct {
-            struct TypeInfo *pointee_type;      // Pointed-to type
-            bool is_mutable;             // Mutable pointer
+            struct TypeInfo *pointee_type; // Pointed-to type
+            bool is_mutable;               // Mutable pointer
         } pointer;
-        
+
         // Result types
         struct {
-            struct TypeInfo *ok_type;           // Success type
-            struct TypeInfo *err_type;          // Error type
+            struct TypeInfo *ok_type;  // Success type
+            struct TypeInfo *err_type; // Error type
         } result;
-        
+
         // Option types
         struct {
-            struct TypeInfo *value_type;        // Inner value type
+            struct TypeInfo *value_type; // Inner value type
         } option;
-        
+
         // Function types
         struct {
-            struct TypeInfo **param_types;      // Parameter types
-            size_t param_count;          // Number of parameters
-            struct TypeInfo *return_type;       // Return type
-            bool is_extern;              // External function
-            const char *extern_name;     // External library name
+            struct TypeInfo **param_types; // Parameter types
+            size_t param_count;            // Number of parameters
+            struct TypeInfo *return_type;  // Return type
+            bool is_extern;                // External function
+            const char *extern_name;       // External library name
         } function;
-        
+
         // Module types (for module access)
         struct {
-            char *module_name;           // Module name
-            SymbolEntry **exports;       // Exported symbols
-            size_t export_count;         // Number of exports
+            char *module_name;     // Module name
+            SymbolEntry **exports; // Exported symbols
+            size_t export_count;   // Number of exports
         } module;
-        
+
         // Tuple types
         struct {
-            struct TypeInfo **element_types;    // Element types
-            size_t element_count;              // Number of elements
-            size_t *element_offsets;           // Memory offsets for each element
+            struct TypeInfo **element_types; // Element types
+            size_t element_count;            // Number of elements
+            size_t *element_offsets;         // Memory offsets for each element
         } tuple;
     } data;
-    
+
     // Semantic analysis integration
-    const TypeDescriptor *type_descriptor;     // Link to semantic analyzer type
-    ASTNode *declaration_node;           // AST node where type was declared
-    
+    const TypeDescriptor *type_descriptor; // Link to semantic analyzer type
+    ASTNode *declaration_node;             // AST node where type was declared
+
     // Runtime integration
-    void (*destructor)(void *);          // Destructor function (if any)
+    void (*destructor)(void *);                     // Destructor function (if any)
     void (*copy_constructor)(void *, const void *); // Copy constructor
     void (*move_constructor)(void *, void *);       // Move constructor
-    
+
     // Reference counting for memory management
     atomic_uint_fast32_t ref_count;
-    
+
     // Debug and introspection
-    const char *source_file;             // Source file where defined
-    int source_line;                     // Source line number
-    uint64_t creation_timestamp;         // When type info was created
+    const char *source_file;     // Source file where defined
+    int source_line;             // Source line number
+    uint64_t creation_timestamp; // When type info was created
 } TypeInfo;
 
 // =============================================================================
@@ -237,13 +250,14 @@ TypeInfo *type_info_create_option(TypeInfo *value_type);
 /**
  * Create function type info
  */
-TypeInfo *type_info_create_function(TypeInfo **param_types, size_t param_count, 
-                                   TypeInfo *return_type);
+TypeInfo *type_info_create_function(TypeInfo **param_types, size_t param_count,
+                                    TypeInfo *return_type);
 
 /**
  * Create module type info
  */
-TypeInfo *type_info_create_module(const char *module_name, SymbolEntry **exports, size_t export_count);
+TypeInfo *type_info_create_module(const char *module_name, SymbolEntry **exports,
+                                  size_t export_count);
 
 /**
  * Create tuple type info
@@ -321,8 +335,8 @@ bool type_info_is_ffi_compatible(const TypeInfo *type_info);
 /**
  * Add a field to a struct type
  */
-bool type_info_struct_add_field(TypeInfo *struct_type, const char *field_name, 
-                               TypeInfo *field_type, size_t offset);
+bool type_info_struct_add_field(TypeInfo *struct_type, const char *field_name, TypeInfo *field_type,
+                                size_t offset);
 
 /**
  * Look up a field in a struct type
@@ -542,4 +556,4 @@ extern pthread_mutex_t g_type_registry_mutex;
 }
 #endif
 
-#endif // ASTHRA_TYPE_INFO_H 
+#endif // ASTHRA_TYPE_INFO_H

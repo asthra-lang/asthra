@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Symbol Table Module Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Symbol table operations and symbol management
  */
 
@@ -19,70 +19,53 @@ extern "C" {
 // semantic_register_module_alias
 ;
 
-
 // semantic_resolve_module_alias
 ;
-
 
 // semantic_has_module_alias
 ;
 
-
 // semantic_cleanup_module_aliases
 ;
-
 
 // symbol_table_insert_impl
 ;
 
-
 // symbol_table_lookup_impl
 ;
-
 
 // symbol_table_contains
 ;
 
-
 // symbol_table_capacity
 ;
-
 
 // symbol_entry_copy
 ;
 
-
 // semantic_resolve_symbol_impl
 ;
-
 
 // semantic_print_symbol_statistics
 ;
 
-
 // symbol_kind_name
 ;
-
 
 // symbol_kind_is_callable
 ;
 
-
 // symbol_kind_is_type
 ;
-
 
 // symbol_kind_is_value
 ;
 
-
 // semantic_validate_symbol_name
 ;
 
-
 // semantic_is_reserved_keyword
 ;
-
 
 // semantic_check_symbol_shadowing
 ;
@@ -139,10 +122,8 @@ bool symbol_table_remove_safe(SymbolTable *table, const char *name);
 /**
  * Create a new symbol entry
  */
-SymbolEntry *symbol_entry_create(const char *name, 
-                                SymbolKind kind, 
-                                TypeDescriptor *type, 
-                                ASTNode *declaration);
+SymbolEntry *symbol_entry_create(const char *name, SymbolKind kind, TypeDescriptor *type,
+                                 ASTNode *declaration);
 
 /**
  * Destroy a symbol entry and free resources
@@ -156,8 +137,8 @@ void symbol_entry_destroy(SymbolEntry *entry);
 /**
  * Add a module alias to the symbol table
  */
-bool symbol_table_add_alias(SymbolTable *table, const char *alias_name, 
-                           const char *module_path, SymbolTable *module_symbols);
+bool symbol_table_add_alias(SymbolTable *table, const char *alias_name, const char *module_path,
+                            SymbolTable *module_symbols);
 
 /**
  * Resolve a module alias to its symbol table
@@ -197,4 +178,4 @@ void symbol_table_iterate(SymbolTable *table, SymbolIteratorFunc func, void *use
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_SYMBOLS_H 
+#endif // ASTHRA_SEMANTIC_SYMBOLS_H

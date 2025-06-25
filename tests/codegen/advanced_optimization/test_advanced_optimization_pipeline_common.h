@@ -2,11 +2,11 @@
 #define TEST_ADVANCED_OPTIMIZATION_PIPELINE_COMMON_H
 
 #include "../framework/test_framework_minimal.h"
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <stdint.h>
 
 // Optimization type enumeration
 typedef enum {
@@ -24,7 +24,7 @@ typedef enum {
 // Optimization pass structure
 typedef struct {
     OptimizationType type;
-    const char* name;
+    const char *name;
     bool enabled;
     int priority;
     int execution_count;
@@ -35,7 +35,7 @@ typedef struct {
 // Instruction representation for optimization
 typedef struct {
     uint64_t address;
-    const char* instruction;
+    const char *instruction;
     bool is_dead;           // For dead code elimination
     bool is_constant;       // For constant folding
     int64_t constant_value; // Constant value if applicable
@@ -67,19 +67,19 @@ typedef struct {
 } MinimalOptimizationContext;
 
 // Common function declarations
-void init_optimization_context(MinimalOptimizationContext* ctx);
-void add_instruction(MinimalOptimizationContext* ctx, uint64_t addr, const char* instr);
-void add_loop(MinimalOptimizationContext* ctx, uint64_t start, uint64_t end, int iterations);
-void run_optimization_pass(MinimalOptimizationContext* ctx, OptimizationType type);
-bool run_optimization_pipeline(MinimalOptimizationContext* ctx, int max_iterations);
+void init_optimization_context(MinimalOptimizationContext *ctx);
+void add_instruction(MinimalOptimizationContext *ctx, uint64_t addr, const char *instr);
+void add_loop(MinimalOptimizationContext *ctx, uint64_t start, uint64_t end, int iterations);
+void run_optimization_pass(MinimalOptimizationContext *ctx, OptimizationType type);
+bool run_optimization_pipeline(MinimalOptimizationContext *ctx, int max_iterations);
 
 // Test function declarations
-AsthraTestResult test_optimization_pipeline_creation(AsthraTestContext* context);
-AsthraTestResult test_multi_pass_optimization(AsthraTestContext* context);
-AsthraTestResult test_optimization_effectiveness(AsthraTestContext* context);
-AsthraTestResult test_optimization_validation(AsthraTestContext* context);
+AsthraTestResult test_optimization_pipeline_creation(AsthraTestContext *context);
+AsthraTestResult test_multi_pass_optimization(AsthraTestContext *context);
+AsthraTestResult test_optimization_effectiveness(AsthraTestContext *context);
+AsthraTestResult test_optimization_validation(AsthraTestContext *context);
 
 // Test metadata
 extern AsthraTestMetadata test_metadata[];
 
-#endif // TEST_ADVANCED_OPTIMIZATION_PIPELINE_COMMON_H 
+#endif // TEST_ADVANCED_OPTIMIZATION_PIPELINE_COMMON_H

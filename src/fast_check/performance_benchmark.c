@@ -1,7 +1,7 @@
 /*
  * Asthra Fast Check Performance Benchmark Tool
  * Week 16: Performance Optimization & Testing
- * 
+ *
  * Comprehensive benchmark suite for validating performance targets
  * and measuring optimization improvements.
  */
@@ -10,9 +10,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
-#include <sys/stat.h>
 
 // =============================================================================
 // FastCheckEngine Stub Implementations
@@ -32,7 +32,7 @@ typedef struct {
 } FastCheckResult;
 
 // Stub function implementations
-static FastCheckEngine* fast_check_engine_create(void) {
+static FastCheckEngine *fast_check_engine_create(void) {
     FastCheckEngine *engine = malloc(sizeof(FastCheckEngine));
     if (engine) {
         engine->initialized = true;
@@ -47,30 +47,32 @@ static void fast_check_engine_destroy(FastCheckEngine *engine) {
     }
 }
 
-static FastCheckResult* fast_check_file(FastCheckEngine *engine, const char *filename) {
-    (void)engine;  // Suppress unused parameter warning
-    
+static FastCheckResult *fast_check_file(FastCheckEngine *engine, const char *filename) {
+    (void)engine; // Suppress unused parameter warning
+
     FastCheckResult *result = malloc(sizeof(FastCheckResult));
-    if (!result) return NULL;
-    
+    if (!result)
+        return NULL;
+
     // Simulate processing time based on file size
     struct stat st;
     double simulated_time = 10.0; // Default 10ms
-    
+
     if (stat(filename, &st) == 0) {
         // Simulate processing time: 1ms per KB + base 5ms
         simulated_time = 5.0 + (st.st_size / 1024.0);
     }
-    
+
     // Add some random variation
     simulated_time += (rand() % 10) - 5;
-    if (simulated_time < 1.0) simulated_time = 1.0;
-    
+    if (simulated_time < 1.0)
+        simulated_time = 1.0;
+
     result->success = true;
     result->duration_ms = simulated_time;
     result->error_count = 0;
     result->warning_count = rand() % 3; // 0-2 warnings
-    
+
     return result;
 }
 
@@ -96,27 +98,25 @@ static const BenchmarkSuite BENCHMARK_SUITES[] = {
     {"single_file", "Single file performance", 100.0, 1, "simple"},
     {"medium_project", "Medium project (20 files)", 500.0, 20, "medium"},
     {"large_project", "Large project (50 files)", 2000.0, 50, "complex"},
-    {"cache_performance", "Cache optimization test", 50.0, 10, "medium"}
-};
+    {"cache_performance", "Cache optimization test", 50.0, 10, "medium"}};
 
 static const int BENCHMARK_SUITE_COUNT = sizeof(BENCHMARK_SUITES) / sizeof(BENCHMARK_SUITES[0]);
 
 // Test code templates
-static const char *SIMPLE_CODE_TEMPLATE = 
-    "package benchmark_%d;\n"
-    "\n"
-    "pub struct Point {\n"
-    "    x: f64,\n"
-    "    y: f64\n"
-    "}\n"
-    "\n"
-    "pub fn distance(p1: Point, p2: Point) -> f64 {\n"
-    "    let dx: f64 = p1.x - p2.x;\n"
-    "    let dy: f64 = p1.y - p2.y;\n"
-    "    return sqrt(dx * dx + dy * dy);\n"
-    "}\n";
+static const char *SIMPLE_CODE_TEMPLATE = "package benchmark_%d;\n"
+                                          "\n"
+                                          "pub struct Point {\n"
+                                          "    x: f64,\n"
+                                          "    y: f64\n"
+                                          "}\n"
+                                          "\n"
+                                          "pub fn distance(p1: Point, p2: Point) -> f64 {\n"
+                                          "    let dx: f64 = p1.x - p2.x;\n"
+                                          "    let dy: f64 = p1.y - p2.y;\n"
+                                          "    return sqrt(dx * dx + dy * dy);\n"
+                                          "}\n";
 
-static const char *MEDIUM_CODE_TEMPLATE = 
+static const char *MEDIUM_CODE_TEMPLATE =
     "package benchmark_%d;\n"
     "\n"
     "pub struct User {\n"
@@ -164,7 +164,7 @@ static const char *MEDIUM_CODE_TEMPLATE =
     "    return valid_users;\n"
     "}\n";
 
-static const char *COMPLEX_CODE_TEMPLATE = 
+static const char *COMPLEX_CODE_TEMPLATE =
     "package benchmark_%d;\n"
     "\n"
     "pub struct Database {\n"
@@ -239,8 +239,9 @@ static double get_current_time_ms(void) {
 
 static bool create_benchmark_file(const char *filename, const char *template, int index) {
     FILE *file = fopen(filename, "w");
-    if (!file) return false;
-    
+    if (!file)
+        return false;
+
     fprintf(file, template, index);
     fclose(file);
     return true;
@@ -266,7 +267,7 @@ static const char *get_code_template(const char *complexity) {
 // =============================================================================
 
 typedef struct {
-    char suite_name[128];  // Changed from const char * to char array
+    char suite_name[128]; // Changed from const char * to char array
     double total_time_ms;
     double average_time_ms;
     double min_time_ms;
@@ -287,24 +288,24 @@ static BenchmarkReport run_single_benchmark_suite(const BenchmarkSuite *suite) {
     report.file_count = suite->file_count;
     report.min_time_ms = 999999.0;
     report.max_time_ms = 0.0;
-    
+
     FastCheckEngine *engine = fast_check_engine_create();
     if (!engine) {
         strcpy(report.status, "ENGINE_CREATION_FAILED");
         return report;
     }
-    
+
     PerformanceProfile *profile = performance_profiler_create();
     if (!profile) {
         fast_check_engine_destroy(engine);
         strcpy(report.status, "PROFILER_CREATION_FAILED");
         return report;
     }
-    
+
     // Create benchmark files
     char filenames[suite->file_count][64];
     const char *template = get_code_template(suite->complexity);
-    
+
     for (int i = 0; i < suite->file_count; i++) {
         snprintf(filenames[i], sizeof(filenames[i]), "benchmark_%s_%d.asthra", suite->name, i);
         if (!create_benchmark_file(filenames[i], template, i)) {
@@ -312,55 +313,57 @@ static BenchmarkReport run_single_benchmark_suite(const BenchmarkSuite *suite) {
             goto cleanup;
         }
     }
-    
+
     // Start overall timing and profiling
     performance_timer_start(&profile->overall_timer);
     double benchmark_start = get_current_time_ms();
-    
+
     // Execute benchmark
     bool all_success = true;
     double total_file_time = 0.0;
-    
+
     for (int i = 0; i < suite->file_count; i++) {
         performance_record_file_start(profile, filenames[i]);
-        
+
         double file_start = get_current_time_ms();
         FastCheckResult *result = fast_check_file(engine, filenames[i]);
         double file_time = get_current_time_ms() - file_start;
-        
+
         performance_record_file_complete(profile, filenames[i], 100, 30, file_time);
-        
+
         if (!result || !result->success) {
             all_success = false;
         }
-        
+
         // Track min/max times
-        if (file_time < report.min_time_ms) report.min_time_ms = file_time;
-        if (file_time > report.max_time_ms) report.max_time_ms = file_time;
-        
+        if (file_time < report.min_time_ms)
+            report.min_time_ms = file_time;
+        if (file_time > report.max_time_ms)
+            report.max_time_ms = file_time;
+
         total_file_time += file_time;
-        
+
         if (result) {
             fast_check_result_destroy(result);
         }
     }
-    
+
     double benchmark_end = get_current_time_ms();
     performance_timer_stop(&profile->overall_timer);
-    
+
     // Calculate results
     report.total_time_ms = benchmark_end - benchmark_start;
     report.average_time_ms = total_file_time / suite->file_count;
     report.meets_target = report.total_time_ms <= suite->target_time_ms;
-    
+
     // Get cache performance
     if (profile->cache_stats.total_requests > 0) {
         report.cache_hit_rate = profile->cache_stats.hit_rate_percentage;
     }
-    
+
     // Get memory usage
     report.peak_memory_mb = profile->memory_stats.peak_memory_bytes / (1024 * 1024);
-    
+
     // Set status
     if (all_success && report.meets_target) {
         strcpy(report.status, "PASS");
@@ -369,16 +372,16 @@ static BenchmarkReport run_single_benchmark_suite(const BenchmarkSuite *suite) {
     } else {
         strcpy(report.status, "FAIL");
     }
-    
+
 cleanup:
     // Cleanup files
     for (int i = 0; i < suite->file_count; i++) {
         cleanup_benchmark_file(filenames[i]);
     }
-    
+
     performance_profiler_destroy(profile);
     fast_check_engine_destroy(engine);
-    
+
     return report;
 }
 
@@ -390,17 +393,17 @@ static BenchmarkReport run_cache_performance_benchmark(void) {
     BenchmarkReport report = {0};
     strncpy(report.suite_name, "cache_performance", sizeof(report.suite_name) - 1);
     report.suite_name[sizeof(report.suite_name) - 1] = '\0';
-    report.target_time_ms = 50.0;  // Cached operations should be very fast
+    report.target_time_ms = 50.0; // Cached operations should be very fast
     report.file_count = 1;
     report.min_time_ms = 999999.0;
     report.max_time_ms = 0.0;
-    
+
     FastCheckEngine *engine = fast_check_engine_create();
     if (!engine) {
         strcpy(report.status, "ENGINE_CREATION_FAILED");
         return report;
     }
-    
+
     // Create test file
     const char *test_file = "benchmark_cache_test.asthra";
     if (!create_benchmark_file(test_file, MEDIUM_CODE_TEMPLATE, 1)) {
@@ -408,30 +411,30 @@ static BenchmarkReport run_cache_performance_benchmark(void) {
         fast_check_engine_destroy(engine);
         return report;
     }
-    
+
     // First run (cold cache)
     double cold_start = get_current_time_ms();
     FastCheckResult *cold_result = fast_check_file(engine, test_file);
     double cold_time = get_current_time_ms() - cold_start;
-    
+
     // Multiple warm runs
     double warm_times[5];
     double total_warm_time = 0.0;
-    
+
     for (int i = 0; i < 5; i++) {
         double warm_start = get_current_time_ms();
         FastCheckResult *warm_result = fast_check_file(engine, test_file);
         warm_times[i] = get_current_time_ms() - warm_start;
         total_warm_time += warm_times[i];
-        
+
         if (warm_result) {
             fast_check_result_destroy(warm_result);
         }
     }
-    
+
     double average_warm_time = total_warm_time / 5;
     double cache_speedup = cold_time / average_warm_time;
-    
+
     // Calculate results
     report.total_time_ms = cold_time + total_warm_time;
     report.average_time_ms = average_warm_time;
@@ -439,7 +442,7 @@ static BenchmarkReport run_cache_performance_benchmark(void) {
     report.max_time_ms = cold_time;
     report.meets_target = average_warm_time <= report.target_time_ms;
     report.cache_hit_rate = ((cache_speedup - 1.0) / cache_speedup) * 100.0;
-    
+
     // Set status based on cache performance
     if (cache_speedup >= 5.0 && report.meets_target) {
         strcpy(report.status, "EXCELLENT");
@@ -450,14 +453,14 @@ static BenchmarkReport run_cache_performance_benchmark(void) {
     } else {
         strcpy(report.status, "SLOW");
     }
-    
+
     // Cleanup
     if (cold_result) {
         fast_check_result_destroy(cold_result);
     }
     cleanup_benchmark_file(test_file);
     fast_check_engine_destroy(engine);
-    
+
     return report;
 }
 
@@ -470,7 +473,7 @@ static void print_benchmark_header(void) {
     printf("================================================\n");
     printf("Week 16: Performance Optimization & Testing\n");
     printf("Phase 5: Fast Check Mode & Incremental Analysis\n\n");
-    
+
     printf("Performance Targets:\n");
     printf("  • Single File: < 100ms\n");
     printf("  • Medium Project (20 files): < 500ms\n");
@@ -479,24 +482,28 @@ static void print_benchmark_header(void) {
 }
 
 static void print_benchmark_report(const BenchmarkReport *report) {
-    const char *status_emoji = 
-        strcmp(report->status, "PASS") == 0 || strcmp(report->status, "EXCELLENT") == 0 || strcmp(report->status, "GOOD") == 0 ? "✅" :
-        strcmp(report->status, "SLOW") == 0 ? "⚠️" : "❌";
-    
+    const char *status_emoji = strcmp(report->status, "PASS") == 0 ||
+                                       strcmp(report->status, "EXCELLENT") == 0 ||
+                                       strcmp(report->status, "GOOD") == 0
+                                   ? "✅"
+                               : strcmp(report->status, "SLOW") == 0 ? "⚠️"
+                                                                     : "❌";
+
     printf("%s %s Benchmark\n", status_emoji, report->suite_name);
-    printf("   Total Time: %.2f ms (Target: %.0f ms)\n", report->total_time_ms, report->target_time_ms);
+    printf("   Total Time: %.2f ms (Target: %.0f ms)\n", report->total_time_ms,
+           report->target_time_ms);
     printf("   Average Time: %.2f ms\n", report->average_time_ms);
     printf("   Range: %.2f - %.2f ms\n", report->min_time_ms, report->max_time_ms);
     printf("   Files: %d\n", report->file_count);
-    
+
     if (report->cache_hit_rate > 0) {
         printf("   Cache Performance: %.1f%% efficiency\n", report->cache_hit_rate);
     }
-    
+
     if (report->peak_memory_mb > 0) {
         printf("   Peak Memory: %zu MB\n", report->peak_memory_mb);
     }
-    
+
     printf("   Status: %s", report->status);
     if (strcmp(report->status, "EXCELLENT") == 0) {
         printf(" (Outstanding performance!)");
@@ -512,25 +519,25 @@ static void print_benchmark_summary(const BenchmarkReport *reports, int count) {
     int passed = 0;
     int total_files = 0;
     double total_time = 0.0;
-    
+
     for (int i = 0; i < count; i++) {
-        if (strcmp(reports[i].status, "PASS") == 0 || 
-            strcmp(reports[i].status, "EXCELLENT") == 0 || 
+        if (strcmp(reports[i].status, "PASS") == 0 || strcmp(reports[i].status, "EXCELLENT") == 0 ||
             strcmp(reports[i].status, "GOOD") == 0) {
             passed++;
         }
         total_files += reports[i].file_count;
         total_time += reports[i].total_time_ms;
     }
-    
+
     printf("📊 Benchmark Summary\n");
     printf("===================\n");
     printf("Suites Passed: %d/%d (%.1f%%)\n", passed, count, (passed * 100.0) / count);
     printf("Total Files Tested: %d\n", total_files);
     printf("Total Execution Time: %.2f ms\n", total_time);
-    printf("Overall Performance: %s\n", passed == count ? "✅ EXCELLENT" : 
-           passed >= count * 0.75 ? "✅ GOOD" : "⚠️ NEEDS IMPROVEMENT");
-    
+    printf("Overall Performance: %s\n", passed == count          ? "✅ EXCELLENT"
+                                        : passed >= count * 0.75 ? "✅ GOOD"
+                                                                 : "⚠️ NEEDS IMPROVEMENT");
+
     if (passed == count) {
         printf("\n🎉 All performance targets achieved!\n");
         printf("Phase 5 Fast Check Mode implementation is production-ready.\n");
@@ -545,37 +552,37 @@ static void print_benchmark_summary(const BenchmarkReport *reports, int count) {
 
 int run_performance_benchmarks(void) {
     print_benchmark_header();
-    
-    BenchmarkReport reports[BENCHMARK_SUITE_COUNT + 1];  // +1 for cache benchmark
+
+    BenchmarkReport reports[BENCHMARK_SUITE_COUNT + 1]; // +1 for cache benchmark
     int report_count = 0;
-    
+
     // Run standard benchmark suites
-    for (int i = 0; i < BENCHMARK_SUITE_COUNT - 1; i++) {  // -1 to skip cache_performance (handled separately)
+    for (int i = 0; i < BENCHMARK_SUITE_COUNT - 1;
+         i++) { // -1 to skip cache_performance (handled separately)
         printf("Running %s benchmark...\n", BENCHMARK_SUITES[i].name);
         reports[report_count] = run_single_benchmark_suite(&BENCHMARK_SUITES[i]);
         print_benchmark_report(&reports[report_count]);
         report_count++;
     }
-    
+
     // Run cache performance benchmark separately
     printf("Running cache performance benchmark...\n");
     reports[report_count] = run_cache_performance_benchmark();
     print_benchmark_report(&reports[report_count]);
     report_count++;
-    
+
     // Print summary
     print_benchmark_summary(reports, report_count);
-    
+
     // Return success if all benchmarks passed
     int passed = 0;
     for (int i = 0; i < report_count; i++) {
-        if (strcmp(reports[i].status, "PASS") == 0 || 
-            strcmp(reports[i].status, "EXCELLENT") == 0 || 
+        if (strcmp(reports[i].status, "PASS") == 0 || strcmp(reports[i].status, "EXCELLENT") == 0 ||
             strcmp(reports[i].status, "GOOD") == 0) {
             passed++;
         }
     }
-    
+
     return passed == report_count ? 0 : 1;
 }
 
@@ -586,9 +593,9 @@ int run_performance_benchmarks(void) {
 int main(int argc, char *argv[]) {
     (void)argc;
     (void)argv;
-    
+
     printf("Asthra Fast Check Performance Benchmark Tool\n");
     printf("Week 16: Performance Optimization & Testing\n\n");
-    
+
     return run_performance_benchmarks();
-} 
+}

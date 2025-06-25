@@ -1,22 +1,22 @@
 /**
  * Asthra Programming Language - Legacy Stub Functions
- * 
+ *
  * Compatibility stub functions for testing infrastructure
  * Copyright (c) 2025 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
 
-#include "immutable_infrastructure.h"
-#include "../../src/parser/parser_core.h"
-#include "../../src/parser/ast.h"
 #include "../../src/analysis/semantic_analyzer.h"
 #include "../../src/codegen/code_generator_core.h"
+#include "../../src/parser/ast.h"
+#include "../../src/parser/parser_core.h"
+#include "immutable_infrastructure.h"
 
 // Type definitions for compatibility
 typedef struct {
     bool success;
-    const char* error_message;
-    const char* generated_code;
+    const char *error_message;
+    const char *generated_code;
     size_t code_size;
 } CodeGeneratorResult;
 
@@ -55,15 +55,16 @@ void parser_destroy(Parser *parser) {
 }
 
 ASTNode *parser_parse_string(Parser *parser, const char *source) {
-    if (!parser || !source) return NULL;
-    
+    if (!parser || !source)
+        return NULL;
+
     // For immutability testing, we create stub AST nodes
     // Real parser integration would use the actual parser_parse_string function
-    
+
     // Simple stub that creates a basic AST node for testing
     ASTNode *root = calloc(1, sizeof(ASTNode));
     root->type = 1; // AST_PROGRAM
-    
+
     // For testing immutable-by-default, we'll validate basic patterns
     if (strstr(source, "let x: i32 = 42;")) {
         // Valid immutable declaration
@@ -82,7 +83,7 @@ ASTNode *parser_parse_string(Parser *parser, const char *source) {
         free(root);
         return NULL;
     }
-    
+
     return root;
 }
 
@@ -102,8 +103,9 @@ void semantic_analyzer_destroy(SemanticAnalyzer *analyzer) {
 }
 
 bool semantic_analyze_program(SemanticAnalyzer *analyzer, ASTNode *ast) {
-    if (!analyzer || !ast) return false;
-    
+    if (!analyzer || !ast)
+        return false;
+
     // For Phase 4 testing, semantic analysis always succeeds for valid AST
     // Note: SemanticAnalyzer doesn't have has_error field, errors are tracked differently
     return true;
@@ -135,10 +137,11 @@ void code_generator_destroy(CodeGenerator *generator) {
 }
 
 bool code_generator_generate_program(CodeGenerator *generator, ASTNode *ast, FILE *output) {
-    if (!generator || !ast || !output) return false;
-    
+    if (!generator || !ast || !output)
+        return false;
+
     // Note: CodeGenerator struct doesn't have output field, but we can write directly to output
-    
+
     // Generate simple C code for testing
     fprintf(output, "// Generated C code for immutable-by-default test\n");
     fprintf(output, "#include <stdint.h>\n\n");
@@ -146,24 +149,24 @@ bool code_generator_generate_program(CodeGenerator *generator, ASTNode *ast, FIL
     fprintf(output, "    const int32_t value = 42;  // Immutable by default\n");
     fprintf(output, "    // Generated from Asthra immutable-by-default code\n");
     fprintf(output, "}\n");
-    
+
     return true;
 }
 
 CodeGeneratorResult code_generator_generate_program_stub(CodeGenerator *generator, ASTNode *ast) {
     CodeGeneratorResult result = {0};
-    
+
     if (!generator || !ast) {
         result.success = false;
         result.error_message = "Invalid parameters";
         return result;
     }
-    
+
     // For testing, always return success
     result.success = true;
     result.generated_code = "// Generated code";
     result.code_size = strlen(result.generated_code);
-    
+
     return result;
 }
 

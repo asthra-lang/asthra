@@ -2,8 +2,8 @@
 #define ASTHRA_ENHANCED_DIAGNOSTICS_H
 
 #include "../parser/common.h"
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 // Enhanced diagnostic system
 typedef enum {
@@ -13,17 +13,9 @@ typedef enum {
     DIAGNOSTIC_NOTE
 } DiagnosticLevel;
 
-typedef enum {
-    SUGGESTION_INSERT,
-    SUGGESTION_DELETE,
-    SUGGESTION_REPLACE
-} SuggestionType;
+typedef enum { SUGGESTION_INSERT, SUGGESTION_DELETE, SUGGESTION_REPLACE } SuggestionType;
 
-typedef enum {
-    CONFIDENCE_HIGH,
-    CONFIDENCE_MEDIUM,
-    CONFIDENCE_LOW
-} ConfidenceLevel;
+typedef enum { CONFIDENCE_HIGH, CONFIDENCE_MEDIUM, CONFIDENCE_LOW } ConfidenceLevel;
 
 typedef struct {
     size_t start_line, start_column;
@@ -65,11 +57,14 @@ typedef struct {
 } EnhancedDiagnostic;
 
 // Core API functions
-EnhancedDiagnostic *enhanced_diagnostic_create(const char *code, DiagnosticLevel level, const char *message);
+EnhancedDiagnostic *enhanced_diagnostic_create(const char *code, DiagnosticLevel level,
+                                               const char *message);
 void enhanced_diagnostic_destroy(EnhancedDiagnostic *diagnostic);
 bool enhanced_diagnostic_add_span(EnhancedDiagnostic *diagnostic, const DiagnosticSpan *span);
-bool enhanced_diagnostic_add_suggestion(EnhancedDiagnostic *diagnostic, const DiagnosticSuggestion *suggestion);
-bool enhanced_diagnostic_set_metadata(EnhancedDiagnostic *diagnostic, const DiagnosticMetadata *metadata);
+bool enhanced_diagnostic_add_suggestion(EnhancedDiagnostic *diagnostic,
+                                        const DiagnosticSuggestion *suggestion);
+bool enhanced_diagnostic_set_metadata(EnhancedDiagnostic *diagnostic,
+                                      const DiagnosticMetadata *metadata);
 char *enhanced_diagnostic_to_json(EnhancedDiagnostic *diagnostic);
 
-#endif 
+#endif

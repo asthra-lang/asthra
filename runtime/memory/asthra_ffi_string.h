@@ -1,7 +1,7 @@
 /**
  * Asthra Safe C Memory Interface v1.0 - String Operations
  * String creation, concatenation, interpolation, and conversion
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -9,9 +9,9 @@
 #ifndef ASTHRA_FFI_STRING_H
 #define ASTHRA_FFI_STRING_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 #include "asthra_ffi_memory_core.h"
 #include "asthra_ffi_slice.h"
@@ -41,11 +41,16 @@ typedef struct {
 typedef enum {
     ASTHRA_VARIANT_NULL,
     ASTHRA_VARIANT_BOOL,
-    ASTHRA_VARIANT_I8, ASTHRA_VARIANT_U8,
-    ASTHRA_VARIANT_I16, ASTHRA_VARIANT_U16,
-    ASTHRA_VARIANT_I32, ASTHRA_VARIANT_U32,
-    ASTHRA_VARIANT_I64, ASTHRA_VARIANT_U64,
-    ASTHRA_VARIANT_F32, ASTHRA_VARIANT_F64,
+    ASTHRA_VARIANT_I8,
+    ASTHRA_VARIANT_U8,
+    ASTHRA_VARIANT_I16,
+    ASTHRA_VARIANT_U16,
+    ASTHRA_VARIANT_I32,
+    ASTHRA_VARIANT_U32,
+    ASTHRA_VARIANT_I64,
+    ASTHRA_VARIANT_U64,
+    ASTHRA_VARIANT_F32,
+    ASTHRA_VARIANT_F64,
     ASTHRA_VARIANT_PTR,
     ASTHRA_VARIANT_STRING,
     ASTHRA_VARIANT_SLICE
@@ -55,11 +60,16 @@ typedef struct {
     AsthraVariantType type;
     union {
         bool bool_val;
-        int8_t i8_val; uint8_t u8_val;
-        int16_t i16_val; uint16_t u16_val;
-        int32_t i32_val; uint32_t u32_val;
-        int64_t i64_val; uint64_t u64_val;
-        float f32_val; double f64_val;
+        int8_t i8_val;
+        uint8_t u8_val;
+        int16_t i16_val;
+        uint16_t u16_val;
+        int32_t i32_val;
+        uint32_t u32_val;
+        int64_t i64_val;
+        uint64_t u64_val;
+        float f32_val;
+        double f64_val;
         void *ptr_val;
         AsthraFFIString string_val;
         AsthraFFISliceHeader slice_val;
@@ -82,7 +92,7 @@ typedef struct {
  * @param ownership Ownership transfer semantics
  * @return FFI string structure
  */
-AsthraFFIString Asthra_string_from_cstr(const char* cstr, AsthraOwnershipTransfer ownership);
+AsthraFFIString Asthra_string_from_cstr(const char *cstr, AsthraOwnershipTransfer ownership);
 
 /**
  * Free FFI string
@@ -108,7 +118,7 @@ AsthraFFIResult Asthra_string_concat(AsthraFFIString a, AsthraFFIString b);
  * @param args Array of variant arguments
  * @return Result containing interpolated string or error
  */
-AsthraFFIResult Asthra_string_interpolate(const char* template, AsthraVariantArray args);
+AsthraFFIResult Asthra_string_interpolate(const char *template, AsthraVariantArray args);
 
 // =============================================================================
 // STRING CONVERSION
@@ -120,7 +130,7 @@ AsthraFFIResult Asthra_string_interpolate(const char* template, AsthraVariantArr
  * @param transfer_ownership Whether to transfer ownership of the data
  * @return C string pointer (caller responsible for freeing if ownership transferred)
  */
-char* Asthra_string_to_cstr(AsthraFFIString s, bool transfer_ownership);
+char *Asthra_string_to_cstr(AsthraFFIString s, bool transfer_ownership);
 
 /**
  * Convert FFI string to slice
@@ -146,7 +156,7 @@ AsthraVariantArray Asthra_variant_array_new(size_t initial_capacity);
  * @param variant Variant to add
  * @return Result indicating success or failure
  */
-AsthraFFIResult Asthra_variant_array_push(AsthraVariantArray* array, AsthraVariant variant);
+AsthraFFIResult Asthra_variant_array_push(AsthraVariantArray *array, AsthraVariant variant);
 
 /**
  * Get variant from array
@@ -166,4 +176,4 @@ void Asthra_variant_array_free(AsthraVariantArray array);
 }
 #endif
 
-#endif // ASTHRA_FFI_STRING_H 
+#endif // ASTHRA_FFI_STRING_H

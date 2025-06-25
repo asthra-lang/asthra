@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Options validation and utility functions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -18,44 +18,41 @@
 
 AsthraCompilerOptions asthra_compiler_default_options(void) {
     // C17 designated initializer for default options
-    return (AsthraCompilerOptions) {
-        .input_file = NULL,
-        .output_file = NULL,
-        .opt_level = ASTHRA_OPT_STANDARD,
-        .target_arch = ASTHRA_TARGET_NATIVE,
-        .backend_type = ASTHRA_BACKEND_LLVM_IR,
-        .output_format = ASTHRA_FORMAT_DEFAULT,
-        .asm_syntax = ASTHRA_ASM_SYNTAX_ATT,
-        .debug_info = false,
-        .verbose = false,
-        .emit_llvm = false,
-        .emit_asm = false,
-        .no_stdlib = false,
-        .include_paths = NULL,
-        .library_paths = NULL,
-        .libraries = NULL
-    };
+    return (AsthraCompilerOptions){.input_file = NULL,
+                                   .output_file = NULL,
+                                   .opt_level = ASTHRA_OPT_STANDARD,
+                                   .target_arch = ASTHRA_TARGET_NATIVE,
+                                   .backend_type = ASTHRA_BACKEND_LLVM_IR,
+                                   .output_format = ASTHRA_FORMAT_DEFAULT,
+                                   .asm_syntax = ASTHRA_ASM_SYNTAX_ATT,
+                                   .debug_info = false,
+                                   .verbose = false,
+                                   .emit_llvm = false,
+                                   .emit_asm = false,
+                                   .no_stdlib = false,
+                                   .include_paths = NULL,
+                                   .library_paths = NULL,
+                                   .libraries = NULL};
 }
 
-AsthraCompilerOptions asthra_compiler_options_create(const char *input_file, const char *output_file) {
+AsthraCompilerOptions asthra_compiler_options_create(const char *input_file,
+                                                     const char *output_file) {
     // C17 compound literal with designated initializers
-    return (AsthraCompilerOptions) {
-        .input_file = input_file,
-        .output_file = output_file,
-        .opt_level = ASTHRA_OPT_STANDARD,
-        .target_arch = ASTHRA_TARGET_NATIVE,
-        .backend_type = ASTHRA_BACKEND_LLVM_IR,
-        .output_format = ASTHRA_FORMAT_DEFAULT,
-        .asm_syntax = ASTHRA_ASM_SYNTAX_ATT,
-        .debug_info = false,
-        .verbose = false,
-        .emit_llvm = false,
-        .emit_asm = false,
-        .no_stdlib = false,
-        .include_paths = asthra_argument_list_create(8),
-        .library_paths = asthra_argument_list_create(8),
-        .libraries = asthra_argument_list_create(8)
-    };
+    return (AsthraCompilerOptions){.input_file = input_file,
+                                   .output_file = output_file,
+                                   .opt_level = ASTHRA_OPT_STANDARD,
+                                   .target_arch = ASTHRA_TARGET_NATIVE,
+                                   .backend_type = ASTHRA_BACKEND_LLVM_IR,
+                                   .output_format = ASTHRA_FORMAT_DEFAULT,
+                                   .asm_syntax = ASTHRA_ASM_SYNTAX_ATT,
+                                   .debug_info = false,
+                                   .verbose = false,
+                                   .emit_llvm = false,
+                                   .emit_asm = false,
+                                   .no_stdlib = false,
+                                   .include_paths = asthra_argument_list_create(8),
+                                   .library_paths = asthra_argument_list_create(8),
+                                   .libraries = asthra_argument_list_create(8)};
 }
 
 bool asthra_compiler_validate_options(const AsthraCompilerOptions *options) {
@@ -74,7 +71,8 @@ bool asthra_compiler_validate_options(const AsthraCompilerOptions *options) {
     }
 
     // Validate target architecture
-    if (options->target_arch < ASTHRA_TARGET_X86_64 || options->target_arch > ASTHRA_TARGET_NATIVE) {
+    if (options->target_arch < ASTHRA_TARGET_X86_64 ||
+        options->target_arch > ASTHRA_TARGET_NATIVE) {
         return false;
     }
 
@@ -91,12 +89,10 @@ const char *asthra_get_target_triple(AsthraTargetArch arch) {
     static const struct {
         AsthraTargetArch arch;
         const char *triple;
-    } target_map[] = {
-        {ASTHRA_TARGET_X86_64, "x86_64-unknown-linux-gnu"},
-        {ASTHRA_TARGET_ARM64, "aarch64-unknown-linux-gnu"},
-        {ASTHRA_TARGET_WASM32, "wasm32-unknown-unknown"},
-        {ASTHRA_TARGET_NATIVE, "native"}
-    };
+    } target_map[] = {{ASTHRA_TARGET_X86_64, "x86_64-unknown-linux-gnu"},
+                      {ASTHRA_TARGET_ARM64, "aarch64-unknown-linux-gnu"},
+                      {ASTHRA_TARGET_WASM32, "wasm32-unknown-unknown"},
+                      {ASTHRA_TARGET_NATIVE, "native"}};
 
     for (size_t i = 0; i < sizeof(target_map) / sizeof(target_map[0]); i++) {
         if (target_map[i].arch == arch) {
@@ -112,12 +108,10 @@ const char *asthra_get_optimization_level_string(AsthraOptimizationLevel level) 
     static const struct {
         AsthraOptimizationLevel level;
         const char *string;
-    } opt_map[] = {
-        {ASTHRA_OPT_NONE, "O0"},
-        {ASTHRA_OPT_BASIC, "O1"},
-        {ASTHRA_OPT_STANDARD, "O2"},
-        {ASTHRA_OPT_AGGRESSIVE, "O3"}
-    };
+    } opt_map[] = {{ASTHRA_OPT_NONE, "O0"},
+                   {ASTHRA_OPT_BASIC, "O1"},
+                   {ASTHRA_OPT_STANDARD, "O2"},
+                   {ASTHRA_OPT_AGGRESSIVE, "O3"}};
 
     for (size_t i = 0; i < sizeof(opt_map) / sizeof(opt_map[0]); i++) {
         if (opt_map[i].level == level) {
@@ -134,4 +128,4 @@ const char *asthra_get_backend_type_string(AsthraBackendType backend) {
         return "LLVM IR";
     }
     return "Unknown"; // Default fallback
-} 
+}

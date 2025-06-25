@@ -6,10 +6,10 @@
 /**
  * Asthra Programming Language Compiler
  * Function Call Expression Generation Tests
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Test code generation for function call expressions including simple calls,
  * calls with arguments, and nested function calls
  */
@@ -20,9 +20,10 @@
 /**
  * Test function call expression generation (simplified)
  */
-AsthraTestResult test_generate_call_expressions(AsthraTestContext* context) {
+AsthraTestResult test_generate_call_expressions(AsthraTestContext *context) {
     // Log that we're skipping these tests for now
-    return ASTHRA_TEST_SKIP;;
+    return ASTHRA_TEST_SKIP;
+    ;
     return ASTHRA_TEST_PASS;
 }
 
@@ -86,4 +87,4 @@ AsthraTestResult test_generate_call_expressions_original(AsthraTestContext* cont
     cleanup_codegen_fixture(fixture);
     return ASTHRA_TEST_PASS;
 }
-#endif 
+#endif

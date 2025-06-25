@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - FFI Module Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * FFI validation and extern function handling
  */
 
@@ -48,7 +48,8 @@ bool semantic_validate_ffi_constant_time_safety(SemanticAnalyzer *analyzer, ASTN
 /**
  * Validate FFI parameter constant-time safety
  */
-bool semantic_validate_ffi_parameter_constant_time_safety(SemanticAnalyzer *analyzer, ASTNode *param);
+bool semantic_validate_ffi_parameter_constant_time_safety(SemanticAnalyzer *analyzer,
+                                                          ASTNode *param);
 
 // =============================================================================
 // FFI VOLATILE MEMORY SAFETY
@@ -63,4 +64,4 @@ bool semantic_validate_ffi_volatile_memory_safety(SemanticAnalyzer *analyzer, AS
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_FFI_H 
+#endif // ASTHRA_SEMANTIC_FFI_H

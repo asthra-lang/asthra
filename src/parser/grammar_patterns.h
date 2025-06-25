@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler - Pattern Grammar Productions
  * Pattern matching for match statements and destructuring
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -31,4 +31,4 @@ ASTNode *parse_field_pattern(Parser *parser);
 }
 #endif
 
-#endif // ASTHRA_GRAMMAR_PATTERNS_H 
+#endif // ASTHRA_GRAMMAR_PATTERNS_H

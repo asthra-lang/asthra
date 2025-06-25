@@ -1,6 +1,6 @@
 /**
  * Asthra Programming Language - Runtime Function Stubs
- * 
+ *
  * Phase 4: Core Infrastructure Implementation
  * Copyright (c) 2025 Asthra Project
  * Licensed under the terms specified in LICENSE
@@ -22,12 +22,12 @@
  * Create error result with FFI signature
  * Matches the signature in asthra_ffi_memory.h
  */
-AsthraFFIResult Asthra_result_err(int error_code, const char* error_message, 
-                                 const char* error_source, void* error_context) {
+AsthraFFIResult Asthra_result_err(int error_code, const char *error_message,
+                                  const char *error_source, void *error_context) {
     AsthraFFIResult result;
     result.tag = ASTHRA_FFI_RESULT_ERR;
     result.data.err.error_code = error_code;
-    
+
     // Safely copy error message
     if (error_message) {
         strncpy(result.data.err.error_message, error_message, 255);
@@ -35,10 +35,10 @@ AsthraFFIResult Asthra_result_err(int error_code, const char* error_message,
     } else {
         strcpy(result.data.err.error_message, "Unknown error");
     }
-    
+
     result.data.err.error_source = error_source;
     result.data.err.error_context = error_context;
-    
+
     return result;
 }
 
@@ -50,15 +50,15 @@ AsthraFFIResult Asthra_result_err(int error_code, const char* error_message,
  * Initialize test context
  * Provides basic initialization for integration tests
  */
-void asthra_test_context_init(AsthraTestContext* context) {
+void asthra_test_context_init(AsthraTestContext *context) {
     if (!context) {
         return;
     }
-    
+
     // Initialize context structure
     memset(context, 0, sizeof(AsthraTestContext));
-    context->result = ASTHRA_TEST_PASS;
-    
+    context->result = CONCURRENCY_TEST_PASS;
+
     // Initialize metadata with default values
     context->metadata.name = "integration_test";
     context->metadata.file = __FILE__;
@@ -68,7 +68,7 @@ void asthra_test_context_init(AsthraTestContext* context) {
     context->metadata.timeout_ns = 30000000000ULL; // 30 seconds
     context->metadata.skip = false;
     context->metadata.skip_reason = NULL;
-    
+
     // Initialize timing
     context->start_time_ns = asthra_test_get_time_ns();
     context->end_time_ns = 0;

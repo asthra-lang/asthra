@@ -1,6 +1,6 @@
 /**
  * Minimal FFI Assembly Generator Test - Test Runner
- * 
+ *
  * This file contains the main test runner and global test state
  * for the minimal FFI assembly generator test suite.
  */
@@ -28,31 +28,27 @@ void run_test(test_function_t test_func) {
 int main(void) {
     printf("Minimal FFI Assembly Generator Test Suite\n");
     printf("=========================================\n\n");
-    
+
     test_function_t test_functions[] = {
-        test_ffi_generator_creation,
-        test_ffi_generator_configuration,
-        test_string_operations,
-        test_slice_operations,
-        test_security_operations,
-        test_concurrency_operations,
-        test_assembly_validation,
-        test_nasm_output,
+        test_ffi_generator_creation, test_ffi_generator_configuration,
+        test_string_operations,      test_slice_operations,
+        test_security_operations,    test_concurrency_operations,
+        test_assembly_validation,    test_nasm_output,
         test_generation_statistics,
     };
-    
+
     size_t num_tests = sizeof(test_functions) / sizeof(test_functions[0]);
     for (size_t i = 0; i < num_tests; i++) {
         run_test(test_functions[i]);
     }
-    
+
     printf("\n=========================================\n");
     printf("Test Results:\n");
     printf("  Tests run: %zu\n", tests_run);
     printf("  Tests passed: %zu\n", tests_passed);
     printf("  Tests failed: %zu\n", tests_run - tests_passed);
     printf("  Success rate: %.1f%%\n", (double)tests_passed / (double)tests_run * 100.0);
-    
+
     if (tests_passed == tests_run) {
         printf("\n🎉 All tests passed! The FFI Assembly Generator concept is working.\n");
         printf("\nThis demonstrates:\n");
@@ -66,6 +62,6 @@ int main(void) {
         printf("\nThe full implementation in ffi_assembly_generator.c provides\n");
         printf("comprehensive support for all Asthra v1.2 language features.\n");
     }
-    
+
     return (tests_passed == tests_run) ? 0 : 1;
-} 
+}

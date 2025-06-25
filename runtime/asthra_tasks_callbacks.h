@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Task System Callbacks v1.2
  * Callback Queue Management Functions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -34,4 +34,4 @@ void asthra_callback_queue_process(void);
  */
 void init_callback_queue(void);
 
-#endif // ASTHRA_TASKS_CALLBACKS_H 
+#endif // ASTHRA_TASKS_CALLBACKS_H

@@ -1,11 +1,11 @@
 #ifndef TEST_IMMUTABLE_BY_DEFAULT_COMMON_H
 #define TEST_IMMUTABLE_BY_DEFAULT_COMMON_H
 
+#include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include <stdbool.h>
 
 // Include the necessary types
 #include "../../src/codegen/code_generator_types.h"

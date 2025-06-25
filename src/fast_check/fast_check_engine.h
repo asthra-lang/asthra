@@ -1,14 +1,14 @@
 #ifndef FAST_CHECK_ENGINE_H
 #define FAST_CHECK_ENGINE_H
 
+#include "dependency_tracker.h"
+#include "fast_semantic_cache.h"
+#include "performance_profiler.h"
+#include <pthread.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <time.h>
-#include <pthread.h>
-#include "dependency_tracker.h"
-#include "fast_semantic_cache.h"
-#include "performance_profiler.h"
 
 // Forward declarations
 typedef struct FastCheckEngine FastCheckEngine;
@@ -39,13 +39,13 @@ struct FastCheckEngine {
     FastSemanticCacheManager *semantic_cache;
     void *analyzer;
     FastCheckEngineStats stats;
-    
+
     // Statistics fields used by fast_check_command.c
     size_t total_checks;
     double total_check_time;
     size_t cache_hits;
     size_t cache_misses;
-    
+
     // Threading support
     pthread_mutex_t engine_lock;
 
@@ -79,7 +79,7 @@ struct FastCheckResult {
     int error_count;
     int warning_count;
     bool was_cached;
-    
+
     // Additional fields used by engine implementation
     char *file_path;
     EnhancedDiagnostic *errors;
@@ -105,44 +105,48 @@ struct IncrementalAnalyzer {
 };
 
 // Engine functions (stubs)
-FastCheckEngine* fast_check_engine_create(void);
-FastCheckEngine* fast_check_engine_create_with_config(FastCheckConfig *config);
+FastCheckEngine *fast_check_engine_create(void);
+FastCheckEngine *fast_check_engine_create_with_config(FastCheckConfig *config);
 void fast_check_engine_destroy(FastCheckEngine *engine);
 FastCheckEngineStats fast_check_engine_get_stats(FastCheckEngine *engine);
 void fast_check_engine_clear_cache(FastCheckEngine *engine);
 
 // Config functions (stubs)
-FastCheckConfig* fast_check_config_create_default(void);
+FastCheckConfig *fast_check_config_create_default(void);
 void fast_check_config_destroy(FastCheckConfig *config);
 
 // Result functions (stubs)
-FastCheckResult* fast_check_file(FastCheckEngine *engine, const char *filepath);
-FastCheckResult* fast_check_code_snippet(FastCheckEngine *engine, const char *code, const char *context);
+FastCheckResult *fast_check_file(FastCheckEngine *engine, const char *filepath);
+FastCheckResult *fast_check_code_snippet(FastCheckEngine *engine, const char *code,
+                                         const char *context);
 void fast_check_result_destroy(FastCheckResult *result);
 bool fast_check_invalidate_cache(FastCheckEngine *engine, const char *filepath);
 
 // Dependency graph functions (stubs)
-DependencyGraph* dependency_graph_create(void);
+DependencyGraph *dependency_graph_create(void);
 void dependency_graph_destroy(DependencyGraph *graph);
 bool dependency_graph_add_file(DependencyGraph *graph, const char *filepath);
 bool dependency_graph_add_dependency(DependencyGraph *graph, const char *from, const char *to);
 
 // Cache functions (stubs)
-FastSemanticCacheManager* fast_semantic_cache_create(size_t max_memory_mb);
+FastSemanticCacheManager *fast_semantic_cache_create(size_t max_memory_mb);
 void fast_semantic_cache_destroy(FastSemanticCacheManager *cache);
 FastCacheStatistics fast_semantic_cache_get_statistics(FastSemanticCacheManager *cache);
 
 // Performance profiler functions are declared in performance_profiler.h
 
 // Additional engine functions used by implementation
-FastCheckResult* fast_check_result_create(void);
-IncrementalAnalyzer* incremental_analyzer_create(void);
+FastCheckResult *fast_check_result_create(void);
+IncrementalAnalyzer *incremental_analyzer_create(void);
 void incremental_analyzer_destroy(IncrementalAnalyzer *analyzer);
-FastCheckResult* incremental_analyzer_check_file(IncrementalAnalyzer *analyzer, const char *file_path);
-FastCheckResult* incremental_analyzer_check_snippet(IncrementalAnalyzer *analyzer, const char *code, const char *context_file);
+FastCheckResult *incremental_analyzer_check_file(IncrementalAnalyzer *analyzer,
+                                                 const char *file_path);
+FastCheckResult *incremental_analyzer_check_snippet(IncrementalAnalyzer *analyzer, const char *code,
+                                                    const char *context_file);
 
 // Semantic cache functions used by implementation
-SemanticAnalysisCache* fast_semantic_cache_get_file(FastSemanticCacheManager *cache, const char *file_path);
+SemanticAnalysisCache *fast_semantic_cache_get_file(FastSemanticCacheManager *cache,
+                                                    const char *file_path);
 void fast_semantic_cache_invalidate_file(FastSemanticCacheManager *cache, const char *file_path);
 void fast_semantic_cache_reset_statistics(FastSemanticCacheManager *cache);
 
@@ -150,7 +154,7 @@ void fast_semantic_cache_reset_statistics(FastSemanticCacheManager *cache);
 typedef struct SemanticAnalyzer SemanticAnalyzer;
 
 // Semantic analyzer functions used by implementation
-SemanticAnalyzer* semantic_analyzer_create(void);
+SemanticAnalyzer *semantic_analyzer_create(void);
 void semantic_analyzer_destroy(SemanticAnalyzer *analyzer);
 
-#endif // FAST_CHECK_ENGINE_H 
+#endif // FAST_CHECK_ENGINE_H

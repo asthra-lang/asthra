@@ -1,10 +1,10 @@
 /*
  * Concurrency Tiers Integration Tests - Migration Patterns
- * 
+ *
  * Tests for migration patterns from other programming languages to Asthra's
  * three-tier concurrency system. Demonstrates how common concurrency patterns
  * from languages like Go can be adapted to Asthra.
- * 
+ *
  * Phase 8: Testing and Validation
  * Focus: Migration patterns and language interoperability
  */
@@ -17,14 +17,15 @@
 
 void test_go_to_asthra_migration(void) {
     printf("Testing Go to Asthra migration patterns...\n");
-    
+
     // Simulate Go-style concurrent code migrated to Asthra
-    const char* migrated_code = 
+    const char *migrated_code =
         "import \"stdlib/concurrent/channels\";\n"
         "\n"
         "// Originally: func worker(jobs <-chan Job, results chan<- Result)\n"
         "#[non_deterministic]\n"
-        "fn worker(jobs: channels.Receiver<Job>, results: channels.Sender<Result>) -> Result<(), string> {\n"
+        "fn worker(jobs: channels.Receiver<Job>, results: channels.Sender<Result>) -> Result<(), "
+        "string> {\n"
         "    loop {\n"
         "        match jobs.recv(void) {\n"
         "            channels.RecvResult.Ok(job) => {\n"
@@ -98,37 +99,37 @@ void test_go_to_asthra_migration(void) {
         "        value: job.data * 2,\n"
         "    })\n"
         "}\n";
-    
+
     ParseResult result = parse_string(migrated_code);
     ASSERT_TRUE(result.success);
-    
+
     SemanticAnalysisResult semantic_result = analyze_semantics(result.ast);
     ASSERT_TRUE(semantic_result.success);
     ASSERT_EQUAL(semantic_result.error_count, 0);
-    
+
     // Verify all channel-using functions have proper annotations
-    ASTNode* worker_func = find_function_declaration(result.ast, "worker");
+    ASTNode *worker_func = find_function_declaration(result.ast, "worker");
     ASSERT_NOT_NULL(worker_func);
     ASSERT_TRUE(has_annotation(worker_func, "non_deterministic"));
-    
-    ASTNode* run_func = find_function_declaration(result.ast, "run_workers");
+
+    ASTNode *run_func = find_function_declaration(result.ast, "run_workers");
     ASSERT_NOT_NULL(run_func);
     ASSERT_TRUE(has_annotation(run_func, "non_deterministic"));
-    
+
     // Helper function shouldn't need annotation
-    ASTNode* process_func = find_function_declaration(result.ast, "process_job");
+    ASTNode *process_func = find_function_declaration(result.ast, "process_job");
     ASSERT_NOT_NULL(process_func);
     ASSERT_FALSE(has_annotation(process_func, "non_deterministic"));
-    
+
     cleanup_parse_result(&result);
     cleanup_semantic_result(&semantic_result);
 }
 
 void test_java_to_asthra_migration(void) {
     printf("Testing Java to Asthra migration patterns...\n");
-    
+
     // Simulate Java ExecutorService pattern migrated to Asthra
-    const char* java_migrated_code = 
+    const char *java_migrated_code =
         "import \"stdlib/concurrent/patterns\";\n"
         "\n"
         "// Originally: ExecutorService executor = Executors.newFixedThreadPool(4);\n"
@@ -139,7 +140,8 @@ void test_java_to_asthra_migration(void) {
         "\n"
         "// Originally: Future<Result> submit(Callable<Result> task)\n"
         "#[non_deterministic]\n"
-        "fn submit_task(pool: patterns.WorkerPool<TaskResult>, task: Task) -> Result<(), string> {\n"
+        "fn submit_task(pool: patterns.WorkerPool<TaskResult>, task: Task) -> Result<(), string> "
+        "{\n"
         "    pool.submit_function(move || {\n"
         "        execute_task(task)\n"
         "    })\n"
@@ -158,7 +160,10 @@ void test_java_to_asthra_migration(void) {
         "    // Collect results\n"
         "    let mut results = Vec::new();\n"
         "    for _ in 0..tasks.len(void) {\n"
-        "        results.push(pool.get_result()" "?" "?" ");\n"
+        "        results.push(pool.get_result()"
+        "?"
+        "?"
+        ");\n"
         "    }\n"
         "    \n"
         "    pool.shutdown()?;\n"
@@ -181,32 +186,32 @@ void test_java_to_asthra_migration(void) {
         "        output: task.work_data + \" processed\",\n"
         "    })\n"
         "}\n";
-    
+
     ParseResult result = parse_string(java_migrated_code);
     ASSERT_TRUE(result.success);
-    
+
     SemanticAnalysisResult semantic_result = analyze_semantics(result.ast);
     ASSERT_TRUE(semantic_result.success);
     ASSERT_EQUAL(semantic_result.error_count, 0);
-    
+
     // Verify all pool-using functions have proper annotations
-    ASTNode* create_func = find_function_declaration(result.ast, "create_executor_service");
+    ASTNode *create_func = find_function_declaration(result.ast, "create_executor_service");
     ASSERT_NOT_NULL(create_func);
     ASSERT_TRUE(has_annotation(create_func, "non_deterministic"));
-    
-    ASTNode* submit_func = find_function_declaration(result.ast, "submit_task");
+
+    ASTNode *submit_func = find_function_declaration(result.ast, "submit_task");
     ASSERT_NOT_NULL(submit_func);
     ASSERT_TRUE(has_annotation(submit_func, "non_deterministic"));
-    
-    ASTNode* batch_func = find_function_declaration(result.ast, "process_tasks_batch");
+
+    ASTNode *batch_func = find_function_declaration(result.ast, "process_tasks_batch");
     ASSERT_NOT_NULL(batch_func);
     ASSERT_TRUE(has_annotation(batch_func, "non_deterministic"));
-    
+
     // Helper function shouldn't need annotation
-    ASTNode* execute_func = find_function_declaration(result.ast, "execute_task");
+    ASTNode *execute_func = find_function_declaration(result.ast, "execute_task");
     ASSERT_NOT_NULL(execute_func);
     ASSERT_FALSE(has_annotation(execute_func, "non_deterministic"));
-    
+
     cleanup_parse_result(&result);
     cleanup_semantic_result(&semantic_result);
 }
@@ -219,4 +224,4 @@ void run_migration_pattern_tests(void) {
     printf("\n--- Migration Pattern Tests ---\n");
     test_go_to_asthra_migration();
     test_java_to_asthra_migration();
-} 
+}

@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * String and multi-line string scanning functions for Asthra grammar
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -31,4 +31,4 @@ Token scan_multiline_raw_string(Lexer *lexer);
  */
 Token scan_multiline_processed_string(Lexer *lexer);
 
-#endif // LEXER_SCAN_STRINGS_H 
+#endif // LEXER_SCAN_STRINGS_H

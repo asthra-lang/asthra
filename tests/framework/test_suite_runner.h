@@ -10,9 +10,9 @@
 #ifndef ASTHRA_TEST_SUITE_RUNNER_H
 #define ASTHRA_TEST_SUITE_RUNNER_H
 
-#include <stddef.h>
-#include "test_framework.h"
 #include "test_formatters.h"
+#include "test_framework.h"
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,26 +28,24 @@ typedef struct AsthraTestRunner AsthraTestRunner;
 /**
  * Create a new test runner instance
  */
-AsthraTestRunner* asthra_test_runner_create(void);
+AsthraTestRunner *asthra_test_runner_create(void);
 
 /**
  * Destroy test runner and free all resources
  */
-void asthra_test_runner_destroy(AsthraTestRunner* runner);
+void asthra_test_runner_destroy(AsthraTestRunner *runner);
 
 /**
  * Add a test suite to the runner
  */
-int asthra_test_runner_add_suite(AsthraTestRunner* runner, 
-                                const char* suite_name,
-                                AsthraTestFunction* tests,
-                                const AsthraTestMetadata* metadata_array,
-                                size_t test_count);
+int asthra_test_runner_add_suite(AsthraTestRunner *runner, const char *suite_name,
+                                 AsthraTestFunction *tests,
+                                 const AsthraTestMetadata *metadata_array, size_t test_count);
 
 /**
  * Execute all registered test suites
  */
-int asthra_test_runner_execute(AsthraTestRunner* runner);
+int asthra_test_runner_execute(AsthraTestRunner *runner);
 
 // =============================================================================
 // MAIN ENTRY POINT

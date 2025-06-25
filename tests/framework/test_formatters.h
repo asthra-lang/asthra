@@ -10,10 +10,10 @@
 #ifndef ASTHRA_TEST_FORMATTERS_H
 #define ASTHRA_TEST_FORMATTERS_H
 
-#include <stdio.h>
+#include "test_framework.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include "test_framework.h"
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,13 +24,13 @@ extern "C" {
 // =============================================================================
 
 typedef enum {
-    ASTHRA_FORMAT_CONSOLE,      // Colored console output
-    ASTHRA_FORMAT_PLAIN,        // Plain text output
-    ASTHRA_FORMAT_JSON,         // JSON structured output
-    ASTHRA_FORMAT_XML,          // XML structured output
-    ASTHRA_FORMAT_TAP,          // Test Anything Protocol
-    ASTHRA_FORMAT_JUNIT,        // JUnit XML format
-    ASTHRA_FORMAT_MARKDOWN      // Markdown format
+    ASTHRA_FORMAT_CONSOLE, // Colored console output
+    ASTHRA_FORMAT_PLAIN,   // Plain text output
+    ASTHRA_FORMAT_JSON,    // JSON structured output
+    ASTHRA_FORMAT_XML,     // XML structured output
+    ASTHRA_FORMAT_TAP,     // Test Anything Protocol
+    ASTHRA_FORMAT_JUNIT,   // JUnit XML format
+    ASTHRA_FORMAT_MARKDOWN // Markdown format
 } AsthraTestOutputFormat;
 
 // =============================================================================
@@ -40,9 +40,8 @@ typedef enum {
 /**
  * Configure the test formatter with output format and options
  */
-void asthra_test_formatter_set_config(AsthraTestOutputFormat format, 
-                                     bool use_colors, 
-                                     const char* output_file);
+void asthra_test_formatter_set_config(AsthraTestOutputFormat format, bool use_colors,
+                                      const char *output_file);
 
 /**
  * Enable or disable verbose output
@@ -66,22 +65,22 @@ void asthra_test_formatter_cleanup(void);
 /**
  * Format a single test result
  */
-void format_test_result(const AsthraTestContext* context);
+void format_test_result(const AsthraTestContext *context);
 
 /**
  * Format test suite header
  */
-void format_suite_header(const char* suite_name, size_t total_tests);
+void format_suite_header(const char *suite_name, size_t total_tests);
 
 /**
  * Format test suite summary
  */
-void format_suite_summary(const AsthraTestStatistics* stats);
+void format_suite_summary(const AsthraTestStatistics *stats);
 
 /**
  * Format multiple test results as JSON array
  */
-void format_json_test_results(const AsthraTestContext* contexts, size_t count);
+void format_json_test_results(const AsthraTestContext *contexts, size_t count);
 
 // =============================================================================
 // LEGACY COMPATIBILITY

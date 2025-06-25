@@ -1,11 +1,11 @@
 #ifndef SEMANTIC_SYMBOLS_ALIASES_H
 #define SEMANTIC_SYMBOLS_ALIASES_H
 
+#include "semantic_symbols.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdio.h>
-#include "semantic_symbols.h"
 
 #ifdef __cplusplus
 extern "C" {

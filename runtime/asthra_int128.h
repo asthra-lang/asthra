@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Runtime
  * 128-bit Integer Support
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This header provides runtime support for 128-bit integer operations (i128/u128).
  * It includes type definitions, arithmetic operations, conversions, and utilities
  * for working with 128-bit integers in Asthra programs.
@@ -13,8 +13,8 @@
 #ifndef ASTHRA_INT128_H
 #define ASTHRA_INT128_H
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #ifdef __cplusplus
@@ -30,30 +30,30 @@ extern "C" {
  * Use compiler builtins when available, otherwise emulate with two 64-bit integers
  */
 #if defined(__SIZEOF_INT128__) && __SIZEOF_INT128__ == 16
-    // Clang supports native 128-bit integers
-    #ifdef __clang__
-        #pragma clang diagnostic push
-        #pragma clang diagnostic ignored "-Wpedantic"
-    #endif
-    typedef __int128 asthra_i128;
-    typedef unsigned __int128 asthra_u128;
-    #ifdef __clang__
-        #pragma clang diagnostic pop
-    #endif
-    #define ASTHRA_HAS_NATIVE_INT128 1
+// Clang supports native 128-bit integers
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpedantic"
+#endif
+typedef __int128 asthra_i128;
+typedef unsigned __int128 asthra_u128;
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+#define ASTHRA_HAS_NATIVE_INT128 1
 #else
-    // Emulate 128-bit integers with two 64-bit values
-    typedef struct {
-        uint64_t low;   // Lower 64 bits
-        int64_t high;   // Upper 64 bits (signed for i128)
-    } asthra_i128;
-    
-    typedef struct {
-        uint64_t low;   // Lower 64 bits
-        uint64_t high;  // Upper 64 bits
-    } asthra_u128;
-    
-    #define ASTHRA_HAS_NATIVE_INT128 0
+// Emulate 128-bit integers with two 64-bit values
+typedef struct {
+    uint64_t low; // Lower 64 bits
+    int64_t high; // Upper 64 bits (signed for i128)
+} asthra_i128;
+
+typedef struct {
+    uint64_t low;  // Lower 64 bits
+    uint64_t high; // Upper 64 bits
+} asthra_u128;
+
+#define ASTHRA_HAS_NATIVE_INT128 0
 #endif
 
 // =============================================================================

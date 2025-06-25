@@ -1,13 +1,13 @@
 #include "fast_check_engine.h"
-#include "fast_semantic_cache.h"
 #include "dependency_tracker.h"
+#include "fast_semantic_cache.h"
 #include "performance_profiler.h"
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h> // For usleep
-#include <pthread.h>
 
 // =============================================================================
 // STUB IMPLEMENTATIONS FOR MISSING FUNCTIONS
@@ -26,16 +26,17 @@ static void performance_profiler_reset_file_stats(PerformanceProfile *profiler) 
 // Create default configuration
 FastCheckConfig *fast_check_config_create_default(void) {
     FastCheckConfig *config = malloc(sizeof(FastCheckConfig));
-    if (!config) return NULL;
-    
-    config->max_cache_memory_mb = 256;          // 256MB cache
-    config->cache_ttl_seconds = 300;            // 5 minutes
+    if (!config)
+        return NULL;
+
+    config->max_cache_memory_mb = 256; // 256MB cache
+    config->cache_ttl_seconds = 300;   // 5 minutes
     config->enable_dependency_tracking = true;
     config->enable_incremental_parsing = true;
-    config->enable_parallel_analysis = false;   // Disabled for now
-    config->max_analysis_time_ms = 5000;        // 5 seconds max
+    config->enable_parallel_analysis = false; // Disabled for now
+    config->max_analysis_time_ms = 5000;      // 5 seconds max
     config->max_files_per_batch = 10;
-    
+
     return config;
 }
 
@@ -45,7 +46,8 @@ void fast_check_config_destroy(FastCheckConfig *config) {
 
 // Create fast check engine with provided config
 FastCheckEngine *fast_check_engine_create_with_config(FastCheckConfig *config) {
-    if (!config) return NULL;
+    if (!config)
+        return NULL;
 
     FastCheckEngine *engine = calloc(1, sizeof(FastCheckEngine));
     if (!engine) {
@@ -81,7 +83,8 @@ FastCheckEngine *fast_check_engine_create_with_config(FastCheckConfig *config) {
 // Create fast check engine
 FastCheckEngine *fast_check_engine_create(void) {
     FastCheckConfig *config = fast_check_config_create_default();
-    if (!config) return NULL;
+    if (!config)
+        return NULL;
 
     FastCheckEngine *engine = fast_check_engine_create_with_config(config);
     if (!engine) {
@@ -93,7 +96,8 @@ FastCheckEngine *fast_check_engine_create(void) {
 }
 
 void fast_check_engine_destroy(FastCheckEngine *engine) {
-    if (!engine) return;
+    if (!engine)
+        return;
 
     pthread_mutex_destroy(&engine->engine_lock);
     fast_semantic_cache_destroy(engine->semantic_cache);
@@ -105,8 +109,9 @@ void fast_check_engine_destroy(FastCheckEngine *engine) {
 // Create fast check result
 FastCheckResult *fast_check_result_create(void) {
     FastCheckResult *result = malloc(sizeof(FastCheckResult));
-    if (!result) return NULL;
-    
+    if (!result)
+        return NULL;
+
     result->success = false;
     result->file_path = NULL;
     result->errors = NULL;
@@ -120,13 +125,14 @@ FastCheckResult *fast_check_result_create(void) {
     result->memory_used_bytes = 0;
     result->files_analyzed = 0;
     result->cache_hits = 0;
-    
+
     return result;
 }
 
 void fast_check_result_destroy(FastCheckResult *result) {
-    if (!result) return;
-    
+    if (!result)
+        return;
+
     free(result->file_path);
     free(result->errors);
     free(result->warnings);
@@ -137,11 +143,12 @@ void fast_check_result_destroy(FastCheckResult *result) {
 // Create error result
 static FastCheckResult *create_error_result(const char *error_message, const char *file_path) {
     FastCheckResult *result = fast_check_result_create();
-    if (!result) return NULL;
-    
+    if (!result)
+        return NULL;
+
     result->success = false;
     result->file_path = file_path ? strdup(file_path) : NULL;
-    
+
     // Create a single error diagnostic
     result->errors = malloc(sizeof(EnhancedDiagnostic));
     if (result->errors) {
@@ -159,22 +166,24 @@ static FastCheckResult *create_error_result(const char *error_message, const cha
         result->errors[0].related_info = NULL;
         result->errors[0].related_count = 0;
     }
-    
+
     return result;
 }
 
 // Create result from cache
 static FastCheckResult *create_fast_check_result_from_cache(SemanticAnalysisCache *cache) {
-    if (!cache) return NULL;
-    
+    if (!cache)
+        return NULL;
+
     FastCheckResult *result = fast_check_result_create();
-    if (!result) return NULL;
-    
+    if (!result)
+        return NULL;
+
     result->success = cache->is_valid;
     result->was_cached = true;
     result->memory_used_bytes = cache->memory_used_bytes;
     result->check_time_ms = cache->analysis_time_ms;
-    
+
     // Copy diagnostics from cache
     if (cache->diagnostics && cache->diagnostic_count > 0) {
         // Note: This is simplified - in a full implementation we'd
@@ -182,11 +191,11 @@ static FastCheckResult *create_fast_check_result_from_cache(SemanticAnalysisCach
         result->error_count = cache->diagnostic_count;
         result->errors = malloc(sizeof(EnhancedDiagnostic) * cache->diagnostic_count);
         if (result->errors) {
-            memcpy(result->errors, cache->diagnostics, 
+            memcpy(result->errors, cache->diagnostics,
                    sizeof(EnhancedDiagnostic) * cache->diagnostic_count);
         }
     }
-    
+
     return result;
 }
 
@@ -211,21 +220,23 @@ FastCheckResult *fast_check_file(FastCheckEngine *engine, const char *filepath) 
     result->was_cached = false;
 
     // Try to get from cache
-    SemanticAnalysisCache *cached_analysis = fast_semantic_cache_get_file(engine->semantic_cache, filepath);
+    SemanticAnalysisCache *cached_analysis =
+        fast_semantic_cache_get_file(engine->semantic_cache, filepath);
     if (cached_analysis) {
         result->success = cached_analysis->is_valid;
         result->was_cached = true;
-        result->check_time_ms = cached_analysis->analysis_time_ms; // Use cached time
+        result->check_time_ms = cached_analysis->analysis_time_ms;             // Use cached time
         performance_record_cache_hit(engine->profiler, result->check_time_ms); // Record cache hit
         // In a real scenario, you'd return the analysis results here
         // Note: fast_semantic_cache_release_file is not declared, so we'll skip it
-        // fast_semantic_cache_release_file(engine->semantic_cache, cached_analysis); // Release reference
+        // fast_semantic_cache_release_file(engine->semantic_cache, cached_analysis); // Release
+        // reference
     } else {
         performance_record_cache_miss(engine->profiler, 0.0); // Record cache miss
 
         // Simulate work (replace with actual parsing/analysis)
         usleep(50000); // Simulate 50ms work
-        
+
         // Simulate result
         result->success = true;
         result->check_time_ms = 50.0; // Simulated time
@@ -242,16 +253,17 @@ FastCheckResult *fast_check_file(FastCheckEngine *engine, const char *filepath) 
     }
 
     performance_timer_stop(&engine->profiler->overall_timer); // Stop overall timer
-    performance_record_file_complete(engine->profiler, filepath, 
-                                     100, 50, result->check_time_ms); // Simulate lines/symbols
-    performance_update_peak_memory(engine->profiler); // Update peak memory
+    performance_record_file_complete(engine->profiler, filepath, 100, 50,
+                                     result->check_time_ms); // Simulate lines/symbols
+    performance_update_peak_memory(engine->profiler);        // Update peak memory
 
     pthread_mutex_unlock(&engine->engine_lock);
     return result;
 }
 
 // Code snippet checking
-FastCheckResult *fast_check_code_snippet(FastCheckEngine *engine, const char *code_snippet, const char *file_path) {
+FastCheckResult *fast_check_code_snippet(FastCheckEngine *engine, const char *code_snippet,
+                                         const char *file_path) {
     if (!engine || !code_snippet) {
         FastCheckResult *result = calloc(1, sizeof(FastCheckResult));
         // Note: error_message field doesn't exist in FastCheckResult
@@ -260,7 +272,8 @@ FastCheckResult *fast_check_code_snippet(FastCheckEngine *engine, const char *co
 
     pthread_mutex_lock(&engine->engine_lock);
     performance_timer_start(&engine->profiler->overall_timer); // Start overall timer
-    performance_record_file_start(engine->profiler, file_path ? file_path : "<snippet>"); // Record snippet start
+    performance_record_file_start(engine->profiler,
+                                  file_path ? file_path : "<snippet>"); // Record snippet start
 
     FastCheckResult *result = calloc(1, sizeof(FastCheckResult));
     if (!result) {
@@ -279,8 +292,10 @@ FastCheckResult *fast_check_code_snippet(FastCheckEngine *engine, const char *co
 
     performance_timer_stop(&engine->profiler->overall_timer); // Stop overall timer
     performance_record_file_complete(engine->profiler, file_path ? file_path : "<snippet>",
-                                     (uint32_t)(strlen(code_snippet) / 20), (uint32_t)(strlen(code_snippet) / 10), result->check_time_ms); // Simulate lines/symbols
-    performance_update_peak_memory(engine->profiler); // Update peak memory
+                                     (uint32_t)(strlen(code_snippet) / 20),
+                                     (uint32_t)(strlen(code_snippet) / 10),
+                                     result->check_time_ms); // Simulate lines/symbols
+    performance_update_peak_memory(engine->profiler);        // Update peak memory
 
     pthread_mutex_unlock(&engine->engine_lock);
     return result;
@@ -288,7 +303,8 @@ FastCheckResult *fast_check_code_snippet(FastCheckEngine *engine, const char *co
 
 // Cache invalidation
 bool fast_check_invalidate_cache(FastCheckEngine *engine, const char *filepath) {
-    if (!engine) return false;
+    if (!engine)
+        return false;
 
     pthread_mutex_lock(&engine->engine_lock);
     // Note: fast_semantic_cache_invalidate_file returns void, not bool
@@ -300,15 +316,16 @@ bool fast_check_invalidate_cache(FastCheckEngine *engine, const char *filepath) 
 // Create incremental analyzer
 IncrementalAnalyzer *incremental_analyzer_create(void) {
     IncrementalAnalyzer *analyzer = malloc(sizeof(IncrementalAnalyzer));
-    if (!analyzer) return NULL;
-    
+    if (!analyzer)
+        return NULL;
+
     // Create semantic analyzer
     analyzer->analyzer = semantic_analyzer_create();
     if (!analyzer->analyzer) {
         free(analyzer);
         return NULL;
     }
-    
+
     // Create fast cache manager
     analyzer->cache = fast_semantic_cache_create(128); // 128MB for incremental cache
     if (!analyzer->cache) {
@@ -316,7 +333,7 @@ IncrementalAnalyzer *incremental_analyzer_create(void) {
         free(analyzer);
         return NULL;
     }
-    
+
     // Create dependency graph
     analyzer->dependencies = dependency_graph_create();
     if (!analyzer->dependencies) {
@@ -325,58 +342,65 @@ IncrementalAnalyzer *incremental_analyzer_create(void) {
         free(analyzer);
         return NULL;
     }
-    
+
     // Initialize state
     analyzer->has_global_context = false;
     analyzer->global_symbols = NULL;
     analyzer->builtin_types = NULL;
     analyzer->builtin_type_count = 0;
-    
+
     return analyzer;
 }
 
 void incremental_analyzer_destroy(IncrementalAnalyzer *analyzer) {
-    if (!analyzer) return;
-    
+    if (!analyzer)
+        return;
+
     dependency_graph_destroy(analyzer->dependencies);
     fast_semantic_cache_destroy(analyzer->cache);
     semantic_analyzer_destroy(analyzer->analyzer);
-    
+
     free(analyzer);
 }
 
 // Simplified incremental analysis implementation
-FastCheckResult *incremental_analyzer_check_file(IncrementalAnalyzer *analyzer, const char *file_path) {
-    if (!analyzer || !file_path) return NULL;
-    
+FastCheckResult *incremental_analyzer_check_file(IncrementalAnalyzer *analyzer,
+                                                 const char *file_path) {
+    if (!analyzer || !file_path)
+        return NULL;
+
     // For now, this is a simplified implementation
     // In a full implementation, this would:
     // 1. Parse the file if needed
     // 2. Perform semantic analysis
     // 3. Cache the results
     // 4. Return diagnostics
-    
+
     FastCheckResult *result = fast_check_result_create();
-    if (!result) return NULL;
-    
+    if (!result)
+        return NULL;
+
     result->success = true;
     result->file_path = strdup(file_path);
     result->files_analyzed = 1;
-    
+
     return result;
 }
 
-FastCheckResult *incremental_analyzer_check_snippet(IncrementalAnalyzer *analyzer, const char *code, const char *context_file) {
-    if (!analyzer || !code) return NULL;
-    
+FastCheckResult *incremental_analyzer_check_snippet(IncrementalAnalyzer *analyzer, const char *code,
+                                                    const char *context_file) {
+    if (!analyzer || !code)
+        return NULL;
+
     // Simplified implementation for code snippets
     FastCheckResult *result = fast_check_result_create();
-    if (!result) return NULL;
-    
+    if (!result)
+        return NULL;
+
     result->success = true;
     result->file_path = context_file ? strdup(context_file) : strdup("<snippet>");
     result->files_analyzed = 1;
-    
+
     return result;
 }
 
@@ -384,7 +408,8 @@ FastCheckResult *incremental_analyzer_check_snippet(IncrementalAnalyzer *analyze
 FastCheckEngineStats fast_check_engine_get_stats(FastCheckEngine *engine) {
     FastCheckEngineStats stats = {0};
 
-    if (!engine) return stats;
+    if (!engine)
+        return stats;
 
     pthread_mutex_lock(&engine->engine_lock);
 
@@ -396,12 +421,15 @@ FastCheckEngineStats fast_check_engine_get_stats(FastCheckEngine *engine) {
         stats.total_checks = profile->file_stats.files_processed;
         stats.cache_hits = profile->cache_stats.cache_hits;
         stats.cache_misses = profile->cache_stats.cache_misses;
-        stats.hit_rate = (profile->cache_stats.total_requests > 0) ? 
-                         (double)profile->cache_stats.cache_hits / (double)profile->cache_stats.total_requests : 0.0;
+        stats.hit_rate = (profile->cache_stats.total_requests > 0)
+                             ? (double)profile->cache_stats.cache_hits /
+                                   (double)profile->cache_stats.total_requests
+                             : 0.0;
         stats.average_check_time_ms = profile->file_stats.average_file_time_ms;
         stats.memory_usage_bytes = profile->memory_stats.peak_memory_bytes;
         // For files cached, we need to adapt from semantic_cache's count
-        FastCacheStatistics cache_stats = fast_semantic_cache_get_statistics(engine->semantic_cache);
+        FastCacheStatistics cache_stats =
+            fast_semantic_cache_get_statistics(engine->semantic_cache);
         stats.files_cached = cache_stats.total_files_cached;
     }
 
@@ -411,7 +439,8 @@ FastCheckEngineStats fast_check_engine_get_stats(FastCheckEngine *engine) {
 }
 
 void fast_check_engine_reset_stats(FastCheckEngine *engine) {
-    if (!engine) return;
+    if (!engine)
+        return;
 
     pthread_mutex_lock(&engine->engine_lock);
 
@@ -432,7 +461,8 @@ void fast_check_engine_reset_stats(FastCheckEngine *engine) {
 
 // Utility functions
 void fast_check_engine_clear_cache(FastCheckEngine *engine) {
-    if (!engine) return;
+    if (!engine)
+        return;
 
     pthread_mutex_lock(&engine->engine_lock);
 
@@ -446,14 +476,15 @@ void fast_check_engine_clear_cache(FastCheckEngine *engine) {
 }
 
 size_t fast_check_engine_get_cache_size(FastCheckEngine *engine) {
-    if (!engine) return 0;
-    
+    if (!engine)
+        return 0;
+
     pthread_mutex_lock(&engine->engine_lock);
-    
+
     FastCacheStatistics stats = fast_semantic_cache_get_statistics(engine->semantic_cache);
     size_t size = stats.memory_usage_bytes;
-    
+
     pthread_mutex_unlock(&engine->engine_lock);
-    
+
     return size;
-} 
+}

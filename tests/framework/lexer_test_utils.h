@@ -12,9 +12,9 @@
 #define ASTHRA_LEXER_TEST_UTILS_H
 
 #include "lexer.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,8 +28,8 @@ extern "C" {
  * Test lexer configuration
  */
 typedef struct {
-    const char* source_code;
-    const char* filename;
+    const char *source_code;
+    const char *filename;
     bool enable_location_tracking;
     bool enable_comment_preservation;
     size_t buffer_size;
@@ -40,10 +40,10 @@ typedef struct {
  */
 typedef struct {
     TokenType type;
-    const char* value;
+    const char *value;
     size_t line;
     size_t column;
-    const char* filename;
+    const char *filename;
 } TokenExpectation;
 
 // =============================================================================
@@ -56,20 +56,20 @@ typedef struct {
  * @param filename The filename for error reporting
  * @return A new lexer state for testing
  */
-Lexer* create_test_lexer(const char* source, const char* filename);
+Lexer *create_test_lexer(const char *source, const char *filename);
 
 /**
  * Create a test lexer with custom configuration
  * @param config Test lexer configuration
  * @return A new lexer state for testing
  */
-Lexer* create_test_lexer_with_config(const TestLexerConfig* config);
+Lexer *create_test_lexer_with_config(const TestLexerConfig *config);
 
 /**
  * Destroy a test lexer and clean up resources
  * @param lexer The lexer to destroy
  */
-void destroy_test_lexer(Lexer* lexer);
+void destroy_test_lexer(Lexer *lexer);
 
 /**
  * Tokenize source and return all tokens
@@ -78,7 +78,7 @@ void destroy_test_lexer(Lexer* lexer);
  * @param token_count Output parameter for number of tokens
  * @return Array of tokens (caller must free)
  */
-Token* tokenize_test_source(const char* source, const char* filename, size_t* token_count);
+Token *tokenize_test_source(const char *source, const char *filename, size_t *token_count);
 
 #ifdef __cplusplus
 }

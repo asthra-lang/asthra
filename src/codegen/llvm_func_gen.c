@@ -1,31 +1,31 @@
 /**
  * Asthra Programming Language LLVM Function Generation
  * Implementation of function and top-level code generation
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
 
 #include "llvm_func_gen.h"
-#include "llvm_stmt_gen.h"
-#include "llvm_expr_gen.h"
-#include "llvm_types.h"
 #include "llvm_debug.h"
+#include "llvm_expr_gen.h"
 #include "llvm_locals.h"
+#include "llvm_stmt_gen.h"
+#include "llvm_types.h"
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 // Generate code for functions
 void generate_function(LLVMBackendData *data, const ASTNode *node) {
     if (!node || (node->type != AST_FUNCTION_DECL && node->type != AST_METHOD_DECL)) {
         return;
     }
-    
+
     const char *func_name = NULL;
     ASTNodeList *params = NULL;
     ASTNode *body = NULL;
-    
+
     if (node->type == AST_FUNCTION_DECL) {
         func_name = node->data.function_decl.name;
         params = node->data.function_decl.params;
@@ -35,15 +35,14 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
         params = node->data.method_decl.params;
         body = node->data.method_decl.body;
     }
-    
-    
+
     // Get function type from type_info
     TypeInfo *func_type = node->type_info;
-    
+
     // For now, if we don't have type info, try to continue with defaults
     LLVMTypeRef ret_type = data->void_type;
     int param_count = 0;
-    
+
     if (func_type && func_type->category == TYPE_INFO_FUNCTION) {
         if (func_type->data.function.return_type) {
             ret_type = asthra_type_to_llvm(data, func_type->data.function.return_type);
@@ -53,8 +52,7 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
         // Try to get param count from AST
         param_count = params ? params->count : 0;
     }
-    
-    
+
     // Convert parameter types
     LLVMTypeRef *param_types = NULL;
     if (param_count > 0) {
@@ -64,7 +62,7 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
             if (param && param->type == AST_PARAM_DECL) {
                 // Get type from param declaration
                 TypeInfo *param_type_info = NULL;
-                
+
                 // First check if param has direct type_info
                 if (param->type_info) {
                     param_type_info = param->type_info;
@@ -100,40 +98,41 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
                         }
                     }
                 }
-                
+
                 param_types[i] = asthra_type_to_llvm(data, param_type_info);
             } else {
                 param_types[i] = data->void_type;
             }
         }
     }
-    
+
     // Create function type
     LLVMTypeRef fn_type = LLVMFunctionType(ret_type, param_types, param_count, false);
-    
+
     // Create function
     LLVMValueRef function = LLVMAddFunction(data->module, func_name, fn_type);
-    
+
     // If function returns Never, mark it as noreturn
-    if (func_type && func_type->category == TYPE_INFO_FUNCTION && 
-        func_type->data.function.return_type && 
+    if (func_type && func_type->category == TYPE_INFO_FUNCTION &&
+        func_type->data.function.return_type &&
         func_type->data.function.return_type->category == TYPE_INFO_PRIMITIVE &&
         func_type->data.function.return_type->data.primitive.kind == PRIMITIVE_INFO_NEVER) {
         // In LLVM 15+, use attribute builder
         // For now, we'll just handle Never type properly in code generation
-        // The noreturn attribute would be: LLVMAddAttributeAtIndex(function, LLVMAttributeFunctionIndex, attr);
+        // The noreturn attribute would be: LLVMAddAttributeAtIndex(function,
+        // LLVMAttributeFunctionIndex, attr);
     }
-    
+
     // Set parameter names
     for (int i = 0; i < param_count; i++) {
         LLVMValueRef param = LLVMGetParam(function, i);
         ASTNode *param_node = params->nodes[i];
         if (param_node && param_node->type == AST_PARAM_DECL) {
-            LLVMSetValueName2(param, param_node->data.param_decl.name, 
+            LLVMSetValueName2(param, param_node->data.param_decl.name,
                               strlen(param_node->data.param_decl.name));
         }
     }
-    
+
     // Generate debug info for function if enabled
     if (data->di_builder && node->location.line > 0) {
         // Create function debug type
@@ -141,49 +140,45 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
         if (func_type && func_type->category == TYPE_INFO_FUNCTION) {
             fn_di_type = asthra_type_to_debug_type(data, func_type);
         }
-        
+
         // Create function debug info
-        LLVMMetadataRef di_function = LLVMDIBuilderCreateFunction(
-            data->di_builder,
-            data->di_file,  // scope
-            func_name,
-            strlen(func_name),
-            func_name,  // linkage name
-            strlen(func_name),
-            data->di_file,
-            node->location.line,
-            fn_di_type ? fn_di_type : data->di_void_type,
-            false,  // is local
-            true,   // is definition
-            node->location.line,
-            LLVMDIFlagPrototyped,
-            false   // is optimized
-        );
-        
+        LLVMMetadataRef di_function =
+            LLVMDIBuilderCreateFunction(data->di_builder,
+                                        data->di_file, // scope
+                                        func_name, strlen(func_name),
+                                        func_name, // linkage name
+                                        strlen(func_name), data->di_file, node->location.line,
+                                        fn_di_type ? fn_di_type : data->di_void_type,
+                                        false, // is local
+                                        true,  // is definition
+                                        node->location.line, LLVMDIFlagPrototyped,
+                                        false // is optimized
+            );
+
         // Attach debug info to function
         LLVMSetSubprogram(function, di_function);
         data->current_debug_scope = di_function;
     }
-    
+
     // Generate function body if present
     if (body) {
         // Create entry basic block
         LLVMBasicBlockRef entry = LLVMAppendBasicBlockInContext(data->context, function, "entry");
         LLVMPositionBuilderAtEnd(data->builder, entry);
-        
+
         // Set current function
         data->current_function = function;
-        
+
         // Clear local variables from previous function
         clear_local_vars(data);
-        
+
         // Generate body statements
         LLVMValueRef last_value = NULL;
         if (body->type == AST_BLOCK) {
             ASTNodeList *statements = body->data.block.statements;
             for (size_t i = 0; statements && i < statements->count; i++) {
                 ASTNode *stmt = statements->nodes[i];
-                
+
                 // Check if this is the last statement and it's an expression statement
                 if (i == statements->count - 1 && stmt->type == AST_EXPR_STMT) {
                     // For the last expression, generate it as a value (potential return)
@@ -194,11 +189,10 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
                 }
             }
         }
-        
-        
+
         // Add implicit return if needed
         LLVMBasicBlockRef current_block = LLVMGetInsertBlock(data->builder);
-        
+
         if (!LLVMGetBasicBlockTerminator(current_block)) {
             if (ret_type == data->void_type) {
                 LLVMBuildRetVoid(data->builder);
@@ -210,7 +204,7 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
                 LLVMTypeRef last_value_type = LLVMTypeOf(last_value);
                 if (last_value_type != ret_type) {
                     // Coerce integer types
-                    if (LLVMGetTypeKind(last_value_type) == LLVMIntegerTypeKind && 
+                    if (LLVMGetTypeKind(last_value_type) == LLVMIntegerTypeKind &&
                         LLVMGetTypeKind(ret_type) == LLVMIntegerTypeKind) {
                         unsigned src_bits = LLVMGetIntTypeWidth(last_value_type);
                         unsigned dst_bits = LLVMGetIntTypeWidth(ret_type);
@@ -219,7 +213,8 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
                             last_value = LLVMBuildSExt(data->builder, last_value, ret_type, "sext");
                         } else if (src_bits > dst_bits) {
                             // Truncate for smaller type
-                            last_value = LLVMBuildTrunc(data->builder, last_value, ret_type, "trunc");
+                            last_value =
+                                LLVMBuildTrunc(data->builder, last_value, ret_type, "trunc");
                         }
                     }
                 }
@@ -233,24 +228,27 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
                 }
             }
         }
-        
+
         // Verify function
         char *error = NULL;
         if (LLVMVerifyFunction(function, LLVMReturnStatusAction)) {
-            // Function verification failed - this should not happen with our corrected implementation
+            // Function verification failed - this should not happen with our corrected
+            // implementation
             fprintf(stderr, "LLVM function verification failed for %s\n", func_name);
-            
+
             // Get detailed error info
             char *func_str = LLVMPrintValueToString(function);
             fprintf(stderr, "Function dump:\n%s\n", func_str ? func_str : "null");
-            if (func_str) LLVMDisposeMessage(func_str);
-            
+            if (func_str)
+                LLVMDisposeMessage(func_str);
+
             LLVMDeleteFunction(function);
         } else {
         }
     }
-    
-    if (param_types) free(param_types);
+
+    if (param_types)
+        free(param_types);
 }
 
 // Generate code for top-level declarations
@@ -258,35 +256,36 @@ void generate_top_level(LLVMBackendData *data, const ASTNode *node) {
     if (!node) {
         return;
     }
-    
+
     switch (node->type) {
-        case AST_FUNCTION_DECL:
-            generate_function(data, node);
-            // TODO: Update statistics when backend pointer is available
-            break;
-            
-        // TODO: Implement other top-level declarations
-        case AST_STRUCT_DECL:
-        case AST_ENUM_DECL:
-        case AST_CONST_DECL:
-            // Not yet implemented
-            break;
-            
-        case AST_IMPL_BLOCK:
-            // Generate functions from impl block
-            if (node->data.impl_block.methods) {
-                for (size_t i = 0; i < node->data.impl_block.methods->count; i++) {
-                    ASTNode *method = node->data.impl_block.methods->nodes[i];
-                    if (method && (method->type == AST_FUNCTION_DECL || method->type == AST_METHOD_DECL)) {
-                        // Generate the method as a regular function
-                        // The semantic analyzer should have already mangled the name
-                        generate_function(data, method);
-                    }
+    case AST_FUNCTION_DECL:
+        generate_function(data, node);
+        // TODO: Update statistics when backend pointer is available
+        break;
+
+    // TODO: Implement other top-level declarations
+    case AST_STRUCT_DECL:
+    case AST_ENUM_DECL:
+    case AST_CONST_DECL:
+        // Not yet implemented
+        break;
+
+    case AST_IMPL_BLOCK:
+        // Generate functions from impl block
+        if (node->data.impl_block.methods) {
+            for (size_t i = 0; i < node->data.impl_block.methods->count; i++) {
+                ASTNode *method = node->data.impl_block.methods->nodes[i];
+                if (method &&
+                    (method->type == AST_FUNCTION_DECL || method->type == AST_METHOD_DECL)) {
+                    // Generate the method as a regular function
+                    // The semantic analyzer should have already mangled the name
+                    generate_function(data, method);
                 }
             }
-            break;
-            
-        default:
-            break;
+        }
+        break;
+
+    default:
+        break;
     }
 }

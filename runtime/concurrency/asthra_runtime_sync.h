@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Runtime v1.2 - Synchronization Module
  * Synchronization Primitives and Thread Safety
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This module provides synchronization primitives including
  * mutexes, condition variables, and read-write locks.
  */
@@ -97,4 +97,4 @@ double asthra_call_variadic_double(void *func_ptr, AsthraVarArg *args, size_t ar
 }
 #endif
 
-#endif // ASTHRA_RUNTIME_SYNC_H 
+#endif // ASTHRA_RUNTIME_SYNC_H

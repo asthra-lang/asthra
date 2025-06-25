@@ -1,13 +1,13 @@
 #ifndef ASTHRA_MEMORY_POOL_INTERNAL_H
 #define ASTHRA_MEMORY_POOL_INTERNAL_H
 
-#include "memory_pool.h"
 #include "benchmark.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+#include "memory_pool.h"
 #include <assert.h>
 #include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #if defined(__APPLE__) || defined(__linux__)
 #include <sys/mman.h>
@@ -28,7 +28,8 @@
 #define ASTHRA_MEMORY_POOL_FREE_MAGIC 0xFEEDFACE __attribute__((unused))
 
 // Thread-local storage for performance tracking
-extern ASTHRA_MEMORY_POOL_THREAD_LOCAL AsthraPoolStatistics *g_thread_local_stats __attribute__((unused));
+extern ASTHRA_MEMORY_POOL_THREAD_LOCAL AsthraPoolStatistics *g_thread_local_stats
+    __attribute__((unused));
 
 // Global atomic counters for memory tracking (reserved for future use)
 extern _Atomic(uint64_t) g_global_allocations __attribute__((unused));
@@ -52,4 +53,4 @@ static inline void suppress_unused_warnings(void) {
 #pragma GCC diagnostic pop
 #endif
 
-#endif // ASTHRA_MEMORY_POOL_INTERNAL_H 
+#endif // ASTHRA_MEMORY_POOL_INTERNAL_H

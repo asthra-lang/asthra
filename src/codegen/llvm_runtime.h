@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language LLVM Runtime Interface
  * Runtime function declarations for LLVM backend
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */

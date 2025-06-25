@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Loop Detection and Analysis Tests
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This file tests loop detection and nesting analysis
  */
 
@@ -13,10 +13,10 @@
 /**
  * Test loop detection
  */
-AsthraTestResult test_loop_detection(AsthraTestContext* context) {
+AsthraTestResult test_loop_detection(AsthraTestContext *context) {
     // TODO: Fix Instruction type issues in this test
     return ASTHRA_TEST_SKIP;
-    
+
 #if 0
     ControlFlowAnalysisTestFixture* fixture = setup_control_flow_analysis_fixture();
     if (!asthra_test_assert_pointer(context, fixture, "Failed to setup test fixture")) {
@@ -78,10 +78,10 @@ AsthraTestResult test_loop_detection(AsthraTestContext* context) {
 /**
  * Test loop nesting analysis
  */
-AsthraTestResult test_loop_nesting_analysis(AsthraTestContext* context) {
+AsthraTestResult test_loop_nesting_analysis(AsthraTestContext *context) {
     // TODO: Implement loop_analysis_detect_loops and loop_analysis_get_max_nesting_depth functions
     return ASTHRA_TEST_SKIP;
-    
+
 #if 0
     ControlFlowAnalysisTestFixture* fixture = setup_control_flow_analysis_fixture();
     if (!asthra_test_assert_pointer(context, fixture, "Failed to setup test fixture")) {
@@ -122,7 +122,7 @@ int main(void) {
     // TODO: Fix header conflicts and function signatures before enabling tests
     printf("Loop Detection Tests: SKIPPED due to header conflicts\n");
     return 0;
-    
+
 #if 0
     AsthraTestSuite suite = {
         .name = "Loop Detection Tests",

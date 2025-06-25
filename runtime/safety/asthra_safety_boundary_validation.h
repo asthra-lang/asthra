@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Runtime Safety - Boundary & Memory Validation
  * Header file for enhanced boundary checks and memory layout validation
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -40,4 +40,4 @@ AsthraMemoryLayoutValidation asthra_safety_validate_slice_header(AsthraSliceHead
 }
 #endif
 
-#endif // ASTHRA_SAFETY_BOUNDARY_VALIDATION_H 
+#endif // ASTHRA_SAFETY_BOUNDARY_VALIDATION_H

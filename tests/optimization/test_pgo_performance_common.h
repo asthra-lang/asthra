@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language
  * Profile-Guided Optimization (PGO) Performance Testing Common Utilities
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Common utilities, data structures, and constants for PGO performance testing
  */
 
@@ -12,9 +12,9 @@
 #define ASTHRA_TEST_PGO_PERFORMANCE_COMMON_H
 
 #include "test_optimization_common.h"
+#include <math.h>
 #include <sys/time.h>
 #include <time.h>
-#include <math.h>
 
 // PGO Performance test configuration
 #define PGO_BENCHMARK_ITERATIONS 10
@@ -57,10 +57,12 @@ double pgo_get_time_ms(void);
 
 // Statistical analysis
 PGOPerformanceStats pgo_calculate_stats(double *samples, size_t count);
-PGOBenchmarkComparison pgo_compare_performance(PGOPerformanceStats baseline, PGOPerformanceStats optimized);
+PGOBenchmarkComparison pgo_compare_performance(PGOPerformanceStats baseline,
+                                               PGOPerformanceStats optimized);
 
 // Benchmark execution
-bool pgo_run_binary_benchmark(const char *binary_path, const char *args, PGOPerformanceStats *stats);
+bool pgo_run_binary_benchmark(const char *binary_path, const char *args,
+                              PGOPerformanceStats *stats);
 
 // Test program generation
 bool pgo_create_test_program(const char *filename, PGOBenchmarkType program_type);
@@ -70,6 +72,7 @@ bool pgo_validate_binaries(const char *baseline_binary, const char *optimized_bi
 
 // Performance reporting
 void pgo_print_performance_stats(const char *label, const PGOPerformanceStats *stats);
-void pgo_print_benchmark_comparison(const char *benchmark_name, const PGOBenchmarkComparison *comparison);
+void pgo_print_benchmark_comparison(const char *benchmark_name,
+                                    const PGOBenchmarkComparison *comparison);
 
-#endif // ASTHRA_TEST_PGO_PERFORMANCE_COMMON_H 
+#endif // ASTHRA_TEST_PGO_PERFORMANCE_COMMON_H

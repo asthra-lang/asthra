@@ -10,10 +10,10 @@
 #ifndef ASTHRA_TEST_PATTERN_MATCHING_HELPERS_H
 #define ASTHRA_TEST_PATTERN_MATCHING_HELPERS_H
 
-#include "test_comprehensive.h"
 #include "../../runtime/types/asthra_runtime_result.h"
-#include <string.h>
+#include "test_comprehensive.h"
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 // =============================================================================
@@ -68,4 +68,4 @@ TestResult mock_ffi_function(int input);
  */
 TestResult recursive_impl(int depth, int max_depth);
 
-#endif // ASTHRA_TEST_PATTERN_MATCHING_HELPERS_H 
+#endif // ASTHRA_TEST_PATTERN_MATCHING_HELPERS_H

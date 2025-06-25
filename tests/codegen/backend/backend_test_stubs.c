@@ -3,12 +3,12 @@
  * Provides stub implementations to avoid linking issues
  */
 
+#include "../../../src/compiler.h"
+#include "../../../src/parser/ast.h"
+#include "../../../src/parser/ast_types.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../../src/parser/ast.h"
-#include "../../../src/parser/ast_types.h"
-#include "../../../src/compiler.h"
 // Code generator headers removed - using LLVM backend only
 
 #ifdef MINIMAL_TEST_BUILD
@@ -34,11 +34,11 @@ int generate_c_code(FILE *output, ASTNode *node) {
 // Most functions are now provided by asthra_compiler library
 
 // Stub for error handling context (if not provided by library)
-void* asthra_error_context_create(void) {
-    return calloc(1, sizeof(void*));
+void *asthra_error_context_create(void) {
+    return calloc(1, sizeof(void *));
 }
 
-void asthra_error_context_destroy(void* ctx) {
+void asthra_error_context_destroy(void *ctx) {
     free(ctx);
 }
 

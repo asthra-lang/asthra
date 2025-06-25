@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Lexical analyzer (tokenizer) for Asthra grammar
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -9,10 +9,10 @@
 #ifndef ASTHRA_LEXER_H
 #define ASTHRA_LEXER_H
 
+#include "common.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
-#include "common.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,29 +26,29 @@ typedef struct Lexer Lexer;
 typedef enum {
     // End of file
     TOKEN_EOF,
-    
+
     // Literals
     TOKEN_INTEGER,
     TOKEN_FLOAT,
     TOKEN_STRING,
     TOKEN_BOOL_TRUE,
     TOKEN_BOOL_FALSE,
-    TOKEN_CHAR,               // Character literals like 'a', '\n'
+    TOKEN_CHAR, // Character literals like 'a', '\n'
     TOKEN_IDENTIFIER,
-    
+
     // Keywords
     TOKEN_PACKAGE,
     TOKEN_IMPORT,
-    TOKEN_AS,                 // for import aliases
-    TOKEN_PUB,                // for public visibility
-    TOKEN_PRIV,               // for private visibility (v1.18 explicit visibility)
+    TOKEN_AS,   // for import aliases
+    TOKEN_PUB,  // for public visibility
+    TOKEN_PRIV, // for private visibility (v1.18 explicit visibility)
     TOKEN_FN,
     TOKEN_STRUCT,
     TOKEN_ENUM,
     TOKEN_EXTERN,
     TOKEN_LET,
-    TOKEN_CONST,              // const keyword for compile-time constants
-    TOKEN_MUT,                // mut keyword for variable mutability (v1.25: immutable by default)
+    TOKEN_CONST, // const keyword for compile-time constants
+    TOKEN_MUT,   // mut keyword for variable mutability (v1.25: immutable by default)
     TOKEN_IF,
     TOKEN_ELSE,
     TOKEN_FOR,
@@ -60,28 +60,34 @@ typedef enum {
     TOKEN_SPAWN,
     TOKEN_UNSAFE,
     TOKEN_SIZEOF,
-    TOKEN_IMPL,               // for struct method implementations
-    TOKEN_SELF,               // for instance methods
-    
+    TOKEN_IMPL, // for struct method implementations
+    TOKEN_SELF, // for instance methods
+
     // Types
     TOKEN_INT,
     TOKEN_FLOAT_TYPE,
     TOKEN_BOOL,
     TOKEN_STRING_TYPE,
     TOKEN_VOID,
-    TOKEN_NONE,               // v1.19: structural absence marker
+    TOKEN_NONE, // v1.19: structural absence marker
     TOKEN_USIZE,
     TOKEN_ISIZE,
-    TOKEN_U8, TOKEN_I8,
-    TOKEN_U16, TOKEN_I16,
-    TOKEN_U32, TOKEN_I32,
-    TOKEN_U64, TOKEN_I64,
-    TOKEN_U128, TOKEN_I128,
-    TOKEN_F32, TOKEN_F64,
+    TOKEN_U8,
+    TOKEN_I8,
+    TOKEN_U16,
+    TOKEN_I16,
+    TOKEN_U32,
+    TOKEN_I32,
+    TOKEN_U64,
+    TOKEN_I64,
+    TOKEN_U128,
+    TOKEN_I128,
+    TOKEN_F32,
+    TOKEN_F64,
     TOKEN_RESULT,
-    TOKEN_OPTION,             // Option<T> built-in type
-    TOKEN_NEVER,              // Never type for functions that don't return
-    
+    TOKEN_OPTION, // Option<T> built-in type
+    TOKEN_NEVER,  // Never type for functions that don't return
+
     // Operators
     TOKEN_PLUS,
     TOKEN_MINUS,
@@ -104,15 +110,15 @@ typedef enum {
     TOKEN_BITWISE_NOT,
     TOKEN_LEFT_SHIFT,
     TOKEN_RIGHT_SHIFT,
-    TOKEN_ARROW,              // ->
-    TOKEN_FAT_ARROW,          // =>
-    
+    TOKEN_ARROW,     // ->
+    TOKEN_FAT_ARROW, // =>
+
     // Punctuation
     TOKEN_SEMICOLON,
     TOKEN_COMMA,
     TOKEN_DOT,
     TOKEN_COLON,
-    TOKEN_DOUBLE_COLON,       // ::
+    TOKEN_DOUBLE_COLON, // ::
     TOKEN_LEFT_PAREN,
     TOKEN_RIGHT_PAREN,
     TOKEN_LEFT_BRACE,
@@ -121,28 +127,28 @@ typedef enum {
     TOKEN_RIGHT_BRACKET,
     TOKEN_LEFT_ANGLE,
     TOKEN_RIGHT_ANGLE,
-    
+
     // Special tokens for annotations
-    TOKEN_HASH,               // #
-    TOKEN_AT,                 // @
-    TOKEN_ELLIPSIS,           // ... (for variadic functions)
-    
+    TOKEN_HASH,     // #
+    TOKEN_AT,       // @
+    TOKEN_ELLIPSIS, // ... (for variadic functions)
+
     // Memory and FFI keywords
-    TOKEN_STAR,               // * (for pointers)
-    TOKEN_AMPERSAND,          // & (for references)
-    
+    TOKEN_STAR,      // * (for pointers)
+    TOKEN_AMPERSAND, // & (for references)
+
     // Error token
     TOKEN_ERROR,
-    
+
     // Whitespace and comments (usually skipped)
     TOKEN_WHITESPACE,
     TOKEN_COMMENT,
     TOKEN_NEWLINE,
-    
+
     // New token types for advanced concurrency features
     TOKEN_SPAWN_WITH_HANDLE,
     TOKEN_AWAIT,
-    // Note: Tier 3 tokens (TOKEN_CHANNEL, TOKEN_SEND, TOKEN_RECV, TOKEN_SELECT, 
+    // Note: Tier 3 tokens (TOKEN_CHANNEL, TOKEN_SEND, TOKEN_RECV, TOKEN_SELECT,
     // TOKEN_DEFAULT, TOKEN_WORKER_POOL, TOKEN_TIMEOUT, TOKEN_CLOSE) moved to stdlib
 } TokenType;
 
@@ -166,7 +172,7 @@ struct Token {
             size_t length;
         } identifier;
         struct {
-            uint32_t value;  // Unicode code point
+            uint32_t value; // Unicode code point
         } character;
     } data;
 };
@@ -261,4 +267,4 @@ bool is_reserved_keyword(const char *identifier, size_t length);
 }
 #endif
 
-#endif // ASTHRA_LEXER_H 
+#endif // ASTHRA_LEXER_H

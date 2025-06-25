@@ -9,9 +9,9 @@
  */
 
 #include "test_comprehensive_core.h"
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 // =============================================================================
@@ -25,7 +25,8 @@ static AsthraTestStatistics *g_global_stats = NULL;
 // TEST CONTEXT MANAGEMENT
 // =============================================================================
 
-AsthraExtendedTestContext* asthra_test_context_create_extended(const AsthraExtendedTestMetadata *metadata) {
+AsthraExtendedTestContext *
+asthra_test_context_create_extended(const AsthraExtendedTestMetadata *metadata) {
     AsthraV12TestContext *ctx = calloc(1, sizeof(AsthraV12TestContext));
     if (!ctx) {
         return NULL;
@@ -74,7 +75,8 @@ AsthraExtendedTestContext* asthra_test_context_create_extended(const AsthraExten
 }
 
 void asthra_test_context_destroy_extended(AsthraExtendedTestContext *ctx) {
-    if (!ctx) return;
+    if (!ctx)
+        return;
 
     if (ctx->test_data) {
         free(ctx->test_data);
@@ -84,7 +86,8 @@ void asthra_test_context_destroy_extended(AsthraExtendedTestContext *ctx) {
 }
 
 void asthra_test_context_reset_extended(AsthraExtendedTestContext *ctx) {
-    if (!ctx) return;
+    if (!ctx)
+        return;
 
     ctx->base.result = ASTHRA_TEST_PASS;
     ctx->base.start_time_ns = 0;
@@ -125,8 +128,6 @@ void asthra_set_global_stats(AsthraTestStatistics *stats) {
     g_global_stats = stats;
 }
 
-AsthraTestStatistics* asthra_get_global_stats(void) {
+AsthraTestStatistics *asthra_get_global_stats(void) {
     return g_global_stats;
 }
-
- 

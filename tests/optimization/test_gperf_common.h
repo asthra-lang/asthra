@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language
  * Gperf Integration Test Common Definitions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -13,10 +13,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <unistd.h>
 
 // Test configuration constants
 #define MAX_KEYWORDS 256
@@ -49,4 +49,4 @@ bool gperf_file_exists(const char *filepath);
 bool check_file_substantial(const char *filepath, size_t min_size);
 int run_command_with_timeout(const char *command, double timeout_seconds);
 
-#endif // ASTHRA_TEST_GPERF_COMMON_H 
+#endif // ASTHRA_TEST_GPERF_COMMON_H

@@ -1,9 +1,9 @@
 #include "development_server.h"
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
 
 static AsthraDevelopmentServer *g_server = NULL;
 
@@ -30,23 +30,23 @@ void print_usage(const char *program_name) {
 
 void run_test(AsthraDevelopmentServer *server) {
     printf("Running development server functionality test...\n");
-    
+
     // Test request creation and handling
-    const char *test_request_json = 
+    const char *test_request_json =
         "{"
         "\"request_id\": \"test_001\","
         "\"command\": \"check\","
         "\"code_content\": \"function add(x: int, y: int) -> int { return x + y; }\""
         "}";
-    
+
     DevServerRequest *request = dev_server_request_create(test_request_json);
     if (!request) {
         printf("❌ Failed to create test request\n");
         return;
     }
-    
+
     printf("✅ Created test request: %s\n", request->command);
-    
+
     // Handle the request
     DevServerResponse *response = asthra_dev_server_handle_request(server, request);
     if (!response) {
@@ -54,36 +54,36 @@ void run_test(AsthraDevelopmentServer *server) {
         dev_server_request_destroy(request);
         return;
     }
-    
+
     printf("✅ Handled request in %.2fms\n", response->processing_time_ms);
     printf("Response success: %s\n", response->success ? "true" : "false");
-    
+
     if (response->result_json) {
         printf("Response result: %s\n", response->result_json);
     }
-    
+
     if (response->error_message) {
         printf("Response error: %s\n", response->error_message);
     }
-    
+
     // Test statistics
     DevServerStats stats = asthra_dev_server_get_stats(server);
     printf("Server stats:\n");
     printf("  Total requests: %zu\n", stats.total_requests);
     printf("  Successful requests: %zu\n", stats.successful_requests);
     printf("  Average response time: %.2fms\n", stats.average_response_time_ms);
-    
+
     // Clean up
     dev_server_request_destroy(request);
     dev_server_response_destroy(response);
-    
+
     printf("✅ All tests passed!\n");
 }
 
 int main(int argc, char *argv[]) {
     int port = 8080;
     bool run_tests = false;
-    
+
     // Parse command line arguments
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
@@ -108,11 +108,11 @@ int main(int argc, char *argv[]) {
             return 1;
         }
     }
-    
+
     // Set up signal handlers
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
-    
+
     // Create and start server
     printf("Creating Asthra Development Server on port %d...\n", port);
     g_server = asthra_dev_server_create(port);
@@ -120,21 +120,21 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error: Failed to create development server\n");
         return 1;
     }
-    
+
     // Run tests if requested
     if (run_tests) {
         run_test(g_server);
         asthra_dev_server_destroy(g_server);
         return 0;
     }
-    
+
     // Start the server
     if (!asthra_dev_server_start(g_server)) {
         fprintf(stderr, "Error: Failed to start development server\n");
         asthra_dev_server_destroy(g_server);
         return 1;
     }
-    
+
     printf("✅ Asthra Development Server is running on port %d\n", port);
     printf("Press Ctrl+C to stop the server\n");
     printf("\nEndpoints:\n");
@@ -145,11 +145,11 @@ int main(int argc, char *argv[]) {
     printf("  - complete: Code completion (coming soon)\n");
     printf("  - analyze: AI-powered analysis (coming soon)\n");
     printf("  - stats: Server performance statistics\n");
-    
+
     // Keep the main thread alive
     while (asthra_dev_server_is_running(g_server)) {
         sleep(1);
-        
+
         // Print periodic stats (every 30 seconds)
         static time_t last_stats_time = 0;
         time_t current_time = time(NULL);
@@ -157,16 +157,17 @@ int main(int argc, char *argv[]) {
             DevServerStats stats = asthra_dev_server_get_stats(g_server);
             if (stats.total_requests > 0) {
                 printf("[Stats] Requests: %zu, Avg Response: %.1fms, Cache Hit Rate: %zu%%\n",
-                       stats.total_requests, stats.average_response_time_ms, stats.cache_hit_rate_percent);
+                       stats.total_requests, stats.average_response_time_ms,
+                       stats.cache_hit_rate_percent);
             }
             last_stats_time = current_time;
         }
     }
-    
+
     // Clean up
     asthra_dev_server_destroy(g_server);
     g_server = NULL;
-    
+
     printf("Asthra Development Server stopped.\n");
     return 0;
-} 
+}

@@ -1,23 +1,23 @@
 /**
  * Asthra Programming Language Compiler
  * Cross-Platform Abstraction Layer
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This header provides platform-specific abstractions for:
- * - macOS (Clang) 
+ * - macOS (Clang)
  * - Linux (Clang)
- * 
+ *
  * Features C17 compatibility and compile-time validation.
  */
 
 #ifndef ASTHRA_PLATFORM_H
 #define ASTHRA_PLATFORM_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdio.h>
 
 // C17 feature detection
@@ -39,29 +39,29 @@ extern "C" {
 // =============================================================================
 
 #if defined(_WIN32) || defined(_WIN64)
-    #define ASTHRA_PLATFORM_WINDOWS 1
-    #define ASTHRA_PLATFORM_UNIX 0
-    #define ASTHRA_PLATFORM_MACOS 0
-    #define ASTHRA_PLATFORM_LINUX 0
-    #define ASTHRA_PLATFORM_NAME "Windows"
+#define ASTHRA_PLATFORM_WINDOWS 1
+#define ASTHRA_PLATFORM_UNIX 0
+#define ASTHRA_PLATFORM_MACOS 0
+#define ASTHRA_PLATFORM_LINUX 0
+#define ASTHRA_PLATFORM_NAME "Windows"
 #elif defined(__APPLE__) && defined(__MACH__)
-    #define ASTHRA_PLATFORM_WINDOWS 0
-    #define ASTHRA_PLATFORM_UNIX 1
-    #define ASTHRA_PLATFORM_MACOS 1
-    #define ASTHRA_PLATFORM_LINUX 0
-    #define ASTHRA_PLATFORM_NAME "macOS"
+#define ASTHRA_PLATFORM_WINDOWS 0
+#define ASTHRA_PLATFORM_UNIX 1
+#define ASTHRA_PLATFORM_MACOS 1
+#define ASTHRA_PLATFORM_LINUX 0
+#define ASTHRA_PLATFORM_NAME "macOS"
 #elif defined(__linux__)
-    #define ASTHRA_PLATFORM_WINDOWS 0
-    #define ASTHRA_PLATFORM_UNIX 1
-    #define ASTHRA_PLATFORM_MACOS 0
-    #define ASTHRA_PLATFORM_LINUX 1
-    #define ASTHRA_PLATFORM_NAME "Linux"
+#define ASTHRA_PLATFORM_WINDOWS 0
+#define ASTHRA_PLATFORM_UNIX 1
+#define ASTHRA_PLATFORM_MACOS 0
+#define ASTHRA_PLATFORM_LINUX 1
+#define ASTHRA_PLATFORM_NAME "Linux"
 #else
-    #define ASTHRA_PLATFORM_WINDOWS 0
-    #define ASTHRA_PLATFORM_UNIX 1
-    #define ASTHRA_PLATFORM_MACOS 0
-    #define ASTHRA_PLATFORM_LINUX 0
-    #define ASTHRA_PLATFORM_NAME "Unknown"
+#define ASTHRA_PLATFORM_WINDOWS 0
+#define ASTHRA_PLATFORM_UNIX 1
+#define ASTHRA_PLATFORM_MACOS 0
+#define ASTHRA_PLATFORM_LINUX 0
+#define ASTHRA_PLATFORM_NAME "Unknown"
 #endif
 
 // =============================================================================
@@ -69,11 +69,12 @@ extern "C" {
 // =============================================================================
 
 #if defined(__clang__)
-    #define ASTHRA_COMPILER_CLANG 1
-    #define ASTHRA_COMPILER_NAME "Clang"
-    #define ASTHRA_COMPILER_VERSION (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
+#define ASTHRA_COMPILER_CLANG 1
+#define ASTHRA_COMPILER_NAME "Clang"
+#define ASTHRA_COMPILER_VERSION                                                                    \
+    (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
 #else
-    #error "Unsupported compiler. Asthra requires Clang/LLVM."
+#error "Unsupported compiler. Asthra requires Clang/LLVM."
 #endif
 
 // =============================================================================
@@ -81,16 +82,16 @@ extern "C" {
 // =============================================================================
 
 #if !ASTHRA_PLATFORM_WINDOWS
-    #include <unistd.h>
-    #include <pthread.h>
-    #include <sys/stat.h>
-    #include <sys/types.h>
-    #include <dirent.h>
-    #include <dlfcn.h>
-    #if ASTHRA_PLATFORM_LINUX
-        #include <sys/prctl.h>
-        #include <linux/limits.h>
-    #endif
+#include <dirent.h>
+#include <dlfcn.h>
+#include <pthread.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#if ASTHRA_PLATFORM_LINUX
+#include <linux/limits.h>
+#include <sys/prctl.h>
+#endif
 #endif
 
 // =============================================================================
@@ -106,9 +107,9 @@ extern "C" {
 #define ASTHRA_OBJ_EXT ".o"
 #define ASTHRA_LIB_EXT ".a"
 #if ASTHRA_PLATFORM_MACOS
-    #define ASTHRA_DLL_EXT ".dylib"
+#define ASTHRA_DLL_EXT ".dylib"
 #else
-    #define ASTHRA_DLL_EXT ".so"
+#define ASTHRA_DLL_EXT ".so"
 #endif
 #define ASTHRA_LIB_PREFIX "lib"
 #define ASTHRA_MAX_PATH 4096
@@ -124,7 +125,7 @@ typedef pid_t asthra_process_t;
 typedef pthread_t asthra_thread_id_t;
 typedef pid_t asthra_process_id_t;
 #define ASTHRA_THREAD_INVALID ((pthread_t)0)
-#define ASTHRA_PROCESS_INVALID ((pid_t)-1)
+#define ASTHRA_PROCESS_INVALID ((pid_t) - 1)
 
 // =============================================================================
 // MEMORY MANAGEMENT ABSTRACTIONS
@@ -158,21 +159,21 @@ typedef pid_t asthra_process_id_t;
 // =============================================================================
 
 #if ASTHRA_C17_AVAILABLE
-    #include <stdatomic.h>
-    #define ASTHRA_ATOMIC(type) _Atomic(type)
-    #define asthra_atomic_load(ptr) atomic_load(ptr)
-    #define asthra_atomic_store(ptr, val) atomic_store(ptr, val)
-    #define asthra_atomic_fetch_add(ptr, val) atomic_fetch_add(ptr, val)
-    #define asthra_atomic_fetch_sub(ptr, val) atomic_fetch_sub(ptr, val)
-    #define asthra_atomic_compare_exchange(ptr, expected, desired) \
-        atomic_compare_exchange_strong(ptr, expected, desired)
+#include <stdatomic.h>
+#define ASTHRA_ATOMIC(type) _Atomic(type)
+#define asthra_atomic_load(ptr) atomic_load(ptr)
+#define asthra_atomic_store(ptr, val) atomic_store(ptr, val)
+#define asthra_atomic_fetch_add(ptr, val) atomic_fetch_add(ptr, val)
+#define asthra_atomic_fetch_sub(ptr, val) atomic_fetch_sub(ptr, val)
+#define asthra_atomic_compare_exchange(ptr, expected, desired)                                     \
+    atomic_compare_exchange_strong(ptr, expected, desired)
 #else
-    #define ASTHRA_ATOMIC(type) volatile type
-    // Fallback implementations for Clang builtins
-    #define asthra_atomic_load(ptr) __sync_fetch_and_add(ptr, 0)
-    #define asthra_atomic_store(ptr, val) __sync_lock_test_and_set(ptr, val)
-    #define asthra_atomic_fetch_add(ptr, val) __sync_fetch_and_add(ptr, val)
-    #define asthra_atomic_fetch_sub(ptr, val) __sync_fetch_and_sub(ptr, val)
+#define ASTHRA_ATOMIC(type) volatile type
+// Fallback implementations for Clang builtins
+#define asthra_atomic_load(ptr) __sync_fetch_and_add(ptr, 0)
+#define asthra_atomic_store(ptr, val) __sync_lock_test_and_set(ptr, val)
+#define asthra_atomic_fetch_add(ptr, val) __sync_fetch_and_add(ptr, val)
+#define asthra_atomic_fetch_sub(ptr, val) __sync_fetch_and_sub(ptr, val)
 #endif
 
 // =============================================================================
@@ -190,7 +191,7 @@ typedef int asthra_error_t;
  * @param error Error code to convert to string
  * @return Human-readable error message
  */
-const char* asthra_get_error_string(asthra_error_t error);
+const char *asthra_get_error_string(asthra_error_t error);
 
 // =============================================================================
 // UNICODE AND STRING HANDLING
@@ -210,12 +211,11 @@ typedef wchar_t asthra_wchar_t;
 // =============================================================================
 
 // Validate platform detection
-ASTHRA_STATIC_ASSERT(ASTHRA_PLATFORM_WINDOWS + ASTHRA_PLATFORM_UNIX == 1, 
+ASTHRA_STATIC_ASSERT(ASTHRA_PLATFORM_WINDOWS + ASTHRA_PLATFORM_UNIX == 1,
                      "Exactly one platform must be detected");
 
 // Validate compiler detection
-ASTHRA_STATIC_ASSERT(ASTHRA_COMPILER_CLANG == 1,
-                     "Clang compiler must be detected");
+ASTHRA_STATIC_ASSERT(ASTHRA_COMPILER_CLANG == 1, "Clang compiler must be detected");
 
 // Validate path separator consistency
 #if ASTHRA_PLATFORM_WINDOWS
@@ -225,7 +225,7 @@ ASTHRA_STATIC_ASSERT(ASTHRA_PATH_SEPARATOR == '/', "Unix path separator must be 
 #endif
 
 // Validate type sizes for cross-platform compatibility
-ASTHRA_STATIC_ASSERT(sizeof(void*) == 8, "64-bit pointers required");
+ASTHRA_STATIC_ASSERT(sizeof(void *) == 8, "64-bit pointers required");
 ASTHRA_STATIC_ASSERT(sizeof(size_t) >= 4, "size_t must be at least 32-bit");
 ASTHRA_STATIC_ASSERT(sizeof(int) == 4, "int must be 32-bit for ABI compatibility");
 
@@ -237,10 +237,10 @@ ASTHRA_STATIC_ASSERT(sizeof(int) == 4, "int must be 32-bit for ABI compatibility
  * @brief Get platform information string
  * @return Platform name and compiler information
  */
-ASTHRA_INLINE const char* asthra_get_platform_info(void) {
+ASTHRA_INLINE const char *asthra_get_platform_info(void) {
     static char info[256];
-    snprintf(info, sizeof(info), "%s (%s %d)", 
-             ASTHRA_PLATFORM_NAME, ASTHRA_COMPILER_NAME, ASTHRA_COMPILER_VERSION);
+    snprintf(info, sizeof(info), "%s (%s %d)", ASTHRA_PLATFORM_NAME, ASTHRA_COMPILER_NAME,
+             ASTHRA_COMPILER_VERSION);
     return info;
 }
 
@@ -264,7 +264,7 @@ ASTHRA_INLINE bool asthra_is_unix(void) {
  * @brief Get appropriate file extension for executable
  * @return ".exe" on Windows, "" on Unix
  */
-ASTHRA_INLINE const char* asthra_get_exe_extension(void) {
+ASTHRA_INLINE const char *asthra_get_exe_extension(void) {
     return ASTHRA_EXE_EXT;
 }
 
@@ -283,49 +283,47 @@ ASTHRA_INLINE char asthra_get_path_separator(void) {
  * @param components NULL-terminated array of path components
  * @return Number of characters written, or -1 on error
  */
-int asthra_build_path(char* buffer, size_t buffer_size, const char** components);
+int asthra_build_path(char *buffer, size_t buffer_size, const char **components);
 
 /**
  * @brief Convert path separators to platform-specific format
  * @param path Path to normalize (modified in-place)
  */
-void asthra_normalize_path(char* path);
+void asthra_normalize_path(char *path);
 
 /**
  * @brief Check if a file exists
  * @param path File path to check
  * @return true if file exists
  */
-bool asthra_file_exists(const char* path);
+bool asthra_file_exists(const char *path);
 
 /**
  * @brief Create directory (including parent directories)
  * @param path Directory path to create
  * @return true on success
  */
-bool asthra_create_directory(const char* path);
+bool asthra_create_directory(const char *path);
 
 /**
  * @brief Duplicate a string (cross-platform strdup)
  * @param str String to duplicate
  * @return Newly allocated copy of the string, or NULL on failure
  */
-char* asthra_strdup(const char* str);
+char *asthra_strdup(const char *str);
 
 #ifdef __cplusplus
 }
 #endif
 
-
 // Additional platform functions
 asthra_thread_id_t asthra_get_current_thread_id(void);
 asthra_process_id_t asthra_get_current_process_id(void);
-void* asthra_realloc_safe(void* ptr, size_t old_size, size_t new_size);
-bool asthra_cstring_ends_with(const char* str, const char* suffix);
-
+void *asthra_realloc_safe(void *ptr, size_t old_size, size_t new_size);
+bool asthra_cstring_ends_with(const char *str, const char *suffix);
 
 // asthra_string_starts_with
-bool asthra_string_starts_with(const char* str, const char* prefix);
+bool asthra_string_starts_with(const char *str, const char *prefix);
 
 // asthra_get_current_time_ms - Get current time in milliseconds
 uint64_t asthra_get_current_time_ms(void);
@@ -344,4 +342,4 @@ size_t asthra_get_system_memory(void);
 
 // asthra_get_cpu_count
 int asthra_get_cpu_count(void);
-#endif /* ASTHRA_PLATFORM_H */ 
+#endif /* ASTHRA_PLATFORM_H */

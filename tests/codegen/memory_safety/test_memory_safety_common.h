@@ -2,11 +2,11 @@
 #define TEST_MEMORY_SAFETY_COMMON_H
 
 #include "../framework/test_framework_minimal.h"
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <stdint.h>
 
 // Memory management types
 typedef enum {
@@ -30,13 +30,13 @@ typedef enum {
 } OwnershipType;
 
 typedef struct {
-    void* ptr;
+    void *ptr;
     size_t size;
     MemoryState state;
     OwnershipType ownership;
     int ref_count;
     int lifetime_id;
-    const char* allocated_at;
+    const char *allocated_at;
     uint64_t allocation_time;
     bool is_array;
     size_t array_length;
@@ -45,21 +45,21 @@ typedef struct {
 
 typedef struct {
     int lifetime_id;
-    const char* name;
+    const char *name;
     int start_scope;
     int end_scope;
     bool is_active;
-    MemoryBlock* blocks[32];
+    MemoryBlock *blocks[32];
     int block_count;
 } Lifetime;
 
 typedef struct {
-    MemoryBlock* from_block;
-    MemoryBlock* to_block;
+    MemoryBlock *from_block;
+    MemoryBlock *to_block;
     OwnershipType borrow_type;
     int lifetime_id;
     bool is_active;
-    const char* created_at;
+    const char *created_at;
 } BorrowReference;
 
 typedef struct {
@@ -69,17 +69,17 @@ typedef struct {
     int lifetime_count;
     BorrowReference borrows[128];
     int borrow_count;
-    
+
     // Safety tracking
     int current_scope;
     bool safety_enabled;
     int violations_detected;
-    const char* last_violation;
-    
+    const char *last_violation;
+
     // Memory pool for testing
     uint8_t memory_pool[8192];
     size_t memory_used;
-    
+
     // Statistics
     int allocations_made;
     int deallocations_made;
@@ -88,29 +88,31 @@ typedef struct {
 } MemorySafetyContext;
 
 // Core memory management functions
-void init_memory_safety_context(MemorySafetyContext* ctx);
-void* safe_allocate(MemorySafetyContext* ctx, size_t size, const char* location);
-void* safe_allocate_array(MemorySafetyContext* ctx, size_t element_size, size_t count, const char* location);
-MemoryBlock* find_memory_block(MemorySafetyContext* ctx, void* ptr);
-bool safe_deallocate(MemorySafetyContext* ctx, void* ptr, const char* location);
+void init_memory_safety_context(MemorySafetyContext *ctx);
+void *safe_allocate(MemorySafetyContext *ctx, size_t size, const char *location);
+void *safe_allocate_array(MemorySafetyContext *ctx, size_t element_size, size_t count,
+                          const char *location);
+MemoryBlock *find_memory_block(MemorySafetyContext *ctx, void *ptr);
+bool safe_deallocate(MemorySafetyContext *ctx, void *ptr, const char *location);
 
 // Ownership and borrowing functions
-bool transfer_ownership(MemorySafetyContext* ctx, void* ptr, const char* location);
-BorrowReference* create_borrow(MemorySafetyContext* ctx, void* ptr, OwnershipType borrow_type, int lifetime_id, const char* location);
-void end_borrow(MemorySafetyContext* ctx, BorrowReference* borrow);
+bool transfer_ownership(MemorySafetyContext *ctx, void *ptr, const char *location);
+BorrowReference *create_borrow(MemorySafetyContext *ctx, void *ptr, OwnershipType borrow_type,
+                               int lifetime_id, const char *location);
+void end_borrow(MemorySafetyContext *ctx, BorrowReference *borrow);
 
 // Lifetime management functions
-Lifetime* create_lifetime(MemorySafetyContext* ctx, const char* name, int start_scope);
-void end_lifetime(MemorySafetyContext* ctx, Lifetime* lifetime, int end_scope);
+Lifetime *create_lifetime(MemorySafetyContext *ctx, const char *name, int start_scope);
+void end_lifetime(MemorySafetyContext *ctx, Lifetime *lifetime, int end_scope);
 
 // Safety validation functions
-bool check_array_bounds(MemorySafetyContext* ctx, void* ptr, size_t index, const char* location);
-int count_memory_leaks(MemorySafetyContext* ctx);
+bool check_array_bounds(MemorySafetyContext *ctx, void *ptr, size_t index, const char *location);
+int count_memory_leaks(MemorySafetyContext *ctx);
 
 // Test function declarations
-AsthraTestResult test_ownership_tracking(AsthraTestContext* context);
-AsthraTestResult test_lifetime_management(AsthraTestContext* context);
-AsthraTestResult test_memory_leak_detection(AsthraTestContext* context);
-AsthraTestResult test_bounds_checking(AsthraTestContext* context);
+AsthraTestResult test_ownership_tracking(AsthraTestContext *context);
+AsthraTestResult test_lifetime_management(AsthraTestContext *context);
+AsthraTestResult test_memory_leak_detection(AsthraTestContext *context);
+AsthraTestResult test_bounds_checking(AsthraTestContext *context);
 
-#endif // TEST_MEMORY_SAFETY_COMMON_H 
+#endif // TEST_MEMORY_SAFETY_COMMON_H

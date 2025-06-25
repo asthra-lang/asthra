@@ -10,16 +10,16 @@
  */
 
 #include "test_statistics.h"
-#include <stdlib.h>
-#include <limits.h>
 #include <inttypes.h>
+#include <limits.h>
+#include <stdlib.h>
 #include <string.h>
 
 // =============================================================================
 // TEST STATISTICS MANAGEMENT
 // =============================================================================
 
-AsthraTestStatistics* asthra_test_statistics_create(void) {
+AsthraTestStatistics *asthra_test_statistics_create(void) {
     AsthraTestStatistics *stats = malloc(sizeof(AsthraTestStatistics));
     if (!stats) {
         return NULL;
@@ -58,7 +58,8 @@ void asthra_test_statistics_destroy(AsthraTestStatistics *stats) {
 }
 
 void asthra_test_statistics_reset(AsthraTestStatistics *stats) {
-    if (!stats) return;
+    if (!stats)
+        return;
 
     asthra_test_set_stat(&stats->tests_run, 0);
     asthra_test_set_stat(&stats->tests_passed, 0);
@@ -82,19 +83,21 @@ void asthra_test_statistics_reset(AsthraTestStatistics *stats) {
 
 // NEW: Sync compatibility fields with atomic counters (Phase 1)
 void asthra_test_statistics_sync_compat_fields(AsthraTestStatistics *stats) {
-    if (!stats) return;
+    if (!stats)
+        return;
 
     // Copy atomic values to compatibility fields for simple access
     stats->total_tests = (size_t)asthra_test_get_stat(&stats->tests_run);
     stats->passed_tests = (size_t)asthra_test_get_stat(&stats->tests_passed);
     stats->failed_tests = (size_t)asthra_test_get_stat(&stats->tests_failed);
     stats->skipped_tests = (size_t)asthra_test_get_stat(&stats->tests_skipped);
-    stats->error_tests = (size_t)(asthra_test_get_stat(&stats->tests_error) + 
-                                 asthra_test_get_stat(&stats->tests_timeout));
+    stats->error_tests = (size_t)(asthra_test_get_stat(&stats->tests_error) +
+                                  asthra_test_get_stat(&stats->tests_timeout));
 }
 
 void asthra_test_statistics_print(const AsthraTestStatistics *stats, bool json_format) {
-    if (!stats) return;
+    if (!stats)
+        return;
 
     uint64_t tests_run = asthra_test_get_stat(&stats->tests_run);
     uint64_t tests_passed = asthra_test_get_stat(&stats->tests_passed);
@@ -119,7 +122,8 @@ void asthra_test_statistics_print(const AsthraTestStatistics *stats, bool json_f
         printf("    \"tests_timeout\": %" PRIu64 ",\n", tests_timeout);
         printf("    \"total_duration_ms\": %.3f,\n", asthra_test_ns_to_ms(total_duration_ns));
         printf("    \"max_duration_ms\": %.3f,\n", asthra_test_ns_to_ms(max_duration_ns));
-        printf("    \"min_duration_ms\": %.3f,\n", asthra_test_ns_to_ms(min_duration_ns == UINT64_MAX ? 0 : min_duration_ns));
+        printf("    \"min_duration_ms\": %.3f,\n",
+               asthra_test_ns_to_ms(min_duration_ns == UINT64_MAX ? 0 : min_duration_ns));
         printf("    \"assertions_checked\": %" PRIu64 ",\n", assertions_checked);
         printf("    \"assertions_failed\": %" PRIu64 "\n", assertions_failed);
         printf("  }\n");
@@ -134,8 +138,10 @@ void asthra_test_statistics_print(const AsthraTestStatistics *stats, bool json_f
         printf("Tests timeout:   %" PRIu64 "\n", tests_timeout);
         printf("Total duration:  %.3f ms\n", asthra_test_ns_to_ms(total_duration_ns));
         printf("Max duration:    %.3f ms\n", asthra_test_ns_to_ms(max_duration_ns));
-        printf("Min duration:    %.3f ms\n", asthra_test_ns_to_ms(min_duration_ns == UINT64_MAX ? 0 : min_duration_ns));
-        printf("Assertions:      %" PRIu64 " checked, %" PRIu64 " failed\n", assertions_checked, assertions_failed);
+        printf("Min duration:    %.3f ms\n",
+               asthra_test_ns_to_ms(min_duration_ns == UINT64_MAX ? 0 : min_duration_ns));
+        printf("Assertions:      %" PRIu64 " checked, %" PRIu64 " failed\n", assertions_checked,
+               assertions_failed);
 
         if (tests_run > 0) {
             double pass_rate = (double)tests_passed / (double)tests_run * 100.0;

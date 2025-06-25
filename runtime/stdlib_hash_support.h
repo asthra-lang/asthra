@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Runtime - Hash Support Module
  * FFI Support for stdlib::hash package
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This module provides C runtime support for hash functions, specifically
  * SipHash implementation to support the stdlib::hash Asthra package.
  */
@@ -12,10 +12,10 @@
 #ifndef ASTHRA_STDLIB_HASH_SUPPORT_H
 #define ASTHRA_STDLIB_HASH_SUPPORT_H
 
-#include "types/asthra_runtime_result.h"
 #include "core/asthra_runtime_core.h"
-#include <stdint.h>
+#include "types/asthra_runtime_result.h"
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,9 +37,9 @@ typedef struct {
  * SipHash variants enumeration
  */
 typedef enum {
-    ASTHRA_SIPHASH_1_3 = 0,  // Fast variant (1 compression round, 3 finalization)
-    ASTHRA_SIPHASH_2_4 = 1,  // Standard variant (2 compression rounds, 4 finalization)
-    ASTHRA_SIPHASH_4_8 = 2   // High-security variant (4 compression rounds, 8 finalization)
+    ASTHRA_SIPHASH_1_3 = 0, // Fast variant (1 compression round, 3 finalization)
+    ASTHRA_SIPHASH_2_4 = 1, // Standard variant (2 compression rounds, 4 finalization)
+    ASTHRA_SIPHASH_4_8 = 2  // High-security variant (4 compression rounds, 8 finalization)
 } AsthraSipHashVariant;
 
 /**
@@ -97,14 +97,14 @@ AsthraSipHashKey asthra_siphash_key_from_u64(uint64_t k0, uint64_t k1);
  * @param bytes 16-byte array containing key data
  * @return Result containing SipHash key or error
  */
-AsthraResult asthra_siphash_key_from_bytes(const uint8_t* bytes);
+AsthraResult asthra_siphash_key_from_bytes(const uint8_t *bytes);
 
 /**
  * Convert SipHash key to byte array
  * @param key SipHash key to convert
  * @param bytes Output buffer (must be at least 16 bytes)
  */
-void asthra_siphash_key_to_bytes(AsthraSipHashKey key, uint8_t* bytes);
+void asthra_siphash_key_to_bytes(AsthraSipHashKey key, uint8_t *bytes);
 
 // =============================================================================
 // ONE-SHOT SIPHASH FUNCTIONS
@@ -117,7 +117,7 @@ void asthra_siphash_key_to_bytes(AsthraSipHashKey key, uint8_t* bytes);
  * @param key SipHash key
  * @return 64-bit hash value
  */
-uint64_t asthra_siphash_24(const uint8_t* data, size_t len, AsthraSipHashKey key);
+uint64_t asthra_siphash_24(const uint8_t *data, size_t len, AsthraSipHashKey key);
 
 /**
  * Hash data using SipHash-1-3 (fast variant)
@@ -126,7 +126,7 @@ uint64_t asthra_siphash_24(const uint8_t* data, size_t len, AsthraSipHashKey key
  * @param key SipHash key
  * @return 64-bit hash value
  */
-uint64_t asthra_siphash_13(const uint8_t* data, size_t len, AsthraSipHashKey key);
+uint64_t asthra_siphash_13(const uint8_t *data, size_t len, AsthraSipHashKey key);
 
 /**
  * Hash data using SipHash-4-8 (high-security variant)
@@ -135,7 +135,7 @@ uint64_t asthra_siphash_13(const uint8_t* data, size_t len, AsthraSipHashKey key
  * @param key SipHash key
  * @return 64-bit hash value
  */
-uint64_t asthra_siphash_48(const uint8_t* data, size_t len, AsthraSipHashKey key);
+uint64_t asthra_siphash_48(const uint8_t *data, size_t len, AsthraSipHashKey key);
 
 /**
  * Hash data with specified SipHash variant
@@ -145,7 +145,8 @@ uint64_t asthra_siphash_48(const uint8_t* data, size_t len, AsthraSipHashKey key
  * @param variant SipHash variant to use
  * @return 64-bit hash value
  */
-uint64_t asthra_siphash_hash_variant(const uint8_t* data, size_t len, AsthraSipHashKey key, AsthraSipHashVariant variant);
+uint64_t asthra_siphash_hash_variant(const uint8_t *data, size_t len, AsthraSipHashKey key,
+                                     AsthraSipHashVariant variant);
 
 /**
  * Hash string using SipHash-2-4
@@ -153,14 +154,14 @@ uint64_t asthra_siphash_hash_variant(const uint8_t* data, size_t len, AsthraSipH
  * @param key SipHash key
  * @return 64-bit hash value
  */
-uint64_t asthra_siphash_hash_string(const char* str, AsthraSipHashKey key);
+uint64_t asthra_siphash_hash_string(const char *str, AsthraSipHashKey key);
 
 /**
  * Hash string with random key (convenience function)
  * @param str Null-terminated string to hash
  * @return 64-bit hash value
  */
-uint64_t asthra_siphash_hash_string_random(const char* str);
+uint64_t asthra_siphash_hash_string_random(const char *str);
 
 // =============================================================================
 // STREAMING SIPHASH INTERFACE
@@ -172,7 +173,8 @@ uint64_t asthra_siphash_hash_string_random(const char* str);
  * @param key SipHash key
  * @param variant SipHash variant to use
  */
-void asthra_siphash_init_context(AsthraSipHashContext* ctx, AsthraSipHashKey key, AsthraSipHashVariant variant);
+void asthra_siphash_init_context(AsthraSipHashContext *ctx, AsthraSipHashKey key,
+                                 AsthraSipHashVariant variant);
 
 /**
  * Update SipHash context with more data
@@ -180,14 +182,14 @@ void asthra_siphash_init_context(AsthraSipHashContext* ctx, AsthraSipHashKey key
  * @param data Data to add to hash
  * @param len Length of data in bytes
  */
-void asthra_siphash_update(AsthraSipHashContext* ctx, const uint8_t* data, size_t len);
+void asthra_siphash_update(AsthraSipHashContext *ctx, const uint8_t *data, size_t len);
 
 /**
  * Finalize SipHash context and get result
  * @param ctx SipHash context
  * @return 64-bit hash value
  */
-uint64_t asthra_siphash_finalize(AsthraSipHashContext* ctx);
+uint64_t asthra_siphash_finalize(AsthraSipHashContext *ctx);
 
 // =============================================================================
 // GENERAL HASH FUNCTIONS
@@ -200,7 +202,8 @@ uint64_t asthra_siphash_finalize(AsthraSipHashContext* ctx);
  * @param config Hash configuration
  * @return Result containing hash value or error
  */
-AsthraResult asthra_hash_bytes_with_config(const uint8_t* data, size_t len, const AsthrHashConfig* config);
+AsthraResult asthra_hash_bytes_with_config(const uint8_t *data, size_t len,
+                                           const AsthrHashConfig *config);
 
 /**
  * Hash string using specified configuration
@@ -208,7 +211,7 @@ AsthraResult asthra_hash_bytes_with_config(const uint8_t* data, size_t len, cons
  * @param config Hash configuration
  * @return Result containing hash value or error
  */
-AsthraResult asthra_hash_string_with_config(const char* str, const AsthrHashConfig* config);
+AsthraResult asthra_hash_string_with_config(const char *str, const AsthrHashConfig *config);
 
 /**
  * Hash bytes using default SipHash-2-4 with random key
@@ -216,14 +219,14 @@ AsthraResult asthra_hash_string_with_config(const char* str, const AsthrHashConf
  * @param len Length of data in bytes
  * @return 64-bit hash value
  */
-uint64_t asthra_hash_bytes(const uint8_t* data, size_t len);
+uint64_t asthra_hash_bytes(const uint8_t *data, size_t len);
 
 /**
  * Hash string using default SipHash-2-4 with random key
  * @param str Null-terminated string to hash
  * @return 64-bit hash value
  */
-uint64_t asthra_hash_string(const char* str);
+uint64_t asthra_hash_string(const char *str);
 
 // =============================================================================
 // HASH CONFIGURATION
@@ -265,14 +268,14 @@ uint64_t asthra_random_u64(void);
  * @param bytes Input byte array (at least 8 bytes)
  * @return 64-bit value in host byte order
  */
-uint64_t asthra_bytes_to_u64_le(const uint8_t* bytes);
+uint64_t asthra_bytes_to_u64_le(const uint8_t *bytes);
 
 /**
  * Convert 64-bit value to 8 bytes in little-endian format
  * @param value 64-bit value to convert
  * @param bytes Output buffer (at least 8 bytes)
  */
-void asthra_u64_to_bytes_le(uint64_t value, uint8_t* bytes);
+void asthra_u64_to_bytes_le(uint64_t value, uint8_t *bytes);
 
 /**
  * Convert string to byte array (for hashing)
@@ -280,21 +283,21 @@ void asthra_u64_to_bytes_le(uint64_t value, uint8_t* bytes);
  * @param len Output parameter for length
  * @return Pointer to byte representation of string
  */
-const uint8_t* asthra_string_to_bytes(const char* str, size_t* len);
+const uint8_t *asthra_string_to_bytes(const char *str, size_t *len);
 
 /**
  * Get hash function name as string
  * @param function Hash function type
  * @return String representation of hash function
  */
-const char* asthra_hash_function_name(AshtraHashFunction function);
+const char *asthra_hash_function_name(AshtraHashFunction function);
 
 /**
  * Get SipHash variant name as string
  * @param variant SipHash variant
  * @return String representation of SipHash variant
  */
-const char* asthra_siphash_variant_name(AsthraSipHashVariant variant);
+const char *asthra_siphash_variant_name(AsthraSipHashVariant variant);
 
 // =============================================================================
 // LEGACY/COMPATIBILITY FUNCTIONS
@@ -306,17 +309,17 @@ const char* asthra_siphash_variant_name(AsthraSipHashVariant variant);
  * @param len Length of data in bytes
  * @return 64-bit hash value
  */
-uint64_t asthra_fnv1a_hash(const uint8_t* data, size_t len);
+uint64_t asthra_fnv1a_hash(const uint8_t *data, size_t len);
 
 /**
  * FNV-1a hash for strings
  * @param str Null-terminated string to hash
  * @return 64-bit hash value
  */
-uint64_t asthra_fnv1a_hash_string(const char* str);
+uint64_t asthra_fnv1a_hash_string(const char *str);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ASTHRA_STDLIB_HASH_SUPPORT_H 
+#endif // ASTHRA_STDLIB_HASH_SUPPORT_H

@@ -1,7 +1,7 @@
 /**
  * Asthra Safe C Memory Interface v1.0 - Core Memory Management
  * Basic allocation/deallocation functions and memory zone management
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -9,11 +9,11 @@
 #ifndef ASTHRA_FFI_MEMORY_CORE_H
 #define ASTHRA_FFI_MEMORY_CORE_H
 
+#include <pthread.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdio.h>
-#include <pthread.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,20 +27,20 @@ extern "C" {
  * Memory zone hints for allocation strategy
  */
 typedef enum {
-    ASTHRA_ZONE_HINT_GC,           // Prefer GC-managed heap
-    ASTHRA_ZONE_HINT_MANUAL,       // Prefer manual memory zone
-    ASTHRA_ZONE_HINT_PINNED,       // Prefer pinned memory zone
-    ASTHRA_ZONE_HINT_STACK,        // Stack-allocated (temporary)
-    ASTHRA_ZONE_HINT_SECURE        // Secure memory (locked, zeroed on free)
+    ASTHRA_ZONE_HINT_GC,     // Prefer GC-managed heap
+    ASTHRA_ZONE_HINT_MANUAL, // Prefer manual memory zone
+    ASTHRA_ZONE_HINT_PINNED, // Prefer pinned memory zone
+    ASTHRA_ZONE_HINT_STACK,  // Stack-allocated (temporary)
+    ASTHRA_ZONE_HINT_SECURE  // Secure memory (locked, zeroed on free)
 } AsthraMemoryZoneHint;
 
 /**
  * Ownership transfer semantics for FFI operations
  */
 typedef enum {
-    ASTHRA_OWNERSHIP_TRANSFER_FULL,    // Full ownership transfer
-    ASTHRA_OWNERSHIP_TRANSFER_NONE,    // No ownership transfer (borrowed)
-    ASTHRA_OWNERSHIP_TRANSFER_SHARED   // Shared ownership (reference counted)
+    ASTHRA_OWNERSHIP_TRANSFER_FULL,  // Full ownership transfer
+    ASTHRA_OWNERSHIP_TRANSFER_NONE,  // No ownership transfer (borrowed)
+    ASTHRA_OWNERSHIP_TRANSFER_SHARED // Shared ownership (reference counted)
 } AsthraOwnershipTransfer;
 
 /**
@@ -51,7 +51,7 @@ typedef struct AsthraFFIMemoryBlock {
     size_t size;
     AsthraMemoryZoneHint zone_hint;
     AsthraOwnershipTransfer ownership;
-    void (*cleanup)(void*);
+    void (*cleanup)(void *);
     bool is_secure;
     struct AsthraFFIMemoryBlock *next;
 } AsthraFFIMemoryBlock;
@@ -104,14 +104,14 @@ void asthra_ffi_memory_cleanup(void);
  * @param zone_hint Preferred memory zone
  * @return Pointer to allocated memory or NULL on failure
  */
-void* Asthra_ffi_alloc(size_t size, AsthraMemoryZoneHint zone_hint);
+void *Asthra_ffi_alloc(size_t size, AsthraMemoryZoneHint zone_hint);
 
 /**
  * Free memory with zone hint and ownership validation
  * @param ptr Pointer to memory to free
  * @param current_zone_hint Current zone hint for validation
  */
-void Asthra_ffi_free(void* ptr, AsthraMemoryZoneHint current_zone_hint);
+void Asthra_ffi_free(void *ptr, AsthraMemoryZoneHint current_zone_hint);
 
 /**
  * Reallocate memory with zone migration support
@@ -120,7 +120,7 @@ void Asthra_ffi_free(void* ptr, AsthraMemoryZoneHint current_zone_hint);
  * @param zone_hint Target zone hint
  * @return Pointer to reallocated memory or NULL on failure
  */
-void* Asthra_ffi_realloc(void* ptr, size_t new_size, AsthraMemoryZoneHint zone_hint);
+void *Asthra_ffi_realloc(void *ptr, size_t new_size, AsthraMemoryZoneHint zone_hint);
 
 /**
  * Allocate zeroed memory
@@ -128,7 +128,7 @@ void* Asthra_ffi_realloc(void* ptr, size_t new_size, AsthraMemoryZoneHint zone_h
  * @param zone_hint Preferred memory zone
  * @return Pointer to zeroed memory or NULL on failure
  */
-void* Asthra_ffi_alloc_zeroed(size_t size, AsthraMemoryZoneHint zone_hint);
+void *Asthra_ffi_alloc_zeroed(size_t size, AsthraMemoryZoneHint zone_hint);
 
 // =============================================================================
 // INTERNAL HELPER FUNCTIONS
@@ -139,7 +139,7 @@ void* Asthra_ffi_alloc_zeroed(size_t size, AsthraMemoryZoneHint zone_hint);
  * @param ptr Pointer to search for
  * @return Block if found, NULL otherwise
  */
-AsthraFFIMemoryBlock* asthra_ffi_find_memory_block(void *ptr);
+AsthraFFIMemoryBlock *asthra_ffi_find_memory_block(void *ptr);
 
 /**
  * Add memory block to tracking
@@ -151,7 +151,8 @@ AsthraFFIMemoryBlock* asthra_ffi_find_memory_block(void *ptr);
  * @param is_secure Whether this is secure memory
  */
 void asthra_ffi_add_memory_block(void *ptr, size_t size, AsthraMemoryZoneHint zone_hint,
-                                AsthraOwnershipTransfer ownership, void (*cleanup)(void*), bool is_secure);
+                                 AsthraOwnershipTransfer ownership, void (*cleanup)(void *),
+                                 bool is_secure);
 
 /**
  * Remove memory block from tracking
@@ -180,7 +181,7 @@ int Asthra_ffi_validate_all_pointers(void);
  * Dump memory state to file
  * @param output_file File to write to
  */
-void Asthra_ffi_dump_memory_state(FILE* output_file);
+void Asthra_ffi_dump_memory_state(FILE *output_file);
 
 // =============================================================================
 // SECURE MEMORY OPERATIONS
@@ -191,31 +192,28 @@ void Asthra_ffi_dump_memory_state(FILE* output_file);
  * @param ptr Pointer to memory
  * @param size Size to zero
  */
-void Asthra_secure_zero(void* ptr, size_t size);
+void Asthra_secure_zero(void *ptr, size_t size);
 
 /**
  * Allocate secure memory
  * @param size Size to allocate
  * @return Pointer to secure memory or NULL on failure
  */
-void* Asthra_secure_alloc(size_t size);
+void *Asthra_secure_alloc(size_t size);
 
 /**
  * Free secure memory
  * @param ptr Pointer to secure memory
  * @param size Size of allocation
  */
-void Asthra_secure_free(void* ptr, size_t size);
+void Asthra_secure_free(void *ptr, size_t size);
 
 // =============================================================================
 // RESULT TYPE FUNCTIONS (SHARED ACROSS FFI MODULES)
 // =============================================================================
 
 // Forward declarations for result types
-typedef enum {
-    ASTHRA_FFI_RESULT_OK,
-    ASTHRA_FFI_RESULT_ERR
-} AsthraFFIResultTag;
+typedef enum { ASTHRA_FFI_RESULT_OK, ASTHRA_FFI_RESULT_ERR } AsthraFFIResultTag;
 
 typedef struct {
     AsthraFFIResultTag tag;
@@ -243,8 +241,8 @@ typedef struct {
  * @param ownership Ownership transfer semantics
  * @return Result containing the value
  */
-AsthraFFIResult Asthra_result_ok(void* value, size_t value_size, uint32_t type_id, 
-                                AsthraOwnershipTransfer ownership);
+AsthraFFIResult Asthra_result_ok(void *value, size_t value_size, uint32_t type_id,
+                                 AsthraOwnershipTransfer ownership);
 
 /**
  * Create an error result (shared implementation)
@@ -254,8 +252,8 @@ AsthraFFIResult Asthra_result_ok(void* value, size_t value_size, uint32_t type_i
  * @param error_context Additional error context
  * @return Result containing the error
  */
-AsthraFFIResult Asthra_result_err(int error_code, const char* error_message, 
-                                 const char* error_source, void* error_context);
+AsthraFFIResult Asthra_result_err(int error_code, const char *error_message,
+                                  const char *error_source, void *error_context);
 
 /**
  * Check if result is successful (shared implementation)
@@ -278,4 +276,4 @@ extern AsthraFFIMemoryManager g_ffi_memory;
 }
 #endif
 
-#endif // ASTHRA_FFI_MEMORY_CORE_H 
+#endif // ASTHRA_FFI_MEMORY_CORE_H

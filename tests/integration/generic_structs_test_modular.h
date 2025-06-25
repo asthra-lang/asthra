@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Generic Structs Testing - Modular Test Suite
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Umbrella header for modular generic structs validation testing
  * Provides complete backward compatibility with original test_generic_structs_validation_phase5.c
  */
@@ -15,8 +15,8 @@
 // Include all modular test components
 #include "generic_structs_test_common.h"
 #include "generic_structs_test_declarations.h"
-#include "generic_structs_test_usage.h"
 #include "generic_structs_test_system.h"
+#include "generic_structs_test_usage.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -66,4 +66,4 @@ int main(void);
 }
 #endif
 
-#endif // GENERIC_STRUCTS_TEST_MODULAR_H 
+#endif // GENERIC_STRUCTS_TEST_MODULAR_H

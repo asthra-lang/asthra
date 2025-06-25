@@ -1,10 +1,10 @@
 /**
  * Asthra FFI Error Handling v1.0
  * Mapping C error codes (primarily errno values) to Asthra's Result types
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * DESIGN GOALS:
  * - Type-safe FFI error handling
  * - Comprehensive error context for debugging
@@ -16,9 +16,9 @@
 #ifndef ASTHRA_FFI_ERROR_H
 #define ASTHRA_FFI_ERROR_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,7 +26,7 @@ extern "C" {
 
 // Define our own string structure for standalone usage
 typedef struct {
-    char* data;
+    char *data;
     size_t len;
     size_t cap;
 } AsthraCFFIString;
@@ -35,11 +35,11 @@ typedef struct {
  * Core FFI error representation
  */
 typedef struct {
-    int32_t code;                      // Original C error code
-    AsthraCFFIString* subsystem;       // Subsystem identifier (e.g., "libc", "openssl")
-    AsthraCFFIString* message;         // Human-readable error message
-    AsthraCFFIString* source_file;     // Source file where error occurred
-    int32_t line;                      // Line number where error occurred
+    int32_t code;                  // Original C error code
+    AsthraCFFIString *subsystem;   // Subsystem identifier (e.g., "libc", "openssl")
+    AsthraCFFIString *message;     // Human-readable error message
+    AsthraCFFIString *source_file; // Source file where error occurred
+    int32_t line;                  // Line number where error occurred
 } AsthraCFFIError;
 
 /**
@@ -48,20 +48,20 @@ typedef struct {
  * @param subsystem Subsystem identifier string
  * @return Initialized FFIError struct
  */
-AsthraCFFIError* asthra_ffi_error_create(int32_t code, const char* subsystem);
+AsthraCFFIError *asthra_ffi_error_create(int32_t code, const char *subsystem);
 
 /**
  * Free FFIError resources
  * @param error Pointer to FFIError struct
  */
-void asthra_ffi_error_free(AsthraCFFIError* error);
+void asthra_ffi_error_free(AsthraCFFIError *error);
 
 /**
  * Create FFIError from current errno
  * @param subsystem Subsystem identifier
  * @return Initialized FFIError struct
  */
-AsthraCFFIError* asthra_ffi_error_from_errno(const char* subsystem);
+AsthraCFFIError *asthra_ffi_error_from_errno(const char *subsystem);
 
 /**
  * Create FFIError with source location information
@@ -71,10 +71,8 @@ AsthraCFFIError* asthra_ffi_error_from_errno(const char* subsystem);
  * @param line Line number
  * @return Initialized FFIError struct
  */
-AsthraCFFIError* asthra_ffi_error_create_with_location(int32_t code, 
-                                                     const char* subsystem,
-                                                     const char* file,
-                                                     int32_t line);
+AsthraCFFIError *asthra_ffi_error_create_with_location(int32_t code, const char *subsystem,
+                                                       const char *file, int32_t line);
 
 /**
  * Set source location for error
@@ -82,23 +80,21 @@ AsthraCFFIError* asthra_ffi_error_create_with_location(int32_t code,
  * @param file Source file
  * @param line Line number
  */
-void asthra_ffi_error_set_location(AsthraCFFIError* error, 
-                                 const char* file, 
-                                 int32_t line);
+void asthra_ffi_error_set_location(AsthraCFFIError *error, const char *file, int32_t line);
 
 /**
  * Get error message
  * @param error FFIError struct
  * @return Error message string (caller must not free)
  */
-const char* asthra_ffi_error_get_message(AsthraCFFIError* error);
+const char *asthra_ffi_error_get_message(AsthraCFFIError *error);
 
 /**
  * Get error code
  * @param error FFIError struct
  * @return Error code
  */
-int32_t asthra_ffi_error_get_code(AsthraCFFIError* error);
+int32_t asthra_ffi_error_get_code(AsthraCFFIError *error);
 
 /**
  * Register the FFIError type with the runtime
@@ -112,7 +108,7 @@ uint32_t asthra_ffi_error_register_type(void);
  * @param error FFIError struct
  * @return Error value (to be used with asthra_result_err)
  */
-void* asthra_ffi_error_create_err_value(AsthraCFFIError* error);
+void *asthra_ffi_error_create_err_value(AsthraCFFIError *error);
 
 /**
  * Check if error code represents a temporary error
@@ -142,9 +138,7 @@ bool asthra_ffi_error_is_not_found(int32_t code);
  * @param buffer_size Size of output buffer
  * @return Number of characters written (excluding null terminator)
  */
-size_t asthra_ffi_error_to_string(AsthraCFFIError* error, 
-                                char* buffer, 
-                                size_t buffer_size);
+size_t asthra_ffi_error_to_string(AsthraCFFIError *error, char *buffer, size_t buffer_size);
 
 /**
  * Builtin function handlers for Asthra language integration
@@ -156,7 +150,7 @@ size_t asthra_ffi_error_to_string(AsthraCFFIError* error,
  * @param subsystem Subsystem identifier
  * @return Initialized FFIError struct with source location
  */
-AsthraCFFIError* asthra_builtin_from_errno(const char* subsystem);
+AsthraCFFIError *asthra_builtin_from_errno(const char *subsystem);
 
 /**
  * Creates FFIError from specific error code (called by from_error_code() builtin)
@@ -164,10 +158,10 @@ AsthraCFFIError* asthra_builtin_from_errno(const char* subsystem);
  * @param subsystem Subsystem identifier
  * @return Initialized FFIError struct with source location
  */
-AsthraCFFIError* asthra_builtin_from_error_code(int32_t code, const char* subsystem);
+AsthraCFFIError *asthra_builtin_from_error_code(int32_t code, const char *subsystem);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ASTHRA_FFI_ERROR_H 
+#endif // ASTHRA_FFI_ERROR_H

@@ -27,37 +27,39 @@ static void print_annotation_summary(AICompilationReport *report) {
     printf("AI Generated Functions: %zu\n", report->ai_generated_functions);
     printf("Human Reviewed Functions: %zu\n", report->human_reviewed_functions);
     printf("Total Functions: %zu\n", report->total_functions);
-    
+
     if (report->suggestion_count > 0) {
         printf("\nImprovement Suggestions:\n");
         for (size_t i = 0; i < report->suggestion_count; i++) {
             printf("  - %s\n", report->improvement_suggestions[i]);
         }
     }
-    
+
     if (report->concern_count > 0) {
         printf("\nSecurity Concerns:\n");
         for (size_t i = 0; i < report->concern_count; i++) {
             printf("  - %s\n", report->security_concerns[i]);
         }
     }
-    
+
     if (report->todo_count > 0) {
         printf("\nTODO Items:\n");
         for (size_t i = 0; i < report->todo_count; i++) {
             printf("  - %s\n", report->todo_items[i]);
         }
     }
-    
+
     printf("\nQuality Scores:\n");
     printf("  Test Coverage: %.2f\n", report->test_coverage_score);
     printf("  Security: %.2f\n", report->security_score);
     printf("  Maintainability: %.2f\n", report->maintainability_score);
-    
+
     if (report->learning_data) {
         printf("\nLearning Data:\n");
-        printf("  Category: %s\n", report->learning_data->category ? report->learning_data->category : "unknown");
-        printf("  Priority: %s\n", report->learning_data->priority ? report->learning_data->priority : "unknown");
+        printf("  Category: %s\n",
+               report->learning_data->category ? report->learning_data->category : "unknown");
+        printf("  Priority: %s\n",
+               report->learning_data->priority ? report->learning_data->priority : "unknown");
         printf("  Impact Score: %.2f\n", report->learning_data->impact_score);
         if (report->learning_data->reasoning) {
             printf("  Reasoning: %s\n", report->learning_data->reasoning);
@@ -70,7 +72,7 @@ int main(int argc, char *argv[]) {
     bool include_learning = false;
     float confidence_threshold = 0.5f;
     bool demo_mode = false;
-    
+
     // Parse command line options
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--output-json") == 0 && i + 1 < argc) {
@@ -94,60 +96,63 @@ int main(int argc, char *argv[]) {
             return 1;
         }
     }
-    
+
     // Create AI annotation processor
     AIAnnotationProcessor *processor = ai_annotation_processor_create();
     if (!processor) {
         fprintf(stderr, "Error: Failed to create annotation processor\n");
         return 1;
     }
-    
+
     // Configure processor
     ai_annotation_processor_set_confidence_threshold(processor, confidence_threshold);
     ai_annotation_processor_set_learning_data(processor, include_learning);
-    
+
     // Create a simple mock AST program for demo
     SimpleASTNode mock_program;
     mock_program.type = 1; // AST_PROGRAM
     mock_program.name = strdup("demo_program");
-    
+
     // Process annotations (with mock data)
-    AICompilationReport *report = ai_annotation_process_program(processor, (ASTNode*)&mock_program);
+    AICompilationReport *report =
+        ai_annotation_process_program(processor, (ASTNode *)&mock_program);
     if (!report) {
         fprintf(stderr, "Error: Failed to process annotations\n");
         ai_annotation_processor_destroy(processor);
         free(mock_program.name);
         return 1;
     }
-    
+
     // For demo, add some mock data to make the report more interesting
     if (demo_mode) {
         // Override some fields for demo
-        if (report->file_path) free(report->file_path);
+        if (report->file_path)
+            free(report->file_path);
         report->file_path = strdup("demo_source.asthra");
         report->overall_confidence = 0.75f;
         report->ai_generated_functions = 3;
         report->human_reviewed_functions = 2;
         report->total_functions = 5;
-        
+
         // Add mock suggestions
         report->suggestion_count = 2;
-        report->improvement_suggestions = malloc(sizeof(char*) * 2);
-        report->improvement_suggestions[0] = strdup("Consider adding error handling for edge cases");
+        report->improvement_suggestions = malloc(sizeof(char *) * 2);
+        report->improvement_suggestions[0] =
+            strdup("Consider adding error handling for edge cases");
         report->improvement_suggestions[1] = strdup("Optimize the sorting algorithm performance");
-        
+
         // Add mock TODO item
         report->todo_count = 1;
-        report->todo_items = malloc(sizeof(char*) * 1);
+        report->todo_items = malloc(sizeof(char *) * 1);
         report->todo_items[0] = strdup("Add comprehensive unit tests");
-        
+
         printf("Running AI Annotation Analyzer Demo\n");
         printf("====================================\n");
         printf("Confidence threshold: %.2f\n", confidence_threshold);
         printf("Learning data enabled: %s\n", include_learning ? "yes" : "no");
         printf("\n");
     }
-    
+
     // Generate output
     if (output_file) {
         char *json_report = ai_annotation_generate_json_report(report);
@@ -168,11 +173,11 @@ int main(int argc, char *argv[]) {
         // Print summary to stdout
         print_annotation_summary(report);
     }
-    
+
     // Cleanup
     free_ai_compilation_report(report);
     ai_annotation_processor_destroy(processor);
     free(mock_program.name);
-    
+
     return 0;
-} 
+}

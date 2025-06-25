@@ -35,38 +35,37 @@ AsthraTestResult asthra_test_fail(AsthraTestContext *context, const char *messag
     return ASTHRA_TEST_FAIL;
 }
 
-AsthraTestContext* asthra_test_create_context(AsthraTestMetadata* metadata) {
-    AsthraTestContext* context = calloc(1, sizeof(AsthraTestContext));
-    if (!context) return NULL;
-    
+AsthraTestContext *asthra_test_create_context(AsthraTestMetadata *metadata) {
+    AsthraTestContext *context = calloc(1, sizeof(AsthraTestContext));
+    if (!context)
+        return NULL;
+
     if (metadata) {
         context->metadata = *metadata;
     } else {
         // Create default metadata
-        static AsthraTestMetadata default_metadata = {
-            .name = "default_test",
-            .file = __FILE__,
-            .line = __LINE__,
-            .function = "default_test",
-            .severity = ASTHRA_TEST_SEVERITY_MEDIUM,
-            .timeout_ns = 5000000000ULL,
-            .skip = false,
-            .skip_reason = NULL
-        };
+        static AsthraTestMetadata default_metadata = {.name = "default_test",
+                                                      .file = __FILE__,
+                                                      .line = __LINE__,
+                                                      .function = "default_test",
+                                                      .severity = ASTHRA_TEST_SEVERITY_MEDIUM,
+                                                      .timeout_ns = 5000000000ULL,
+                                                      .skip = false,
+                                                      .skip_reason = NULL};
         context->metadata = default_metadata;
     }
-    
+
     context->result = ASTHRA_TEST_PASS;
     context->error_message = NULL;
     context->assertions_in_test = 0;
-    
+
     return context;
 }
 
-void asthra_test_destroy_context(AsthraTestContext* context) {
+void asthra_test_destroy_context(AsthraTestContext *context) {
     if (context) {
         free(context);
     }
 }
 
-// Statistics functions are implemented in test_statistics.c 
+// Statistics functions are implemented in test_statistics.c

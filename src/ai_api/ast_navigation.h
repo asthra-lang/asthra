@@ -1,8 +1,8 @@
 #ifndef ASTHRA_AI_AST_NAVIGATION_H
 #define ASTHRA_AI_AST_NAVIGATION_H
 
-#include "semantic_api_core.h"
 #include "../parser/ast.h"
+#include "semantic_api_core.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,7 +46,8 @@ ASTNode *asthra_ai_find_declaration(AsthraSemanticsAPI *api, const char *symbol_
  * @return Array of symbol usage information, or NULL if none found
  * @note Caller must free using asthra_ai_free_symbol_usage_array
  */
-AISymbolUsage **asthra_ai_find_symbol_usages(AsthraSemanticsAPI *api, const char *symbol_name, size_t *count);
+AISymbolUsage **asthra_ai_find_symbol_usages(AsthraSemanticsAPI *api, const char *symbol_name,
+                                             size_t *count);
 
 /**
  * Get documentation for a symbol (from comments)
@@ -65,7 +66,8 @@ char *asthra_ai_get_symbol_documentation(AsthraSemanticsAPI *api, const char *sy
  * @return Array of code locations, or NULL if none found
  * @note Caller must free using asthra_ai_free_code_location_array
  */
-AICodeLocation **asthra_ai_get_symbol_locations(AsthraSemanticsAPI *api, const char *symbol_name, size_t *count);
+AICodeLocation **asthra_ai_get_symbol_locations(AsthraSemanticsAPI *api, const char *symbol_name,
+                                                size_t *count);
 
 // =============================================================================
 // AST TRAVERSAL AND ANALYSIS
@@ -98,7 +100,8 @@ ASTNode **asthra_ai_get_child_nodes(AsthraSemanticsAPI *api, ASTNode *node, size
  * @return Array of matching AST nodes, or NULL if none found
  * @note Caller must free the returned array (but not the nodes themselves)
  */
-ASTNode **asthra_ai_find_nodes_by_type(AsthraSemanticsAPI *api, ASTNodeType node_type, size_t *count);
+ASTNode **asthra_ai_find_nodes_by_type(AsthraSemanticsAPI *api, ASTNodeType node_type,
+                                       size_t *count);
 
 /**
  * Get the scope containing a given AST node
@@ -122,7 +125,8 @@ char *asthra_ai_get_node_scope(AsthraSemanticsAPI *api, ASTNode *node);
  * @return Code context string, or NULL if not found
  * @note Caller must free the returned string
  */
-char *asthra_ai_get_code_context(AsthraSemanticsAPI *api, const char *file_path, size_t line, size_t context_lines);
+char *asthra_ai_get_code_context(AsthraSemanticsAPI *api, const char *file_path, size_t line,
+                                 size_t context_lines);
 
 /**
  * Get all symbols visible at a given location
@@ -134,7 +138,8 @@ char *asthra_ai_get_code_context(AsthraSemanticsAPI *api, const char *file_path,
  * @return Array of visible symbol names, or NULL if none
  * @note Caller must free using asthra_ai_free_string_array
  */
-char **asthra_ai_get_visible_symbols(AsthraSemanticsAPI *api, const char *file_path, size_t line, size_t column, size_t *count);
+char **asthra_ai_get_visible_symbols(AsthraSemanticsAPI *api, const char *file_path, size_t line,
+                                     size_t column, size_t *count);
 
 /**
  * Check if a symbol is accessible from a given location
@@ -145,7 +150,8 @@ char **asthra_ai_get_visible_symbols(AsthraSemanticsAPI *api, const char *file_p
  * @param column The column number (1-based)
  * @return true if symbol is accessible, false otherwise
  */
-bool asthra_ai_is_symbol_accessible(AsthraSemanticsAPI *api, const char *symbol_name, const char *file_path, size_t line, size_t column);
+bool asthra_ai_is_symbol_accessible(AsthraSemanticsAPI *api, const char *symbol_name,
+                                    const char *file_path, size_t line, size_t column);
 
 // =============================================================================
 // MEMORY MANAGEMENT
@@ -181,4 +187,4 @@ void asthra_ai_free_symbol_usage(AISymbolUsage *usage);
 }
 #endif
 
-#endif // ASTHRA_AI_AST_NAVIGATION_H 
+#endif // ASTHRA_AI_AST_NAVIGATION_H

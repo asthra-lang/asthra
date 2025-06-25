@@ -1,8 +1,8 @@
 #ifndef ASTHRA_AI_ANNOTATION_SEMANTIC_H
 #define ASTHRA_AI_ANNOTATION_SEMANTIC_H
 
-#include "ai_annotation_grammar.h"
 #include "../analysis/semantic_analyzer.h"
+#include "ai_annotation_grammar.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -10,16 +10,16 @@ extern "C" {
 
 // Semantic analysis for AI annotations
 typedef struct {
-    AIAnnotation *annotations;     // Array of processed annotations
+    AIAnnotation *annotations; // Array of processed annotations
     size_t annotation_count;
     size_t capacity;
-    
+
     // Statistics
     size_t confidence_annotations;
     size_t review_needed_count;
     size_t todo_count;
     size_t security_annotations;
-    
+
     // Validation results
     size_t valid_annotations;
     size_t invalid_annotations;
@@ -28,9 +28,11 @@ typedef struct {
 } AIAnnotationAnalysisResult;
 
 // Semantic analysis functions
-AIAnnotationAnalysisResult *ai_annotation_analyze_program(SemanticAnalyzer *analyzer, ASTNode *program);
+AIAnnotationAnalysisResult *ai_annotation_analyze_program(SemanticAnalyzer *analyzer,
+                                                          ASTNode *program);
 bool ai_annotation_validate_placement(AIAnnotation *annotation, ASTNode *target);
-bool ai_annotation_check_conflicts(AIAnnotation *annotation, AIAnnotation *existing[], size_t existing_count);
+bool ai_annotation_check_conflicts(AIAnnotation *annotation, AIAnnotation *existing[],
+                                   size_t existing_count);
 void ai_annotation_extract_metadata(AIAnnotation *annotation, AIAnnotationMetadata *metadata);
 
 // Context validation
@@ -48,4 +50,4 @@ void free_ai_annotation_analysis_result(AIAnnotationAnalysisResult *result);
 }
 #endif
 
-#endif // ASTHRA_AI_ANNOTATION_SEMANTIC_H 
+#endif // ASTHRA_AI_ANNOTATION_SEMANTIC_H

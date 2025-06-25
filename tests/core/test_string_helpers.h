@@ -1,9 +1,9 @@
 /**
  * Asthra Programming Language String Operations Test Helpers
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Common helpers, structures, and utilities for string operation tests.
  */
 
@@ -12,9 +12,9 @@
 
 #include "test_comprehensive.h"
 #include "test_comprehensive_core.h"
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #ifdef __cplusplus
@@ -38,9 +38,9 @@ typedef struct {
 // =============================================================================
 
 // String creation and management
-TestString* test_string_create(const char *str);
+TestString *test_string_create(const char *str);
 void test_string_destroy(TestString *ts);
-TestString* test_string_concat(const TestString *a, const TestString *b);
+TestString *test_string_concat(const TestString *a, const TestString *b);
 
 // Test utility functions
 uint64_t asthra_test_get_time_ns(void);
@@ -57,4 +57,4 @@ void asthra_benchmark_iteration(AsthraExtendedTestContext *ctx);
 }
 #endif
 
-#endif // ASTHRA_TEST_STRING_HELPERS_H 
+#endif // ASTHRA_TEST_STRING_HELPERS_H

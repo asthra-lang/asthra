@@ -6,20 +6,20 @@
 #ifndef TEST_ENUM_VARIANT_COMMON_H
 #define TEST_ENUM_VARIANT_COMMON_H
 
+#include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include <stdbool.h>
 
 // Include the necessary headers for code generation testing
-#include "parser.h"
-#include "lexer.h"
 #include "ast.h"
-#include "semantic_core.h"
 #include "backend_interface.h"
-#include "compiler.h"
 #include "codegen_test_stubs.h"
+#include "compiler.h"
+#include "lexer.h"
+#include "parser.h"
+#include "semantic_core.h"
 
 // Test helper structure to track both backend and analyzer
 typedef struct {

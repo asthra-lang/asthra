@@ -1,11 +1,11 @@
 #ifndef AST_DESTRUCTION_EXPRESSIONS_H
 #define AST_DESTRUCTION_EXPRESSIONS_H
 
+#include "ast.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdio.h>
-#include "ast.h"
 
 #ifdef __cplusplus
 extern "C" {

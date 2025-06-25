@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Error handling and reporting
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -19,11 +19,12 @@
 // TODO: add_compiler_error function will be implemented when error reporting
 // system is integrated with the compilation pipeline
 
-const AsthraCompilerError *asthra_compiler_get_errors(AsthraCompilerContext *ctx, size_t *error_count) {
+const AsthraCompilerError *asthra_compiler_get_errors(AsthraCompilerContext *ctx,
+                                                      size_t *error_count) {
     if (!ctx || !error_count) {
         return NULL;
     }
-    
+
     *error_count = ctx->error_count;
     return ctx->errors;
 }
@@ -39,4 +40,4 @@ void asthra_compiler_clear_errors(AsthraCompilerContext *ctx) {
 // =============================================================================
 
 // TODO: get_phase_name function will be implemented when phase-specific
-// error reporting is integrated with the compilation pipeline 
+// error reporting is integrated with the compilation pipeline

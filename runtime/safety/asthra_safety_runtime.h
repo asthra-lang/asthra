@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Runtime Safety System
  * Runtime Validation Systems Module - String, pattern matching, and result validation
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -10,10 +10,10 @@
 #define ASTHRA_SAFETY_RUNTIME_H
 
 #include "asthra_safety_minimal_includes.h"
+#include <pthread.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
-#include <pthread.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -73,12 +73,14 @@ typedef struct {
 /**
  * Validate string concatenation operation safety
  */
-AsthraStringOperationValidation asthra_safety_validate_string_concatenation(AsthraString *strings, size_t count);
+AsthraStringOperationValidation asthra_safety_validate_string_concatenation(AsthraString *strings,
+                                                                            size_t count);
 
 /**
  * Log task lifecycle events for debugging
  */
-void asthra_safety_log_task_lifecycle_event(uint64_t task_id, AsthraTaskEvent event, const char *details);
+void asthra_safety_log_task_lifecycle_event(uint64_t task_id, AsthraTaskEvent event,
+                                            const char *details);
 
 /**
  * Log scheduler events for debugging
@@ -88,8 +90,9 @@ void asthra_safety_log_scheduler_event(AsthraSchedulerEvent event, const char *d
 /**
  * Log C task interaction events
  */
-void asthra_safety_log_c_task_interaction(uint64_t asthra_task_id, pthread_t c_thread_id, 
-                                          const char *interaction_type, void *data, size_t data_size);
+void asthra_safety_log_c_task_interaction(uint64_t asthra_task_id, pthread_t c_thread_id,
+                                          const char *interaction_type, void *data,
+                                          size_t data_size);
 
 /**
  * Register result for tracking unhandled errors
@@ -114,7 +117,8 @@ bool asthra_safety_validate_string_encoding(const char *str, size_t length);
 /**
  * Check string operation for potential buffer overflow
  */
-bool asthra_safety_check_string_overflow(size_t current_length, size_t additional_length, size_t max_length);
+bool asthra_safety_check_string_overflow(size_t current_length, size_t additional_length,
+                                         size_t max_length);
 
 /**
  * Validate interpolation template format
@@ -145,4 +149,4 @@ void asthra_safety_cleanup_handled_result_trackers(void);
 }
 #endif
 
-#endif // ASTHRA_SAFETY_RUNTIME_H 
+#endif // ASTHRA_SAFETY_RUNTIME_H

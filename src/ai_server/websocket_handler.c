@@ -5,9 +5,9 @@
 #include <sys/socket.h>
 
 #ifdef HAVE_OPENSSL
-#include <openssl/sha.h> // For SHA1
 #include <openssl/bio.h> // For Base64
 #include <openssl/evp.h> // For Base64
+#include <openssl/sha.h> // For SHA1
 #endif
 
 #ifdef HAVE_OPENSSL
@@ -49,8 +49,9 @@ void sha1_hash(const char *input, unsigned char *output) {
 char *base64_encode(const unsigned char *input, int length) {
     // Simple stub - returns hex representation instead
     char *buf = malloc(length * 2 + 1);
-    if (!buf) return NULL;
-    
+    if (!buf)
+        return NULL;
+
     for (int i = 0; i < length; i++) {
         snprintf(buf + i * 2, 3, "%02x", input[i]);
     }
@@ -65,7 +66,8 @@ char *generate_websocket_accept_key(const char *websocket_key) {
     size_t key_len = strlen(websocket_key);
     size_t guid_len = strlen(guid);
     char *combined = malloc(key_len + guid_len + 1);
-    if (!combined) return NULL;
+    if (!combined)
+        return NULL;
     snprintf(combined, key_len + guid_len + 1, "%s%s", websocket_key, guid);
 
     unsigned char sha1_result[20]; // SHA1 produces 20 bytes
@@ -77,62 +79,65 @@ char *generate_websocket_accept_key(const char *websocket_key) {
 }
 
 // Real WebSocket frame parser
-bool parse_websocket_frame(const char *buffer, size_t buffer_len, char **payload, size_t *payload_len) {
+bool parse_websocket_frame(const char *buffer, size_t buffer_len, char **payload,
+                           size_t *payload_len) {
     if (!buffer || buffer_len < 2 || !payload || !payload_len) {
         return false;
     }
-    
+
     const unsigned char *frame = (const unsigned char *)buffer;
     size_t offset = 0;
-    
+
     // Parse first byte: FIN and opcode
     unsigned char fin = (frame[offset] >> 7) & 0x01;
     (void)fin; // Suppress unused warning
     unsigned char opcode = frame[offset] & 0x0F;
     offset++;
-    
+
     // Parse second byte: MASK and payload length
     unsigned char mask = (frame[offset] >> 7) & 0x01;
     unsigned char payload_len_initial = frame[offset] & 0x7F;
     offset++;
-    
+
     // Only handle text frames (opcode 0x1) for now
     if (opcode != 0x1) {
         return false;
     }
-    
+
     // Determine actual payload length
     size_t actual_payload_len = 0;
     if (payload_len_initial <= 125) {
         actual_payload_len = payload_len_initial;
     } else if (payload_len_initial == 126) {
-        if (offset + 2 > buffer_len) return false;
+        if (offset + 2 > buffer_len)
+            return false;
         actual_payload_len = (frame[offset] << 8) | frame[offset + 1];
         offset += 2;
     } else if (payload_len_initial == 127) {
         // 64-bit length not supported for simplicity
         return false;
     }
-    
+
     // Extract masking key if present
     unsigned char masking_key[4] = {0};
     if (mask) {
-        if (offset + 4 > buffer_len) return false;
+        if (offset + 4 > buffer_len)
+            return false;
         memcpy(masking_key, frame + offset, 4);
         offset += 4;
     }
-    
+
     // Check if we have enough data
     if (offset + actual_payload_len > buffer_len) {
         return false;
     }
-    
+
     // Extract and unmask payload
     *payload = malloc(actual_payload_len + 1);
     if (!*payload) {
         return false;
     }
-    
+
     for (size_t i = 0; i < actual_payload_len; i++) {
         if (mask) {
             (*payload)[i] = frame[offset + i] ^ masking_key[i % 4];
@@ -142,13 +147,14 @@ bool parse_websocket_frame(const char *buffer, size_t buffer_len, char **payload
     }
     (*payload)[actual_payload_len] = '\0';
     *payload_len = actual_payload_len;
-    
+
     return true;
 }
 
 // Helper to send WebSocket text frame
 void send_websocket_text_frame(int fd, const char *message) {
-    if (!message) return;
+    if (!message)
+        return;
 
     size_t len = strlen(message);
     uint8_t header[10]; // Max header size for 64-bit length

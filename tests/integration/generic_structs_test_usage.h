@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Generic Structs Testing - Usage Validation Tests
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Tests for generic type usage validation and complex nested types
  */
 
@@ -46,4 +46,4 @@ bool test_generic_struct_pattern_matching_validation(void);
 }
 #endif
 
-#endif // GENERIC_STRUCTS_TEST_USAGE_H 
+#endif // GENERIC_STRUCTS_TEST_USAGE_H

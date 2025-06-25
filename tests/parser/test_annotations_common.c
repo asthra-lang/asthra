@@ -1,7 +1,7 @@
 /*
  * Annotation Tests Common - Shared Implementation
  * Common utilities for modular annotation test suite
- * 
+ *
  * Provides implementations for shared utility functions:
  * - AST navigation and search functions
  * - Annotation checking utilities
@@ -22,34 +22,35 @@ size_t tests_passed = 0;
 // AST Navigation Functions
 // ============================================================================
 
-ASTNode* find_function_declaration(ASTNode* ast, const char* name) {
-    if (!ast) return NULL;
-    
-    if (ast->type == AST_FUNCTION_DECL && 
-        ast->data.function_decl.name && 
+ASTNode *find_function_declaration(ASTNode *ast, const char *name) {
+    if (!ast)
+        return NULL;
+
+    if (ast->type == AST_FUNCTION_DECL && ast->data.function_decl.name &&
         strcmp(ast->data.function_decl.name, name) == 0) {
         return ast;
     }
-    
+
     for (int i = 0; i < ast->child_count; i++) {
-        ASTNode* result = find_function_declaration(ast->children[i], name);
-        if (result) return result;
+        ASTNode *result = find_function_declaration(ast->children[i], name);
+        if (result)
+            return result;
     }
-    
+
     return NULL;
 }
 
-bool has_annotation(ASTNode* function_node, const char* annotation_name) {
+bool has_annotation(ASTNode *function_node, const char *annotation_name) {
     if (!function_node || function_node->type != AST_FUNCTION_DECL) {
         return false;
     }
-    
+
     for (int i = 0; i < function_node->annotation_count; i++) {
         if (strcmp(function_node->annotations[i].name, annotation_name) == 0) {
             return true;
         }
     }
-    
+
     return false;
 }
 
@@ -57,14 +58,14 @@ bool has_annotation(ASTNode* function_node, const char* annotation_name) {
 // Resource Cleanup Functions
 // ============================================================================
 
-void cleanup_parse_result(ParseResult* result) {
+void cleanup_parse_result(ParseResult *result) {
     if (result && result->ast) {
         free_ast_node(result->ast);
         result->ast = NULL;
     }
 }
 
-void cleanup_semantic_result(SemanticAnalysisResult* result) {
+void cleanup_semantic_result(SemanticAnalysisResult *result) {
     if (result && result->errors) {
         for (int i = 0; i < result->error_count; i++) {
             free(result->errors[i].message);
@@ -83,23 +84,25 @@ void init_test_counters(void) {
     tests_passed = 0;
 }
 
-void get_test_stats(size_t* total_tests, size_t* passed_tests) {
-    if (total_tests) *total_tests = tests_run;
-    if (passed_tests) *passed_tests = tests_passed;
+void get_test_stats(size_t *total_tests, size_t *passed_tests) {
+    if (total_tests)
+        *total_tests = tests_run;
+    if (passed_tests)
+        *passed_tests = tests_passed;
 }
 
-void print_test_results(const char* category_name) {
+void print_test_results(const char *category_name) {
     printf("\n=== %s Test Results ===\n", category_name);
     printf("Tests run: %zu\n", tests_run);
     printf("Tests passed: %zu\n", tests_passed);
     printf("Tests failed: %zu\n", tests_run - tests_passed);
-    
+
     if (tests_run > 0) {
         printf("Success rate: %.1f%%\n", (float)tests_passed / tests_run * 100.0);
     } else {
         printf("Success rate: N/A (no tests run)\n");
     }
-    
+
     if (tests_passed == tests_run && tests_run > 0) {
         printf("✅ All %s tests passed!\n", category_name);
     } else if (tests_run > 0) {
@@ -107,4 +110,4 @@ void print_test_results(const char* category_name) {
     } else {
         printf("⚠️  No %s tests were run.\n", category_name);
     }
-} 
+}

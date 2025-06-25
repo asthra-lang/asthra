@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Runtime v1.2 - Diagnostics Module
  * Logging and Diagnostic Functions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * This module provides logging and diagnostic functionality
  * for runtime monitoring and debugging.
  */
@@ -43,7 +43,8 @@ typedef enum {
 
 // Logging operations
 void asthra_log(AsthraLogLevel level, AsthraLogCategory category, const char *format, ...);
-void asthra_log_va(AsthraLogLevel level, AsthraLogCategory category, const char *format, va_list args);
+void asthra_log_va(AsthraLogLevel level, AsthraLogCategory category, const char *format,
+                   va_list args);
 void asthra_log_set_level(AsthraLogLevel min_level);
 void asthra_log_enable_category(AsthraLogCategory category, bool enabled);
 
@@ -57,4 +58,4 @@ void asthra_log_task_stats(void);
 }
 #endif
 
-#endif // ASTHRA_RUNTIME_LOGGING_H 
+#endif // ASTHRA_RUNTIME_LOGGING_H

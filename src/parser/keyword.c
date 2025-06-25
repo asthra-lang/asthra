@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Keyword handling for Asthra grammar
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -26,7 +26,7 @@ static const KeywordEntry keywords[] = {
     {"extern", TOKEN_EXTERN},
     {"let", TOKEN_LET},
     {"const", TOKEN_CONST},
-    {"mut", TOKEN_MUT},      // mut keyword for variable mutability
+    {"mut", TOKEN_MUT}, // mut keyword for variable mutability
     {"if", TOKEN_IF},
     {"else", TOKEN_ELSE},
     {"enum", TOKEN_ENUM},
@@ -43,14 +43,14 @@ static const KeywordEntry keywords[] = {
     {"self", TOKEN_SELF},
     {"true", TOKEN_BOOL_TRUE},
     {"false", TOKEN_BOOL_FALSE},
-    
+
     // Types
     {"int", TOKEN_INT},
     {"float", TOKEN_FLOAT_TYPE},
     {"bool", TOKEN_BOOL},
     {"string", TOKEN_STRING_TYPE},
     {"void", TOKEN_VOID},
-    {"none", TOKEN_NONE},     // structural absence marker
+    {"none", TOKEN_NONE}, // structural absence marker
     {"usize", TOKEN_USIZE},
     {"isize", TOKEN_ISIZE},
     {"u8", TOKEN_U8},
@@ -68,14 +68,14 @@ static const KeywordEntry keywords[] = {
     {"Result", TOKEN_RESULT},
     {"Option", TOKEN_OPTION},
     {"Never", TOKEN_NEVER},
-    
+
     // Tier 1 Concurrency Features (Core & Simple)
     {"spawn_with_handle", TOKEN_SPAWN_WITH_HANDLE},
     {"await", TOKEN_AWAIT}
-    
+
     // Note: Tier 3 concurrency keywords moved to stdlib:
     // {"channel", TOKEN_CHANNEL}, {"send", TOKEN_SEND}, {"recv", TOKEN_RECV},
-    // {"select", TOKEN_SELECT}, {"default", TOKEN_DEFAULT}, 
+    // {"select", TOKEN_SELECT}, {"default", TOKEN_DEFAULT},
     // {"worker_pool", TOKEN_WORKER_POOL}, {"timeout", TOKEN_TIMEOUT}, {"close", TOKEN_CLOSE}
 };
 
@@ -97,4 +97,4 @@ TokenType keyword_lookup(const char *identifier, size_t length) {
 
 bool is_reserved_keyword(const char *identifier, size_t length) {
     return keyword_lookup(identifier, length) != TOKEN_IDENTIFIER;
-} 
+}

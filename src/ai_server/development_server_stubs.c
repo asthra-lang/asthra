@@ -1,7 +1,7 @@
-#include "development_server.h"
 #include "../fast_check/fast_check_engine.h"
-#include <stdlib.h>
+#include "development_server.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -11,9 +11,10 @@
 // Struct definitions are now in the header file
 
 // Server functions (stub implementations)
-AsthraDevelopmentServer* asthra_dev_server_create(int port) {
+AsthraDevelopmentServer *asthra_dev_server_create(int port) {
     AsthraDevelopmentServer *server = calloc(1, sizeof(AsthraDevelopmentServer));
-    if (!server) return NULL;
+    if (!server)
+        return NULL;
 
     server->port = port;
     server->is_running = false;
@@ -53,7 +54,8 @@ AsthraDevelopmentServer* asthra_dev_server_create(int port) {
 }
 
 void asthra_dev_server_destroy(AsthraDevelopmentServer *server) {
-    if (!server) return;
+    if (!server)
+        return;
 
     // Stop server if running
     if (server->is_running) {
@@ -77,13 +79,15 @@ void asthra_dev_server_destroy(AsthraDevelopmentServer *server) {
 }
 
 bool asthra_dev_server_start(AsthraDevelopmentServer *server) {
-    if (!server) return false;
+    if (!server)
+        return false;
     server->is_running = true;
     return true;
 }
 
 void asthra_dev_server_stop(AsthraDevelopmentServer *server) {
-    if (!server) return;
+    if (!server)
+        return;
     server->is_running = false;
     server->should_stop = true;
 }
@@ -101,7 +105,8 @@ DevServerStats asthra_dev_server_get_stats(const AsthraDevelopmentServer *server
 }
 
 void asthra_dev_server_reset_stats(AsthraDevelopmentServer *server) {
-    if (!server) return;
+    if (!server)
+        return;
 
     server->total_requests = 0;
     server->total_response_time = 0.0;
@@ -113,22 +118,25 @@ void asthra_dev_server_reset_stats(AsthraDevelopmentServer *server) {
 }
 
 char *asthra_dev_server_stats_to_json(const DevServerStats *stats) {
-    if (!stats) return NULL;
+    if (!stats)
+        return NULL;
 
     // Simple JSON stub (not using cJSON here as it's a stub file)
     char *result = malloc(256);
-    if (!result) return NULL;
+    if (!result)
+        return NULL;
     snprintf(result, 256, "{\"total_requests\": %zu, \"active_connections\": %zu}",
              stats->total_requests, stats->active_connections);
     return result;
 }
 
 // Request/Response handling (stub implementations)
-DevServerRequest* dev_server_request_create(const char *json) {
+DevServerRequest *dev_server_request_create(const char *json) {
     // This function is now fully implemented in development_server.c using cJSON
     // This stub version returns a minimal request for compilation compatibility.
     DevServerRequest *request = calloc(1, sizeof(DevServerRequest));
-    if (!request) return NULL;
+    if (!request)
+        return NULL;
     request->command = strdup("stub_command");
     request->request_id = strdup("stub_id");
     request->file_path = NULL;
@@ -143,7 +151,8 @@ DevServerRequest* dev_server_request_create(const char *json) {
 }
 
 void dev_server_request_destroy(DevServerRequest *request) {
-    if (!request) return;
+    if (!request)
+        return;
     free(request->command);
     free(request->request_id);
     free(request->file_path);
@@ -158,9 +167,11 @@ void dev_server_request_destroy(DevServerRequest *request) {
     free(request);
 }
 
-DevServerResponse* asthra_dev_server_handle_request(AsthraDevelopmentServer *server, DevServerRequest *request) {
+DevServerResponse *asthra_dev_server_handle_request(AsthraDevelopmentServer *server,
+                                                    DevServerRequest *request) {
     DevServerResponse *response = calloc(1, sizeof(DevServerResponse));
-    if (!response) return NULL;
+    if (!response)
+        return NULL;
     response->request_id = strdup(request ? request->request_id : "stub_id");
     response->success = true;
     response->processing_time_ms = 0.0;
@@ -172,19 +183,22 @@ DevServerResponse* asthra_dev_server_handle_request(AsthraDevelopmentServer *ser
 }
 
 void dev_server_response_destroy(DevServerResponse *response) {
-    if (!response) return;
+    if (!response)
+        return;
     free(response->request_id);
     free(response->result_json);
     free(response->error_message);
     free(response);
 }
 
-char* dev_server_response_to_json(const DevServerResponse *response) {
+char *dev_server_response_to_json(const DevServerResponse *response) {
     // This function is now fully implemented in development_server.c using cJSON
     // This stub version returns a minimal JSON string for compilation compatibility.
-    if (!response) return NULL;
+    if (!response)
+        return NULL;
     char *result = malloc(256);
-    if (!result) return NULL;
+    if (!result)
+        return NULL;
     snprintf(result, 256, "{\"request_id\":\"%s\",\"success\":%s}",
              response->request_id ? response->request_id : "",
              response->success ? "true" : "false");
@@ -192,7 +206,8 @@ char* dev_server_response_to_json(const DevServerResponse *response) {
 }
 
 // Connection management (stub implementations)
-void asthra_dev_server_add_connection(AsthraDevelopmentServer *server, int client_fd, const char *client_id, const char *websocket_key) {
+void asthra_dev_server_add_connection(AsthraDevelopmentServer *server, int client_fd,
+                                      const char *client_id, const char *websocket_key) {
     (void)server;
     (void)client_fd;
     (void)client_id;
@@ -206,7 +221,8 @@ void asthra_dev_server_remove_connection(AsthraDevelopmentServer *server, int cl
     fprintf(stdout, "STUB: Removed connection %d\n", client_fd);
 }
 
-void asthra_dev_server_broadcast_notification(AsthraDevelopmentServer *server, const char *notification_json) {
+void asthra_dev_server_broadcast_notification(AsthraDevelopmentServer *server,
+                                              const char *notification_json) {
     (void)server;
     (void)notification_json;
     fprintf(stdout, "STUB: Broadcast notification: %s\n", notification_json);
@@ -215,7 +231,9 @@ void asthra_dev_server_broadcast_notification(AsthraDevelopmentServer *server, c
 // Error Codes (stub implementation)
 const char *dev_server_error_to_string(DevServerErrorCode error) {
     switch (error) {
-        case DEV_SERVER_OK: return "STUB_Success";
-        default: return "STUB_Unknown_Error";
+    case DEV_SERVER_OK:
+        return "STUB_Success";
+    default:
+        return "STUB_Unknown_Error";
     }
-} 
+}

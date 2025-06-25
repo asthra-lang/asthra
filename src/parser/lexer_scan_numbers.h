@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Numeric literal scanning functions for Asthra grammar
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -35,4 +35,4 @@ Token scan_octal_literal(Lexer *lexer, SourceLocation start_loc, size_t start_po
  */
 Token scan_decimal_literal(Lexer *lexer, SourceLocation start_loc, size_t start_pos);
 
-#endif // LEXER_SCAN_NUMBERS_H 
+#endif // LEXER_SCAN_NUMBERS_H

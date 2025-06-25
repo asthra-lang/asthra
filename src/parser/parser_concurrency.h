@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Compiler
  * Parser concurrency parsing functions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -36,4 +36,4 @@ ASTNode *parse_await_expr(Parser *parser);
 }
 #endif
 
-#endif // ASTHRA_PARSER_CONCURRENCY_H 
+#endif // ASTHRA_PARSER_CONCURRENCY_H

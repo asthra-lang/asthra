@@ -52,4 +52,4 @@ TestResult recursive_impl(int depth, int max_depth) {
 
     // Transform the result
     return test_result_ok(result.data.ok_value + 1);
-} 
+}

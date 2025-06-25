@@ -4,11 +4,11 @@
 #include "development_server.h"
 
 // Request/Response handling
-DevServerRequest* dev_server_request_create(const char *json);
+DevServerRequest *dev_server_request_create(const char *json);
 void dev_server_request_destroy(DevServerRequest *request);
 // Note: dev_server_response_create is declared in development_server.h
 void dev_server_response_destroy(DevServerResponse *response);
-char* dev_server_response_to_json(const DevServerResponse *response);
+char *dev_server_response_to_json(const DevServerResponse *response);
 
 // Error handling
 const char *dev_server_error_to_string(DevServerErrorCode error);

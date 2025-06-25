@@ -1,17 +1,17 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Method and Impl Block Analysis
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Analysis of impl blocks, methods, and visibility checking
  */
 
 #include "semantic_methods.h"
+#include "semantic_annotations.h" // Phase 3: For method annotation analysis
 #include "semantic_core.h"
 #include "semantic_symbols.h"
-#include "semantic_annotations.h"  // Phase 3: For method annotation analysis
 #include "semantic_types.h"
 #include <stdlib.h>
 #include <string.h>
@@ -29,27 +29,24 @@ bool analyze_impl_block(SemanticAnalyzer *analyzer, ASTNode *impl_block) {
     ASTNodeList *methods = impl_block->data.impl_block.methods;
 
     if (!struct_name) {
-        semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION,
-                             impl_block->location,
-                             "Impl block missing struct name");
+        semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, impl_block->location,
+                              "Impl block missing struct name");
         return false;
     }
 
     // Verify the struct exists
     SymbolEntry *struct_symbol = symbol_table_lookup_safe(analyzer->current_scope, struct_name);
     if (!struct_symbol || struct_symbol->kind != SYMBOL_TYPE) {
-        semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL,
-                             impl_block->location,
-                             "Impl block for unknown struct '%s'", struct_name);
+        semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL, impl_block->location,
+                              "Impl block for unknown struct '%s'", struct_name);
         return false;
     }
 
     // Get the struct type descriptor
     TypeDescriptor *struct_type = struct_symbol->type;
     if (!struct_type || struct_type->category != TYPE_STRUCT) {
-        semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH,
-                             impl_block->location,
-                             "Symbol '%s' is not a struct type", struct_name);
+        semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, impl_block->location,
+                              "Symbol '%s' is not a struct type", struct_name);
         return false;
     }
 
@@ -57,9 +54,8 @@ bool analyze_impl_block(SemanticAnalyzer *analyzer, ASTNode *impl_block) {
     if (!struct_type->data.struct_type.methods) {
         struct_type->data.struct_type.methods = symbol_table_create(8);
         if (!struct_type->data.struct_type.methods) {
-            semantic_report_error(analyzer, SEMANTIC_ERROR_NONE,
-                                 impl_block->location,
-                                 "Failed to create method table for struct '%s'", struct_name);
+            semantic_report_error(analyzer, SEMANTIC_ERROR_NONE, impl_block->location,
+                                  "Failed to create method table for struct '%s'", struct_name);
             return false;
         }
     }
@@ -84,9 +80,9 @@ bool analyze_impl_block(SemanticAnalyzer *analyzer, ASTNode *impl_block) {
                 // Phase 3: Analyze method annotations before analyzing the method
                 if (!analyze_declaration_annotations(analyzer, method)) {
                     success = false;
-                    continue;  // Continue analyzing other methods
+                    continue; // Continue analyzing other methods
                 }
-                
+
                 if (!analyze_method_declaration(analyzer, method, struct_name)) {
                     success = false;
                     // Continue analyzing other methods
@@ -105,7 +101,8 @@ bool analyze_impl_block(SemanticAnalyzer *analyzer, ASTNode *impl_block) {
 // METHOD DECLARATION ANALYSIS
 // =============================================================================
 
-bool analyze_method_declaration(SemanticAnalyzer *analyzer, ASTNode *method_decl, const char *struct_name) {
+bool analyze_method_declaration(SemanticAnalyzer *analyzer, ASTNode *method_decl,
+                                const char *struct_name) {
     if (!analyzer || !method_decl || method_decl->type != AST_METHOD_DECL || !struct_name) {
         return false;
     }
@@ -118,18 +115,16 @@ bool analyze_method_declaration(SemanticAnalyzer *analyzer, ASTNode *method_decl
     VisibilityType visibility = method_decl->data.method_decl.visibility;
 
     if (!method_name) {
-        semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION,
-                             method_decl->location,
-                             "Method declaration missing name");
+        semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, method_decl->location,
+                              "Method declaration missing name");
         return false;
     }
 
     // Get the struct symbol and type
     SymbolEntry *struct_symbol = symbol_table_lookup_safe(analyzer->current_scope, struct_name);
     if (!struct_symbol || !struct_symbol->type) {
-        semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL,
-                             method_decl->location,
-                             "Unknown struct '%s' in method declaration", struct_name);
+        semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL, method_decl->location,
+                              "Unknown struct '%s' in method declaration", struct_name);
         return false;
     }
 
@@ -137,11 +132,12 @@ bool analyze_method_declaration(SemanticAnalyzer *analyzer, ASTNode *method_decl
 
     // Check for duplicate method names
     if (struct_type->data.struct_type.methods) {
-        SymbolEntry *existing = symbol_table_lookup_local(struct_type->data.struct_type.methods, method_name);
+        SymbolEntry *existing =
+            symbol_table_lookup_local(struct_type->data.struct_type.methods, method_name);
         if (existing) {
-            semantic_report_error(analyzer, SEMANTIC_ERROR_DUPLICATE_SYMBOL,
-                                 method_decl->location,
-                                 "Method '%s' is already defined for struct '%s'", method_name, struct_name);
+            semantic_report_error(analyzer, SEMANTIC_ERROR_DUPLICATE_SYMBOL, method_decl->location,
+                                  "Method '%s' is already defined for struct '%s'", method_name,
+                                  struct_name);
             return false;
         }
     }
@@ -149,25 +145,23 @@ bool analyze_method_declaration(SemanticAnalyzer *analyzer, ASTNode *method_decl
     // Validate self parameter if present
     if (is_instance_method) {
         if (!params || ast_node_list_size(params) == 0) {
-            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION,
-                                 method_decl->location,
-                                 "Instance method '%s' must have self parameter", method_name);
+            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, method_decl->location,
+                                  "Instance method '%s' must have self parameter", method_name);
             return false;
         }
 
         ASTNode *first_param = ast_node_list_get(params, 0);
         if (!first_param || first_param->type != AST_PARAM_DECL) {
-            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION,
-                                 method_decl->location,
-                                 "Invalid first parameter in instance method '%s'", method_name);
+            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, method_decl->location,
+                                  "Invalid first parameter in instance method '%s'", method_name);
             return false;
         }
 
         const char *param_name = first_param->data.param_decl.name;
         if (!param_name || strcmp(param_name, "self") != 0) {
-            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION,
-                                 method_decl->location,
-                                 "First parameter of instance method '%s' must be 'self'", method_name);
+            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, method_decl->location,
+                                  "First parameter of instance method '%s' must be 'self'",
+                                  method_name);
             return false;
         }
     }
@@ -175,9 +169,8 @@ bool analyze_method_declaration(SemanticAnalyzer *analyzer, ASTNode *method_decl
     // Create method type descriptor
     TypeDescriptor *method_type = malloc(sizeof(TypeDescriptor));
     if (!method_type) {
-        semantic_report_error(analyzer, SEMANTIC_ERROR_NONE,
-                             method_decl->location,
-                             "Memory allocation failed for method type");
+        semantic_report_error(analyzer, SEMANTIC_ERROR_NONE, method_decl->location,
+                              "Memory allocation failed for method type");
         return false;
     }
 
@@ -191,8 +184,8 @@ bool analyze_method_declaration(SemanticAnalyzer *analyzer, ASTNode *method_decl
     method_type->flags.is_atomic = false;
     method_type->flags.is_ffi_compatible = true;
     method_type->flags.reserved = 0;
-    method_type->size = sizeof(void*); // Function pointer size
-    method_type->alignment = _Alignof(void*);
+    method_type->size = sizeof(void *); // Function pointer size
+    method_type->alignment = _Alignof(void *);
     atomic_init(&method_type->ref_count, 1);
 
     // Set up function type data
@@ -201,13 +194,13 @@ bool analyze_method_declaration(SemanticAnalyzer *analyzer, ASTNode *method_decl
     method_type->data.function.param_types = NULL; // TODO: resolve parameter types
 
     // Create method symbol with visibility information
-    SymbolEntry *method_symbol = symbol_entry_create(method_name, SYMBOL_METHOD, method_type, method_decl);
+    SymbolEntry *method_symbol =
+        symbol_entry_create(method_name, SYMBOL_METHOD, method_type, method_decl);
     if (!method_symbol) {
-        free((char*)method_type->name);
+        free((char *)method_type->name);
         free(method_type);
-        semantic_report_error(analyzer, SEMANTIC_ERROR_NONE,
-                             method_decl->location,
-                             "Failed to create symbol entry for method '%s'", method_name);
+        semantic_report_error(analyzer, SEMANTIC_ERROR_NONE, method_decl->location,
+                              "Failed to create symbol entry for method '%s'", method_name);
         return false;
     }
 
@@ -216,13 +209,14 @@ bool analyze_method_declaration(SemanticAnalyzer *analyzer, ASTNode *method_decl
     method_symbol->is_instance_method = is_instance_method;
 
     // Add method to struct's method table
-    if (!symbol_table_insert_safe(struct_type->data.struct_type.methods, method_name, method_symbol)) {
+    if (!symbol_table_insert_safe(struct_type->data.struct_type.methods, method_name,
+                                  method_symbol)) {
         symbol_entry_destroy(method_symbol);
-        free((char*)method_type->name);
+        free((char *)method_type->name);
         free(method_type);
-        semantic_report_error(analyzer, SEMANTIC_ERROR_DUPLICATE_SYMBOL,
-                             method_decl->location,
-                             "Failed to register method '%s' for struct '%s'", method_name, struct_name);
+        semantic_report_error(analyzer, SEMANTIC_ERROR_DUPLICATE_SYMBOL, method_decl->location,
+                              "Failed to register method '%s' for struct '%s'", method_name,
+                              struct_name);
         return false;
     }
 
@@ -249,25 +243,28 @@ bool analyze_method_declaration(SemanticAnalyzer *analyzer, ASTNode *method_decl
                         if (param_type_node) {
                             param_type = analyze_type_node(analyzer, param_type_node);
                             if (!param_type) {
-                                semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_TYPE,
-                                                     param_type_node->location,
-                                                     "Invalid type for parameter '%s' in method '%s'", 
-                                                     param_name, method_name);
+                                semantic_report_error(
+                                    analyzer, SEMANTIC_ERROR_INVALID_TYPE,
+                                    param_type_node->location,
+                                    "Invalid type for parameter '%s' in method '%s'", param_name,
+                                    method_name);
                                 continue;
                             }
                         } else {
-                            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION,
-                                                 param->location,
-                                                 "Parameter '%s' in method '%s' missing type annotation", 
-                                                 param_name, method_name);
+                            semantic_report_error(
+                                analyzer, SEMANTIC_ERROR_INVALID_OPERATION, param->location,
+                                "Parameter '%s' in method '%s' missing type annotation", param_name,
+                                method_name);
                             continue;
                         }
                     }
 
                     if (param_type) {
-                        SymbolEntry *param_symbol = symbol_entry_create(param_name, SYMBOL_VARIABLE, param_type, param);
+                        SymbolEntry *param_symbol =
+                            symbol_entry_create(param_name, SYMBOL_VARIABLE, param_type, param);
                         if (param_symbol) {
-                            symbol_table_insert_safe(analyzer->current_scope, param_name, param_symbol);
+                            symbol_table_insert_safe(analyzer->current_scope, param_name,
+                                                     param_symbol);
                         }
                     }
                 }
@@ -293,7 +290,8 @@ bool analyze_method_declaration(SemanticAnalyzer *analyzer, ASTNode *method_decl
 // VISIBILITY CHECKING
 // =============================================================================
 
-bool check_method_visibility(SemanticAnalyzer *analyzer, const char *struct_name, const char *method_name, SourceLocation location) {
+bool check_method_visibility(SemanticAnalyzer *analyzer, const char *struct_name,
+                             const char *method_name, SourceLocation location) {
     if (!analyzer || !struct_name || !method_name) {
         return false;
     }
@@ -301,26 +299,24 @@ bool check_method_visibility(SemanticAnalyzer *analyzer, const char *struct_name
     // Get the struct symbol
     SymbolEntry *struct_symbol = symbol_table_lookup_safe(analyzer->current_scope, struct_name);
     if (!struct_symbol || !struct_symbol->type) {
-        semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL,
-                             location,
-                             "Unknown struct '%s' in method access", struct_name);
+        semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL, location,
+                              "Unknown struct '%s' in method access", struct_name);
         return false;
     }
 
     TypeDescriptor *struct_type = struct_symbol->type;
     if (struct_type->category != TYPE_STRUCT || !struct_type->data.struct_type.methods) {
-        semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH,
-                             location,
-                             "Symbol '%s' has no methods", struct_name);
+        semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, location,
+                              "Symbol '%s' has no methods", struct_name);
         return false;
     }
 
     // Look up the method
-    SymbolEntry *method_symbol = symbol_table_lookup_local(struct_type->data.struct_type.methods, method_name);
+    SymbolEntry *method_symbol =
+        symbol_table_lookup_local(struct_type->data.struct_type.methods, method_name);
     if (!method_symbol) {
-        semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL,
-                             location,
-                             "Struct '%s' has no method '%s'", struct_name, method_name);
+        semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL, location,
+                              "Struct '%s' has no method '%s'", struct_name, method_name);
         return false;
     }
 
@@ -331,4 +327,4 @@ bool check_method_visibility(SemanticAnalyzer *analyzer, const char *struct_name
     }
 
     return true;
-} 
+}

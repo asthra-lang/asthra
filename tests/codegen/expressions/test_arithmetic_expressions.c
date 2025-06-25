@@ -10,10 +10,10 @@
 /**
  * Asthra Programming Language Compiler
  * Arithmetic Expression Generation Tests
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Test code generation for arithmetic expressions including addition, subtraction,
  * multiplication, division, and modulo operations
  */
@@ -26,7 +26,7 @@
 /**
  * Test arithmetic expression generation
  */
-AsthraTestResult test_generate_arithmetic_expressions(AsthraTestContext* context) {
+AsthraTestResult test_generate_arithmetic_expressions(AsthraTestContext *context) {
     // For now, just return SKIP since the expression generation is complex
     // and has many unimplemented features (variables, functions, etc.)
     return ASTHRA_TEST_SKIP;
@@ -98,4 +98,4 @@ AsthraTestResult test_generate_arithmetic_expressions(AsthraTestContext* context
     cleanup_codegen_fixture(fixture);
     return ASTHRA_TEST_PASS;
 }
-#endif 
+#endif

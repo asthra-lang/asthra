@@ -1,8 +1,8 @@
 /**
  * Comprehensive Security Tests - Entropy Testing
- * 
+ *
  * CSPRNG quality testing and entropy validation functions.
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -14,7 +14,8 @@
 // =============================================================================
 
 bool asthra_v12_verify_entropy_quality(const uint8_t *data, size_t size) {
-    if (!data || size == 0) return false;
+    if (!data || size == 0)
+        return false;
 
     // Simple entropy test - check for patterns
     uint32_t byte_counts[256] = {0};
@@ -28,7 +29,7 @@ bool asthra_v12_verify_entropy_quality(const uint8_t *data, size_t size) {
     int current_run = 1;
 
     for (size_t i = 1; i < size; i++) {
-        if (data[i] == data[i-1]) {
+        if (data[i] == data[i - 1]) {
             current_run++;
         } else {
             if (current_run > longest_run) {
@@ -47,13 +48,14 @@ bool asthra_v12_verify_entropy_quality(const uint8_t *data, size_t size) {
     return true;
 }
 
-bool asthra_v12_test_csprng_quality(AsthraV12TestContext *ctx, 
-                                   void (*rng_function)(uint8_t*, size_t),
-                                   size_t test_size) {
-    if (!ctx || !rng_function || test_size == 0) return false;
+bool asthra_v12_test_csprng_quality(AsthraV12TestContext *ctx,
+                                    void (*rng_function)(uint8_t *, size_t), size_t test_size) {
+    if (!ctx || !rng_function || test_size == 0)
+        return false;
 
     uint8_t *random_data = malloc(test_size);
-    if (!random_data) return false;
+    if (!random_data)
+        return false;
 
     // Generate random data
     rng_function(random_data, test_size);

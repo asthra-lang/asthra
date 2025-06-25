@@ -213,5 +213,5 @@ cmake --build build --target analyze   # Static analysis with Clang Static Analy
 
 ## Development Workflow Reminders
 
-- After modifying source files: `cmake --build build -j8 && cmake --build build --target build-tests`
+- After modifying source files: `cmake --build build -j8 && cmake --build build --target build-tests && cmake --build build --target format`
 - Use incremental builds (see `docs/contributor/guides/test-build-strategy.md`)

@@ -1,16 +1,16 @@
 /**
  * Asthra Programming Language Runtime Safety System Test Stubs
  * Stub implementations for safety runtime functions used in tests
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
 
 #include "../../runtime/asthra_safety.h"
-#include <stdio.h>
 #include <stdbool.h>
-#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 // Note: asthra_safety_get_config_ptr is already implemented in the runtime library
 
@@ -29,8 +29,7 @@ int asthra_safety_register_result_tracker(AsthraResult result, const char *locat
 
 int asthra_safety_mark_result_handled(uint64_t result_id, const char *handler) {
     // Stub: Always succeed
-    printf("[STUB] Mark result %llu handled by %s\n", 
-           (unsigned long long)result_id, handler);
+    printf("[STUB] Mark result %llu handled by %s\n", (unsigned long long)result_id, handler);
     return 0;
 }
 
@@ -42,9 +41,9 @@ void asthra_safety_check_unhandled_results(void) {
 // Forward declaration to avoid including full header
 typedef struct AsthraExtendedTestContext AsthraV12TestContext;
 
-// Stub for constant time verification  
-bool asthra_v12_verify_constant_time(AsthraV12TestContext *ctx, 
-                                    void (*func)(void*), void *data, size_t iterations) {
+// Stub for constant time verification
+bool asthra_v12_verify_constant_time(AsthraV12TestContext *ctx, void (*func)(void *), void *data,
+                                     size_t iterations) {
     // Stub: Just run the function and return true
     printf("[STUB] Verifying constant time for %zu iterations\n", iterations);
     if (func && data) {
@@ -61,11 +60,12 @@ void asthra_record_ai_feedback(AsthraV12TestContext *ctx, const char *feedback) 
     (void)ctx;
 }
 
-// Missing security test helper stubs  
+// Missing security test helper stubs
 bool asthra_v12_verify_entropy_quality(const uint8_t *data, size_t size) {
     // Stub implementation: just check that data is not all zeros
-    if (!data || size == 0) return false;
-    
+    if (!data || size == 0)
+        return false;
+
     bool has_nonzero = false;
     for (size_t i = 0; i < size && i < 256; i++) {
         if (data[i] != 0) {
@@ -77,12 +77,13 @@ bool asthra_v12_verify_entropy_quality(const uint8_t *data, size_t size) {
 }
 
 // Stub for slice type safety validation
-AsthraTypeSafetyCheck asthra_safety_validate_slice_type_safety(AsthraSliceHeader slice, uint32_t expected_type_id) {
+AsthraTypeSafetyCheck asthra_safety_validate_slice_type_safety(AsthraSliceHeader slice,
+                                                               uint32_t expected_type_id) {
     AsthraTypeSafetyCheck check;
     check.is_valid = (slice.type_id == expected_type_id);
     check.actual_type_id = slice.type_id;
     check.expected_type_id = expected_type_id;
-    snprintf(check.type_error_message, sizeof(check.type_error_message), 
+    snprintf(check.type_error_message, sizeof(check.type_error_message),
              check.is_valid ? "Type match" : "Type mismatch");
     check.context = "slice type validation";
     return check;
@@ -90,8 +91,9 @@ AsthraTypeSafetyCheck asthra_safety_validate_slice_type_safety(AsthraSliceHeader
 
 // Stub for secure memory zeroing verification
 bool asthra_v12_verify_secure_memory_zeroing(const uint8_t *buffer, size_t size) {
-    if (!buffer || size == 0) return false;
-    
+    if (!buffer || size == 0)
+        return false;
+
     // Check if buffer is zeroed
     for (size_t i = 0; i < size; i++) {
         if (buffer[i] != 0) {
@@ -111,9 +113,8 @@ void asthra_v12_secure_memory_zero(void *ptr, size_t size) {
     }
 }
 
-bool asthra_v12_test_csprng_quality(AsthraV12TestContext *ctx, 
-                                   void (*rng_function)(uint8_t*, size_t),
-                                   size_t test_size) {
+bool asthra_v12_test_csprng_quality(AsthraV12TestContext *ctx,
+                                    void (*rng_function)(uint8_t *, size_t), size_t test_size) {
     (void)ctx;
     printf("[STUB] Testing CSPRNG quality with %zu bytes\n", test_size);
     if (rng_function) {
@@ -128,11 +129,8 @@ bool asthra_v12_test_csprng_quality(AsthraV12TestContext *ctx,
     return false;
 }
 
-bool asthra_v12_verify_side_channel_resistance(AsthraV12TestContext *ctx,
-                                              void (*operation)(void*),
-                                              void *data1,
-                                              void *data2,
-                                              size_t iterations) {
+bool asthra_v12_verify_side_channel_resistance(AsthraV12TestContext *ctx, void (*operation)(void *),
+                                               void *data1, void *data2, size_t iterations) {
     (void)ctx;
     printf("[STUB] Testing side-channel resistance for %zu iterations\n", iterations);
     if (operation) {
@@ -148,4 +146,3 @@ void asthra_v12_security_print_results(const AsthraV12TestContext *ctx) {
     (void)ctx;
     printf("[STUB] Security test results summary\n");
 }
-

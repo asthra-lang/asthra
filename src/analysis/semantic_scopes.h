@@ -1,10 +1,10 @@
 /**
  * Asthra Programming Language Compiler
  * Semantic Analysis - Scope Management Module Header
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Scope creation, management, and navigation
  */
 
@@ -40,4 +40,4 @@ uint32_t semantic_get_current_scope_id(SemanticAnalyzer *analyzer);
 }
 #endif
 
-#endif // ASTHRA_SEMANTIC_SCOPES_H 
+#endif // ASTHRA_SEMANTIC_SCOPES_H

@@ -6,10 +6,10 @@
 /**
  * Asthra Programming Language Compiler
  * Unary Expression Generation Tests
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
- * 
+ *
  * Test code generation for unary expressions including unary minus, unary plus,
  * logical NOT, and bitwise NOT operations
  */
@@ -20,9 +20,10 @@
 /**
  * Test unary expression generation (simplified)
  */
-AsthraTestResult test_generate_unary_expressions(AsthraTestContext* context) {
+AsthraTestResult test_generate_unary_expressions(AsthraTestContext *context) {
     // Log that we're skipping these tests for now
-    return ASTHRA_TEST_SKIP;;
+    return ASTHRA_TEST_SKIP;
+    ;
     return ASTHRA_TEST_PASS;
 }
 
@@ -86,4 +87,4 @@ AsthraTestResult test_generate_unary_expressions_original(AsthraTestContext* con
     cleanup_codegen_fixture(fixture);
     return ASTHRA_TEST_PASS;
 }
-#endif 
+#endif

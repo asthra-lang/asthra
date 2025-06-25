@@ -1,7 +1,7 @@
 /**
  * Asthra Programming Language Runtime Safety - Runtime Validation Systems
  * Header file for result tracking, pattern matching, scheduler events, and C-task interactions
- * 
+ *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
@@ -49,7 +49,8 @@ void asthra_safety_check_unhandled_results(void);
  * @param result_type_id Type ID for result type validation
  * @return Pattern completeness check result
  */
-AsthraPatternCompletenessCheck asthra_safety_verify_match_exhaustiveness(AsthraMatchArm *arms, size_t arm_count, 
+AsthraPatternCompletenessCheck asthra_safety_verify_match_exhaustiveness(AsthraMatchArm *arms,
+                                                                         size_t arm_count,
                                                                          uint32_t result_type_id);
 
 /**
@@ -67,11 +68,12 @@ void asthra_safety_log_scheduler_event(AsthraSchedulerEvent event, const char *d
  * @param data Shared data pointer
  * @param data_size Size of shared data
  */
-void asthra_safety_log_c_task_interaction(uint64_t asthra_task_id, pthread_t c_thread_id, 
-                                          const char *interaction_type, void *data, size_t data_size);
+void asthra_safety_log_c_task_interaction(uint64_t asthra_task_id, pthread_t c_thread_id,
+                                          const char *interaction_type, void *data,
+                                          size_t data_size);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // ASTHRA_SAFETY_RUNTIME_VALIDATION_H 
+#endif // ASTHRA_SAFETY_RUNTIME_VALIDATION_H

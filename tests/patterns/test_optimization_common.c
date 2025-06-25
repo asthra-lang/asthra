@@ -2,12 +2,12 @@
  * =============================================================================
  * PATTERN OPTIMIZATION TEST COMMON UTILITIES - IMPLEMENTATION
  * =============================================================================
- * 
+ *
  * This file contains the implementations of shared utility functions used
  * across all pattern optimization test files.
- * 
+ *
  * Part of Phase 3.3: Advanced Pattern Matching
- * 
+ *
  * =============================================================================
  */
 
@@ -62,16 +62,16 @@ PerformanceMeasurement start_performance_measurement(void) {
     return measurement;
 }
 
-void end_performance_measurement(PerformanceMeasurement* measurement) {
+void end_performance_measurement(PerformanceMeasurement *measurement) {
     measurement->end_time = clock();
     getrusage(RUSAGE_SELF, &measurement->end_usage);
 }
 
-double get_cpu_time_ms(const PerformanceMeasurement* measurement) {
+double get_cpu_time_ms(const PerformanceMeasurement *measurement) {
     return ((double)(measurement->end_time - measurement->start_time)) / CLOCKS_PER_SEC * 1000.0;
 }
 
-long get_memory_usage_kb(const PerformanceMeasurement* measurement) {
+long get_memory_usage_kb(const PerformanceMeasurement *measurement) {
     return measurement->end_usage.ru_maxrss - measurement->start_usage.ru_maxrss;
 }
 
@@ -79,9 +79,9 @@ long get_memory_usage_kb(const PerformanceMeasurement* measurement) {
 // PATTERN COMPILATION FUNCTIONS
 // =============================================================================
 
-PatternCompilationResult* compile_patterns(ASTNode* ast, OptimizationLevel level) {
-    PatternCompilationResult* result = malloc(sizeof(PatternCompilationResult));
-    
+PatternCompilationResult *compile_patterns(ASTNode *ast, OptimizationLevel level) {
+    PatternCompilationResult *result = malloc(sizeof(PatternCompilationResult));
+
     // Initialize basic compilation fields
     result->success = true;
     result->pattern_count = 5;
@@ -96,67 +96,67 @@ PatternCompilationResult* compile_patterns(ASTNode* ast, OptimizationLevel level
     result->handles_mixed_patterns = true;
     result->handles_nested_structs = true;
     result->missing_patterns = 0;
-    
+
     // Initialize optimization-specific fields based on level
     switch (level) {
-        case OPTIMIZATION_NONE:
-            result->instruction_count = 50;
-            result->uses_jump_table = false;
-            result->jump_table_size = 0;
-            result->jump_table_density = 0.0;
-            result->uses_hash_table = false;
-            result->hash_table_load_factor = 0.0;
-            result->uses_binary_search = false;
-            result->uses_decision_tree = false;
-            result->decision_tree_depth = 0;
-            result->average_comparisons = 5.0;
-            result->runtime_memory_usage = 1024;
-            result->uses_compact_representation = false;
-            result->optimizes_field_access_order = false;
-            result->minimizes_memory_jumps = false;
-            result->cache_miss_estimate = 0.3;
-            break;
-            
-        case OPTIMIZATION_BASIC:
-            result->instruction_count = 35;
-            result->uses_jump_table = true;
-            result->jump_table_size = 10;
-            result->jump_table_density = 0.8;
-            result->uses_hash_table = false;
-            result->hash_table_load_factor = 0.0;
-            result->uses_binary_search = false;
-            result->uses_decision_tree = false;
-            result->decision_tree_depth = 0;
-            result->average_comparisons = 3.5;
-            result->runtime_memory_usage = 768;
-            result->uses_compact_representation = false;
-            result->optimizes_field_access_order = false;
-            result->minimizes_memory_jumps = false;
-            result->cache_miss_estimate = 0.2;
-            break;
-            
-        case OPTIMIZATION_FULL:
-            result->instruction_count = 20;
-            result->uses_jump_table = true;
-            result->jump_table_size = 10;
-            result->jump_table_density = 1.0;
-            result->uses_hash_table = false;
-            result->hash_table_load_factor = 0.0;
-            result->uses_binary_search = false;
-            result->uses_decision_tree = true;
-            result->decision_tree_depth = 3;
-            result->average_comparisons = 2.5;
-            result->runtime_memory_usage = 512;
-            result->uses_compact_representation = true;
-            result->optimizes_field_access_order = true;
-            result->minimizes_memory_jumps = true;
-            result->cache_miss_estimate = 0.05;
-            break;
+    case OPTIMIZATION_NONE:
+        result->instruction_count = 50;
+        result->uses_jump_table = false;
+        result->jump_table_size = 0;
+        result->jump_table_density = 0.0;
+        result->uses_hash_table = false;
+        result->hash_table_load_factor = 0.0;
+        result->uses_binary_search = false;
+        result->uses_decision_tree = false;
+        result->decision_tree_depth = 0;
+        result->average_comparisons = 5.0;
+        result->runtime_memory_usage = 1024;
+        result->uses_compact_representation = false;
+        result->optimizes_field_access_order = false;
+        result->minimizes_memory_jumps = false;
+        result->cache_miss_estimate = 0.3;
+        break;
+
+    case OPTIMIZATION_BASIC:
+        result->instruction_count = 35;
+        result->uses_jump_table = true;
+        result->jump_table_size = 10;
+        result->jump_table_density = 0.8;
+        result->uses_hash_table = false;
+        result->hash_table_load_factor = 0.0;
+        result->uses_binary_search = false;
+        result->uses_decision_tree = false;
+        result->decision_tree_depth = 0;
+        result->average_comparisons = 3.5;
+        result->runtime_memory_usage = 768;
+        result->uses_compact_representation = false;
+        result->optimizes_field_access_order = false;
+        result->minimizes_memory_jumps = false;
+        result->cache_miss_estimate = 0.2;
+        break;
+
+    case OPTIMIZATION_FULL:
+        result->instruction_count = 20;
+        result->uses_jump_table = true;
+        result->jump_table_size = 10;
+        result->jump_table_density = 1.0;
+        result->uses_hash_table = false;
+        result->hash_table_load_factor = 0.0;
+        result->uses_binary_search = false;
+        result->uses_decision_tree = true;
+        result->decision_tree_depth = 3;
+        result->average_comparisons = 2.5;
+        result->runtime_memory_usage = 512;
+        result->uses_compact_representation = true;
+        result->optimizes_field_access_order = true;
+        result->minimizes_memory_jumps = true;
+        result->cache_miss_estimate = 0.05;
+        break;
     }
-    
+
     result->has_errors = false;
     result->error_message = NULL;
-    
+
     return result;
 }
 
@@ -164,20 +164,20 @@ PatternCompilationResult* compile_patterns(ASTNode* ast, OptimizationLevel level
 // PERFORMANCE PROFILING FUNCTIONS
 // =============================================================================
 
-void enable_pattern_profiling(PatternCompilationResult* result) {
+void enable_pattern_profiling(PatternCompilationResult *result) {
     // Enable profiling for pattern execution
     // In a real implementation, this would set up profiling hooks
 }
 
-PatternPerformanceProfile* get_pattern_performance_profile(PatternCompilationResult* result) {
-    PatternPerformanceProfile* profile = malloc(sizeof(PatternPerformanceProfile));
-    
+PatternPerformanceProfile *get_pattern_performance_profile(PatternCompilationResult *result) {
+    PatternPerformanceProfile *profile = malloc(sizeof(PatternPerformanceProfile));
+
     // Mock performance profile data
     profile->average_execution_time_ns = 500.0;
     profile->cache_hit_rate = 0.98;
     profile->branch_misprediction_rate = 0.02;
     profile->total_executions = 50000;
-    
+
     // Initialize pattern hit counts
     for (int i = 0; i < 20; i++) {
         if (i < 5) {
@@ -186,11 +186,11 @@ PatternPerformanceProfile* get_pattern_performance_profile(PatternCompilationRes
             profile->pattern_hit_counts[i] = 0;
         }
     }
-    
+
     return profile;
 }
 
-void cleanup_pattern_performance_profile(PatternPerformanceProfile* profile) {
+void cleanup_pattern_performance_profile(PatternPerformanceProfile *profile) {
     if (profile) {
         free(profile);
     }
@@ -200,7 +200,7 @@ void cleanup_pattern_performance_profile(PatternPerformanceProfile* profile) {
 // CLEANUP FUNCTIONS
 // =============================================================================
 
-void cleanup_pattern_compilation_result(PatternCompilationResult* result) {
+void cleanup_pattern_compilation_result(PatternCompilationResult *result) {
     if (result) {
         if (result->error_message) {
             free(result->error_message);
@@ -227,4 +227,4 @@ void init_pattern_compiler(void) {
 
 void cleanup_pattern_compiler(void) {
     // Mock implementation
-} 
+}
