@@ -76,8 +76,17 @@ jobs:
           pkg-config \
           gperf
         
+        # Install LLVM 18 (required)
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+        sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main"
+        sudo apt-get update -y
+        sudo apt-get install -y llvm-18 llvm-18-dev clang-18 || {
+          echo "Failed to install LLVM 18, trying default version"
+          sudo apt-get install -y llvm llvm-dev clang
+        }
+        
         # Install optional dependencies (non-critical)
-        sudo apt-get install -y valgrind clang-tools llvm || echo "Optional tools not available"
+        sudo apt-get install -y valgrind clang-tools || echo "Optional tools not available"
         sudo apt-get install -y libjson-c-dev || echo "json-c package not available, CMake will handle it"
         
         echo "✓ Linux dependencies installed successfully"
@@ -92,7 +101,13 @@ jobs:
           cmake \
           pkg-config \
           gperf \
+          llvm@18 \
           json-c || echo "Some packages may already be installed"
+        
+        # Add LLVM to PATH
+        echo "/opt/homebrew/opt/llvm@18/bin" >> $GITHUB_PATH
+        echo "LDFLAGS=-L/opt/homebrew/opt/llvm@18/lib" >> $GITHUB_ENV
+        echo "CPPFLAGS=-I/opt/homebrew/opt/llvm@18/include" >> $GITHUB_ENV
         
         echo "✓ macOS dependencies installed successfully"
           
@@ -114,6 +129,27 @@ jobs:
         ${{ matrix.cxx }} --version
         
         echo "✓ Compiler environment set successfully"
+    
+    - name: Verify LLVM installation
+      run: |
+        set -e
+        echo "=== Verifying LLVM Installation ==="
+        
+        # Try to find llvm-config
+        if command -v llvm-config-18 >/dev/null 2>&1; then
+          echo "Found llvm-config-18"
+          llvm-config-18 --version
+          echo "LLVM_CONFIG=llvm-config-18" >> $GITHUB_ENV
+        elif command -v llvm-config >/dev/null 2>&1; then
+          echo "Found llvm-config"
+          llvm-config --version
+          echo "LLVM_CONFIG=llvm-config" >> $GITHUB_ENV
+        else
+          echo "ERROR: LLVM not found!"
+          exit 1
+        fi
+        
+        echo "✓ LLVM verified successfully"
 
     # =============================================================================
     # BUILD INFORMATION

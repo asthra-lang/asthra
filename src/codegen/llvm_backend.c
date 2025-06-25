@@ -17,18 +17,15 @@
 #include <assert.h>
 #include <time.h>
 
-#ifdef ASTHRA_ENABLE_LLVM_BACKEND
 #include <llvm-c/Core.h>
 #include <llvm-c/Analysis.h>
 #include <llvm-c/BitWriter.h>
 #include <llvm-c/Target.h>
 #include <llvm-c/TargetMachine.h>
 #include <llvm-c/DebugInfo.h>
-#endif
 
 // Private data for LLVM backend
 typedef struct LLVMBackendData {
-#ifdef ASTHRA_ENABLE_LLVM_BACKEND
     LLVMContextRef context;
     LLVMModuleRef module;
     LLVMBuilderRef builder;
@@ -65,9 +62,6 @@ typedef struct LLVMBackendData {
     LLVMMetadataRef di_bool_type;
     LLVMMetadataRef di_void_type;
     LLVMMetadataRef di_ptr_type;
-#else
-    void *dummy; // Keep struct non-empty
-#endif
     char *output_filename;
 } LLVMBackendData;
 
@@ -87,10 +81,6 @@ static LLVMValueRef generate_unary_op(LLVMBackendData *data, const ASTNode *node
 static int llvm_backend_initialize(AsthraBackend *backend, const AsthraCompilerOptions *options) {
     if (!backend || !options) return -1;
     
-#ifndef ASTHRA_ENABLE_LLVM_BACKEND
-    backend->last_error = "LLVM backend support not compiled in. Please rebuild with -DENABLE_LLVM_BACKEND=ON";
-    return -1;
-#else
     // Allocate private data
     LLVMBackendData *data = calloc(1, sizeof(LLVMBackendData));
     if (!data) {
@@ -168,10 +158,7 @@ static int llvm_backend_initialize(AsthraBackend *backend, const AsthraCompilerO
     
     // Success
     return 0;
-#endif
 }
-
-#ifdef ASTHRA_ENABLE_LLVM_BACKEND
 
 // Additional forward declarations  
 static void generate_function(LLVMBackendData *data, const ASTNode *node);
@@ -1002,6 +989,15 @@ static void generate_statement(LLVMBackendData *data, const ASTNode *node) {
             {
                 LLVMValueRef ret_val = NULL;
                 if (node->data.return_stmt.expression) {
+                    // Check if the expression is a unit literal for void return
+                    if (node->data.return_stmt.expression->type == AST_UNIT_LITERAL) {
+                        // For unit literals in void functions, use RetVoid
+                        LLVMTypeRef fn_ret_type = LLVMGetReturnType(LLVMGetElementType(LLVMTypeOf(data->current_function)));
+                        if (fn_ret_type == data->void_type) {
+                            LLVMBuildRetVoid(data->builder);
+                            break;
+                        }
+                    }
                     ret_val = generate_expression(data, node->data.return_stmt.expression);
                 }
                 
@@ -1279,6 +1275,7 @@ static void generate_statement(LLVMBackendData *data, const ASTNode *node) {
 static void generate_function(LLVMBackendData *data, const ASTNode *node) {
     if (!node || node->type != AST_FUNCTION_DECL) return;
     
+    
     // Get function type from type_info
     TypeInfo *func_type = node->type_info;
     
@@ -1304,7 +1301,46 @@ static void generate_function(LLVMBackendData *data, const ASTNode *node) {
         for (int i = 0; i < param_count; i++) {
             ASTNode *param = node->data.function_decl.params->nodes[i];
             if (param && param->type == AST_PARAM_DECL) {
-                param_types[i] = asthra_type_to_llvm(data, param->type_info);
+                // Get type from param declaration
+                TypeInfo *param_type_info = NULL;
+                
+                // First check if param has direct type_info
+                if (param->type_info) {
+                    param_type_info = param->type_info;
+                }
+                // Then check param declaration's type node
+                else if (param->data.param_decl.type) {
+                    ASTNode *type_node = param->data.param_decl.type;
+                    if (type_node->type_info) {
+                        param_type_info = type_node->type_info;
+                    }
+                    // If still no type_info, try to infer from AST_BASE_TYPE
+                    else if (type_node->type == AST_BASE_TYPE) {
+                        // Map base type names to LLVM types
+                        const char *type_name = type_node->data.base_type.name;
+                        if (strcmp(type_name, "i32") == 0) {
+                            param_types[i] = data->i32_type;
+                            continue;
+                        } else if (strcmp(type_name, "i64") == 0) {
+                            param_types[i] = data->i64_type;
+                            continue;
+                        } else if (strcmp(type_name, "f32") == 0) {
+                            param_types[i] = data->f32_type;
+                            continue;
+                        } else if (strcmp(type_name, "f64") == 0) {
+                            param_types[i] = data->f64_type;
+                            continue;
+                        } else if (strcmp(type_name, "bool") == 0) {
+                            param_types[i] = data->bool_type;
+                            continue;
+                        } else if (strcmp(type_name, "string") == 0) {
+                            param_types[i] = data->ptr_type;
+                            continue;
+                        }
+                    }
+                }
+                
+                param_types[i] = asthra_type_to_llvm(data, param_type_info);
             } else {
                 param_types[i] = data->void_type;
             }
@@ -1426,7 +1462,14 @@ static void generate_function(LLVMBackendData *data, const ASTNode *node) {
         if (LLVMVerifyFunction(function, LLVMReturnStatusAction)) {
             // Function verification failed - this should not happen with our corrected implementation
             fprintf(stderr, "LLVM function verification failed for %s\n", node->data.function_decl.name);
+            
+            // Get detailed error info
+            char *func_str = LLVMPrintValueToString(function);
+            fprintf(stderr, "Function dump:\n%s\n", func_str ? func_str : "null");
+            if (func_str) LLVMDisposeMessage(func_str);
+            
             LLVMDeleteFunction(function);
+        } else {
         }
     }
     
@@ -1435,7 +1478,10 @@ static void generate_function(LLVMBackendData *data, const ASTNode *node) {
 
 // Generate code for top-level declarations
 static void generate_top_level(LLVMBackendData *data, const ASTNode *node) {
-    if (!node) return;
+    if (!node) {
+        return;
+    }
+    
     
     switch (node->type) {
         case AST_FUNCTION_DECL:
@@ -1455,17 +1501,11 @@ static void generate_top_level(LLVMBackendData *data, const ASTNode *node) {
     }
 }
 
-#endif // ASTHRA_ENABLE_LLVM_BACKEND
-
 // Generate LLVM IR from AST
 static int llvm_backend_generate(AsthraBackend *backend, 
                                 AsthraCompilerContext *ctx,
                                 const ASTNode *ast,
                                 const char *output_file) {
-#ifndef ASTHRA_ENABLE_LLVM_BACKEND
-    backend->last_error = "LLVM backend support not compiled in";
-    return -1;
-#else
     if (!backend || !backend->private_data || !ctx || !ast || !output_file) {
         backend->last_error = "Invalid parameters for LLVM code generation";
         return -1;
@@ -1552,7 +1592,6 @@ static int llvm_backend_generate(AsthraBackend *backend,
     backend->stats.generation_time = ((double)(end_time - start_time) / CLOCKS_PER_SEC) * 1000.0;
     
     return result;
-#endif
 }
 
 // Optimize LLVM IR
@@ -1572,7 +1611,6 @@ static void llvm_backend_cleanup(AsthraBackend *backend) {
     
     LLVMBackendData *data = (LLVMBackendData*)backend->private_data;
     
-#ifdef ASTHRA_ENABLE_LLVM_BACKEND
     // Dispose of LLVM resources in reverse order
     if (data->di_builder) {
         LLVMDisposeDIBuilder(data->di_builder);
@@ -1589,7 +1627,6 @@ static void llvm_backend_cleanup(AsthraBackend *backend) {
     if (data->context) {
         LLVMContextDispose(data->context);
     }
-#endif
     
     if (data->output_filename) {
         free(data->output_filename);
@@ -1601,9 +1638,6 @@ static void llvm_backend_cleanup(AsthraBackend *backend) {
 
 // Check if LLVM backend supports a feature
 static bool llvm_backend_supports_feature(AsthraBackend *backend, const char *feature) {
-#ifndef ASTHRA_ENABLE_LLVM_BACKEND
-    return false;
-#else
     if (!feature) return false;
     
     // List of supported features
@@ -1624,28 +1658,19 @@ static bool llvm_backend_supports_feature(AsthraBackend *backend, const char *fe
     }
     
     return false;
-#endif
 }
 
 // Get backend version
 static const char* llvm_backend_get_version(AsthraBackend *backend) {
-#ifdef ASTHRA_ENABLE_LLVM_BACKEND
     static char version[128];
     snprintf(version, sizeof(version), "1.0.0 (LLVM %d.%d.%d)", 
              LLVM_VERSION_MAJOR, LLVM_VERSION_MINOR, LLVM_VERSION_PATCH);
     return version;
-#else
-    return "0.0.1-stub";
-#endif
 }
 
 // Get backend name
 static const char* llvm_backend_get_name(AsthraBackend *backend) {
-#ifdef ASTHRA_ENABLE_LLVM_BACKEND
     return "Asthra LLVM IR Generator Backend";
-#else
-    return "Asthra LLVM IR Generator Backend (Not Compiled)";
-#endif
 }
 
 // LLVM Backend operations structure

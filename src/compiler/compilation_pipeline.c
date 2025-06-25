@@ -13,6 +13,7 @@
 #include "../platform.h"
 #include "../compiler.h"
 #include "../codegen/backend_interface.h"
+#include "../codegen/llvm_tools.h"
 
 // Platform-specific includes for system() return value handling
 #if ASTHRA_PLATFORM_UNIX
@@ -37,6 +38,7 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
     }
 
     printf("Compiling %s -> %s\n", input_file, output_file);
+    printf("Debug: Output format in compile_file: %d\n", ctx->options.output_format);
 
     // Phase 1: Read source file
     printf("  Phase 1: Reading source file\n");
@@ -189,6 +191,8 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
                                                                  output_file);
     }
     
+    printf("Debug: backend_output_file = '%s', output_file = '%s'\n", backend_output_file, output_file);
+    
     // Generate code using backend with progress reporting
     printf("    Generating code with %s backend...\n", backend_name);
     int gen_result = asthra_backend_generate(backend, ctx, program, backend_output_file);
@@ -229,10 +233,85 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
                asthra_backend_get_name(backend), asthra_backend_get_version(backend));
     }
 
-    // Phase 6: Linking (skipped for LLVM backend)
+    // Phase 6: Post-processing with LLVM tools (if needed)
     int result = 0;
-    printf("  Phase 6: Linking (skipped for %s backend)\n", 
-           asthra_backend_get_name(backend));
+    
+    // Check if we need to use LLVM tools for the output format
+    AsthraOutputFormat final_format = ctx->options.output_format;
+    if (final_format == ASTHRA_FORMAT_DEFAULT) {
+        // Determine format from output file extension
+        const char *ext = strrchr(output_file, '.');
+        if (ext) {
+            if (strcmp(ext, ".ll") == 0) {
+                final_format = ASTHRA_FORMAT_LLVM_IR;
+            } else if (strcmp(ext, ".bc") == 0) {
+                final_format = ASTHRA_FORMAT_LLVM_BC;
+            } else if (strcmp(ext, ".s") == 0) {
+                final_format = ASTHRA_FORMAT_ASSEMBLY;
+            } else if (strcmp(ext, ".o") == 0) {
+                final_format = ASTHRA_FORMAT_OBJECT;
+            } else {
+                final_format = ASTHRA_FORMAT_EXECUTABLE;
+            }
+        } else {
+            final_format = ASTHRA_FORMAT_EXECUTABLE;
+        }
+    }
+    
+    // If the backend already produced the desired format, we're done
+    bool needs_llvm_tools = false;
+    if (ctx->options.backend_type == ASTHRA_BACKEND_LLVM_IR) {
+        // LLVM backend produces .ll files by default
+        if (final_format == ASTHRA_FORMAT_LLVM_IR && strcmp(backend_output_file, output_file) == 0) {
+            // Already in the right format at the right location
+            needs_llvm_tools = false;
+        } else {
+            // Need to convert or move
+            needs_llvm_tools = true;
+        }
+    }
+    
+    if (needs_llvm_tools) {
+        printf("  Phase 6: LLVM tools pipeline\n");
+        
+        // Check if LLVM tools are available
+        if (!asthra_llvm_tools_available()) {
+            printf("Error: LLVM tools (llc, opt, clang) not found in PATH\n");
+            printf("Please install LLVM 18.0 or later and ensure tools are in PATH\n");
+            result = -1;
+        } else {
+            // Run LLVM compilation pipeline
+            AsthraLLVMToolResult tool_result = asthra_llvm_compile_pipeline(
+                backend_output_file, 
+                output_file,
+                final_format,
+                &ctx->options
+            );
+            
+            if (!tool_result.success) {
+                printf("Error: LLVM tools pipeline failed\n");
+                if (tool_result.stderr_output) {
+                    printf("  Details: %s\n", tool_result.stderr_output);
+                }
+                result = -1;
+            } else {
+                printf("  ✓ Output generated successfully: %s\n", output_file);
+                if (ctx->options.verbose && tool_result.execution_time_ms > 0) {
+                    printf("    LLVM tools execution time: %.3f seconds\n", 
+                           tool_result.execution_time_ms / 1000.0);
+                }
+            }
+            
+            asthra_llvm_tool_result_free(&tool_result);
+        }
+        
+        // Clean up temporary IR file if different from output
+        if (strcmp(backend_output_file, output_file) != 0) {
+            unlink(backend_output_file);
+        }
+    } else {
+        printf("  Phase 6: Output ready (no post-processing needed)\n");
+    }
     
     // Clean up
     free(backend_output_file);
@@ -243,23 +322,9 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
     lexer_destroy(lexer);
     free(source_code);
     
-    if (result == -1) {
-        printf("Error: Failed to execute compile command\n");
-        return -1;
-    }
-    
-#if ASTHRA_PLATFORM_UNIX
-    if (!WIFEXITED(result) || WEXITSTATUS(result) != 0) {
-        printf("Error: Failed to compile generated C code\n");
-        return -1;
-    }
-#else
-    // On Windows, system() returns the exit code directly
     if (result != 0) {
-        printf("Error: Failed to compile generated C code (exit code: %d)\n", result);
         return -1;
     }
-#endif
 
     printf("Compilation completed successfully\n");
     return 0;

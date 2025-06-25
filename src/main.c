@@ -102,6 +102,11 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error: Failed to create compiler context\n");
         goto cleanup_and_exit;
     }
+    
+    // Debug: Print output format
+    if (cli_options.compiler_options.verbose) {
+        printf("Output format: %d\n", cli_options.compiler_options.output_format);
+    }
 
     if (cli_options.test_mode) {
         // Run in test mode

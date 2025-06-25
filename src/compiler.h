@@ -69,6 +69,16 @@ typedef enum {
     ASTHRA_BACKEND_LLVM_IR = 1  // LLVM IR is now the only backend
 } AsthraBackendType;
 
+// Output formats supported by the compiler
+typedef enum {
+    ASTHRA_FORMAT_DEFAULT,      // Default based on file extension
+    ASTHRA_FORMAT_LLVM_IR,      // .ll - LLVM IR text format
+    ASTHRA_FORMAT_LLVM_BC,      // .bc - LLVM bitcode
+    ASTHRA_FORMAT_ASSEMBLY,     // .s  - Native assembly (via llc)
+    ASTHRA_FORMAT_OBJECT,       // .o  - Object file (via llc)
+    ASTHRA_FORMAT_EXECUTABLE    // executable (via clang)
+} AsthraOutputFormat;
+
 // Assembly syntax styles (deprecated - kept for API compatibility)
 typedef enum {
     ASTHRA_ASM_SYNTAX_ATT,    // AT&T syntax (no longer used)
@@ -93,11 +103,12 @@ struct AsthraCompilerOptions {
     AsthraOptimizationLevel opt_level;
     AsthraTargetArch target_arch;
     AsthraBackendType backend_type;  // Backend selection
+    AsthraOutputFormat output_format; // Output format (IR, assembly, object, etc.)
     AsthraAssemblySyntax asm_syntax; // Deprecated - kept for API compatibility
     bool debug_info;
     bool verbose;
     bool emit_llvm;      // Deprecated - LLVM is now always used
-    bool emit_asm;       // Deprecated - assembly backend removed
+    bool emit_asm;       // Deprecated - use output_format instead
     bool no_stdlib;
     
     // Dynamic path and library management using flexible arrays

@@ -37,6 +37,7 @@ static const win_option_t win_long_options[] = {
     {"backend", true, 'b'},
     {"emit-llvm", false, 1000},
     {"emit-asm", false, 1001},
+    {"emit", true, 1005},
     {"no-stdlib", false, 1002},
     {"include", true, 'I'},
     {"library-path", true, 'L'},
@@ -122,8 +123,9 @@ void cli_print_usage(const char *program_name) {
     printf("  -v, --verbose           Verbose output\n");
     printf("  -t, --target <arch>     Target architecture (x86_64, arm64, wasm32, native)\n");
     printf("  -b, --backend <type>    Backend type (llvm only, default: llvm)\n");
-    printf("  --emit-llvm             Deprecated - LLVM IR is now the default\n");
-    printf("  --emit-asm              Deprecated - assembly backend removed\n");
+    printf("  --emit <format>         Output format: llvm-ir, llvm-bc, asm, obj, exe\n");
+    printf("  --emit-llvm             Deprecated - Use --emit llvm-ir\n");
+    printf("  --emit-asm              Deprecated - Use --emit asm\n");
     printf("  --no-stdlib             Don't link standard library\n");
     printf("  -I, --include <path>    Add include path\n");
     printf("  -L, --library-path <path> Add library search path\n");
@@ -311,6 +313,7 @@ int cli_parse_arguments(int argc, char *argv[], CliOptions *options) {
         {.name = "backend",      .has_arg = required_argument, .flag = 0, .val = 'b'},
         {.name = "emit-llvm",    .has_arg = no_argument,       .flag = 0, .val = 1000},
         {.name = "emit-asm",     .has_arg = no_argument,       .flag = 0, .val = 1001},
+        {.name = "emit",         .has_arg = required_argument, .flag = 0, .val = 1005},
         {.name = "no-stdlib",    .has_arg = no_argument,       .flag = 0, .val = 1002},
         {.name = "include",      .has_arg = required_argument, .flag = 0, .val = 'I'},
         {.name = "library-path", .has_arg = required_argument, .flag = 0, .val = 'L'},
@@ -382,6 +385,24 @@ int cli_parse_arguments(int argc, char *argv[], CliOptions *options) {
                 break;
             case 1002: // --no-stdlib
                 options->compiler_options.no_stdlib = true;
+                break;
+            case 1005: // --emit
+                if (strcmp(optarg, "llvm-ir") == 0) {
+                    options->compiler_options.output_format = ASTHRA_FORMAT_LLVM_IR;
+                } else if (strcmp(optarg, "llvm-bc") == 0) {
+                    options->compiler_options.output_format = ASTHRA_FORMAT_LLVM_BC;
+                } else if (strcmp(optarg, "asm") == 0) {
+                    options->compiler_options.output_format = ASTHRA_FORMAT_ASSEMBLY;
+                } else if (strcmp(optarg, "obj") == 0) {
+                    options->compiler_options.output_format = ASTHRA_FORMAT_OBJECT;
+                } else if (strcmp(optarg, "exe") == 0) {
+                    options->compiler_options.output_format = ASTHRA_FORMAT_EXECUTABLE;
+                } else {
+                    fprintf(stderr, "Error: Invalid output format '%s'\n", optarg);
+                    fprintf(stderr, "Valid formats: llvm-ir, llvm-bc, asm, obj, exe\n");
+                    options->exit_code = 1;
+                    goto cleanup_and_exit;
+                }
                 break;
             case 1003: // --test-mode
                 options->test_mode = true;

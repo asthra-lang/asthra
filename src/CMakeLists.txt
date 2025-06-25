@@ -12,12 +12,6 @@ list(FILTER ASTHRA_COMPILER_SOURCES EXCLUDE REGEX "ai_server/.*\\.c$")
 # Exclude json_utils.c that also depends on json-c
 list(FILTER ASTHRA_COMPILER_SOURCES EXCLUDE REGEX "utils/json_utils\\.c$")
 
-# Temporarily exclude pipeline orchestrator files that depend on removed code generators
-list(FILTER ASTHRA_COMPILER_SOURCES EXCLUDE REGEX "compiler/pipeline_orchestrator\\.c$")
-list(FILTER ASTHRA_COMPILER_SOURCES EXCLUDE REGEX "compiler/pipeline_core\\.c$")
-list(FILTER ASTHRA_COMPILER_SOURCES EXCLUDE REGEX "compiler/pipeline_phases\\.c$")
-list(FILTER ASTHRA_COMPILER_SOURCES EXCLUDE REGEX "compiler/pipeline_utils\\.c$")
-
 # Platform-specific exclusions
 if(NOT APPLE)
     # Exclude macOS-specific Mach-O files on non-Apple platforms
@@ -91,7 +85,6 @@ target_link_libraries(asthra_compiler
     PUBLIC
         asthra_runtime
         llvm::llvm  # LLVM is now required
-        # json-c::json-c  # Removed - only needed by ai_server which is excluded
 )
 
 target_compile_definitions(asthra_compiler
@@ -100,7 +93,6 @@ target_compile_definitions(asthra_compiler
         ASTHRA_VERSION_MINOR=${PROJECT_VERSION_MINOR}
         ASTHRA_VERSION_PATCH=${PROJECT_VERSION_PATCH}
         ASTHRA_COMPILER_BUILD
-        ASTHRA_ENABLE_LLVM_BACKEND  # Enable LLVM backend compilation
 )
 
 # Compiler executable
@@ -117,4 +109,4 @@ install(TARGETS asthra asthra_compiler
 
 # Include sanitizer and coverage support
 include(${CMAKE_SOURCE_DIR}/cmake/Sanitizers.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/Coverage.cmake) 
+include(${CMAKE_SOURCE_DIR}/cmake/Coverage.cmake)

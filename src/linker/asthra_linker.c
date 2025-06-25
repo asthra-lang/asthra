@@ -9,8 +9,6 @@
 #include "asthra_linker.h"
 #include "../platform.h"
 // ELF and symbol management removed - using LLVM backend only
-// #include "../codegen/elf_writer_core.h"
-// #include "../codegen/elf_symbol_manager.h"
 // #include "../codegen/global_symbols.h"
 #include <stdio.h>
 #include <stdlib.h>

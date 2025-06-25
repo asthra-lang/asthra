@@ -19,7 +19,6 @@
 #include "type_info.h"
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 // =============================================================================
 // EXPRESSION TYPE ANALYSIS

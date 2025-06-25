@@ -9,11 +9,13 @@
 #include <assert.h>
 #include <errno.h>
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__linux__)
 #include <sys/mman.h>
+#endif
+
+#ifdef __APPLE__
 #include <mach/mach.h>
 #elif defined(__linux__)
-#include <sys/mman.h>
 #include <unistd.h>
 #endif
 
