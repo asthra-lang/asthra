@@ -19,10 +19,27 @@ LLVMValueRef generate_expression(LLVMBackendData *data, const ASTNode *node);
 
 // Generate code for binary operations
 LLVMValueRef generate_binary_op(LLVMBackendData *data, const ASTNode *node) {
-    LLVMValueRef left = generate_expression(data, node->data.binary_expr.left);
-    LLVMValueRef right = generate_expression(data, node->data.binary_expr.right);
+    if (!data || !node) {
+        return NULL;
+    }
     
-    if (!left || !right) return NULL;
+    if (!node->data.binary_expr.left) {
+        LLVM_REPORT_ERROR(data, node, "Binary operation missing left operand");
+    }
+    
+    if (!node->data.binary_expr.right) {
+        LLVM_REPORT_ERROR(data, node, "Binary operation missing right operand");
+    }
+    
+    LLVMValueRef left = generate_expression(data, node->data.binary_expr.left);
+    if (!left) {
+        LLVM_REPORT_ERROR(data, node, "Failed to generate left operand for binary operation");
+    }
+    
+    LLVMValueRef right = generate_expression(data, node->data.binary_expr.right);
+    if (!right) {
+        LLVM_REPORT_ERROR(data, node, "Failed to generate right operand for binary operation");
+    }
     
     switch (node->data.binary_expr.operator) {
         case BINOP_ADD:
@@ -127,7 +144,14 @@ LLVMValueRef generate_binary_op(LLVMBackendData *data, const ASTNode *node) {
 
 // Generate code for identifiers (variable/function references)
 LLVMValueRef generate_identifier(LLVMBackendData *data, const ASTNode *node) {
+    if (!data || !node) {
+        return NULL;
+    }
+    
     const char *name = node->data.identifier.name;
+    if (!name) {
+        LLVM_REPORT_ERROR(data, node, "Identifier has no name");
+    }
     
     // First check local variables in current function
     if (data->current_function) {
@@ -193,13 +217,23 @@ LLVMValueRef generate_identifier(LLVMBackendData *data, const ASTNode *node) {
     }
     
     // Not found
-    return NULL;
+    LLVM_REPORT_ERROR_PRINTF(data, node, "Undefined identifier: '%s'", name);
 }
 
 // Generate code for unary operations
 LLVMValueRef generate_unary_op(LLVMBackendData *data, const ASTNode *node) {
+    if (!data || !node) {
+        return NULL;
+    }
+    
+    if (!node->data.unary_expr.operand) {
+        LLVM_REPORT_ERROR(data, node, "Unary operation missing operand");
+    }
+    
     LLVMValueRef operand = generate_expression(data, node->data.unary_expr.operand);
-    if (!operand) return NULL;
+    if (!operand) {
+        LLVM_REPORT_ERROR(data, node, "Failed to generate operand for unary operation");
+    }
     
     switch (node->data.unary_expr.operator) {
         case UNOP_MINUS:
@@ -247,7 +281,7 @@ LLVMValueRef generate_unary_op(LLVMBackendData *data, const ASTNode *node) {
             }
             
         default:
-            return NULL;
+            LLVM_REPORT_ERROR_PRINTF(data, node, "Unsupported unary operator: %d", node->data.unary_expr.operator);
     }
 }
 
@@ -509,19 +543,44 @@ LLVMValueRef generate_field_access(LLVMBackendData *data, const ASTNode *node) {
     
     const char *field_name = node->data.field_access.field_name;
     
-    // TODO: Look up field index from struct type info
-    // For now, we'll need to integrate with the type system
+    // Get struct type info from the object's AST node
+    TypeInfo *struct_type_info = NULL;
+    if (node->data.field_access.object->type_info) {
+        struct_type_info = node->data.field_access.object->type_info;
+    }
     
-    // Placeholder: assume field index 0
+    // Find field index and type
+    uint32_t field_index = 0;
+    LLVMTypeRef field_type = data->i32_type; // Default
+    
+    if (struct_type_info && struct_type_info->category == TYPE_INFO_STRUCT) {
+        // Search for field by name
+        for (size_t i = 0; i < struct_type_info->data.struct_info.field_count; i++) {
+            SymbolEntry *field = struct_type_info->data.struct_info.fields[i];
+            if (field && field->name && strcmp(field->name, field_name) == 0) {
+                field_index = (uint32_t)i;
+                // Get field type
+                if (field->type) {
+                    // Convert TypeDescriptor to TypeInfo
+                    TypeInfo *field_type_info = type_info_from_descriptor(field->type);
+                    if (field_type_info) {
+                        field_type = asthra_type_to_llvm(data, field_type_info);
+                        type_info_release(field_type_info);
+                    }
+                }
+                break;
+            }
+        }
+    }
+    
+    // Build GEP indices
     LLVMValueRef indices[2] = {
         LLVMConstInt(data->i32_type, 0, false),
-        LLVMConstInt(data->i32_type, 0, false) // TODO: Get actual field index
+        LLVMConstInt(data->i32_type, field_index, false)
     };
     
     LLVMTypeRef object_type = LLVMTypeOf(object);
     LLVMValueRef field_ptr = LLVMBuildGEP2(data->builder, object_type, object, indices, 2, field_name);
-    // TODO: Get actual field type from struct info
-    LLVMTypeRef field_type = data->i32_type; // Placeholder
     return LLVMBuildLoad2(data->builder, field_type, field_ptr, field_name);
 }
 
@@ -559,8 +618,168 @@ LLVMValueRef generate_array_literal(LLVMBackendData *data, const ASTNode *node) 
     return array;
 }
 
+// Generate code for cast expressions
+LLVMValueRef generate_cast_expr(LLVMBackendData *data, const ASTNode *node) {
+    if (!data || !node) {
+        return NULL;
+    }
+    
+    if (!node->data.cast_expr.expression) {
+        LLVM_REPORT_ERROR(data, node, "Cast expression missing source expression");
+    }
+    
+    // Check that we have either target_type AST node or type_info
+    if (!node->data.cast_expr.target_type && !node->type_info) {
+        LLVM_REPORT_ERROR(data, node, "Cast expression missing target type");
+    }
+    
+    // Generate the source expression
+    LLVMValueRef source_value = generate_expression(data, node->data.cast_expr.expression);
+    if (!source_value) {
+        LLVM_REPORT_ERROR(data, node, "Failed to generate source expression for cast");
+    }
+    
+    // Get source and target types
+    LLVMTypeRef source_type = LLVMTypeOf(source_value);
+    
+    // Get target type from type_info if available, otherwise from target_type AST node
+    LLVMTypeRef target_type = NULL;
+    if (node->type_info) {
+        target_type = asthra_type_to_llvm(data, node->type_info);
+    } else if (node->data.cast_expr.target_type->type_info) {
+        target_type = asthra_type_to_llvm(data, node->data.cast_expr.target_type->type_info);
+    } else {
+        LLVM_REPORT_ERROR(data, node, "Cast expression missing type information");
+    }
+    
+    if (!target_type) {
+        LLVM_REPORT_ERROR(data, node, "Failed to determine target type for cast");
+    }
+    
+    // If types are identical, no cast needed
+    if (source_type == target_type) {
+        return source_value;
+    }
+    
+    LLVMTypeKind source_kind = LLVMGetTypeKind(source_type);
+    LLVMTypeKind target_kind = LLVMGetTypeKind(target_type);
+    
+    // Perform type-specific casting
+    switch (source_kind) {
+        case LLVMIntegerTypeKind:
+            switch (target_kind) {
+                case LLVMIntegerTypeKind:
+                    {
+                        unsigned source_width = LLVMGetIntTypeWidth(source_type);
+                        unsigned target_width = LLVMGetIntTypeWidth(target_type);
+                        
+                        if (source_width == target_width) {
+                            // Same width, just bitcast
+                            return source_value;
+                        } else if (source_width < target_width) {
+                            // Sign extend (for signed) or zero extend (for unsigned)
+                            // For now, assume signed extension - could be enhanced with type info
+                            return LLVMBuildSExt(data->builder, source_value, target_type, "cast_sext");
+                        } else {
+                            // Truncate
+                            return LLVMBuildTrunc(data->builder, source_value, target_type, "cast_trunc");
+                        }
+                    }
+                    
+                case LLVMFloatTypeKind:
+                case LLVMDoubleTypeKind:
+                    // Integer to floating point
+                    return LLVMBuildSIToFP(data->builder, source_value, target_type, "cast_itof");
+                    
+                case LLVMPointerTypeKind:
+                    // Integer to pointer (inttoptr)
+                    return LLVMBuildIntToPtr(data->builder, source_value, target_type, "cast_itoptr");
+                    
+                default:
+                    LLVM_REPORT_ERROR_PRINTF(data, node, "Unsupported cast from integer to type %d", target_kind);
+            }
+            break;
+            
+        case LLVMFloatTypeKind:
+        case LLVMDoubleTypeKind:
+            switch (target_kind) {
+                case LLVMIntegerTypeKind:
+                    // Floating point to integer
+                    return LLVMBuildFPToSI(data->builder, source_value, target_type, "cast_ftoi");
+                    
+                case LLVMFloatTypeKind:
+                case LLVMDoubleTypeKind:
+                    // Float to float conversion
+                    if (LLVMGetTypeKind(source_type) == LLVMFloatTypeKind && 
+                        target_kind == LLVMDoubleTypeKind) {
+                        // f32 to f64
+                        return LLVMBuildFPExt(data->builder, source_value, target_type, "cast_fpext");
+                    } else if (LLVMGetTypeKind(source_type) == LLVMDoubleTypeKind && 
+                               target_kind == LLVMFloatTypeKind) {
+                        // f64 to f32
+                        return LLVMBuildFPTrunc(data->builder, source_value, target_type, "cast_fptrunc");
+                    } else {
+                        // Same type
+                        return source_value;
+                    }
+                    
+                default:
+                    LLVM_REPORT_ERROR_PRINTF(data, node, "Unsupported cast from float to type %d", target_kind);
+            }
+            break;
+            
+        case LLVMPointerTypeKind:
+            switch (target_kind) {
+                case LLVMPointerTypeKind:
+                    // Pointer to pointer (bitcast)
+                    return LLVMBuildBitCast(data->builder, source_value, target_type, "cast_ptrcast");
+                    
+                case LLVMIntegerTypeKind:
+                    // Pointer to integer (ptrtoint)
+                    return LLVMBuildPtrToInt(data->builder, source_value, target_type, "cast_ptrtoi");
+                    
+                default:
+                    LLVM_REPORT_ERROR_PRINTF(data, node, "Unsupported cast from pointer to type %d", target_kind);
+            }
+            break;
+            
+        case LLVMStructTypeKind:
+            switch (target_kind) {
+                case LLVMStructTypeKind:
+                    // Struct to struct - only allow if they have the same layout
+                    // For safety, we'll use bitcast
+                    return LLVMBuildBitCast(data->builder, source_value, target_type, "cast_struct");
+                    
+                default:
+                    LLVM_REPORT_ERROR_PRINTF(data, node, "Unsupported cast from struct to type %d", target_kind);
+            }
+            break;
+            
+        case LLVMArrayTypeKind:
+            switch (target_kind) {
+                case LLVMPointerTypeKind:
+                    // Array to pointer (decay)
+                    {
+                        LLVMValueRef indices[2] = {
+                            LLVMConstInt(data->i64_type, 0, false),
+                            LLVMConstInt(data->i64_type, 0, false)
+                        };
+                        return LLVMBuildGEP2(data->builder, source_type, source_value, indices, 2, "cast_array_decay");
+                    }
+                    
+                default:
+                    LLVM_REPORT_ERROR_PRINTF(data, node, "Unsupported cast from array to type %d", target_kind);
+            }
+            break;
+            
+        default:
+            LLVM_REPORT_ERROR_PRINTF(data, node, "Unsupported cast from type %d to type %d", source_kind, target_kind);
+    }
+}
+
 // Generate code for expressions
 LLVMValueRef generate_expression(LLVMBackendData *data, const ASTNode *node) {
+    if (!data) return NULL;
     if (!node) return NULL;
     
     // Set debug location for this expression
@@ -640,16 +859,18 @@ LLVMValueRef generate_expression(LLVMBackendData *data, const ASTNode *node) {
         case AST_ARRAY_LITERAL:
             return generate_array_literal(data, node);
             
+        case AST_CAST_EXPR:
+            return generate_cast_expr(data, node);
+            
         // TODO: Implement remaining expression types
-        // case AST_CAST_EXPR:
         case AST_STRUCT_LITERAL:
         case AST_TUPLE_LITERAL:
         case AST_SLICE_EXPR:
         case AST_ASSOCIATED_FUNC_CALL:
             // Not yet implemented
-            return NULL;
+            LLVM_REPORT_ERROR_PRINTF(data, node, "Expression type not yet implemented: %d", node->type);
             
         default:
-            return NULL;
+            LLVM_REPORT_ERROR_PRINTF(data, node, "Unknown expression type: %d", node->type);
     }
 }

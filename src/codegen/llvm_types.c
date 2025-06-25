@@ -101,16 +101,73 @@ LLVMTypeRef asthra_type_to_llvm(LLVMBackendData *data, const TypeInfo *type) {
             }
             
         case TYPE_INFO_STRUCT:
-            // TODO: Implement struct type conversion
-            return data->ptr_type;
+            {
+                // Create LLVM struct type from field information
+                if (type->data.struct_info.field_count == 0) {
+                    // Empty struct
+                    return LLVMStructTypeInContext(data->context, NULL, 0, type->data.struct_info.is_packed);
+                }
+                
+                // Convert field types
+                LLVMTypeRef *field_types = malloc(type->data.struct_info.field_count * sizeof(LLVMTypeRef));
+                for (size_t i = 0; i < type->data.struct_info.field_count; i++) {
+                    SymbolEntry *field = type->data.struct_info.fields[i];
+                    if (field && field->type) {
+                        // Convert TypeDescriptor to TypeInfo
+                        TypeInfo *field_type_info = type_info_from_descriptor(field->type);
+                        if (field_type_info) {
+                            field_types[i] = asthra_type_to_llvm(data, field_type_info);
+                            type_info_release(field_type_info);
+                        } else {
+                            field_types[i] = data->i32_type;
+                        }
+                    } else {
+                        // Default to i32 if type info is missing
+                        field_types[i] = data->i32_type;
+                    }
+                }
+                
+                // Create the struct type
+                LLVMTypeRef struct_type = LLVMStructTypeInContext(
+                    data->context, 
+                    field_types, 
+                    (unsigned)type->data.struct_info.field_count, 
+                    type->data.struct_info.is_packed
+                );
+                
+                free(field_types);
+                return struct_type;
+            }
             
         case TYPE_INFO_ENUM:
             // Enums are typically represented as integers
             return data->i32_type;
             
         case TYPE_INFO_TUPLE:
-            // TODO: Implement tuple type conversion
-            return data->ptr_type;
+            {
+                // Tuples are represented as anonymous structs
+                if (type->data.tuple.element_count == 0) {
+                    // Empty tuple is unit type
+                    return data->unit_type;
+                }
+                
+                // Convert element types
+                LLVMTypeRef *element_types = malloc(type->data.tuple.element_count * sizeof(LLVMTypeRef));
+                for (size_t i = 0; i < type->data.tuple.element_count; i++) {
+                    element_types[i] = asthra_type_to_llvm(data, type->data.tuple.element_types[i]);
+                }
+                
+                // Create anonymous struct type for tuple
+                LLVMTypeRef tuple_type = LLVMStructTypeInContext(
+                    data->context,
+                    element_types,
+                    (unsigned)type->data.tuple.element_count,
+                    0  // Not packed
+                );
+                
+                free(element_types);
+                return tuple_type;
+            }
             
         case TYPE_INFO_OPTION:
             // Option<T> is represented as a struct { bool present; T value; }

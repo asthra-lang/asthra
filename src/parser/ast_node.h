@@ -260,6 +260,11 @@ struct ASTNode {
             ASTNodeList *elements;     // Phase 2.1: Flexible array
         } array_literal;
         
+        struct {
+            ASTNode *expression;       // Expression to cast
+            ASTNode *target_type;      // Target type to cast to
+        } cast_expr;
+        
         // Literals
         struct {
             int64_t value;

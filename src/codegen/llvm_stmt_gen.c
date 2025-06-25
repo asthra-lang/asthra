@@ -17,8 +17,11 @@
 
 // Generate code for statements
 void generate_statement(LLVMBackendData *data, const ASTNode *node) {
+    if (!data) {
+        return;
+    }
+    
     if (!node) {
-        fprintf(stderr, "DEBUG: generate_statement called with NULL node\n");
         return;
     }
     
@@ -29,28 +32,19 @@ void generate_statement(LLVMBackendData *data, const ASTNode *node) {
     switch (node->type) {
         case AST_RETURN_STMT:
             {
-                fprintf(stderr, "DEBUG: Processing return statement\n");
                 LLVMValueRef ret_val = NULL;
                 if (node->data.return_stmt.expression) {
-                    fprintf(stderr, "DEBUG: Return has expression, type=%d\n", 
-                            node->data.return_stmt.expression->type);
                     // Check if the expression is a unit literal for void return
                     if (node->data.return_stmt.expression->type == AST_UNIT_LITERAL) {
-                        fprintf(stderr, "DEBUG: Return has unit literal\n");
                         // For unit literals in void functions, use RetVoid
                         // In LLVM 15+, use LLVMGlobalGetValueType to get the function type
                         LLVMTypeRef fn_type = LLVMGlobalGetValueType(data->current_function);
-                        fprintf(stderr, "DEBUG: Function type from global: %p\n", (void*)fn_type);
                         LLVMTypeRef fn_ret_type = LLVMGetReturnType(fn_type);
-                        fprintf(stderr, "DEBUG: Function return type: %p, void_type=%p\n", 
-                                (void*)fn_ret_type, (void*)data->void_type);
                         if (fn_ret_type == data->void_type) {
-                            fprintf(stderr, "DEBUG: Building RetVoid\n");
                             LLVMBuildRetVoid(data->builder);
                             break;
                         }
                     }
-                    fprintf(stderr, "DEBUG: Generating expression for return value\n");
                     ret_val = generate_expression(data, node->data.return_stmt.expression);
                 }
                 
@@ -313,17 +307,21 @@ void generate_statement(LLVMBackendData *data, const ASTNode *node) {
             
         case AST_BREAK_STMT:
             // TODO: Implement break statement (need loop context)
+            llvm_backend_report_error(data, node, "Break statement not yet implemented");
             break;
             
         case AST_CONTINUE_STMT:
             // TODO: Implement continue statement (need loop context)
+            llvm_backend_report_error(data, node, "Continue statement not yet implemented");
             break;
             
         case AST_MATCH_STMT:
             // TODO: Implement pattern matching
+            llvm_backend_report_error(data, node, "Match statement not yet implemented");
             break;
             
         default:
+            llvm_backend_report_error_printf(data, node, "Unknown statement type: %d", node->type);
             break;
     }
 }

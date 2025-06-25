@@ -94,6 +94,7 @@ typedef enum {
     AST_ASSIGNMENT,
     AST_ARRAY_LITERAL,
     AST_CONST_EXPR,               // Compile-time constant expressions
+    AST_CAST_EXPR,                // Type cast expressions: expr as Type
     
     // Literals
     AST_INTEGER_LITERAL,

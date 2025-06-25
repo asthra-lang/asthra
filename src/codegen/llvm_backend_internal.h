@@ -34,6 +34,16 @@ typedef struct LocalVar {
     struct LocalVar *next;
 } LocalVar;
 
+// Error reporting for LLVM backend
+typedef struct LLVMBackendError {
+    char *message;
+    char *filename;
+    size_t line;
+    size_t column;
+    const char *function_name;
+    struct LLVMBackendError *next;
+} LLVMBackendError;
+
 // Private data for LLVM backend
 typedef struct LLVMBackendData {
     LLVMContextRef context;
@@ -76,7 +86,39 @@ typedef struct LLVMBackendData {
     
     // Local variable tracking
     LocalVar *local_vars;
+    
+    // Error handling
+    LLVMBackendError *error_list;
+    bool has_errors;
 } LLVMBackendData;
+
+// Error handling functions - implemented in llvm_backend.c
+void llvm_backend_report_error(LLVMBackendData *data, const ASTNode *node, const char *message);
+void llvm_backend_report_error_printf(LLVMBackendData *data, const ASTNode *node, const char *format, ...);
+bool llvm_backend_has_errors(const LLVMBackendData *data);
+void llvm_backend_clear_errors(LLVMBackendData *data);
+void llvm_backend_print_errors(const LLVMBackendData *data);
+
+// Convenience macros for common error scenarios
+#define LLVM_REPORT_ERROR(data, node, msg) \
+    do { \
+        llvm_backend_report_error((data), (node), (msg)); \
+        return NULL; \
+    } while (0)
+
+#define LLVM_REPORT_ERROR_PRINTF(data, node, fmt, ...) \
+    do { \
+        llvm_backend_report_error_printf((data), (node), (fmt), __VA_ARGS__); \
+        return NULL; \
+    } while (0)
+
+#define LLVM_CHECK_NULL_RETURN_ERROR(data, node, ptr, msg) \
+    do { \
+        if (!(ptr)) { \
+            llvm_backend_report_error((data), (node), (msg)); \
+            return NULL; \
+        } \
+    } while (0)
 
 #ifdef __cplusplus
 }

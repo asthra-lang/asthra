@@ -19,7 +19,6 @@
 // Generate code for functions
 void generate_function(LLVMBackendData *data, const ASTNode *node) {
     if (!node || (node->type != AST_FUNCTION_DECL && node->type != AST_METHOD_DECL)) {
-        fprintf(stderr, "DEBUG: generate_function: invalid node\n");
         return;
     }
     
@@ -37,7 +36,6 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
         body = node->data.method_decl.body;
     }
     
-    fprintf(stderr, "DEBUG: generate_function: name=%s\n", func_name ? func_name : "NULL");
     
     // Get function type from type_info
     TypeInfo *func_type = node->type_info;
@@ -54,7 +52,6 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
     } else {
         // Try to get param count from AST
         param_count = params ? params->count : 0;
-        fprintf(stderr, "DEBUG: No type info, using AST param count = %d\n", param_count);
     }
     
     
@@ -64,7 +61,6 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
         param_types = malloc(param_count * sizeof(LLVMTypeRef));
         for (int i = 0; i < param_count; i++) {
             ASTNode *param = params->nodes[i];
-            fprintf(stderr, "DEBUG: Processing param %d: node=%p\n", i, (void*)param);
             if (param && param->type == AST_PARAM_DECL) {
                 // Get type from param declaration
                 TypeInfo *param_type_info = NULL;
@@ -114,11 +110,9 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
     
     // Create function type
     LLVMTypeRef fn_type = LLVMFunctionType(ret_type, param_types, param_count, false);
-    fprintf(stderr, "DEBUG: Created function type\n");
     
     // Create function
     LLVMValueRef function = LLVMAddFunction(data->module, func_name, fn_type);
-    fprintf(stderr, "DEBUG: Added function to module: %p\n", (void*)function);
     
     // If function returns Never, mark it as noreturn
     if (func_type && func_type->category == TYPE_INFO_FUNCTION && 
@@ -172,9 +166,7 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
     }
     
     // Generate function body if present
-    fprintf(stderr, "DEBUG: Checking function body: %p\n", (void*)body);
     if (body) {
-        fprintf(stderr, "DEBUG: Creating entry block\n");
         // Create entry basic block
         LLVMBasicBlockRef entry = LLVMAppendBasicBlockInContext(data->context, function, "entry");
         LLVMPositionBuilderAtEnd(data->builder, entry);
@@ -187,13 +179,10 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
         
         // Generate body statements
         LLVMValueRef last_value = NULL;
-        fprintf(stderr, "DEBUG: Body type = %d\n", body->type);
         if (body->type == AST_BLOCK) {
             ASTNodeList *statements = body->data.block.statements;
-            fprintf(stderr, "DEBUG: Body has %zu statements\n", statements ? statements->count : 0);
             for (size_t i = 0; statements && i < statements->count; i++) {
                 ASTNode *stmt = statements->nodes[i];
-                fprintf(stderr, "DEBUG: Processing statement %zu, type=%d\n", i, stmt ? stmt->type : -1);
                 
                 // Check if this is the last statement and it's an expression statement
                 if (i == statements->count - 1 && stmt->type == AST_EXPR_STMT) {
@@ -206,14 +195,11 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
             }
         }
         
-        fprintf(stderr, "DEBUG: Done processing statements\n");
         
         // Add implicit return if needed
         LLVMBasicBlockRef current_block = LLVMGetInsertBlock(data->builder);
-        fprintf(stderr, "DEBUG: Current block = %p\n", (void*)current_block);
         
         if (!LLVMGetBasicBlockTerminator(current_block)) {
-            fprintf(stderr, "DEBUG: Adding implicit return, ret_type=%p\n", (void*)ret_type);
             if (ret_type == data->void_type) {
                 LLVMBuildRetVoid(data->builder);
             } else if (ret_type == data->unit_type) {

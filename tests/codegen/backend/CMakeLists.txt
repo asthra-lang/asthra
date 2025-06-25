@@ -129,3 +129,175 @@ set_tests_properties(test_llvm_backend PROPERTIES
     LABELS "codegen;backend;llvm"
     TIMEOUT 30
 )
+
+# LLVM types module test (simplified)
+add_executable(test_llvm_types
+    test_llvm_types_simple.c
+    backend_test_stubs.c
+)
+
+# Include directories for LLVM types test
+target_include_directories(test_llvm_types PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/parser
+    ${CMAKE_SOURCE_DIR}/src/analysis
+    ${CMAKE_SOURCE_DIR}/src/codegen
+)
+
+# Define minimal stubs to avoid linking issues
+target_compile_definitions(test_llvm_types PRIVATE
+    MINIMAL_TEST_BUILD=1
+)
+
+# Link libraries for LLVM types test
+target_link_libraries(test_llvm_types PRIVATE
+    asthra_compiler
+    ${COMMON_LIBRARIES}
+)
+
+# Conditionally link LLVM if enabled
+if(ENABLE_LLVM_BACKEND)
+    target_link_libraries(test_llvm_types PRIVATE llvm::llvm)
+endif()
+
+# Set output directory for LLVM types test
+set_target_properties(test_llvm_types PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+# Register LLVM types test
+add_test(NAME test_llvm_types 
+         COMMAND test_llvm_types)
+set_tests_properties(test_llvm_types PROPERTIES
+    LABELS "codegen;backend;llvm;types"
+    TIMEOUT 30
+)
+
+# LLVM expression generation module test (debug version)
+add_executable(test_llvm_expr_gen
+    test_llvm_expr_gen_simple.c
+    backend_test_stubs.c
+)
+
+# Include directories for LLVM expression gen test
+target_include_directories(test_llvm_expr_gen PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/parser
+    ${CMAKE_SOURCE_DIR}/src/analysis
+    ${CMAKE_SOURCE_DIR}/src/codegen
+)
+
+# Define minimal stubs to avoid linking issues
+target_compile_definitions(test_llvm_expr_gen PRIVATE
+    MINIMAL_TEST_BUILD=1
+)
+
+# Link libraries for LLVM expression gen test
+target_link_libraries(test_llvm_expr_gen PRIVATE
+    asthra_compiler
+    ${COMMON_LIBRARIES}
+)
+
+# Conditionally link LLVM if enabled
+if(ENABLE_LLVM_BACKEND)
+    target_link_libraries(test_llvm_expr_gen PRIVATE llvm::llvm)
+endif()
+
+# Set output directory for LLVM expression gen test
+set_target_properties(test_llvm_expr_gen PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+# Register LLVM expression gen test
+add_test(NAME test_llvm_expr_gen 
+         COMMAND test_llvm_expr_gen)
+set_tests_properties(test_llvm_expr_gen PROPERTIES
+    LABELS "codegen;backend;llvm;expressions"
+    TIMEOUT 30
+)
+
+# LLVM statement generation module test
+add_executable(test_llvm_stmt_gen
+    test_llvm_stmt_gen.c
+    backend_test_stubs.c
+)
+
+# Include directories for LLVM statement gen test
+target_include_directories(test_llvm_stmt_gen PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/parser
+    ${CMAKE_SOURCE_DIR}/src/analysis
+    ${CMAKE_SOURCE_DIR}/src/codegen
+)
+
+# Define minimal stubs to avoid linking issues
+target_compile_definitions(test_llvm_stmt_gen PRIVATE
+    MINIMAL_TEST_BUILD=1
+)
+
+# Link libraries for LLVM statement gen test
+target_link_libraries(test_llvm_stmt_gen PRIVATE
+    asthra_compiler
+    ${COMMON_LIBRARIES}
+)
+
+# Conditionally link LLVM if enabled
+if(ENABLE_LLVM_BACKEND)
+    target_link_libraries(test_llvm_stmt_gen PRIVATE llvm::llvm)
+endif()
+
+# Set output directory for LLVM statement gen test
+set_target_properties(test_llvm_stmt_gen PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+# Register LLVM statement gen test
+add_test(NAME test_llvm_stmt_gen 
+         COMMAND test_llvm_stmt_gen)
+set_tests_properties(test_llvm_stmt_gen PROPERTIES
+    LABELS "codegen;backend;llvm;statements"
+    TIMEOUT 30
+)
+
+# LLVM cast expression module test
+add_executable(test_llvm_cast_expr
+    test_llvm_cast_expr.c
+    backend_test_stubs.c
+)
+
+# Include directories for LLVM cast expr test
+target_include_directories(test_llvm_cast_expr PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/parser
+    ${CMAKE_SOURCE_DIR}/src/analysis
+    ${CMAKE_SOURCE_DIR}/src/codegen
+)
+
+# Define minimal stubs to avoid linking issues
+target_compile_definitions(test_llvm_cast_expr PRIVATE
+    MINIMAL_TEST_BUILD=1
+)
+
+# Link libraries for LLVM cast expr test
+target_link_libraries(test_llvm_cast_expr PRIVATE
+    asthra_compiler
+    ${COMMON_LIBRARIES}
+)
+
+# Conditionally link LLVM if enabled
+if(ENABLE_LLVM_BACKEND)
+    target_link_libraries(test_llvm_cast_expr PRIVATE llvm::llvm)
+endif()
+
+# Set output directory for LLVM cast expr test
+set_target_properties(test_llvm_cast_expr PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+# Register LLVM cast expr test
+add_test(NAME test_llvm_cast_expr 
+         COMMAND test_llvm_cast_expr)
+set_tests_properties(test_llvm_cast_expr PROPERTIES
+    LABELS "codegen;backend;llvm;expressions;cast"
+    TIMEOUT 30
+)

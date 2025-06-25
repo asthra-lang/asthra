@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include <assert.h>
 #include <time.h>
 
@@ -127,10 +128,8 @@ static int llvm_backend_generate(AsthraBackend *backend,
     clock_t start_time = clock();
     
     // Generate code for all top-level nodes
-    fprintf(stderr, "DEBUG: Starting code generation\n");
     const ASTNode *current = ast;
     while (current) {
-        fprintf(stderr, "DEBUG: Processing top-level node type=%d\n", current->type);
         
         // Check for program node
         if (current->type == AST_PROGRAM) {
@@ -138,7 +137,6 @@ static int llvm_backend_generate(AsthraBackend *backend,
             if (current->data.program.declarations) {
                 for (size_t i = 0; i < current->data.program.declarations->count; i++) {
                     ASTNode *decl = current->data.program.declarations->nodes[i];
-                    fprintf(stderr, "DEBUG: Processing program child %zu, type=%d\n", i, decl ? decl->type : -1);
                     generate_top_level(data, decl);
                 }
             }
@@ -293,4 +291,122 @@ AsthraBackend* asthra_create_llvm_backend(void) {
     backend->ops = &llvm_backend_ops;
     
     return backend;
+}
+
+// ===== Error Handling Implementation =====
+
+// Report an error with a static message
+void llvm_backend_report_error(LLVMBackendData *data, const ASTNode *node, const char *message) {
+    if (!data || !message) return;
+    
+    LLVMBackendError *error = malloc(sizeof(LLVMBackendError));
+    if (!error) return; // Out of memory, can't report error
+    
+    error->message = strdup(message);
+    error->filename = NULL;
+    error->line = 0;
+    error->column = 0;
+    error->function_name = NULL;
+    
+    // Extract location information from AST node
+    if (node && node->location.filename) {
+        error->filename = strdup(node->location.filename);
+        error->line = node->location.line;
+        error->column = node->location.column;
+    }
+    
+    // Get current function name if available
+    if (data->current_function) {
+        const char *fn_name = LLVMGetValueName(data->current_function);
+        if (fn_name) {
+            error->function_name = fn_name; // Don't strdup since LLVM owns this
+        }
+    }
+    
+    // Add to error list (prepend for efficiency)
+    error->next = data->error_list;
+    data->error_list = error;
+    data->has_errors = true;
+}
+
+// Report an error with formatted message
+void llvm_backend_report_error_printf(LLVMBackendData *data, const ASTNode *node, const char *format, ...) {
+    if (!data || !format) return;
+    
+    va_list args;
+    va_start(args, format);
+    
+    // Calculate needed buffer size
+    int needed = vsnprintf(NULL, 0, format, args);
+    va_end(args);
+    
+    if (needed < 0) return;
+    
+    // Allocate buffer and format message
+    char *message = malloc(needed + 1);
+    if (!message) return;
+    
+    va_start(args, format);
+    vsnprintf(message, needed + 1, format, args);
+    va_end(args);
+    
+    // Report the error
+    llvm_backend_report_error(data, node, message);
+    
+    // Free the temporary message (llvm_backend_report_error makes its own copy)
+    free(message);
+}
+
+// Check if backend has errors
+bool llvm_backend_has_errors(const LLVMBackendData *data) {
+    return data && data->has_errors;
+}
+
+// Clear all errors
+void llvm_backend_clear_errors(LLVMBackendData *data) {
+    if (!data) return;
+    
+    LLVMBackendError *current = data->error_list;
+    while (current) {
+        LLVMBackendError *next = current->next;
+        
+        free(current->message);
+        free(current->filename);
+        free(current);
+        
+        current = next;
+    }
+    
+    data->error_list = NULL;
+    data->has_errors = false;
+}
+
+// Print all errors to stderr
+void llvm_backend_print_errors(const LLVMBackendData *data) {
+    if (!data || !data->error_list) return;
+    
+    fprintf(stderr, "LLVM Backend Errors:\n");
+    
+    LLVMBackendError *current = data->error_list;
+    int error_count = 0;
+    
+    while (current) {
+        error_count++;
+        
+        fprintf(stderr, "Error %d: ", error_count);
+        
+        if (current->filename) {
+            fprintf(stderr, "%s:%zu:%zu: ", current->filename, current->line, current->column);
+        }
+        
+        if (current->function_name) {
+            fprintf(stderr, "in function '%s': ", current->function_name);
+        }
+        
+        fprintf(stderr, "%s\n", current->message);
+        
+        current = current->next;
+    }
+    
+    fprintf(stderr, "Total errors: %d\n\n", error_count);
 }
