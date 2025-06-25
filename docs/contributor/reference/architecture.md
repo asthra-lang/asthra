@@ -157,7 +157,7 @@ graph TD
 ### Generated Code Quality
 - **Zero-cost abstractions**: No runtime overhead for language features
 - **Monomorphization**: Specialized code for generic types
-- **C compiler optimization**: Leverage LLVM/GCC optimizations
+- **C compiler optimization**: Leverage LLVM/Clang optimizations
 - **FFI efficiency**: Direct C function calls without marshaling overhead
 
 ## Platform Support
@@ -169,12 +169,12 @@ graph TD
 
 ### Operating Systems
 - **macOS**: Primary development platform with full toolchain
-- **Linux**: Complete support with GCC/Clang integration
+- **Linux**: Complete support with Clang integration
 - **Windows**: Cross-compilation support via MinGW
 
 ### Toolchain Integration
 - **Clang**: Preferred compiler with enhanced diagnostics
-- **GCC**: Full compatibility with fallback support
+- **Clang**: Full compatibility with fallback support
 - **Make**: Modular build system with parallel compilation
 - **Static Analysis**: Integrated linting and safety checks
 

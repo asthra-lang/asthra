@@ -32,7 +32,7 @@ Before writing BDD tests, ensure you have:
 
 1. **Build Tools**
    - CMake 3.20 or higher
-   - C17-compatible compiler (GCC 11+, Clang 14+, or MSVC 2019+)
+   - C17-compatible compiler (Clang 14+ or MSVC 2019+)
    - Make or Ninja build system
 
 2. **Optional Dependencies**
@@ -588,7 +588,7 @@ ast_node_free(parse.ast);
 ### Platform-Specific Issues
 
 #### Linux
-- Ensure GCC 11+ or Clang 14+ is installed
+- Ensure Clang 14+ is installed
 - Install development headers: `sudo apt-get install build-essential`
 
 #### macOS

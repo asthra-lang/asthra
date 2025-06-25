@@ -281,7 +281,7 @@ add_custom_target(help-troubleshoot
     COMMAND ${CMAKE_COMMAND} -E echo "                   apt install libjson-c-dev (Ubuntu)"
     COMMAND ${CMAKE_COMMAND} -E echo ""
     COMMAND ${CMAKE_COMMAND} -E echo "2. Sanitizer not available:"
-    COMMAND ${CMAKE_COMMAND} -E echo "   Use Clang or GCC compiler"
+    COMMAND ${CMAKE_COMMAND} -E echo "   Use Clang compiler (LLVM required)"
     COMMAND ${CMAKE_COMMAND} -E echo "   cmake -DCMAKE_C_COMPILER=clang .."
     COMMAND ${CMAKE_COMMAND} -E echo ""
     COMMAND ${CMAKE_COMMAND} -E echo "3. Coverage reports empty:"

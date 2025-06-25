@@ -89,7 +89,7 @@ In-depth guides for specific development tasks and features.
 ## 🚀 Quick Start (5 Minutes)
 
 ### Prerequisites
-- **C17 Compiler**: Clang 6+ (preferred) or GCC 7+
+- **C17 Compiler**: Clang 6+
 - **Make**: GNU Make 4.0+
 - **Git**: For version control
 - **Platform**: macOS, Linux, or Windows (with MinGW)

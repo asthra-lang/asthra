@@ -139,7 +139,7 @@ make analyze-comprehensive
 - Optimal performance on Apple Silicon
 
 ### Linux (Secondary Platform)
-- GCC and Clang support
+- Clang support
 - All sanitizers available
 - Alternative profiling tools available
 

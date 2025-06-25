@@ -65,7 +65,6 @@ sudo apt-get update
 # Install core development tools
 sudo apt-get install -y \
     clang-12 \
-    gcc \
     make \
     git \
     build-essential \
@@ -112,10 +111,10 @@ echo 'export JSON_C_SYSTEM=1' >> ~/.bashrc
 #### Essential Tools
 ```bash
 # CentOS/RHEL
-sudo yum install -y clang gcc make git
+sudo yum install -y clang make git
 
 # Fedora
-sudo dnf install -y clang gcc make git
+sudo dnf install -y clang make git
 
 # Set compiler
 export CC=clang
@@ -141,8 +140,7 @@ sudo dnf install -y cppcheck valgrind gdb
 pacman -Syu
 
 # Install development tools
-pacman -S mingw-w64-x86_64-gcc \
-          mingw-w64-x86_64-clang \
+pacman -S mingw-w64-x86_64-clang \
           mingw-w64-x86_64-make \
           git
 
@@ -210,7 +208,7 @@ Create `.vscode/tasks.json`:
                 "focus": false,
                 "panel": "shared"
             },
-            "problemMatcher": "$gcc"
+            "problemMatcher": "$clang"
         },
         {
             "label": "Run Tests",
@@ -697,7 +695,7 @@ make clean && make asan
 
 Your development environment is ready when:
 
-- [ ] **Compiler**: Clang/GCC installed and configured
+- [ ] **Compiler**: Clang installed and configured
 - [ ] **Build System**: Make builds successfully
 - [ ] **IDE**: Configured with proper syntax highlighting and debugging
 - [ ] **Tools**: Static analysis and debugging tools installed

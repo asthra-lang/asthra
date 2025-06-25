@@ -337,7 +337,7 @@ if(ENABLE_COVERAGE AND NOT WIN32)
         )
         
     else()
-        message(WARNING "Coverage is only supported with GCC and Clang compilers")
+        message(WARNING "Coverage is only supported with Clang compiler")
     endif()
 else()
     # Create dummy targets when coverage is disabled

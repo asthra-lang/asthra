@@ -1,15 +1,13 @@
 # Compiler detection and configuration
 
-# Detect compiler
-if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
-    set(ASTHRA_COMPILER "GCC")
-elseif(CMAKE_C_COMPILER_ID STREQUAL "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "AppleClang")
+# Detect compiler - Asthra requires Clang/LLVM
+if(CMAKE_C_COMPILER_ID STREQUAL "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "AppleClang")
     set(ASTHRA_COMPILER "Clang")
 elseif(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+    # MSVC with clang-cl is supported
     set(ASTHRA_COMPILER "MSVC")
 else()
-    message(WARNING "Unknown compiler: ${CMAKE_C_COMPILER_ID}")
-    set(ASTHRA_COMPILER "Unknown")
+    message(FATAL_ERROR "Unsupported compiler: ${CMAKE_C_COMPILER_ID}. Asthra requires Clang/LLVM.")
 endif()
 
 # C17 feature detection
@@ -48,21 +46,7 @@ else()
 endif()
 
 # Compiler-specific flags
-if(ASTHRA_COMPILER STREQUAL "GCC")
-    list(APPEND COMMON_WARNING_FLAGS
-        -Wno-unused-but-set-variable
-        -Wno-incompatible-pointer-types
-        -fno-strict-aliasing
-    )
-    
-    # GCC-specific optimizations
-    set(COMPILER_OPTIMIZATION_FLAGS 
-        -march=native -mtune=native
-        -ffast-math -funroll-loops
-        -ftree-vectorize
-    )
-    
-elseif(ASTHRA_COMPILER STREQUAL "Clang")
+if(ASTHRA_COMPILER STREQUAL "Clang")
     list(APPEND COMMON_WARNING_FLAGS
         -Wno-newline-eof
         -Wno-unused-but-set-variable

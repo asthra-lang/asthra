@@ -10,8 +10,7 @@ Before starting, verify you have:
 
 ```bash
 # Check C17 compiler
-clang --version    # Should be 6.0+ (preferred)
-gcc --version      # Should be 7.0+ (alternative)
+clang --version    # Should be 6.0+
 
 # Check Make
 make --version     # Should be 4.0+

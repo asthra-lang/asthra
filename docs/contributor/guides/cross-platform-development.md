@@ -92,7 +92,7 @@ if (bytes_written != size) {
 
 ### Issue 1: Unused Return Value Warnings
 
-**Problem**: GCC with `-Wunused-result` warns about unchecked return values.
+**Problem**: Clang with `-Wunused-result` warns about unchecked return values.
 
 **Solution**: Always check return values from system functions:
 ```c
@@ -138,25 +138,22 @@ if (result != 0) {
 
 ### Local Testing
 
-1. **On Linux/macOS**: Test with both GCC and Clang
+1. **On Linux/macOS**: Test with Clang
    ```bash
-   # GCC with strict warnings
-   CC=gcc CFLAGS="-Wall -Werror -Wunused-result" make
-
-   # Clang
-   CC=clang make
+   # Clang with strict warnings
+   CC=clang CFLAGS="-Wall -Werror" make
    ```
 
 2. **Cross-compilation**: Use cross-compilers when available
    ```bash
    # Cross-compile for Windows on Linux
-   CC=x86_64-w64-mingw32-gcc make
+   CC=x86_64-w64-mingw32-clang make
    ```
 
 ### CI/CD Testing
 
 The GitHub Actions CI tests on:
-- Linux with GCC (Ubuntu, strict warnings)
+- Linux with Clang (Ubuntu, strict warnings)
 - Linux with Clang (Ubuntu)
 - macOS with Clang (Apple Silicon and Intel)
 - Windows with MSVC (planned)

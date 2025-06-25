@@ -189,13 +189,13 @@ void asthra_log(AsthraLogLevel level, AsthraLogCategory category, const char *fo
     
     va_list args;
     va_start(args, format);
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
 #endif
     vprintf(format, args);
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic pop
+#ifdef __clang__
+#pragma clang diagnostic pop
 #endif
     va_end(args);
     
@@ -205,13 +205,13 @@ void asthra_log(AsthraLogLevel level, AsthraLogCategory category, const char *fo
 void asthra_log_va(AsthraLogLevel level, AsthraLogCategory category, const char *format, va_list args) {
     printf("[%s:%s] ", log_level_names[level], log_category_names[category]);
     
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
 #endif
     vprintf(format, args);
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic pop
+#ifdef __clang__
+#pragma clang diagnostic pop
 #endif
     
     printf("\n");

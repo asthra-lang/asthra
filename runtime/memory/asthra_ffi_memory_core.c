@@ -461,10 +461,6 @@ void Asthra_secure_zero(void* ptr, size_t size) {
     __asm__ __volatile__("" ::: "memory");
 }
 
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
 void* Asthra_secure_alloc(size_t size) {
     if (size == 0) return NULL;
     
@@ -482,9 +478,6 @@ void* Asthra_secure_alloc(size_t size) {
     
     return ptr;
 }
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
 
 void Asthra_secure_free(void* ptr, size_t size) {
     if (!ptr) return;

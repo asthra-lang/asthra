@@ -80,7 +80,7 @@ Get up and running with Asthra development in under 5 minutes.
 
 ### Prerequisites
 
-- **C17 Compiler**: Clang 6+ (preferred) or GCC 7+
+- **C17 Compiler**: Clang 6+
 - **Make**: GNU Make 4.0+
 - **Git**: For version control
 - **Platform**: macOS, Linux, or Windows (with MinGW)

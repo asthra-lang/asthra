@@ -64,11 +64,11 @@ asthra/
 
 ```bash
 # Ubuntu/Debian
-sudo apt-get install build-essential clang gcc git make
+sudo apt-get install build-essential clang git make
 sudo apt-get install llvm-dev libclang-dev
 
 # macOS (with Homebrew)
-brew install llvm clang gcc make git
+brew install llvm clang make git
 xcode-select --install
 
 # Install Rust for Ampu

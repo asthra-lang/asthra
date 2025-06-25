@@ -114,16 +114,10 @@ The Asthra compiler uses platform detection macros defined in `src/platform.h` t
 // Compiler detection
 #if defined(_MSC_VER)
     #define ASTHRA_COMPILER_MSVC 1
-    #define ASTHRA_COMPILER_GCC 0
     #define ASTHRA_COMPILER_CLANG 0
 #elif defined(__clang__)
     #define ASTHRA_COMPILER_MSVC 0
-    #define ASTHRA_COMPILER_GCC 0
     #define ASTHRA_COMPILER_CLANG 1
-#elif defined(__GNUC__)
-    #define ASTHRA_COMPILER_MSVC 0
-    #define ASTHRA_COMPILER_GCC 1
-    #define ASTHRA_COMPILER_CLANG 0
 #endif
 
 // Architecture detection
@@ -212,7 +206,7 @@ Windows support uses Win32 APIs for memory management, threading, and dynamic lo
 
 ### Compiler Integration
 
-Asthra integrates with multiple C compilers (Clang, GCC) with platform-specific optimizations and cross-compilation support.
+Asthra integrates with C compilers (primarily Clang) with platform-specific optimizations and cross-compilation support.
 
 ### Linker Integration
 
@@ -266,7 +260,6 @@ When writing code that uses system APIs, be aware of these common differences:
 
 Different compilers require different warning flags:
 
-- **GCC**: `-Wall -Werror -Wunused-result`
 - **Clang**: `-Wall -Werror`
 - **MSVC**: `/W4 /WX`
 
@@ -309,8 +302,7 @@ Comprehensive testing across all supported platforms with feature detection and 
 ### Continuous Integration
 
 Platform testing in CI/CD with cross-compilation and performance benchmarking. The CI system tests:
-- Linux with GCC (strict warnings enabled)
-- Linux with Clang
+- Linux with Clang (strict warnings enabled)
 - macOS with Clang
 - Windows with MSVC (when available)
 

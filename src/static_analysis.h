@@ -45,20 +45,16 @@ extern "C" {
 // =============================================================================
 
 // Compiler-specific attribute detection
-#ifdef __GNUC__
-    #define ASTHRA_HAS_GCC_ATTRIBUTES 1
-#else
-    #define ASTHRA_HAS_GCC_ATTRIBUTES 0
-#endif
-
 #ifdef __clang__
-    #define ASTHRA_HAS_CLANG_ATTRIBUTES 1
+    #define ASTHRA_HAS_ATTRIBUTES 1
+#elif defined(_MSC_VER)
+    #define ASTHRA_HAS_ATTRIBUTES 0  // MSVC has different attribute syntax
 #else
-    #define ASTHRA_HAS_CLANG_ATTRIBUTES 0
+    #error "Unsupported compiler. Asthra requires Clang/LLVM."
 #endif
 
 // Function attributes for static analysis
-#if ASTHRA_HAS_GCC_ATTRIBUTES || ASTHRA_HAS_CLANG_ATTRIBUTES
+#if ASTHRA_HAS_ATTRIBUTES
     #define ASTHRA_PURE                __attribute__((pure))
     #define ASTHRA_CONST               __attribute__((const))
     #define ASTHRA_MALLOC              __attribute__((malloc))

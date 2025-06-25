@@ -65,7 +65,6 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install -y \
     llvm-dev \
     clang-12 \
-    gcc \
     make \
     cmake \
     git \
@@ -106,7 +105,7 @@ sudo yum install -y epel-release
 
 # Install development tools (LLVM is required)
 sudo yum groupinstall -y "Development Tools"
-sudo yum install -y llvm-devel clang gcc make cmake git pkg-config
+sudo yum install -y llvm-devel clang make cmake git pkg-config
 
 # Development utilities
 sudo yum install -y cppcheck valgrind gdb htop tree
@@ -116,7 +115,7 @@ sudo yum install -y cppcheck valgrind gdb htop tree
 ```bash
 # Install development tools (LLVM is required)
 sudo dnf groupinstall -y "Development Tools"
-sudo dnf install -y llvm-devel clang gcc make cmake git pkg-config
+sudo dnf install -y llvm-devel clang make cmake git pkg-config
 
 # Development utilities
 sudo dnf install -y cppcheck valgrind gdb htop tree
@@ -138,7 +137,6 @@ wsl --install -d Ubuntu
 # Download from: https://www.msys2.org/
 
 # In MSYS2 terminal:
-pacman -S mingw-w64-x86_64-gcc
 pacman -S mingw-w64-x86_64-clang
 pacman -S mingw-w64-x86_64-make
 pacman -S git
@@ -217,7 +215,7 @@ Create `.vscode/tasks.json`:
                 "focus": false,
                 "panel": "shared"
             },
-            "problemMatcher": ["$gcc"]
+            "problemMatcher": ["$clang"]
         },
         {
             "label": "Clean Build",
@@ -779,7 +777,7 @@ xcode-select -p
 dpkg -l | grep build-essential
 
 # Windows: Check MinGW installation
-gcc --version
+clang --version
 ```
 
 ### Performance Issues

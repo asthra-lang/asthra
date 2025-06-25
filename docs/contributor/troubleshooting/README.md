@@ -126,7 +126,7 @@ error: unknown argument: '-std=c17'
 # Check current version
 clang --version
 
-# Minimum required: Clang 6.0+ or GCC 7.0+
+# Minimum required: Clang 6.0+
 # Update if necessary:
 
 # macOS

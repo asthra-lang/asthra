@@ -9,7 +9,7 @@ The Asthra project uses CMake as its primary build system. This guide covers how
 ### Prerequisites
 
 - **CMake 3.20+**: Modern CMake with good C support
-- **C Compiler**: GCC, Clang, or MSVC
+- **C Compiler**: Clang or MSVC
 - **LLVM 18.0+**: Required for LLVM backend (version 18.0 or later)
 - **json-c**: Optional system library (will download if not found)
 

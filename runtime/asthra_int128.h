@@ -30,15 +30,15 @@ extern "C" {
  * Use compiler builtins when available, otherwise emulate with two 64-bit integers
  */
 #if defined(__SIZEOF_INT128__) && __SIZEOF_INT128__ == 16
-    // GCC/Clang support native 128-bit integers
-    #ifdef __GNUC__
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wpedantic"
+    // Clang supports native 128-bit integers
+    #ifdef __clang__
+        #pragma clang diagnostic push
+        #pragma clang diagnostic ignored "-Wpedantic"
     #endif
     typedef __int128 asthra_i128;
     typedef unsigned __int128 asthra_u128;
-    #ifdef __GNUC__
-        #pragma GCC diagnostic pop
+    #ifdef __clang__
+        #pragma clang diagnostic pop
     #endif
     #define ASTHRA_HAS_NATIVE_INT128 1
 #else

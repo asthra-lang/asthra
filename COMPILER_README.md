@@ -6,7 +6,7 @@ A modern, safe, and performant systems programming language with LLVM-based comp
 
 ### Prerequisites
 
-- **C17-compatible compiler** (Clang 15+ or GCC 11+ recommended)
+- **C17-compatible compiler** (Clang 15+ recommended)
 - **CMake 3.20+**
 - **LLVM 18.0+** (required)
 - **Python 3.8+** (for tooling)

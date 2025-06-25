@@ -32,7 +32,7 @@ The Asthra compiler uses a modern CMake build system designed for cross-platform
 ### Prerequisites
 
 - **CMake 3.20+**: Modern CMake with good C support
-- **C Compiler**: GCC, Clang, or MSVC
+- **C Compiler**: Clang or MSVC
 - **json-c**: Optional system library (will download if not found)
 
 ### Basic Build
@@ -87,7 +87,7 @@ graph TD
 **Key Functionality**:
 - **Operating System Detection**: Windows, macOS, Linux with automatic configuration
 - **Architecture Detection**: x86_64, ARM64, ARM with optimizations
-- **Compiler Detection**: MSVC, GCC, Clang with feature detection
+- **Compiler Detection**: MSVC, Clang with feature detection
 - **Path Configuration**: Platform-appropriate install paths and file extensions
 - **Capability Detection**: SIMD, threading, atomics support
 
@@ -95,7 +95,7 @@ graph TD
 ```cmake
 ASTHRA_PLATFORM        # windows, macos, linux
 ASTHRA_ARCH           # x64, arm64, arm, x86
-ASTHRA_COMPILER_TYPE  # msvc, gcc, clang
+ASTHRA_COMPILER_TYPE  # msvc, clang
 ASTHRA_HAS_SIMD       # TRUE/FALSE for SIMD support
 ASTHRA_HAS_THREADS    # TRUE/FALSE for threading
 ```
@@ -111,7 +111,7 @@ ASTHRA_HAS_THREADS    # TRUE/FALSE for threading
 - **Optimization Settings**: Platform-specific optimizations
 - **Sanitizer Integration**: Preparation for sanitizer builds
 
-**GCC/Clang Configuration**:
+**Clang Configuration**:
 ```cmake
 set(CMAKE_C_FLAGS "-std=c17 -Wall -Wextra -Wpedantic")
 set(CMAKE_C_FLAGS_DEBUG "-g -O0 -DDEBUG")

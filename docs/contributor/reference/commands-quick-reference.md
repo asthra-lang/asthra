@@ -18,7 +18,7 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build  # Build optimi
 cmake -B build -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
 
 # Linux with specific compiler
-CC=gcc-11 CXX=g++-11 cmake -B build
+CC=clang CXX=clang++ cmake -B build
 
 # Windows with MSVC
 cmake -B build -G "Visual Studio 17 2022"

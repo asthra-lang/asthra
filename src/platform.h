@@ -8,7 +8,7 @@
  * This header provides platform-specific abstractions for:
  * - Windows (MSVC)
  * - macOS (Clang) 
- * - Linux (GCC/Clang)
+ * - Linux (Clang)
  * 
  * Features C17 compatibility and compile-time validation.
  */
@@ -71,28 +71,16 @@ extern "C" {
 
 #if defined(_MSC_VER)
     #define ASTHRA_COMPILER_MSVC 1
-    #define ASTHRA_COMPILER_GCC 0
     #define ASTHRA_COMPILER_CLANG 0
     #define ASTHRA_COMPILER_NAME "MSVC"
     #define ASTHRA_COMPILER_VERSION _MSC_VER
 #elif defined(__clang__)
     #define ASTHRA_COMPILER_MSVC 0
-    #define ASTHRA_COMPILER_GCC 0
     #define ASTHRA_COMPILER_CLANG 1
     #define ASTHRA_COMPILER_NAME "Clang"
     #define ASTHRA_COMPILER_VERSION (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
-#elif defined(__GNUC__)
-    #define ASTHRA_COMPILER_MSVC 0
-    #define ASTHRA_COMPILER_GCC 1
-    #define ASTHRA_COMPILER_CLANG 0
-    #define ASTHRA_COMPILER_NAME "GCC"
-    #define ASTHRA_COMPILER_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
 #else
-    #define ASTHRA_COMPILER_MSVC 0
-    #define ASTHRA_COMPILER_GCC 0
-    #define ASTHRA_COMPILER_CLANG 0
-    #define ASTHRA_COMPILER_NAME "Unknown"
-    #define ASTHRA_COMPILER_VERSION 0
+    #error "Unsupported compiler. Asthra requires Clang/LLVM."
 #endif
 
 // =============================================================================
@@ -207,7 +195,7 @@ extern "C" {
     #define ASTHRA_CDECL __cdecl
     #define ASTHRA_STDCALL __stdcall
     #define ASTHRA_FASTCALL __fastcall
-#elif ASTHRA_COMPILER_GCC || ASTHRA_COMPILER_CLANG
+#elif ASTHRA_COMPILER_CLANG
     #define ASTHRA_INLINE static inline __attribute__((always_inline))
     #define ASTHRA_NOINLINE __attribute__((noinline))
     #define ASTHRA_NORETURN __attribute__((noreturn))
@@ -317,8 +305,8 @@ ASTHRA_STATIC_ASSERT(ASTHRA_PLATFORM_WINDOWS + ASTHRA_PLATFORM_UNIX == 1,
                      "Exactly one platform must be detected");
 
 // Validate compiler detection
-ASTHRA_STATIC_ASSERT(ASTHRA_COMPILER_MSVC + ASTHRA_COMPILER_GCC + ASTHRA_COMPILER_CLANG <= 1,
-                     "At most one compiler should be detected");
+ASTHRA_STATIC_ASSERT(ASTHRA_COMPILER_MSVC + ASTHRA_COMPILER_CLANG == 1,
+                     "Exactly one compiler must be detected (MSVC or Clang)");
 
 // Validate path separator consistency
 #if ASTHRA_PLATFORM_WINDOWS

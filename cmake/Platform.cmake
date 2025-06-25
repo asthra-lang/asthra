@@ -164,28 +164,6 @@ elseif(CMAKE_C_COMPILER_ID STREQUAL "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "App
         -fcolor-diagnostics
     )
     
-elseif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
-    set(ASTHRA_COMPILER_TYPE "GCC")
-    set(ASTHRA_COMPILER_VERSION ${CMAKE_C_COMPILER_VERSION})
-    
-    # GCC-specific flags
-    add_compile_options(
-        -Wall -Wextra -Werror -pedantic
-        -Wno-unused-parameter
-        -Wno-unused-variable
-        -Wno-sign-compare
-        -fdiagnostics-color=always
-    )
-    
-    # GCC-specific warnings
-    if(CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL "7.0")
-        add_compile_options(
-            -Wimplicit-fallthrough=3
-            -Wduplicated-cond
-            -Wduplicated-branches
-        )
-    endif()
-    
 else()
     set(ASTHRA_COMPILER_TYPE "Unknown")
     set(ASTHRA_COMPILER_VERSION "0.0")
