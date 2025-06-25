@@ -81,10 +81,10 @@ static FormatterStatistics* create_formatter_statistics(void) {
     
     // C17 designated initializer with atomic initialization
     *stats = (FormatterStatistics) {
-        .lines_formatted = ATOMIC_VAR_INIT(0),
-        .bytes_processed = ATOMIC_VAR_INIT(0),
-        .indentation_changes = ATOMIC_VAR_INIT(0),
-        .whitespace_normalized = ATOMIC_VAR_INIT(0)
+        .lines_formatted = 0,
+        .bytes_processed = 0,
+        .indentation_changes = 0,
+        .whitespace_normalized = 0
     };
     
     return stats;

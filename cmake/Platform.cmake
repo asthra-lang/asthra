@@ -35,29 +35,7 @@ else()
 endif()
 
 # Platform detection with version info
-if(WIN32)
-    set(ASTHRA_PLATFORM "Windows")
-    set(ASTHRA_EXE_EXT ".exe")
-    set(ASTHRA_LIB_EXT ".lib")
-    set(ASTHRA_DLL_EXT ".dll")
-    set(ASTHRA_PATH_SEP "\\")
-    set(ASTHRA_ENV_SEP ";")
-    
-    # Windows version detection
-    if(CMAKE_SYSTEM_VERSION)
-        string(REGEX MATCH "^([0-9]+)\\.([0-9]+)" WIN_VERSION "${CMAKE_SYSTEM_VERSION}")
-        set(ASTHRA_WINDOWS_MAJOR ${CMAKE_MATCH_1})
-        set(ASTHRA_WINDOWS_MINOR ${CMAKE_MATCH_2})
-    endif()
-    
-    # Windows-specific defines
-    add_compile_definitions(
-        WIN32_LEAN_AND_MEAN
-        NOMINMAX
-        _WIN32_WINNT=0x0601  # Windows 7 minimum
-    )
-    
-elseif(APPLE)
+if(APPLE)
     set(ASTHRA_PLATFORM "macOS")
     set(ASTHRA_EXE_EXT "")
     set(ASTHRA_LIB_EXT ".a")
@@ -130,28 +108,8 @@ else()
     add_compile_definitions(ASTHRA_LITTLE_ENDIAN=1)
 endif()
 
-# Compiler detection and configuration
-if(MSVC)
-    set(ASTHRA_COMPILER_TYPE "MSVC")
-    set(ASTHRA_COMPILER_VERSION ${MSVC_VERSION})
-    
-    # MSVC-specific flags
-    add_compile_options(
-        /W4           # Warning level 4
-        /WX           # Warnings as errors
-        /MP           # Multi-processor compilation
-        /utf-8        # UTF-8 source files
-    )
-    
-    add_compile_definitions(
-        _CRT_SECURE_NO_WARNINGS
-        _CRT_NONSTDC_NO_WARNINGS
-    )
-    
-    # MSVC runtime library
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-    
-elseif(CMAKE_C_COMPILER_ID STREQUAL "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "AppleClang")
+# Compiler detection and configuration - Clang only
+if(CMAKE_C_COMPILER_ID STREQUAL "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "AppleClang")
     set(ASTHRA_COMPILER_TYPE "Clang")
     set(ASTHRA_COMPILER_VERSION ${CMAKE_C_COMPILER_VERSION})
     
@@ -165,9 +123,7 @@ elseif(CMAKE_C_COMPILER_ID STREQUAL "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "App
     )
     
 else()
-    set(ASTHRA_COMPILER_TYPE "Unknown")
-    set(ASTHRA_COMPILER_VERSION "0.0")
-    message(WARNING "Unknown compiler: ${CMAKE_C_COMPILER_ID}")
+    message(FATAL_ERROR "Unsupported compiler: ${CMAKE_C_COMPILER_ID}. Asthra requires Clang/LLVM.")
 endif()
 
 # System feature detection
@@ -198,9 +154,7 @@ configure_file(
 
 # Platform-specific libraries
 set(ASTHRA_PLATFORM_LIBS "")
-if(WIN32)
-    list(APPEND ASTHRA_PLATFORM_LIBS ws2_32 winmm psapi)
-elseif(UNIX)
+if(UNIX)
     list(APPEND ASTHRA_PLATFORM_LIBS m)
     if(NOT APPLE)
         list(APPEND ASTHRA_PLATFORM_LIBS rt dl)
@@ -224,22 +178,17 @@ else()
 endif()
 
 # Platform-specific installation paths
-if(WIN32)
-    set(ASTHRA_INSTALL_BIN_DIR "bin")
-    set(ASTHRA_INSTALL_LIB_DIR "lib")
-    set(ASTHRA_INSTALL_INCLUDE_DIR "include")
-    set(ASTHRA_INSTALL_DATA_DIR "share/asthra")
-elseif(APPLE)
+if(APPLE)
     set(ASTHRA_INSTALL_BIN_DIR "bin")
     set(ASTHRA_INSTALL_LIB_DIR "lib")
     set(ASTHRA_INSTALL_INCLUDE_DIR "include")
     set(ASTHRA_INSTALL_DATA_DIR "share/asthra")
 else()
-    include(GNUInstallDirs)
-    set(ASTHRA_INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR})
-    set(ASTHRA_INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR})
-    set(ASTHRA_INSTALL_INCLUDE_DIR ${CMAKE_INSTALL_INCLUDEDIR})
-    set(ASTHRA_INSTALL_DATA_DIR ${CMAKE_INSTALL_DATADIR}/asthra)
+    # Standard Unix paths without GNUInstallDirs
+    set(ASTHRA_INSTALL_BIN_DIR "bin")
+    set(ASTHRA_INSTALL_LIB_DIR "lib")
+    set(ASTHRA_INSTALL_INCLUDE_DIR "include")
+    set(ASTHRA_INSTALL_DATA_DIR "share/asthra")
 endif()
 
 # Platform capability flags

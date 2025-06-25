@@ -13,7 +13,7 @@ set(COMMON_C_FLAGS "${COMMON_C_FLAGS} -fPIC -pthread")
 if(APPLE)
     set(COMMON_C_FLAGS "${COMMON_C_FLAGS} -mmacosx-version-min=10.15")
 elseif(UNIX AND NOT APPLE)
-    set(COMMON_C_FLAGS "${COMMON_C_FLAGS} -D_GNU_SOURCE")
+    # No additional flags for Linux
 endif()
 
 # Debug configuration

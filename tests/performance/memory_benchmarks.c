@@ -63,10 +63,10 @@ typedef struct {
 } ComprehensiveMemoryBenchmark;
 
 // Global memory tracking
-static atomic_size_t total_allocations = ATOMIC_VAR_INIT(0);
-static atomic_size_t total_deallocations = ATOMIC_VAR_INIT(0);
-static atomic_size_t peak_memory_usage = ATOMIC_VAR_INIT(0);
-static atomic_size_t current_memory_usage = ATOMIC_VAR_INIT(0);
+static atomic_size_t total_allocations = 0;
+static atomic_size_t total_deallocations = 0;
+static atomic_size_t peak_memory_usage = 0;
+static atomic_size_t current_memory_usage = 0;
 
 // =============================================================================
 // MEMORY MEASUREMENT UTILITIES

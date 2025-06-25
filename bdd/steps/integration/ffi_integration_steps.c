@@ -69,7 +69,15 @@ void test_ffi_error_handling(void) {
     
     bdd_when("compiling with missing FFI function");
     int exit_code;
-    char* output = bdd_execute_command("asthra ffi_error.asthra -o ffi_error --enable-ffi", &exit_code);
+    char* output = NULL;
+    const char* compiler_path = bdd_find_asthra_compiler();
+    if (!compiler_path) {
+        exit_code = -1;
+    } else {
+        char command[1024];
+        snprintf(command, sizeof(command), "%s ffi_error.asthra -o ffi_error --enable-ffi", compiler_path);
+        output = bdd_execute_command(command, &exit_code);
+    }
     
     bdd_then("compilation should fail with FFI error");
     bdd_assert(exit_code != 0, "Should fail when FFI function is missing");

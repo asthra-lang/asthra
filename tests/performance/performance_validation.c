@@ -66,7 +66,7 @@ typedef struct {
 
 // Global performance state
 static PerformanceMeasurement global_baseline = {0};
-static atomic_bool baseline_initialized = ATOMIC_VAR_INIT(false);
+static atomic_bool baseline_initialized = false;
 
 // =============================================================================
 // MEASUREMENT FUNCTIONS
@@ -125,7 +125,7 @@ static double measure_keyword_lookup_performance(void) {
  */
 static double measure_reference_counting_performance(void) {
     size_t operations = 1000000;
-    atomic_size_t ref_count = ATOMIC_VAR_INIT(1);
+    atomic_size_t ref_count = 1;
     
     double start_time = get_precise_time_ms();
     

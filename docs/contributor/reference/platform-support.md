@@ -22,7 +22,7 @@ Asthra is designed as a cross-platform programming language with first-class sup
 ### Supported Platforms
 
 #### Primary Targets (Tier 1)
-- **x86_64**: Linux, macOS, Windows
+- **x86_64**: Linux, macOS
 - **ARM64**: Linux, macOS, iOS (planned)
 - **WASM32**: Browser and WASI environments
 
@@ -33,7 +33,8 @@ Asthra is designed as a cross-platform programming language with first-class sup
 #### Development Platforms
 - **macOS**: Primary development platform with Clang
 - **Linux**: CI/CD and production deployment
-- **Windows**: Cross-compilation and testing
+
+**Note**: Asthra requires Clang/LLVM compiler. No other compilers are supported.
 
 ### Platform Support Matrix
 
@@ -41,7 +42,6 @@ Asthra is designed as a cross-platform programming language with first-class sup
 |----------|-------------|---------|-----|-------------|--------|
 | x86_64/Linux | ✅ | ✅ | ✅ | ✅ | Production |
 | x86_64/macOS | ✅ | ✅ | ✅ | ✅ | Production |
-| x86_64/Windows | ✅ | ✅ | ✅ | ⚠️ | Beta |
 | ARM64/Linux | ✅ | ✅ | ✅ | ✅ | Production |
 | ARM64/macOS | ✅ | ✅ | ✅ | ✅ | Production |
 | WASM32/Browser | ✅ | ✅ | ⚠️ | ⚠️ | Beta |
@@ -111,13 +111,11 @@ The Asthra compiler uses platform detection macros defined in `src/platform.h` t
     #define ASTHRA_PLATFORM_NAME "Linux"
 #endif
 
-// Compiler detection
-#if defined(_MSC_VER)
-    #define ASTHRA_COMPILER_MSVC 1
-    #define ASTHRA_COMPILER_CLANG 0
-#elif defined(__clang__)
-    #define ASTHRA_COMPILER_MSVC 0
+// Compiler detection - Clang only
+#if defined(__clang__)
     #define ASTHRA_COMPILER_CLANG 1
+#else
+    #error "Unsupported compiler. Asthra requires Clang/LLVM."
 #endif
 
 // Architecture detection
@@ -198,9 +196,6 @@ Linux is the primary target platform with full feature support including mmap, p
 
 macOS support leverages Darwin-specific features including Mach kernel APIs and high-resolution timing.
 
-### Windows Support
-
-Windows support uses Win32 APIs for memory management, threading, and dynamic loading.
 
 ## Toolchain Integration
 
@@ -224,7 +219,7 @@ Efficient atomic operations use platform-specific instructions and memory models
 
 ### Memory Management
 
-Platform-optimized memory allocation uses mmap on Unix systems and VirtualAlloc on Windows.
+Platform-optimized memory allocation uses mmap on Unix systems.
 
 ## Porting Guide
 
@@ -238,18 +233,16 @@ Guidelines for implementing platform abstraction layer for new operating systems
 
 ## Common Platform Compatibility Issues
 
-### POSIX vs Windows Differences
+### Platform Differences
 
 When writing code that uses system APIs, be aware of these common differences:
 
 1. **Process execution and return values**
    - POSIX: `system()` returns a value that must be decoded with `WIFEXITED()` and `WEXITSTATUS()`
-   - Windows: `system()` returns the exit code directly
    - Always use platform guards when handling system call returns
 
 2. **Header files**
    - POSIX-specific headers like `<sys/wait.h>`, `<unistd.h>` must be guarded
-   - Windows-specific headers like `<windows.h>` must be guarded
    - Always include `platform.h` before platform-specific headers
 
 3. **File I/O return value checking**
@@ -261,7 +254,6 @@ When writing code that uses system APIs, be aware of these common differences:
 Different compilers require different warning flags:
 
 - **Clang**: `-Wall -Werror`
-- **MSVC**: `/W4 /WX`
 
 ### Best Practices for Cross-Platform Code
 
@@ -278,7 +270,7 @@ Different compilers require different warning flags:
    #if ASTHRA_PLATFORM_UNIX
        // Unix-specific code
    #elif ASTHRA_PLATFORM_WINDOWS
-       // Windows-specific code
+       // Platform-specific code
    #else
        #error "Unsupported platform"
    #endif
@@ -304,7 +296,6 @@ Comprehensive testing across all supported platforms with feature detection and 
 Platform testing in CI/CD with cross-compilation and performance benchmarking. The CI system tests:
 - Linux with Clang (strict warnings enabled)
 - macOS with Clang
-- Windows with MSVC (when available)
 
 ## Conclusion
 

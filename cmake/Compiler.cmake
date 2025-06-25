@@ -1,85 +1,56 @@
 # Compiler detection and configuration
 
-# Detect compiler - Asthra requires Clang/LLVM
-if(CMAKE_C_COMPILER_ID STREQUAL "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "AppleClang")
-    set(ASTHRA_COMPILER "Clang")
-elseif(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-    # MSVC with clang-cl is supported
-    set(ASTHRA_COMPILER "MSVC")
-else()
-    message(FATAL_ERROR "Unsupported compiler: ${CMAKE_C_COMPILER_ID}. Asthra requires Clang/LLVM.")
+# Detect compiler - Asthra requires Clang/LLVM only
+if(NOT (CMAKE_C_COMPILER_ID STREQUAL "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "AppleClang"))
+    message(FATAL_ERROR "Unsupported compiler: ${CMAKE_C_COMPILER_ID}. Asthra requires Clang/LLVM. No other compilers are supported.")
 endif()
+set(ASTHRA_COMPILER "Clang")
 
-# C23 feature detection
+# C23 feature detection for Clang
 include(CheckCCompilerFlag)
-if(NOT MSVC)
-    check_c_compiler_flag("-std=c23" COMPILER_SUPPORTS_C23)
-    if(COMPILER_SUPPORTS_C23)
-        set(CMAKE_C_STANDARD 23)
-        message(STATUS "Using C23 standard")
-    else()
-        # Fallback to C17 if C23 not supported
-        check_c_compiler_flag("-std=c17" COMPILER_SUPPORTS_C17)
-        if(COMPILER_SUPPORTS_C17)
-            set(CMAKE_C_STANDARD 17)
-            message(STATUS "C23 not supported, falling back to C17")
-        else()
-            message(FATAL_ERROR "Compiler does not support C17 or C23")
-        endif()
-    endif()
-else()
-    # MSVC: Try C23, fallback to C17
+check_c_compiler_flag("-std=c23" COMPILER_SUPPORTS_C23)
+if(COMPILER_SUPPORTS_C23)
     set(CMAKE_C_STANDARD 23)
-    message(STATUS "MSVC: Attempting C23 support")
-endif()
-
-# Common warning flags
-set(COMMON_WARNING_FLAGS "")
-if(NOT MSVC)
-    list(APPEND COMMON_WARNING_FLAGS
-        -Wall -Wextra -Werror
-        -Wno-unused-parameter
-        -Wno-unused-variable
-        -Wno-sign-compare
-        -Wno-unused-function
-        -Wno-missing-field-initializers
-        -Wno-unused-value
-        -Wno-format
-    )
+    message(STATUS "Using C23 standard")
 else()
-    list(APPEND COMMON_WARNING_FLAGS
-        /W4 /WX
-        /wd4996  # Disable deprecated warnings
-        /wd4244  # Disable narrowing conversion warnings
-        /wd4267  # Disable size_t conversion warnings
-    )
+    # Fallback to C17 if C23 not supported
+    check_c_compiler_flag("-std=c17" COMPILER_SUPPORTS_C17)
+    if(COMPILER_SUPPORTS_C17)
+        set(CMAKE_C_STANDARD 17)
+        message(STATUS "C23 not supported, falling back to C17")
+    else()
+        message(FATAL_ERROR "Compiler does not support C17 or C23")
+    endif()
 endif()
 
-# Compiler-specific flags
-if(ASTHRA_COMPILER STREQUAL "Clang")
-    list(APPEND COMMON_WARNING_FLAGS
-        -Wno-newline-eof
-        -Wno-unused-but-set-variable
-        -Wno-incompatible-pointer-types
-        -Wno-gnu-zero-variadic-macro-arguments
-        -Wno-deprecated-pragma
-        -fno-strict-aliasing
-    )
-    
-    # Clang-specific optimizations
-    set(COMPILER_OPTIMIZATION_FLAGS
-        -march=native -mtune=native
-        -ffast-math -funroll-loops
-        -fvectorize -fslp-vectorize
-    )
-    
-elseif(ASTHRA_COMPILER STREQUAL "MSVC")
-    # MSVC-specific optimizations
-    set(COMPILER_OPTIMIZATION_FLAGS
-        /O2 /Oi /Ot /GL
-        /fp:fast
-    )
-endif()
+# Common warning flags for Clang
+set(COMMON_WARNING_FLAGS
+    -Wall -Wextra -Werror
+    -Wno-unused-parameter
+    -Wno-unused-variable
+    -Wno-sign-compare
+    -Wno-unused-function
+    -Wno-missing-field-initializers
+    -Wno-unused-value
+    -Wno-format
+)
+
+# Clang-specific flags
+list(APPEND COMMON_WARNING_FLAGS
+    -Wno-newline-eof
+    -Wno-unused-but-set-variable
+    -Wno-incompatible-pointer-types
+    -Wno-gnu-zero-variadic-macro-arguments
+    -Wno-deprecated-pragma
+    -fno-strict-aliasing
+)
+
+# Clang-specific optimizations
+set(COMPILER_OPTIMIZATION_FLAGS
+    -march=native -mtune=native
+    -ffast-math -funroll-loops
+    -fvectorize -fslp-vectorize
+)
 
 # Apply common warning flags
 add_compile_options(${COMMON_WARNING_FLAGS})
@@ -89,14 +60,12 @@ if(APPLE)
     add_compile_options(-mmacosx-version-min=10.15)
     add_link_options(-mmacosx-version-min=10.15)
 elseif(UNIX AND NOT APPLE)
-    add_compile_definitions(_GNU_SOURCE)
+    # No additional definitions for Linux
 endif()
 
 # Thread support
 find_package(Threads REQUIRED)
-if(NOT MSVC)
-    add_compile_options(-pthread)
-endif()
+add_compile_options(-pthread)
 
 # Position Independent Code
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -119,24 +88,13 @@ endif()
 # Simple debug/release flags for backward compatibility
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_definitions(DEBUG=1 ASTHRA_DEBUG=1)
-    if(NOT MSVC)
-        add_compile_options(-g3 -O0 -fno-omit-frame-pointer)
-    else()
-        add_compile_options(/Od /Zi)
-    endif()
+    add_compile_options(-g3 -O0 -fno-omit-frame-pointer)
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_definitions(NDEBUG=1)
-    if(NOT MSVC)
-        add_compile_options(-O3 ${COMPILER_OPTIMIZATION_FLAGS})
-        if(IPO_SUPPORTED)
-            add_compile_options(-flto)
-            add_link_options(-flto)
-        endif()
-    else()
-        add_compile_options(${COMPILER_OPTIMIZATION_FLAGS})
-        if(IPO_SUPPORTED)
-            add_link_options(/LTCG)
-        endif()
+    add_compile_options(-O3 ${COMPILER_OPTIMIZATION_FLAGS})
+    if(IPO_SUPPORTED)
+        add_compile_options(-flto)
+        add_link_options(-flto)
     endif()
 endif()
 

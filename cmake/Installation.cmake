@@ -1,22 +1,21 @@
 # Installation and Distribution for Asthra
 # Provides install, uninstall, and source distribution capabilities
 
-include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 # Installation directories
-set(ASTHRA_INSTALL_BIN_DIR "${CMAKE_INSTALL_BINDIR}" CACHE PATH "Installation directory for executables")
-set(ASTHRA_INSTALL_LIB_DIR "${CMAKE_INSTALL_LIBDIR}" CACHE PATH "Installation directory for libraries")
-set(ASTHRA_INSTALL_INCLUDE_DIR "${CMAKE_INSTALL_INCLUDEDIR}/asthra" CACHE PATH "Installation directory for headers")
-set(ASTHRA_INSTALL_DATA_DIR "${CMAKE_INSTALL_DATADIR}/asthra" CACHE PATH "Installation directory for data files")
-set(ASTHRA_INSTALL_DOC_DIR "${CMAKE_INSTALL_DOCDIR}" CACHE PATH "Installation directory for documentation")
-set(ASTHRA_INSTALL_MAN_DIR "${CMAKE_INSTALL_MANDIR}" CACHE PATH "Installation directory for man pages")
+set(ASTHRA_INSTALL_BIN_DIR "bin" CACHE PATH "Installation directory for executables")
+set(ASTHRA_INSTALL_LIB_DIR "lib" CACHE PATH "Installation directory for libraries")
+set(ASTHRA_INSTALL_INCLUDE_DIR "include/asthra" CACHE PATH "Installation directory for headers")
+set(ASTHRA_INSTALL_DATA_DIR "share/asthra" CACHE PATH "Installation directory for data files")
+set(ASTHRA_INSTALL_DOC_DIR "share/doc/asthra" CACHE PATH "Installation directory for documentation")
+set(ASTHRA_INSTALL_MAN_DIR "share/man" CACHE PATH "Installation directory for man pages")
 
 # Export targets
 install(EXPORT AsthraTargets
     FILE AsthraTargets.cmake
     NAMESPACE Asthra::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Asthra
+    DESTINATION ${ASTHRA_INSTALL_LIB_DIR}/cmake/Asthra
 )
 
 # Create version file
@@ -37,7 +36,7 @@ configure_file(
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/AsthraConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/AsthraConfigVersion.cmake"
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Asthra
+    DESTINATION ${ASTHRA_INSTALL_LIB_DIR}/cmake/Asthra
 )
 
 # Install headers

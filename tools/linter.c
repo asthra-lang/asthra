@@ -100,11 +100,11 @@ static LinterStatistics* create_linter_statistics(void) {
     
     // C17 designated initializer with atomic initialization
     *stats = (LinterStatistics) {
-        .files_analyzed = ATOMIC_VAR_INIT(0),
-        .lines_analyzed = ATOMIC_VAR_INIT(0),
-        .warnings_found = ATOMIC_VAR_INIT(0),
-        .errors_found = ATOMIC_VAR_INIT(0),
-        .suggestions_made = ATOMIC_VAR_INIT(0)
+        .files_analyzed = 0,
+        .lines_analyzed = 0,
+        .warnings_found = 0,
+        .errors_found = 0,
+        .suggestions_made = 0
     };
     
     return stats;

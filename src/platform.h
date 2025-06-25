@@ -6,7 +6,6 @@
  * Licensed under the terms specified in LICENSE
  * 
  * This header provides platform-specific abstractions for:
- * - Windows (MSVC)
  * - macOS (Clang) 
  * - Linux (Clang)
  * 
@@ -69,13 +68,7 @@ extern "C" {
 // COMPILER DETECTION
 // =============================================================================
 
-#if defined(_MSC_VER)
-    #define ASTHRA_COMPILER_MSVC 1
-    #define ASTHRA_COMPILER_CLANG 0
-    #define ASTHRA_COMPILER_NAME "MSVC"
-    #define ASTHRA_COMPILER_VERSION _MSC_VER
-#elif defined(__clang__)
-    #define ASTHRA_COMPILER_MSVC 0
+#if defined(__clang__)
     #define ASTHRA_COMPILER_CLANG 1
     #define ASTHRA_COMPILER_NAME "Clang"
     #define ASTHRA_COMPILER_VERSION (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
@@ -87,17 +80,7 @@ extern "C" {
 // PLATFORM-SPECIFIC INCLUDES
 // =============================================================================
 
-#if ASTHRA_PLATFORM_WINDOWS
-    #define WIN32_LEAN_AND_MEAN
-    #define NOMINMAX
-    #include <windows.h>
-    #include <process.h>
-    #include <io.h>
-    #include <direct.h>
-    #include <malloc.h>
-    #pragma comment(lib, "ws2_32.lib")
-    #pragma comment(lib, "advapi32.lib")
-#else
+#if !ASTHRA_PLATFORM_WINDOWS
     #include <unistd.h>
     #include <pthread.h>
     #include <sys/stat.h>
@@ -114,112 +97,61 @@ extern "C" {
 // FILE SYSTEM ABSTRACTIONS
 // =============================================================================
 
-#if ASTHRA_PLATFORM_WINDOWS
-    #define ASTHRA_PATH_SEPARATOR '\\'
-    #define ASTHRA_PATH_SEPARATOR_STR "\\"
-    #define ASTHRA_PATH_LIST_SEPARATOR ';'
-    #define ASTHRA_PATH_LIST_SEPARATOR_STR ";"
-    #define ASTHRA_EXE_EXT ".exe"
-    #define ASTHRA_OBJ_EXT ".obj"
-    #define ASTHRA_LIB_EXT ".lib"
-    #define ASTHRA_DLL_EXT ".dll"
-    #define ASTHRA_LIB_PREFIX ""
-    #define ASTHRA_MAX_PATH 260
+// File system abstractions - Unix only
+#define ASTHRA_PATH_SEPARATOR '/'
+#define ASTHRA_PATH_SEPARATOR_STR "/"
+#define ASTHRA_PATH_LIST_SEPARATOR ':'
+#define ASTHRA_PATH_LIST_SEPARATOR_STR ":"
+#define ASTHRA_EXE_EXT ""
+#define ASTHRA_OBJ_EXT ".o"
+#define ASTHRA_LIB_EXT ".a"
+#if ASTHRA_PLATFORM_MACOS
+    #define ASTHRA_DLL_EXT ".dylib"
 #else
-    #define ASTHRA_PATH_SEPARATOR '/'
-    #define ASTHRA_PATH_SEPARATOR_STR "/"
-    #define ASTHRA_PATH_LIST_SEPARATOR ':'
-    #define ASTHRA_PATH_LIST_SEPARATOR_STR ":"
-    #define ASTHRA_EXE_EXT ""
-    #define ASTHRA_OBJ_EXT ".o"
-    #define ASTHRA_LIB_EXT ".a"
-    #if ASTHRA_PLATFORM_MACOS
-        #define ASTHRA_DLL_EXT ".dylib"
-    #else
-        #define ASTHRA_DLL_EXT ".so"
-    #endif
-    #define ASTHRA_LIB_PREFIX "lib"
-    #define ASTHRA_MAX_PATH 4096
+    #define ASTHRA_DLL_EXT ".so"
 #endif
+#define ASTHRA_LIB_PREFIX "lib"
+#define ASTHRA_MAX_PATH 4096
 
 // =============================================================================
 // THREAD AND PROCESS ABSTRACTIONS
 // =============================================================================
 
-#if ASTHRA_PLATFORM_WINDOWS
-    typedef HANDLE asthra_thread_t;
-    typedef HANDLE asthra_mutex_t;
-    typedef HANDLE asthra_process_t;
-    typedef DWORD asthra_thread_id_t;
-    typedef DWORD asthra_process_id_t;
-    #define ASTHRA_THREAD_INVALID INVALID_HANDLE_VALUE
-    #define ASTHRA_PROCESS_INVALID INVALID_HANDLE_VALUE
-#else
-    typedef pthread_t asthra_thread_t;
-    typedef pthread_mutex_t asthra_mutex_t;
-    typedef pid_t asthra_process_t;
-    typedef pthread_t asthra_thread_id_t;
-    typedef pid_t asthra_process_id_t;
-    #define ASTHRA_THREAD_INVALID ((pthread_t)0)
-    #define ASTHRA_PROCESS_INVALID ((pid_t)-1)
-#endif
+// Thread and process abstractions - Unix only
+typedef pthread_t asthra_thread_t;
+typedef pthread_mutex_t asthra_mutex_t;
+typedef pid_t asthra_process_t;
+typedef pthread_t asthra_thread_id_t;
+typedef pid_t asthra_process_id_t;
+#define ASTHRA_THREAD_INVALID ((pthread_t)0)
+#define ASTHRA_PROCESS_INVALID ((pid_t)-1)
 
 // =============================================================================
 // MEMORY MANAGEMENT ABSTRACTIONS
 // =============================================================================
 
-#if ASTHRA_PLATFORM_WINDOWS
-    #define asthra_alloc_aligned(size, alignment) _aligned_malloc(size, alignment)
-    #define asthra_free_aligned(ptr) _aligned_free(ptr)
-    #define asthra_page_size() 4096
-#else
-    #include <stdlib.h>
-    #define asthra_alloc_aligned(size, alignment) aligned_alloc(alignment, size)
-    #define asthra_free_aligned(ptr) free(ptr)
-    #define asthra_page_size() getpagesize()
-#endif
+// Memory management abstractions - Unix only
+#include <stdlib.h>
+#define asthra_alloc_aligned(size, alignment) aligned_alloc(alignment, size)
+#define asthra_free_aligned(ptr) free(ptr)
+#define asthra_page_size() getpagesize()
 
 // =============================================================================
 // FUNCTION ATTRIBUTES AND CALLING CONVENTIONS
 // =============================================================================
 
-#if ASTHRA_COMPILER_MSVC
-    #define ASTHRA_INLINE __forceinline
-    #define ASTHRA_NOINLINE __declspec(noinline)
-    #define ASTHRA_NORETURN __declspec(noreturn)
-    #define ASTHRA_RESTRICT __restrict
-    #define ASTHRA_ALIGN(n) __declspec(align(n))
-    #define ASTHRA_PACKED
-    #define ASTHRA_EXPORT __declspec(dllexport)
-    #define ASTHRA_IMPORT __declspec(dllimport)
-    #define ASTHRA_CDECL __cdecl
-    #define ASTHRA_STDCALL __stdcall
-    #define ASTHRA_FASTCALL __fastcall
-#elif ASTHRA_COMPILER_CLANG
-    #define ASTHRA_INLINE static inline __attribute__((always_inline))
-    #define ASTHRA_NOINLINE __attribute__((noinline))
-    #define ASTHRA_NORETURN __attribute__((noreturn))
-    #define ASTHRA_RESTRICT __restrict__
-    #define ASTHRA_ALIGN(n) __attribute__((aligned(n)))
-    #define ASTHRA_PACKED __attribute__((packed))
-    #define ASTHRA_EXPORT __attribute__((visibility("default")))
-    #define ASTHRA_IMPORT
-    #define ASTHRA_CDECL
-    #define ASTHRA_STDCALL
-    #define ASTHRA_FASTCALL
-#else
-    #define ASTHRA_INLINE static inline
-    #define ASTHRA_NOINLINE
-    #define ASTHRA_NORETURN
-    #define ASTHRA_RESTRICT
-    #define ASTHRA_ALIGN(n)
-    #define ASTHRA_PACKED
-    #define ASTHRA_EXPORT
-    #define ASTHRA_IMPORT
-    #define ASTHRA_CDECL
-    #define ASTHRA_STDCALL
-    #define ASTHRA_FASTCALL
-#endif
+// Clang-only attributes
+#define ASTHRA_INLINE static inline __attribute__((always_inline))
+#define ASTHRA_NOINLINE __attribute__((noinline))
+#define ASTHRA_NORETURN __attribute__((noreturn))
+#define ASTHRA_RESTRICT __restrict__
+#define ASTHRA_ALIGN(n) __attribute__((aligned(n)))
+#define ASTHRA_PACKED __attribute__((packed))
+#define ASTHRA_EXPORT __attribute__((visibility("default")))
+#define ASTHRA_IMPORT
+#define ASTHRA_CDECL
+#define ASTHRA_STDCALL
+#define ASTHRA_FASTCALL
 
 // =============================================================================
 // ATOMIC OPERATIONS (C17)
@@ -236,36 +168,22 @@ extern "C" {
         atomic_compare_exchange_strong(ptr, expected, desired)
 #else
     #define ASTHRA_ATOMIC(type) volatile type
-    // Fallback implementations for older compilers
-    #if ASTHRA_COMPILER_MSVC
-        #include <intrin.h>
-        #define asthra_atomic_load(ptr) (*(ptr))
-        #define asthra_atomic_store(ptr, val) (*(ptr) = (val))
-        #define asthra_atomic_fetch_add(ptr, val) _InterlockedExchangeAdd((long*)(ptr), (val))
-        #define asthra_atomic_fetch_sub(ptr, val) _InterlockedExchangeAdd((long*)(ptr), -(val))
-    #else
-        #define asthra_atomic_load(ptr) __sync_fetch_and_add(ptr, 0)
-        #define asthra_atomic_store(ptr, val) __sync_lock_test_and_set(ptr, val)
-        #define asthra_atomic_fetch_add(ptr, val) __sync_fetch_and_add(ptr, val)
-        #define asthra_atomic_fetch_sub(ptr, val) __sync_fetch_and_sub(ptr, val)
-    #endif
+    // Fallback implementations for Clang builtins
+    #define asthra_atomic_load(ptr) __sync_fetch_and_add(ptr, 0)
+    #define asthra_atomic_store(ptr, val) __sync_lock_test_and_set(ptr, val)
+    #define asthra_atomic_fetch_add(ptr, val) __sync_fetch_and_add(ptr, val)
+    #define asthra_atomic_fetch_sub(ptr, val) __sync_fetch_and_sub(ptr, val)
 #endif
 
 // =============================================================================
 // ERROR HANDLING ABSTRACTIONS
 // =============================================================================
 
-#if ASTHRA_PLATFORM_WINDOWS
-    typedef DWORD asthra_error_t;
-    #define ASTHRA_ERROR_SUCCESS 0
-    #define asthra_get_system_error() GetLastError()
-    #define asthra_set_system_error(err) SetLastError(err)
-#else
-    typedef int asthra_error_t;
-    #define ASTHRA_ERROR_SUCCESS 0
-    #define asthra_get_system_error() errno
-    #define asthra_set_system_error(err) (errno = (err))
-#endif
+// Error handling abstractions - Unix only
+typedef int asthra_error_t;
+#define ASTHRA_ERROR_SUCCESS 0
+#define asthra_get_system_error() errno
+#define asthra_set_system_error(err) (errno = (err))
 
 /**
  * @brief Get error message string for error code
@@ -278,23 +196,14 @@ const char* asthra_get_error_string(asthra_error_t error);
 // UNICODE AND STRING HANDLING
 // =============================================================================
 
-#if ASTHRA_PLATFORM_WINDOWS
-    #include <wchar.h>
-    typedef wchar_t asthra_wchar_t;
-    #define ASTHRA_WCHAR_MAX WCHAR_MAX
-    #define asthra_wcslen wcslen
-    #define asthra_wcscpy wcscpy_s
-    #define asthra_wcscat wcscat_s
-    #define asthra_wcscmp wcscmp
-#else
-    #include <wchar.h>
-    typedef wchar_t asthra_wchar_t;
-    #define ASTHRA_WCHAR_MAX WCHAR_MAX
-    #define asthra_wcslen wcslen
-    #define asthra_wcscpy wcscpy
-    #define asthra_wcscat wcscat
-    #define asthra_wcscmp wcscmp
-#endif
+// Unicode and string handling - Unix only
+#include <wchar.h>
+typedef wchar_t asthra_wchar_t;
+#define ASTHRA_WCHAR_MAX WCHAR_MAX
+#define asthra_wcslen wcslen
+#define asthra_wcscpy wcscpy
+#define asthra_wcscat wcscat
+#define asthra_wcscmp wcscmp
 
 // =============================================================================
 // COMPILE-TIME VALIDATIONS (C17)
@@ -305,8 +214,8 @@ ASTHRA_STATIC_ASSERT(ASTHRA_PLATFORM_WINDOWS + ASTHRA_PLATFORM_UNIX == 1,
                      "Exactly one platform must be detected");
 
 // Validate compiler detection
-ASTHRA_STATIC_ASSERT(ASTHRA_COMPILER_MSVC + ASTHRA_COMPILER_CLANG == 1,
-                     "Exactly one compiler must be detected (MSVC or Clang)");
+ASTHRA_STATIC_ASSERT(ASTHRA_COMPILER_CLANG == 1,
+                     "Clang compiler must be detected");
 
 // Validate path separator consistency
 #if ASTHRA_PLATFORM_WINDOWS

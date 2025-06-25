@@ -108,11 +108,11 @@ static TestStatistics* create_test_statistics(void) {
     
     // C17 designated initializer with atomic initialization
     *stats = (TestStatistics) {
-        .tests_run = ATOMIC_VAR_INIT(0),
-        .tests_passed = ATOMIC_VAR_INIT(0),
-        .tests_failed = ATOMIC_VAR_INIT(0),
-        .tests_skipped = ATOMIC_VAR_INIT(0),
-        .total_time_ms = ATOMIC_VAR_INIT(0)
+        .tests_run = 0,
+        .tests_passed = 0,
+        .tests_failed = 0,
+        .tests_skipped = 0,
+        .total_time_ms = 0
     };
     
     return stats;

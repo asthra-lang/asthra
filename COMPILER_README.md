@@ -16,7 +16,8 @@ A modern, safe, and performant systems programming language with LLVM-based comp
 
 - **macOS** (Apple Silicon & Intel)
 - **Linux** (x86_64 & ARM64)
-- **Windows** (MSVC - experimental)
+
+**Note**: Asthra requires Clang/LLVM compiler. No other compilers are supported.
 
 ### Installation
 
@@ -45,17 +46,6 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j8
 ```
 
-#### Windows (MSVC)
-```powershell
-# Install dependencies via vcpkg or manually
-# Ensure LLVM 18+ is installed and in PATH
-
-# Clone and build
-git clone https://github.com/asthra-lang/asthra.git
-cd asthra
-cmake -B build -G "Visual Studio 17 2022"
-cmake --build build --config Release
-```
 
 ### Verify Installation
 ```bash

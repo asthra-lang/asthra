@@ -26,8 +26,8 @@
 // Global performance state
 static PerformanceTimer global_timer = {0};
 static MemoryUsageStats memory_stats = {0};
-static atomic_size_t total_operations = ATOMIC_VAR_INIT(0);
-static atomic_size_t concurrent_tasks = ATOMIC_VAR_INIT(0);
+static atomic_size_t total_operations = 0;
+static atomic_size_t concurrent_tasks = 0;
 
 // Performance baselines for regression testing
 #define BASELINE_SPAWN_TIME_MS 1.0

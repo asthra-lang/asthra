@@ -1,39 +1,37 @@
 # Main build targets and configurations
 
 # Install configuration
-include(GNUInstallDirs)
-
 # Install compiler
 install(TARGETS asthra
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    RUNTIME DESTINATION bin
 )
 
 # Install libraries
 install(TARGETS asthra_compiler asthra_runtime
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
 )
 
 # Install headers
 install(DIRECTORY src/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/asthra
+    DESTINATION include/asthra
     FILES_MATCHING PATTERN "*.h"
 )
 
 install(DIRECTORY runtime/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/asthra/runtime
+    DESTINATION include/asthra/runtime
     FILES_MATCHING PATTERN "*.h"
 )
 
 # Install standard library
 install(DIRECTORY stdlib/
-    DESTINATION ${CMAKE_INSTALL_DATADIR}/asthra/stdlib
+    DESTINATION share/asthra/stdlib
     FILES_MATCHING PATTERN "*.asthra"
 )
 
 # Install documentation
 install(DIRECTORY docs/
-    DESTINATION ${CMAKE_INSTALL_DOCDIR}
+    DESTINATION share/doc/asthra
     FILES_MATCHING PATTERN "*.md"
 )
 
