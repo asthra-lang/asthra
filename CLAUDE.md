@@ -86,12 +86,13 @@ ctest --test-dir build -R "parser.*expr"       # Test parser expressions
 
 ### Required Testing
 1. **Build test executables first**: `cmake --build build --target build-tests` (especially after clean)
-2. **Run full test suite**: `ctest --test-dir build` must pass
-3. **Component-specific tests**: Test relevant components with `ctest --test-dir build -L <component-name>` (e.g., `ctest -L semantic`)
+2. **Always execute tests from root directory**: All tests must be run from the project root using `ctest` commands
+3. **Run full test suite**: `ctest --test-dir build` must pass
+4. **Component-specific tests**: Test relevant components with `ctest --test-dir build -L <component-name>` (e.g., `ctest -L semantic`)
    - Use parallel execution for quicker iteration: `ctest --test-dir build -L semantic -j8`
    - Some components have sub-categories: `ctest --test-dir build -R "codegen.*function"`
-4. **Performance validation**: Run benchmarks if changes affect performance
-5. **Memory safety**: Use sanitizers (build with `-DSANITIZER=Address` or `-DSANITIZER=Thread`) for memory-related changes
+5. **Performance validation**: Run benchmarks if changes affect performance
+6. **Memory safety**: Use sanitizers (build with `-DSANITIZER=Address` or `-DSANITIZER=Thread`) for memory-related changes
 
 **⚠️ Important**: Never use full clean when fixing tests. See `docs/contributor/guides/test-build-strategy.md` for the correct approach.
 
