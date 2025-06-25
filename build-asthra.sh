@@ -95,7 +95,7 @@ fi
 print_status "Build completed successfully!"
 
 # Check if the binary was created
-if [ -f "build/asthra" ]; then
+if [ -f "build/bin/asthra" ]; then
     print_status "Asthra compiler built at: $(pwd)/build/asthra"
 else
     print_error "Expected output binary not found at build/asthra"
