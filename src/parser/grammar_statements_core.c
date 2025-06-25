@@ -14,11 +14,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Include the modular statement parsing components
-#include "grammar_statements_declarations.c"
-#include "grammar_statements_simple.c"
-#include "grammar_statements_blocks.c"
-#include "grammar_statements_assignments.c"
+// Modular statement parsing components are now compiled separately
+// Functions are declared in grammar_statements.h
 
 // =============================================================================
 // CORE STATEMENT PARSING

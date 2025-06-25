@@ -10,7 +10,9 @@ set(TYPE_SYSTEM_TESTS
     test_function_types.c
     test_advanced_types.c
     test_tuple_type_checking.c
-    test_predeclared_functions.c
+    test_args_function.c
+    test_panic_log_functions.c
+    test_infinite_function.c
     test_i128_u128_types.c
 )
 

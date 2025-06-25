@@ -29,8 +29,16 @@ set(ELF_WRITER_TESTS
     test_elf_relocation_handling_minimal.c
     test_elf_relocation_basic.c
     
+    # ELF symbol table tests (split into individual tests)
+    test_elf_symbol_table_creation.c
+    test_elf_symbol_binding_types.c
+    test_elf_symbol_visibility.c
+    test_elf_dynamic_linking_support.c
+    test_elf_symbol_lookup_resolution.c
+    test_elf_symbol_table_ordering.c
+    
     # REMOVED: test_elf_structure_generation.c (compilation errors)
-    # REMOVED: test_elf_symbol_tables.c (compilation errors)
+    # REMOVED: test_elf_symbol_tables.c (split into individual tests above)
 )
 
 # ELF relocation tests (REMOVED - compilation errors)

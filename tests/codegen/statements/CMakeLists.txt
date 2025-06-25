@@ -1,5 +1,11 @@
 # Statement Generation Tests
-# Tests that depend on statement_generation_common.c
+# Common source files for all statement generation tests
+set(STATEMENT_GENERATION_COMMON_SOURCES
+    test_fixture_management.c
+    test_helper_functions.c
+    test_fragment_parser.c
+    test_suite_configuration.c
+)
 
 set(STATEMENT_GENERATION_TESTS
     test_control_flow_statements.c
@@ -17,7 +23,7 @@ foreach(test_file ${STATEMENT_GENERATION_TESTS})
     get_filename_component(test_name ${test_file} NAME_WE)
     set(test_target "codegen_${test_name}")
     
-    add_executable(${test_target} ${test_file} statement_generation_common.c)
+    add_executable(${test_target} ${test_file} ${STATEMENT_GENERATION_COMMON_SOURCES})
     
     if(TARGET asthra_test_framework)
         target_link_libraries(${test_target} asthra_test_framework)

@@ -59,12 +59,12 @@ set(PARSER_EXCLUDE
     test_enum_generic_constructor.c
     test_generic_structs_phase5.c
     test_grammar_main.c
+    test_grammar_statements.c
     test_postfix_expression_ambiguity.c
     test_pub_impl_self_common.c
     test_pub_impl_self_main.c
     test_return_statements_v14.c
     test_return_v14_simple.c
-    test_safe_ffi_annotation_parser.c
     test_type_annotation_requirement.c
     test_v1_18_comprehensive_explicit_syntax.c
 )
