@@ -13,6 +13,11 @@
 
 #include "semantic_analyzer_core.h"
 
+// Include modular components
+#include "semantic_primitive_types.h"
+#include "semantic_predeclared_functions.h"
+#include "semantic_generic_types.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -22,7 +27,8 @@ extern "C" {
 // =============================================================================
 
 /**
- * Initialize builtin types in the analyzer
+ * Initialize all builtin types in the analyzer
+ * This includes primitive types, predeclared functions, and generic types
  */
 void semantic_init_builtin_types(SemanticAnalyzer *analyzer);
 
@@ -41,19 +47,10 @@ bool semantic_is_builtin_type(const TypeDescriptor *type);
 // =============================================================================
 
 /**
- * Initialize predeclared identifiers (log, range, etc.)
+ * Initialize all predeclared identifiers
+ * This includes functions and generic types
  */
 void semantic_init_predeclared_identifiers(SemanticAnalyzer *analyzer);
-
-/**
- * Initialize builtin generic types (Option, Result, etc.)
- */
-void semantic_init_builtin_generic_types(SemanticAnalyzer *analyzer);
-
-/**
- * Create a function type descriptor from a name and signature string
- */
-TypeDescriptor *create_predeclared_function_type(const char *name, const char *signature);
 
 #ifdef __cplusplus
 }
