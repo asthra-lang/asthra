@@ -23,7 +23,7 @@ jobs:
         
         echo ""
         echo "Platform coverage:"
-        ls all-artifacts/ | grep -E "(linux|macos)" | sort
+        ls all-artifacts/ | grep -E "(linux|macos|windows)" | sort
         
         echo ""
         echo "Compiler coverage:"

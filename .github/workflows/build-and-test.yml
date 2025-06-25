@@ -44,6 +44,15 @@ jobs:
             cc: clang
             cxx: clang++
             build_type: Release
+            
+          # Windows builds - Clang only
+          - platform: windows
+            os: windows-2022
+            compiler: clang
+            arch: x64
+            cc: clang
+            cxx: clang++
+            build_type: Release
 
     steps:
     - name: Checkout code
@@ -102,14 +111,43 @@ jobs:
         echo "CPPFLAGS=-I/opt/homebrew/opt/llvm@18/include" >> $GITHUB_ENV
         
         echo "✓ macOS dependencies installed successfully"
+        
+    - name: Setup Windows dependencies
+      if: matrix.platform == 'windows'
+      shell: pwsh
+      run: |
+        Write-Host "=== Installing Windows Dependencies ==="
+        
+        # Install Chocolatey if not present
+        if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
+            Set-ExecutionPolicy Bypass -Scope Process -Force
+            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+            iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+        }
+        
+        # Install required tools
+        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
+        choco install llvm --version=18.1.8 -y
+        choco install ninja -y
+        choco install git -y
+        
+        # Add LLVM to PATH
+        $env:PATH = "C:\Program Files\LLVM\bin;$env:PATH"
+        echo "C:\Program Files\LLVM\bin" >> $env:GITHUB_PATH
+        
+        # Set LLVM environment variables
+        echo "LLVM_ROOT=C:\Program Files\LLVM" >> $env:GITHUB_ENV
+        echo "LLVM_CONFIG=C:\Program Files\LLVM\bin\llvm-config.exe" >> $env:GITHUB_ENV
+        
+        Write-Host "✓ Windows dependencies installed successfully"
           
     # =============================================================================
     # COMPILER SETUP
     # =============================================================================
     
     - name: Set compiler environment
+      shell: bash
       run: |
-        set -e
         echo "=== Setting Compiler Environment ==="
         echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
         echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
@@ -123,22 +161,34 @@ jobs:
         echo "✓ Compiler environment set successfully"
     
     - name: Verify LLVM installation
+      shell: bash
       run: |
-        set -e
         echo "=== Verifying LLVM Installation ==="
         
-        # Try to find llvm-config
-        if command -v llvm-config-18 >/dev/null 2>&1; then
-          echo "Found llvm-config-18"
-          llvm-config-18 --version
-          echo "LLVM_CONFIG=llvm-config-18" >> $GITHUB_ENV
-        elif command -v llvm-config >/dev/null 2>&1; then
-          echo "Found llvm-config"
-          llvm-config --version
-          echo "LLVM_CONFIG=llvm-config" >> $GITHUB_ENV
+        if [[ "${{ matrix.platform }}" == "windows" ]]; then
+          # Windows LLVM verification
+          if command -v llvm-config >/dev/null 2>&1; then
+            echo "Found llvm-config"
+            llvm-config --version
+            echo "LLVM_CONFIG=llvm-config" >> $GITHUB_ENV
+          else
+            echo "ERROR: LLVM not found on Windows!"
+            exit 1
+          fi
         else
-          echo "ERROR: LLVM not found!"
-          exit 1
+          # Unix-like systems
+          if command -v llvm-config-18 >/dev/null 2>&1; then
+            echo "Found llvm-config-18"
+            llvm-config-18 --version
+            echo "LLVM_CONFIG=llvm-config-18" >> $GITHUB_ENV
+          elif command -v llvm-config >/dev/null 2>&1; then
+            echo "Found llvm-config"
+            llvm-config --version
+            echo "LLVM_CONFIG=llvm-config" >> $GITHUB_ENV
+          else
+            echo "ERROR: LLVM not found!"
+            exit 1
+          fi
         fi
         
         echo "✓ LLVM verified successfully"
@@ -168,8 +218,8 @@ jobs:
     # =============================================================================
     
     - name: Configure CMake
+      shell: bash
       run: |
-        set -e
         echo "=== CMake Configuration ==="
         mkdir -p build
         cd build
@@ -181,16 +231,26 @@ jobs:
         echo "CMAKE_CXX_COMPILER: ${{ matrix.cxx }}"
         echo ""
         
-        cmake .. \
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DCMAKE_C_COMPILER=${{ matrix.cc }} \
-          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+        if [[ "${{ matrix.platform }}" == "windows" ]]; then
+          # Use Ninja generator on Windows for better Clang support
+          cmake .. \
+            -G "Ninja" \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+        else
+          # Use default generator on Unix-like systems
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+        fi
         
         echo "✓ CMake configuration completed successfully"
 
     - name: Build Asthra compiler
+      shell: bash
       run: |
-        set -e
         echo "=== Building Asthra Compiler ==="
         cd build
         
@@ -199,7 +259,11 @@ jobs:
         echo ""
         
         # Use a reasonable number of parallel jobs
-        JOBS=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
+        if [[ "${{ matrix.platform }}" == "windows" ]]; then
+          JOBS=$(nproc 2>/dev/null || echo 2)
+        else
+          JOBS=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
+        fi
         echo "Building with $JOBS parallel jobs"
         
         cmake --build . --config ${{ matrix.build_type }} -j$JOBS
@@ -207,19 +271,38 @@ jobs:
         echo "✓ Build completed successfully"
 
     - name: Verify build artifacts
+      shell: bash
       run: |
         echo "=== Verifying Build Artifacts ==="
-        if [[ -f "build/asthra" ]]; then
-          echo "✓ Asthra compiler built successfully"
-          ls -la build/asthra
-        elif [[ -f "build/bin/asthra" ]]; then
-          echo "✓ Asthra compiler built successfully"
-          ls -la build/bin/asthra
+        
+        if [[ "${{ matrix.platform }}" == "windows" ]]; then
+          # Windows: Look for .exe files
+          if [[ -f "build/asthra.exe" ]]; then
+            echo "✓ Asthra compiler built successfully"
+            ls -la build/asthra.exe
+          elif [[ -f "build/bin/asthra.exe" ]]; then
+            echo "✓ Asthra compiler built successfully"
+            ls -la build/bin/asthra.exe
+          else
+            echo "✗ Asthra compiler not found"
+            echo "Contents of build directory:"
+            find build -name "asthra*" -o -name "*.exe" | head -10
+            exit 1
+          fi
         else
-          echo "✗ Asthra compiler not found"
-          echo "Contents of build directory:"
-          find build -name "asthra*" -o -name "*.exe" | head -10
-          exit 1
+          # Unix-like: Look for files without extension
+          if [[ -f "build/asthra" ]]; then
+            echo "✓ Asthra compiler built successfully"
+            ls -la build/asthra
+          elif [[ -f "build/bin/asthra" ]]; then
+            echo "✓ Asthra compiler built successfully"
+            ls -la build/bin/asthra
+          else
+            echo "✗ Asthra compiler not found"
+            echo "Contents of build directory:"
+            find build -name "asthra*" | head -10
+            exit 1
+          fi
         fi
 
     # =============================================================================
@@ -227,31 +310,63 @@ jobs:
     # =============================================================================
     
     - name: Run basic tests
+      shell: bash
       run: |
         echo "=== Running Basic Tests ==="
         cd build
-        ctest --output-on-failure --parallel $(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2) || echo "Some tests may have failed"
+        
+        if [[ "${{ matrix.platform }}" == "windows" ]]; then
+          JOBS=$(nproc 2>/dev/null || echo 2)
+        else
+          JOBS=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
+        fi
+        
+        ctest --output-on-failure --parallel $JOBS || echo "Some tests may have failed"
 
     - name: Test compiler version
+      shell: bash
       run: |
         echo "=== Testing Compiler Version ==="
-        if [[ -f "build/asthra" ]]; then
-          ./build/asthra --version || echo "Version command not implemented"
-        elif [[ -f "build/bin/asthra" ]]; then
-          ./build/bin/asthra --version || echo "Version command not implemented"
+        
+        if [[ "${{ matrix.platform }}" == "windows" ]]; then
+          if [[ -f "build/asthra.exe" ]]; then
+            ./build/asthra.exe --version || echo "Version command not implemented"
+          elif [[ -f "build/bin/asthra.exe" ]]; then
+            ./build/bin/asthra.exe --version || echo "Version command not implemented"
+          else
+            echo "Asthra binary not found for version test"
+          fi
         else
-          echo "Asthra binary not found for version test"
+          if [[ -f "build/asthra" ]]; then
+            ./build/asthra --version || echo "Version command not implemented"
+          elif [[ -f "build/bin/asthra" ]]; then
+            ./build/bin/asthra --version || echo "Version command not implemented"
+          else
+            echo "Asthra binary not found for version test"
+          fi
         fi
         
     - name: Test compiler help
+      shell: bash
       run: |
         echo "=== Testing Compiler Help ==="
-        if [[ -f "build/asthra" ]]; then
-          ./build/asthra --help || echo "Help command not implemented"
-        elif [[ -f "build/bin/asthra" ]]; then
-          ./build/bin/asthra --help || echo "Help command not implemented"
+        
+        if [[ "${{ matrix.platform }}" == "windows" ]]; then
+          if [[ -f "build/asthra.exe" ]]; then
+            ./build/asthra.exe --help || echo "Help command not implemented"
+          elif [[ -f "build/bin/asthra.exe" ]]; then
+            ./build/bin/asthra.exe --help || echo "Help command not implemented"
+          else
+            echo "Asthra binary not found for help test"
+          fi
         else
-          echo "Asthra binary not found for help test"
+          if [[ -f "build/asthra" ]]; then
+            ./build/asthra --help || echo "Help command not implemented"
+          elif [[ -f "build/bin/asthra" ]]; then
+            ./build/bin/asthra --help || echo "Help command not implemented"
+          else
+            echo "Asthra binary not found for help test"
+          fi
         fi
 
     # =============================================================================

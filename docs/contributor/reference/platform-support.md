@@ -22,7 +22,7 @@ Asthra is designed as a cross-platform programming language with first-class sup
 ### Supported Platforms
 
 #### Primary Targets (Tier 1)
-- **x86_64**: Linux, macOS
+- **x86_64**: Linux, macOS, Windows
 - **ARM64**: Linux, macOS, iOS (planned)
 - **WASM32**: Browser and WASI environments
 
@@ -33,6 +33,7 @@ Asthra is designed as a cross-platform programming language with first-class sup
 #### Development Platforms
 - **macOS**: Primary development platform with Clang
 - **Linux**: CI/CD and production deployment
+- **Windows**: Development with Clang/LLVM (no MSVC support)
 
 **Note**: Asthra requires Clang/LLVM compiler. No other compilers are supported.
 
@@ -42,6 +43,7 @@ Asthra is designed as a cross-platform programming language with first-class sup
 |----------|-------------|---------|-----|-------------|--------|
 | x86_64/Linux | ✅ | ✅ | ✅ | ✅ | Production |
 | x86_64/macOS | ✅ | ✅ | ✅ | ✅ | Production |
+| x86_64/Windows | ✅ | ✅ | ✅ | ✅ | Production |
 | ARM64/Linux | ✅ | ✅ | ✅ | ✅ | Production |
 | ARM64/macOS | ✅ | ✅ | ✅ | ✅ | Production |
 | WASM32/Browser | ✅ | ✅ | ⚠️ | ⚠️ | Beta |
@@ -196,6 +198,10 @@ Linux is the primary target platform with full feature support including mmap, p
 
 macOS support leverages Darwin-specific features including Mach kernel APIs and high-resolution timing.
 
+### Windows Support
+
+Windows support uses Clang/LLVM with native Windows APIs for memory management, file I/O, and threading, avoiding MSVC dependencies.
+
 
 ## Toolchain Integration
 
@@ -296,6 +302,7 @@ Comprehensive testing across all supported platforms with feature detection and 
 Platform testing in CI/CD with cross-compilation and performance benchmarking. The CI system tests:
 - Linux with Clang (strict warnings enabled)
 - macOS with Clang
+- Windows with Clang/LLVM
 
 ## Conclusion
 

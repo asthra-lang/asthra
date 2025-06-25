@@ -30,6 +30,12 @@
 #cmakedefine HAVE_EXECINFO_H
 #cmakedefine HAVE_PTHREAD_H
 
+/* Windows-specific headers */
+#cmakedefine HAVE_WINDOWS_H
+#cmakedefine HAVE_IO_H
+#cmakedefine HAVE_PROCESS_H
+#cmakedefine HAVE_DIRECT_H
+
 /* System functions */
 #cmakedefine HAVE_MMAP
 #cmakedefine HAVE_MPROTECT
@@ -39,6 +45,15 @@
 #cmakedefine HAVE_GETTIMEOFDAY
 #cmakedefine HAVE_POSIX_MEMALIGN
 #cmakedefine HAVE_ALIGNED_ALLOC
+
+/* Windows-specific functions */
+#cmakedefine HAVE_VIRTUALALLOC
+#cmakedefine HAVE_VIRTUALPROTECT
+#cmakedefine HAVE_LOADLIBRARY
+#cmakedefine HAVE_GETPROCADDRESS
+#cmakedefine HAVE_QUERYPERFORMANCECOUNTER
+#cmakedefine HAVE_ALIGNED_MALLOC
+#cmakedefine HAVE_GETMODULEFILENAME
 
 /* SIMD support */
 #cmakedefine ASTHRA_HAS_SSE
