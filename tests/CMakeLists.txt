@@ -98,6 +98,16 @@ foreach(category ${TEST_CATEGORY_DIRS})
         else()
             # Auto-discover tests
             file(GLOB test_files "${category}/*.c")
+            
+            # Exclude tests that depend on removed pipeline orchestrator
+            if(category STREQUAL "pipeline")
+                list(REMOVE_ITEM test_files
+                    "${CMAKE_CURRENT_SOURCE_DIR}/pipeline/test_pipeline_orchestrator.c"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/pipeline/test_pipeline_orchestrator_minimal.c"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/pipeline/test_end_to_end_compilation.c"
+                )
+            endif()
+            
             set(category_test_count 0)
             foreach(test_file ${test_files})
                 add_asthra_test(${category} ${test_file})

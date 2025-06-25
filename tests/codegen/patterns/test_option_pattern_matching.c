@@ -5,7 +5,7 @@
 
 #include "../../framework/test_framework.h"
 #include "../../framework/compiler_test_utils.h"
-#include "../../../src/codegen/code_generator.h"
+#include "../../../src/codegen/backend_interface.h"
 #include "../../../src/analysis/semantic_analyzer.h"
 #include "../../../src/parser/parser.h"
 #include <stdio.h>

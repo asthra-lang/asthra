@@ -27,7 +27,7 @@
 #include "parser.h"
 #include "ast.h"
 #include "semantic_analyzer.h"
-#include "code_generator.h"
+#include "backend_interface.h"
 
 // =============================================================================
 // TEST UTILITIES AND HELPERS

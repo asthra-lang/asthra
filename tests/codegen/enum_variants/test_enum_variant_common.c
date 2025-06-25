@@ -43,15 +43,23 @@ ASTNode *parse_enum_test_expression(const char *source) {
     return expr;
 }
 
-// Test helper function to create a minimal code generator context
+// Test helper function to create a minimal backend context
 TestCodeGenContext *create_test_code_gen_context(void) {
     TestCodeGenContext *ctx = calloc(1, sizeof(TestCodeGenContext));
     if (!ctx) {
         return NULL;
     }
     
-    ctx->generator = code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!ctx->generator) {
+    AsthraCompilerOptions options = {
+        .backend_type = ASTHRA_BACKEND_LLVM_IR,
+        .target_arch = ASTHRA_TARGET_X86_64,
+        .opt_level = ASTHRA_OPT_NONE,
+        .output_file = "test_output.ll",
+        .debug_info = true,
+        .verbose = false
+    };
+    ctx->backend = asthra_backend_create(&options);
+    if (!ctx->backend) {
         free(ctx);
         return NULL;
     }
@@ -59,26 +67,23 @@ TestCodeGenContext *create_test_code_gen_context(void) {
     // Create and set a semantic analyzer to satisfy architectural requirements
     ctx->analyzer = semantic_analyzer_create();
     if (!ctx->analyzer) {
-        code_generator_destroy(ctx->generator);
+        asthra_backend_destroy(ctx->backend);
         free(ctx);
         return NULL;
     }
     
-    // Set the semantic analyzer on the code generator
-    code_generator_set_semantic_analyzer(ctx->generator, ctx->analyzer);
-    
-    // Debug: Verify the analyzer was set
-    printf("DEBUG: Set semantic analyzer %p on generator %p\n", (void*)ctx->analyzer, (void*)ctx->generator);
+    // Debug: Created backend and analyzer
+    printf("DEBUG: Created backend %p and analyzer %p\n", (void*)ctx->backend, (void*)ctx->analyzer);
     
     return ctx;
 }
 
-// Test helper function to destroy code generator context
+// Test helper function to destroy backend context
 void destroy_test_code_gen_context(TestCodeGenContext *ctx) {
     if (!ctx) return;
     
-    if (ctx->generator) {
-        code_generator_destroy(ctx->generator);
+    if (ctx->backend) {
+        asthra_backend_destroy(ctx->backend);
     }
     if (ctx->analyzer) {
         semantic_analyzer_destroy(ctx->analyzer);

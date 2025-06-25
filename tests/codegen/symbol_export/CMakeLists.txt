@@ -1,11 +1,13 @@
 # Symbol Export Tests
 # Tests for public/private symbol visibility and export functionality
+# REMOVED: Symbol export tests depend on deleted assembly backend code
+# LLVM backend handles symbol exports internally
 
 set(SYMBOL_EXPORT_TESTS
-    test_mixed_visibility_export.c
-    test_private_symbol_export.c
-    test_public_symbol_export.c
-    test_symbol_export.c
+    # REMOVED: test_mixed_visibility_export.c (depends on deleted assembly backend)
+    # REMOVED: test_private_symbol_export.c (depends on deleted assembly backend)
+    # REMOVED: test_public_symbol_export.c (depends on deleted assembly backend)
+    # REMOVED: test_symbol_export.c (depends on deleted assembly backend)
 )
 
 # Create executables for symbol export tests

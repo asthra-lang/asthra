@@ -17,14 +17,13 @@
 #include "lexer.h"
 #include "ast.h"
 #include "semantic_core.h"
-#include "code_generator.h"
-#include "code_generator_core.h"
-#include "code_generator_types.h"
+#include "backend_interface.h"
+#include "compiler.h"
 #include "codegen_test_stubs.h"
 
-// Test helper structure to track both generator and analyzer
+// Test helper structure to track both backend and analyzer
 typedef struct {
-    CodeGenerator *generator;
+    AsthraBackend *backend;
     SemanticAnalyzer *analyzer;
 } TestCodeGenContext;
 

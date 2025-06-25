@@ -122,7 +122,7 @@ ctest --test-dir build -L backend
 ## Dependencies
 
 The LLVM backend requires:
-- LLVM 15.0 or later (tested with LLVM 15-19)
+- LLVM 18.0 or later
 - LLVM-C API headers and libraries
 
 On macOS with Homebrew:

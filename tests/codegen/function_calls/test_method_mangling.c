@@ -33,8 +33,8 @@
 #include "parser.h"
 #include "ast.h"
 #include "semantic_analyzer.h"
-#include "code_generator.h"
-#include "code_generator_core.h"
+#include "../../../src/codegen/backend_interface.h"
+#include "../../../src/compiler.h"
 
 // =============================================================================
 // TEST UTILITIES AND HELPERS
@@ -84,20 +84,38 @@ static AsthraTestResult test_basic_method_mangling(AsthraTestContext* context) {
         return ASTHRA_TEST_FAIL;
     }
     
-    CodeGenerator* codegen = code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!ASTHRA_TEST_ASSERT(context, codegen != NULL, "Code generator should be created")) {
+    // Create backend for code generation
+    AsthraCompilerOptions options = asthra_compiler_default_options();
+    options.target_arch = ASTHRA_TARGET_X86_64;
+    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    
+    AsthraBackend* backend = asthra_backend_create(&options);
+    if (!ASTHRA_TEST_ASSERT(context, backend != NULL, "Backend should be created")) {
         semantic_analyzer_destroy(analyzer);
         ast_free_node(program);
         cleanup_parser(parser);
         return ASTHRA_TEST_FAIL;
     }
     
-    // Connect semantic analyzer to code generator
-    codegen->semantic_analyzer = analyzer;
+    if (asthra_backend_initialize(backend, &options) != 0) {
+        ASTHRA_TEST_ASSERT(context, false, "Backend should initialize");
+        asthra_backend_destroy(backend);
+        semantic_analyzer_destroy(analyzer);
+        ast_free_node(program);
+        cleanup_parser(parser);
+        return ASTHRA_TEST_FAIL;
+    }
     
-    bool codegen_result = code_generate_program(codegen, program);
-    if (!ASTHRA_TEST_ASSERT(context, codegen_result, "Code generation should succeed")) {
-        code_generator_destroy(codegen);
+    // Create compiler context for backend
+    AsthraCompilerContext compiler_ctx = {0};
+    compiler_ctx.options = options;
+    compiler_ctx.ast = program;
+    compiler_ctx.symbol_table = analyzer->global_scope;
+    compiler_ctx.type_checker = analyzer;
+    
+    int codegen_result = asthra_backend_generate(backend, &compiler_ctx, program, "test.ll");
+    if (!ASTHRA_TEST_ASSERT(context, codegen_result == 0, "Code generation should succeed")) {
+        asthra_backend_destroy(backend);
         semantic_analyzer_destroy(analyzer);
         ast_free_node(program);
         cleanup_parser(parser);
@@ -108,14 +126,14 @@ static AsthraTestResult test_basic_method_mangling(AsthraTestContext* context) {
     // This validates that the method mangling infrastructure is working
     // since the code generator must create mangled names internally
     if (!ASTHRA_TEST_ASSERT(context, true, "Code generation completed successfully")) {
-        code_generator_destroy(codegen);
+        asthra_backend_destroy(backend);
         semantic_analyzer_destroy(analyzer);
         ast_free_node(program);
         cleanup_parser(parser);
         return ASTHRA_TEST_FAIL;
     }
     
-    code_generator_destroy(codegen);
+    asthra_backend_destroy(backend);
     semantic_analyzer_destroy(analyzer);
     ast_free_node(program);
     cleanup_parser(parser);
@@ -156,20 +174,38 @@ static AsthraTestResult test_complex_method_mangling(AsthraTestContext* context)
         return ASTHRA_TEST_FAIL;
     }
     
-    CodeGenerator* codegen = code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!ASTHRA_TEST_ASSERT(context, codegen != NULL, "Code generator should be created")) {
+    // Create backend for code generation
+    AsthraCompilerOptions options = asthra_compiler_default_options();
+    options.target_arch = ASTHRA_TARGET_X86_64;
+    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    
+    AsthraBackend* backend = asthra_backend_create(&options);
+    if (!ASTHRA_TEST_ASSERT(context, backend != NULL, "Backend should be created")) {
         semantic_analyzer_destroy(analyzer);
         ast_free_node(program);
         cleanup_parser(parser);
         return ASTHRA_TEST_FAIL;
     }
     
-    // Connect semantic analyzer to code generator
-    codegen->semantic_analyzer = analyzer;
+    if (asthra_backend_initialize(backend, &options) != 0) {
+        ASTHRA_TEST_ASSERT(context, false, "Backend should initialize");
+        asthra_backend_destroy(backend);
+        semantic_analyzer_destroy(analyzer);
+        ast_free_node(program);
+        cleanup_parser(parser);
+        return ASTHRA_TEST_FAIL;
+    }
     
-    bool codegen_result = code_generate_program(codegen, program);
-    if (!ASTHRA_TEST_ASSERT(context, codegen_result, "Code generation should succeed")) {
-        code_generator_destroy(codegen);
+    // Create compiler context for backend
+    AsthraCompilerContext compiler_ctx = {0};
+    compiler_ctx.options = options;
+    compiler_ctx.ast = program;
+    compiler_ctx.symbol_table = analyzer->global_scope;
+    compiler_ctx.type_checker = analyzer;
+    
+    int codegen_result = asthra_backend_generate(backend, &compiler_ctx, program, "test.ll");
+    if (!ASTHRA_TEST_ASSERT(context, codegen_result == 0, "Code generation should succeed")) {
+        asthra_backend_destroy(backend);
         semantic_analyzer_destroy(analyzer);
         ast_free_node(program);
         cleanup_parser(parser);
@@ -179,14 +215,14 @@ static AsthraTestResult test_complex_method_mangling(AsthraTestContext* context)
     // Test that code generation completes successfully with complex methods
     // This validates that the method mangling handles multiple methods correctly
     if (!ASTHRA_TEST_ASSERT(context, true, "Complex method code generation completed successfully")) {
-        code_generator_destroy(codegen);
+        asthra_backend_destroy(backend);
         semantic_analyzer_destroy(analyzer);
         ast_free_node(program);
         cleanup_parser(parser);
         return ASTHRA_TEST_FAIL;
     }
     
-    code_generator_destroy(codegen);
+    asthra_backend_destroy(backend);
     semantic_analyzer_destroy(analyzer);
     ast_free_node(program);
     cleanup_parser(parser);
@@ -228,20 +264,38 @@ static AsthraTestResult test_multiple_struct_mangling(AsthraTestContext* context
         return ASTHRA_TEST_FAIL;
     }
     
-    CodeGenerator* codegen = code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!ASTHRA_TEST_ASSERT(context, codegen != NULL, "Code generator should be created")) {
+    // Create backend for code generation
+    AsthraCompilerOptions options = asthra_compiler_default_options();
+    options.target_arch = ASTHRA_TARGET_X86_64;
+    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    
+    AsthraBackend* backend = asthra_backend_create(&options);
+    if (!ASTHRA_TEST_ASSERT(context, backend != NULL, "Backend should be created")) {
         semantic_analyzer_destroy(analyzer);
         ast_free_node(program);
         cleanup_parser(parser);
         return ASTHRA_TEST_FAIL;
     }
     
-    // Connect semantic analyzer to code generator
-    codegen->semantic_analyzer = analyzer;
+    if (asthra_backend_initialize(backend, &options) != 0) {
+        ASTHRA_TEST_ASSERT(context, false, "Backend should initialize");
+        asthra_backend_destroy(backend);
+        semantic_analyzer_destroy(analyzer);
+        ast_free_node(program);
+        cleanup_parser(parser);
+        return ASTHRA_TEST_FAIL;
+    }
     
-    bool codegen_result = code_generate_program(codegen, program);
-    if (!ASTHRA_TEST_ASSERT(context, codegen_result, "Code generation should succeed")) {
-        code_generator_destroy(codegen);
+    // Create compiler context for backend
+    AsthraCompilerContext compiler_ctx = {0};
+    compiler_ctx.options = options;
+    compiler_ctx.ast = program;
+    compiler_ctx.symbol_table = analyzer->global_scope;
+    compiler_ctx.type_checker = analyzer;
+    
+    int codegen_result = asthra_backend_generate(backend, &compiler_ctx, program, "test.ll");
+    if (!ASTHRA_TEST_ASSERT(context, codegen_result == 0, "Code generation should succeed")) {
+        asthra_backend_destroy(backend);
         semantic_analyzer_destroy(analyzer);
         ast_free_node(program);
         cleanup_parser(parser);
@@ -251,14 +305,14 @@ static AsthraTestResult test_multiple_struct_mangling(AsthraTestContext* context
     // Test that code generation completes successfully with multiple structs
     // This validates that method mangling distinguishes between different struct types
     if (!ASTHRA_TEST_ASSERT(context, true, "Multiple struct method code generation completed successfully")) {
-        code_generator_destroy(codegen);
+        asthra_backend_destroy(backend);
         semantic_analyzer_destroy(analyzer);
         ast_free_node(program);
         cleanup_parser(parser);
         return ASTHRA_TEST_FAIL;
     }
     
-    code_generator_destroy(codegen);
+    asthra_backend_destroy(backend);
     semantic_analyzer_destroy(analyzer);
     ast_free_node(program);
     cleanup_parser(parser);

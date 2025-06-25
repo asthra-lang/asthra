@@ -15,7 +15,7 @@
 #include "parser.h"
 #include "ast.h"
 #include "semantic_analyzer.h"
-#include "code_generator.h"
+#include "backend_interface.h"
 #include "elf_writer.h"
 #include "ffi_assembly_generator.h"
 #include <stdio.h>
@@ -34,7 +34,7 @@ typedef struct {
     Lexer* lexer;
     Parser* parser;
     SemanticAnalyzer* analyzer;
-    CodeGenerator* generator;
+    AsthraBackend* backend;
     ELFWriter* elf_writer;
     FFIAssemblyGenerator* ffi_generator;
     ASTNode* ast;
@@ -89,8 +89,8 @@ static ErrorHandlingTestFixture* setup_error_handling_fixture(const char* source
         return NULL;
     }
     
-    fixture->generator = code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!fixture->generator) {
+    fixture->backend = asthra_backend_create_by_type(ASTHRA_BACKEND_LLVM_IR);
+    if (!fixture->backend) {
         destroy_semantic_analyzer(fixture->analyzer);
         parser_destroy(fixture->parser);
         lexer_destroy(fixture->lexer);
@@ -102,7 +102,7 @@ static ErrorHandlingTestFixture* setup_error_handling_fixture(const char* source
     
     fixture->ffi_generator = ffi_assembly_generator_create();
     if (!fixture->ffi_generator) {
-        code_generator_destroy(fixture->generator);
+        asthra_backend_destroy(fixture->backend);
         destroy_semantic_analyzer(fixture->analyzer);
         parser_destroy(fixture->parser);
         lexer_destroy(fixture->lexer);
@@ -115,7 +115,7 @@ static ErrorHandlingTestFixture* setup_error_handling_fixture(const char* source
     fixture->elf_writer = elf_writer_create(fixture->ffi_generator);
     if (!fixture->elf_writer) {
         ffi_assembly_generator_destroy(fixture->ffi_generator);
-        code_generator_destroy(fixture->generator);
+        asthra_backend_destroy(fixture->backend);
         destroy_semantic_analyzer(fixture->analyzer);
         parser_destroy(fixture->parser);
         lexer_destroy(fixture->lexer);
@@ -143,8 +143,8 @@ static void cleanup_error_handling_fixture(ErrorHandlingTestFixture* fixture) {
     if (fixture->ffi_generator) {
         ffi_assembly_generator_destroy(fixture->ffi_generator);
     }
-    if (fixture->generator) {
-        code_generator_destroy(fixture->generator);
+    if (fixture->backend) {
+        asthra_backend_destroy(fixture->backend);
     }
     if (fixture->analyzer) {
         destroy_semantic_analyzer(fixture->analyzer);
@@ -337,11 +337,11 @@ AsthraTestResult test_codegen_error_propagation(AsthraTestContext* context) {
     }
     
     // Force a codegen error by destroying the generator early
-    code_generator_destroy(fixture->generator);
-    fixture->generator = NULL;
+    asthra_backend_destroy(fixture->backend);
+    fixture->backend = NULL;
     
     // Attempt code generation - should handle null generator gracefully
-    bool codegen_success = code_generate_program(fixture->generator, fixture->ast);
+    bool codegen_success = asthra_backend_generate_program(fixture->backend, fixture->ast);
     if (!asthra_test_assert_bool_eq(context, codegen_success, false, "Expected code generation to fail with null generator")) {
         cleanup_error_handling_fixture(fixture);
         return ASTHRA_TEST_FAIL;

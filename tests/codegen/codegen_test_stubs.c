@@ -14,7 +14,7 @@
 #include "lexer.h"
 #include "semantic_analyzer.h"
 #include "semantic_types.h"
-#include "code_generator.h"
+#include "backend_interface.h"
 
 // =============================================================================
 // Pattern Engine Stubs
@@ -52,7 +52,7 @@ ASTNode* parse_test_expression(const char* expr_str) {
 // =============================================================================
 
 typedef struct CodegenFixture {
-    CodeGenerator* generator;
+    AsthraBackend* backend;
     SemanticAnalyzer* analyzer;
 } CodegenFixture;
 
@@ -78,12 +78,12 @@ void cleanup_elf_writer_fixture(ELFWriterFixture* fixture) {
 // Code Generation Test Functions (renamed to avoid conflicts)
 // =============================================================================
 
-char* test_code_generate_expression(CodeGenerator* gen, ASTNode* expr) {
+char* test_code_generate_expression(AsthraBackend* backend, ASTNode* expr) {
     // Stub: return a simple string
     return strdup("/* expression */");
 }
 
-char* test_code_generate_enum_variant_construction(CodeGenerator* gen, const char* enum_name, 
+char* test_code_generate_enum_variant_construction(AsthraBackend* backend, const char* enum_name, 
                                              const char* variant_name, ASTNode* payload) {
     // Stub: return a formatted string
     char buffer[256];
@@ -91,7 +91,7 @@ char* test_code_generate_enum_variant_construction(CodeGenerator* gen, const cha
     return strdup(buffer);
 }
 
-char* test_code_generate_impl_block(CodeGenerator* gen, ASTNode* impl_block) {
+char* test_code_generate_impl_block(AsthraBackend* backend, ASTNode* impl_block) {
     // Stub: return a simple implementation
     return strdup("/* impl block */");
 }

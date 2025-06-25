@@ -42,8 +42,8 @@
 #include "parser.h"
 #include "ast.h"
 #include "semantic_analyzer.h"
-#include "code_generator.h"
-#include "code_generator_types.h"
+#include "../../../src/codegen/backend_interface.h"
+#include "../../../src/compiler.h"
 
 // =============================================================================
 // COMMON UTILITIES AND HELPERS
@@ -71,7 +71,8 @@ typedef struct {
     Parser* parser;
     ASTNode* program;
     SemanticAnalyzer* analyzer;
-    CodeGenerator* codegen;
+    AsthraBackend* backend;
+    AsthraCompilerContext* compiler_ctx;
     const char* output;
     bool success;
 } FunctionCallTestPipeline;

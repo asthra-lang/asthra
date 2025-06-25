@@ -22,7 +22,7 @@
 #include "parser_string_interface.h"
 #include "semantic_core.h"
 #include "semantic_annotations.h"
-#include "code_generator_core.h"
+// #include "code_generator_core.h" // REMOVED: depends on deleted code generator
 
 // =============================================================================
 // TEST FRAMEWORK MACROS

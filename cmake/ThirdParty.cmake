@@ -104,12 +104,15 @@ endif()
 # LLVM Configuration (Required)
 message(STATUS "Configuring LLVM...")
 
+# Set minimum required LLVM version
+set(LLVM_MIN_VERSION "18.0")
+
 # Try to find LLVM using llvm-config
-find_package(LLVM QUIET CONFIG)
+find_package(LLVM ${LLVM_MIN_VERSION} QUIET CONFIG)
 
 if(NOT LLVM_FOUND)
-    # Fall back to manual search
-    find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config llvm-config-19 llvm-config-18 llvm-config-17 llvm-config-16 llvm-config-15)
+    # Fall back to manual search - look for any llvm-config
+    find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config llvm-config-20 llvm-config-19 llvm-config-18)
     
     if(LLVM_CONFIG_EXECUTABLE)
         execute_process(
@@ -117,6 +120,12 @@ if(NOT LLVM_FOUND)
             OUTPUT_VARIABLE LLVM_VERSION
             OUTPUT_STRIP_TRAILING_WHITESPACE
         )
+        
+        # Check if the version is at least 18.0
+        string(REGEX MATCH "^([0-9]+)\\.([0-9]+)" VERSION_MATCH ${LLVM_VERSION})
+        if(CMAKE_MATCH_1 LESS 18)
+            message(FATAL_ERROR "Found LLVM ${LLVM_VERSION}, but LLVM 18.0 or later is required.")
+        endif()
         
         execute_process(
             COMMAND ${LLVM_CONFIG_EXECUTABLE} --cflags
@@ -141,11 +150,19 @@ if(NOT LLVM_FOUND)
 endif()
 
 if(NOT LLVM_FOUND)
-    message(FATAL_ERROR "LLVM not found. Please install LLVM 15.0 or later.\n"
+    message(FATAL_ERROR "LLVM 18.0 or later not found. Please install LLVM 18.0+.\n"
                         "On macOS: brew install llvm\n"
-                        "On Ubuntu: apt install llvm-dev\n"
+                        "On Ubuntu: apt install llvm-dev (or llvm-18-dev for specific version)\n"
                         "You may need to set LLVM_DIR or ensure llvm-config is in your PATH.")
 else()
+    # Validate version for CMake package path as well
+    if(LLVM_VERSION)
+        string(REGEX MATCH "^([0-9]+)\\.([0-9]+)" VERSION_MATCH ${LLVM_VERSION})
+        if(CMAKE_MATCH_1 LESS 18)
+            message(FATAL_ERROR "Found LLVM ${LLVM_VERSION}, but LLVM 18.0 or later is required.")
+        endif()
+    endif()
+    
     message(STATUS "Found LLVM ${LLVM_VERSION}")
     
     # Create LLVM interface library

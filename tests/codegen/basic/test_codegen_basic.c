@@ -10,10 +10,13 @@
 #include <string.h>
 #include <stdbool.h>
 
-// Include the code generator header for struct definition
-#include "code_generator_core.h"
+// Include backend interface and necessary headers
+#include "../../../src/codegen/backend_interface.h"
+#include "../../../src/analysis/semantic_analyzer.h"
+#include "../../../src/parser/ast.h"
+#include "../../../src/compiler.h"
 
-// Direct declarations (only for types not in the included header)
+// Direct declarations for parser types
 typedef struct Lexer Lexer;
 typedef struct Parser Parser;
 
@@ -26,9 +29,7 @@ extern ASTNode* parser_parse_program(Parser* parser);
 extern SemanticAnalyzer* semantic_analyzer_create(void);
 extern void semantic_analyzer_destroy(SemanticAnalyzer* analyzer);
 extern bool semantic_analyze_program(SemanticAnalyzer* analyzer, ASTNode* ast);
-extern CodeGenerator* code_generator_create(TargetArchitecture arch, CallingConvention conv);
-extern void code_generator_destroy(CodeGenerator* generator);
-extern bool code_generate_program(CodeGenerator* generator, ASTNode* ast);
+// Backend-related functions are provided by backend_interface.h
 
 bool test_codegen(const char* name, const char* source) {
     printf("Testing %s...\n", name);
@@ -70,20 +71,34 @@ bool test_codegen(const char* name, const char* source) {
         return false;
     }
     
-    // Generate code
-    CodeGenerator* generator = code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!generator) {
-        printf("  FAIL: Could not create code generator\n");
+    // Generate code using backend interface
+    AsthraCompilerOptions options = asthra_compiler_default_options();
+    options.target_arch = ASTHRA_TARGET_X86_64;
+    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    
+    AsthraBackend* backend = asthra_backend_create(&options);
+    if (!backend) {
+        printf("  FAIL: Could not create backend\n");
         semantic_analyzer_destroy(analyzer);
         return false;
     }
     
-    // Set the semantic analyzer in the code generator
-    // This is required for the code generator to access type information
-    generator->semantic_analyzer = analyzer;
+    if (asthra_backend_initialize(backend, &options) != 0) {
+        printf("  FAIL: Could not initialize backend\n");
+        asthra_backend_destroy(backend);
+        semantic_analyzer_destroy(analyzer);
+        return false;
+    }
     
-    bool codegen_result = code_generate_program(generator, ast);
-    code_generator_destroy(generator);
+    // Create a minimal compiler context for the backend
+    AsthraCompilerContext ctx = {0};
+    ctx.options = options;
+    ctx.ast = ast;
+    ctx.symbol_table = analyzer->global_scope;
+    ctx.type_checker = analyzer;
+    
+    bool codegen_result = asthra_backend_generate(backend, &ctx, ast, "test.ll") == 0;
+    asthra_backend_destroy(backend);
     semantic_analyzer_destroy(analyzer);
     
     if (!codegen_result) {

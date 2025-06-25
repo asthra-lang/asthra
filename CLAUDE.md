@@ -71,9 +71,10 @@ ctest --test-dir build -R "parser.*expr"       # Test parser expressions
 - Use feature detection macros for C17 features
 
 ### Build System
-- **Modular Makefile system** in `make/` directory with platform detection and compiler optimization
+- **CMake-based build system** with modular configuration
 - **Platform support**: macOS (Apple Silicon/Intel), Linux (x86_64/ARM64), Windows (MSVC)
 - **Sanitizer support**: AddressSanitizer, ThreadSanitizer, UndefinedBehaviorSanitizer
+- **LLVM requirement**: Version 18.0 or later (enforced by CMake)
 
 ## Development Workflow
 

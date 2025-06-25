@@ -18,10 +18,8 @@
 #include "../framework/test_framework.h"
 #include "../framework/compiler_test_utils.h"
 #endif
-#include "code_generator.h"
-#include "code_generator_core.h"
-#include "code_generator_types.h"
-#include "code_generator_instructions.h"
+#include "backend_interface.h"
+#include "compiler.h"
 #include "ast.h"
 #include "semantic_analyzer.h"
 #include <stdio.h>
@@ -37,7 +35,7 @@
  * Test fixture for code generator testing
  */
 typedef struct {
-    CodeGenerator* generator;
+    AsthraBackend* backend;
     SemanticAnalyzer* analyzer;
     ASTNode* test_ast;
     char* output_buffer;
@@ -56,15 +54,24 @@ static CodeGenTestFixture* setup_codegen_fixture(void) {
     CodeGenTestFixture* fixture = calloc(1, sizeof(CodeGenTestFixture));
     if (!fixture) return NULL;
     
-    fixture->generator = code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!fixture->generator) {
+    // Create compiler options for backend initialization
+    AsthraCompilerOptions options = {
+        .backend_type = ASTHRA_BACKEND_LLVM_IR,
+        .target_arch = ASTHRA_TARGET_X86_64,
+        .opt_level = ASTHRA_OPT_NONE,
+        .debug_info = true,
+        .verbose = false
+    };
+    
+    fixture->backend = asthra_backend_create(&options);
+    if (!fixture->backend) {
         free(fixture);
         return NULL;
     }
     
     fixture->analyzer = setup_semantic_analyzer();
     if (!fixture->analyzer) {
-        code_generator_destroy(fixture->generator);
+        asthra_backend_destroy(fixture->backend);
         free(fixture);
         return NULL;
     }
@@ -73,13 +80,13 @@ static CodeGenTestFixture* setup_codegen_fixture(void) {
     fixture->output_buffer = malloc(fixture->output_buffer_size);
     if (!fixture->output_buffer) {
         destroy_semantic_analyzer(fixture->analyzer);
-        code_generator_destroy(fixture->generator);
+        asthra_backend_destroy(fixture->backend);
         free(fixture);
         return NULL;
     }
     
-    // Connect the semantic analyzer to the code generator
-    fixture->generator->semantic_analyzer = fixture->analyzer;
+    // Note: Backend doesn't directly store semantic analyzer
+    // The analyzer will be passed through the compiler context during generation
     
     return fixture;
 }
@@ -100,8 +107,8 @@ static void cleanup_codegen_fixture(CodeGenTestFixture* fixture) {
     if (fixture->analyzer) {
         destroy_semantic_analyzer(fixture->analyzer);
     }
-    if (fixture->generator) {
-        code_generator_destroy(fixture->generator);
+    if (fixture->backend) {
+        asthra_backend_destroy(fixture->backend);
     }
     free(fixture);
 }

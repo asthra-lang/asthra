@@ -4,7 +4,8 @@
 
 #include "../../framework/test_framework.h"
 #include "../../framework/compiler_test_utils.h"
-#include "codegen/code_generator.h"
+#include "codegen/backend_interface.h"
+#include "compiler.h"
 #include "analysis/semantic_analyzer.h"
 #include "parser/parser.h"
 #include "parser/parser_error.h"
@@ -45,17 +46,38 @@ static bool compile_test(const char* source) {
         return false;
     }
     
-    CodeGenerator* generator = code_generator_create(TARGET_ARCH_AARCH64, CALLING_CONV_AARCH64_AAPCS);
-    if (!generator) {
+    // Generate code using backend interface
+    AsthraCompilerOptions options = asthra_compiler_default_options();
+    options.target_arch = ASTHRA_TARGET_ARM64;
+    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    
+    AsthraBackend* backend = asthra_backend_create(&options);
+    if (!backend) {
         semantic_analyzer_destroy(analyzer);
         ast_free_node(ast);
         destroy_test_parser(parser);
         return false;
     }
     
-    bool codegen_success = code_generate_program(generator, ast);
+    if (asthra_backend_initialize(backend, &options) != 0) {
+        fprintf(stderr, "Failed to initialize backend\n");
+        asthra_backend_destroy(backend);
+        semantic_analyzer_destroy(analyzer);
+        ast_free_node(ast);
+        destroy_test_parser(parser);
+        return false;
+    }
     
-    code_generator_destroy(generator);
+    // Create a minimal compiler context for the backend
+    AsthraCompilerContext ctx = {0};
+    ctx.options = options;
+    ctx.ast = ast;
+    ctx.symbol_table = analyzer->global_scope;
+    ctx.type_checker = analyzer;
+    
+    bool codegen_success = asthra_backend_generate(backend, &ctx, ast, "test_option.ll") == 0;
+    
+    asthra_backend_destroy(backend);
     semantic_analyzer_destroy(analyzer);
     ast_free_node(ast);
     destroy_test_parser(parser);

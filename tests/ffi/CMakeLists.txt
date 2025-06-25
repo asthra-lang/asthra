@@ -36,27 +36,28 @@ set(FFI_ENHANCED_TEST_FILES
     test_ffi_enhanced_simple.c
 )
 
-# Create FFI assembly core test with common helpers
-add_executable(ffi_test_ffi_assembly_core
-    test_ffi_assembly_core.c
-    test_ffi_assembly_common.c
-)
-
-if(TARGET asthra_test_framework)
-    target_link_libraries(ffi_test_ffi_assembly_core asthra_test_framework)
-else()
-    target_link_libraries(ffi_test_ffi_assembly_core asthra_compiler asthra_runtime)
-endif()
-
-add_test(NAME ffi_test_ffi_assembly_core COMMAND ffi_test_ffi_assembly_core)
-set_tests_properties(ffi_test_ffi_assembly_core PROPERTIES
-    TIMEOUT 30
-    LABELS ffi
-)
-
-if(TARGET build-tests)
-    add_dependencies(build-tests ffi_test_ffi_assembly_core)
-endif()
+# REMOVED: FFI assembly tests depend on deleted ffi_assembly_generator.h
+# # Create FFI assembly core test with common helpers
+# add_executable(ffi_test_ffi_assembly_core
+#     test_ffi_assembly_core.c
+#     test_ffi_assembly_common.c
+# )
+# 
+# if(TARGET asthra_test_framework)
+#     target_link_libraries(ffi_test_ffi_assembly_core asthra_test_framework)
+# else()
+#     target_link_libraries(ffi_test_ffi_assembly_core asthra_compiler asthra_runtime)
+# endif()
+# 
+# add_test(NAME ffi_test_ffi_assembly_core COMMAND ffi_test_ffi_assembly_core)
+# set_tests_properties(ffi_test_ffi_assembly_core PROPERTIES
+#     TIMEOUT 30
+#     LABELS ffi
+# )
+# 
+# if(TARGET build-tests)
+#     add_dependencies(build-tests ffi_test_ffi_assembly_core)
+# endif()
 
 # Auto-discover other test files (excluding enhanced tests)
 file(GLOB ALL_FFI_TEST_FILES "*.c")
@@ -135,6 +136,9 @@ set(FFI_ASSEMBLY_EXCLUDE
     test_ffi_assembly_string_slice.c
     test_ffi_assembly_strings_slices_simple.c
     test_ffi_assembly_strings_slices.c
+    test_ffi_assembly_calls.c          # depends on ffi_assembly_generator.h
+    test_ffi_assembly_common_impl.c    # depends on ffi_assembly_generator.h
+    test_ffi_assembly_master.c         # depends on deleted assembly code
     test_ffi_complete.c
     test_ffi_grammar_compliance.c
     test_ffi_memory_diagnostics.c
@@ -147,47 +151,57 @@ set(FFI_ASSEMBLY_EXCLUDE
     test_ffi_minimal_tests.c
     test_ffi_ownership.c
     test_ffi_simple.c
-    test_ffi_stubs.c
+    test_ffi_stubs.c                   # depends on ffi_assembly_generator.h
     # Also exclude memory tests that need special handling
     test_ffi_memory_all.c
     test_ffi_memory_allocation.c
     test_ffi_memory_integration.c
     test_ffi_memory_patterns.c
     test_ffi_memory_common.c
+    # FFI stubs helper files that depend on deleted assembly code  
+    ffi_stubs_generator.c
+    ffi_stubs_ast_parser.c
+    ffi_stubs_codegen.c
+    ffi_stubs_marshaling.c
+    ffi_stubs_memory.c
+    ffi_stubs_test_suite.c
+    # FFI tests that depend on deleted code generator files
+    test_option_ffi.c                  # depends on deleted ffi_generator_core.h
 )
 
 foreach(exclude_file ${FFI_ASSEMBLY_EXCLUDE})
     list(REMOVE_ITEM INDIVIDUAL_FFI_TEST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${exclude_file}")
 endforeach()
 
-# Create the enhanced FFI stubs test with all its modular components
-set(FFI_STUBS_TEST_SOURCES
-    test_ffi_stubs.c
-    ffi_stubs_generator.c
-    ffi_stubs_memory.c
-    ffi_stubs_marshaling.c
-    ffi_stubs_ast_parser.c
-    ffi_stubs_codegen.c
-    ffi_stubs_test_suite.c
-)
-
-add_executable(ffi_test_ffi_stubs ${FFI_STUBS_TEST_SOURCES})
-
-if(TARGET asthra_test_framework)
-    target_link_libraries(ffi_test_ffi_stubs asthra_test_framework)
-else()
-    target_link_libraries(ffi_test_ffi_stubs asthra_compiler asthra_runtime)
-endif()
-
-add_test(NAME ffi_test_ffi_stubs COMMAND ffi_test_ffi_stubs)
-set_tests_properties(ffi_test_ffi_stubs PROPERTIES
-    TIMEOUT 60
-    LABELS ffi
-)
-
-if(TARGET build-tests)
-    add_dependencies(build-tests ffi_test_ffi_stubs)
-endif()
+# REMOVED: FFI stubs test depends on deleted ffi_assembly_generator.h
+# # Create the enhanced FFI stubs test with all its modular components
+# set(FFI_STUBS_TEST_SOURCES
+#     test_ffi_stubs.c
+#     ffi_stubs_generator.c
+#     ffi_stubs_memory.c
+#     ffi_stubs_marshaling.c
+#     ffi_stubs_ast_parser.c
+#     ffi_stubs_codegen.c
+#     ffi_stubs_test_suite.c
+# )
+# 
+# add_executable(ffi_test_ffi_stubs ${FFI_STUBS_TEST_SOURCES})
+# 
+# if(TARGET asthra_test_framework)
+#     target_link_libraries(ffi_test_ffi_stubs asthra_test_framework)
+# else()
+#     target_link_libraries(ffi_test_ffi_stubs asthra_compiler asthra_runtime)
+# endif()
+# 
+# add_test(NAME ffi_test_ffi_stubs COMMAND ffi_test_ffi_stubs)
+# set_tests_properties(ffi_test_ffi_stubs PROPERTIES
+#     TIMEOUT 60
+#     LABELS ffi
+# )
+# 
+# if(TARGET build-tests)
+#     add_dependencies(build-tests ffi_test_ffi_stubs)
+# endif()
 
 # Also exclude the modular FFI stubs files from individual test compilation
 set(FFI_STUBS_MODULAR_FILES

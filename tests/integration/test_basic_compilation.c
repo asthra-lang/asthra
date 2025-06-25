@@ -30,7 +30,7 @@
 #include "semantic_core.h"
 
 // Code generation includes
-#include "code_generator.h"
+#include "backend_interface.h"
 
 // Runtime includes
 #include "../../runtime/asthra_runtime.h"

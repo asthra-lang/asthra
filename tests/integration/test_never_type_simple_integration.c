@@ -16,7 +16,8 @@
 #include "../framework/test_framework.h"
 #include "../framework/compiler_test_utils.h"
 #include "semantic_analyzer.h"
-#include "code_generator_core.h"
+#include "backend_interface.h"
+#include "compiler.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -196,25 +197,30 @@ static AsthraTestResult test_never_type_codegen(AsthraTestContext* ctx) {
         return ASTHRA_TEST_FAIL;
     }
     
-    // Create code generator
-    CodeGenerator* codegen = code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!codegen) {
-        printf("Failed to create code generator\n");
+    // Create backend with default options
+    AsthraCompilerOptions options = asthra_compiler_default_options();
+    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    AsthraBackend* backend = asthra_backend_create(&options);
+    if (!backend) {
+        printf("Failed to create backend\n");
         semantic_analyzer_destroy(analyzer);
         ast_free_node(ast);
         destroy_test_parser(parser);
         asthra_test_context_end(ctx, ASTHRA_TEST_FAIL);
         return ASTHRA_TEST_FAIL;
     }
-    
-    // CRITICAL: Link semantic analyzer to code generator to prevent architectural violations
-    code_generator_set_semantic_analyzer(codegen, analyzer);
     
     // Generate code
-    bool codegen_success = code_generate_program(codegen, ast);
+    AsthraCompilerContext context = {0};
+    context.options = options;
+    context.ast = ast;
+    context.type_checker = analyzer;
+    context.error_count = 0;
+    int codegen_result = asthra_backend_generate(backend, &context, ast, "output.ll");
+    bool codegen_success = (codegen_result == 0);
     if (!codegen_success) {
         printf("Code generation failed\n");
-        code_generator_destroy(codegen);
+        asthra_backend_destroy(backend);
         semantic_analyzer_destroy(analyzer);
         ast_free_node(ast);
         destroy_test_parser(parser);
@@ -222,15 +228,12 @@ static AsthraTestResult test_never_type_codegen(AsthraTestContext* ctx) {
         return ASTHRA_TEST_FAIL;
     }
     
-    // Get code generation statistics
-    CodeGenStatistics stats = code_generator_get_statistics(codegen);
-    
+    // Backend code generation successful
     printf("Never type code generation: SUCCESS\n");
-    printf("  - Generated %llu functions\n", (unsigned long long)stats.functions_generated);
     printf("  - Never-returning function handled in codegen\n");
     
     // Clean up
-    code_generator_destroy(codegen);
+    asthra_backend_destroy(backend);
     semantic_analyzer_destroy(analyzer);
     ast_free_node(ast);
     destroy_test_parser(parser);

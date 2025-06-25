@@ -22,57 +22,53 @@ static void test_enum_variant_complex_expression_codegen(void) {
     // Set up code generator context
     TestCodeGenContext *ctx = create_test_code_gen_context();
     assert(ctx != NULL);
-    CodeGenerator *generator = ctx->generator;
+    AsthraBackend *backend = ctx->backend;
     
     // Run semantic analysis on the expression first
     analyze_expression_for_test(ctx, expr);
     
     // Generate code for the enum variant expression
-    Register target_reg = ASTHRA_REG_RSI; // Use another test register
-    bool success = code_generate_enum_variant_construction(generator, expr, target_reg);
+    // Use the test helper function for enum variant construction
+    char *assembly = test_code_generate_enum_variant_construction(backend, "Result", "Ok", 
+                                                                  expr->data.enum_variant.value);
     
-    if (success) {
+    if (assembly) {
         printf("✓ Successfully generated code for Result.Ok(x + y * 2)\n");
         
-        // Verify the generated assembly instructions
-        char assembly_buffer[4096];
-        bool assembly_success = code_generator_emit_assembly(generator, assembly_buffer, sizeof(assembly_buffer));
+        // The test helper returns the assembly directly
+        printf("✓ Assembly generation succeeded\n");
         
-        if (assembly_success) {
-            printf("✓ Assembly generation succeeded\n");
-            
-            // Check for expected assembly patterns
-            bool has_constructor_call = strstr(assembly_buffer, "Result_Ok") != NULL ||
-                                       strstr(assembly_buffer, "enum_constructor") != NULL ||
-                                       strstr(assembly_buffer, "variant_create") != NULL;
-            
-            // Look for arithmetic operations in the assembly
-            bool has_arithmetic = strstr(assembly_buffer, "add") != NULL ||
-                                 strstr(assembly_buffer, "mul") != NULL ||
-                                 strstr(assembly_buffer, "imul") != NULL;
-            
-            // Look for expression evaluation
-            bool has_expression_eval = strstr(assembly_buffer, "mov") != NULL &&
-                                      has_arithmetic;
-            
-            bool has_target_register = strstr(assembly_buffer, "rsi") != NULL ||
-                                      strstr(assembly_buffer, "%rsi") != NULL;
-            
-            if (has_constructor_call) {
-                printf("✓ Found enum constructor call pattern\n");
-            }
-            if (has_expression_eval) {
-                printf("✓ Found complex expression evaluation\n");
-            }
-            if (has_target_register) {
-                printf("✓ Found target register usage\n");
-            }
-            
-            // For debugging, uncomment to see generated assembly
-            // printf("Generated assembly:\n%s\n", assembly_buffer);
-        } else {
-            printf("⚠ Assembly generation failed, but codegen succeeded\n");
+        // Check for expected assembly patterns
+        bool has_constructor_call = strstr(assembly, "Result_Ok") != NULL ||
+                                   strstr(assembly, "enum_constructor") != NULL ||
+                                   strstr(assembly, "variant_create") != NULL;
+        
+        // Look for arithmetic operations in the assembly
+        bool has_arithmetic = strstr(assembly, "add") != NULL ||
+                             strstr(assembly, "mul") != NULL ||
+                             strstr(assembly, "imul") != NULL;
+        
+        // Look for expression evaluation
+        bool has_expression_eval = strstr(assembly, "mov") != NULL &&
+                                  has_arithmetic;
+        
+        bool has_target_register = strstr(assembly, "rsi") != NULL ||
+                                  strstr(assembly, "%rsi") != NULL;
+        
+        if (has_constructor_call) {
+            printf("✓ Found enum constructor call pattern\n");
         }
+        if (has_expression_eval) {
+            printf("✓ Found complex expression evaluation\n");
+        }
+        if (has_target_register) {
+            printf("✓ Found target register usage\n");
+        }
+        
+        // For debugging, uncomment to see generated assembly
+        // printf("Generated assembly:\n%s\n", assembly);
+        
+        free(assembly);
         
     } else {
         printf("✗ Failed to generate code for Result.Ok(x + y * 2)\n");
@@ -103,15 +99,19 @@ static void test_enum_variant_switch_case_exists(void) {
     // Set up code generator context
     TestCodeGenContext *ctx = create_test_code_gen_context();
     assert(ctx != NULL);
-    CodeGenerator *generator = ctx->generator;
+    AsthraBackend *backend = ctx->backend;
     
     // Try to generate code - this should NOT produce "Unsupported expression type" error
-    Register target_reg = ASTHRA_REG_RAX;
-    bool success = code_generate_expression(generator, expr, target_reg);
+    // Use the test helper that wraps the backend's expression generation
+    char *assembly = test_code_generate_expression(backend, expr);
     
     // The test passes if we don't get an "unsupported expression type" error
     // Even if code generation fails for other reasons, the switch case should exist
     printf("✓ AST_ENUM_VARIANT case exists in code generation switch\n");
+    
+    if (assembly) {
+        free(assembly);
+    }
     
     // Cleanup
     destroy_test_code_gen_context(ctx);
@@ -136,49 +136,45 @@ static void test_enum_variant_with_integer(void) {
     // Set up code generator context
     TestCodeGenContext *ctx = create_test_code_gen_context();
     assert(ctx != NULL);
-    CodeGenerator *generator = ctx->generator;
+    AsthraBackend *backend = ctx->backend;
     
     // Run semantic analysis on the expression first
     analyze_expression_for_test(ctx, expr);
     
     // Generate code for the enum variant expression
-    Register target_reg = ASTHRA_REG_RDI; // Use another test register
-    bool success = code_generate_enum_variant_construction(generator, expr, target_reg);
+    // Use the test helper function for enum variant construction
+    char *assembly = test_code_generate_enum_variant_construction(backend, "Option", "Some", 
+                                                                  expr->data.enum_variant.value);
     
-    if (success) {
+    if (assembly) {
         printf("✓ Successfully generated code for Option.Some(100)\n");
         
-        // Verify the generated assembly instructions
-        char assembly_buffer[4096];
-        bool assembly_success = code_generator_emit_assembly(generator, assembly_buffer, sizeof(assembly_buffer));
+        // The test helper returns the assembly directly
+        printf("✓ Assembly generation succeeded\n");
         
-        if (assembly_success) {
-            printf("✓ Assembly generation succeeded\n");
-            
-            // Check for expected assembly patterns
-            bool has_constructor_call = strstr(assembly_buffer, "Option_Some") != NULL ||
-                                       strstr(assembly_buffer, "enum_constructor") != NULL ||
-                                       strstr(assembly_buffer, "variant_create") != NULL;
-            
-            bool has_value_100 = strstr(assembly_buffer, "100") != NULL ||
-                                strstr(assembly_buffer, "$100") != NULL ||
-                                strstr(assembly_buffer, "#100") != NULL;
-            
-            bool has_target_register = strstr(assembly_buffer, "rdi") != NULL ||
-                                      strstr(assembly_buffer, "%rdi") != NULL;
-            
-            if (has_constructor_call) {
-                printf("✓ Found enum constructor call pattern\n");
-            }
-            if (has_value_100) {
-                printf("✓ Found value 100 in assembly\n");
-            }
-            if (has_target_register) {
-                printf("✓ Found target register usage\n");
-            }
-        } else {
-            printf("⚠ Assembly generation failed, but codegen succeeded\n");
+        // Check for expected assembly patterns
+        bool has_constructor_call = strstr(assembly, "Option_Some") != NULL ||
+                                   strstr(assembly, "enum_constructor") != NULL ||
+                                   strstr(assembly, "variant_create") != NULL;
+        
+        bool has_value_100 = strstr(assembly, "100") != NULL ||
+                            strstr(assembly, "$100") != NULL ||
+                            strstr(assembly, "#100") != NULL;
+        
+        bool has_target_register = strstr(assembly, "rdi") != NULL ||
+                                  strstr(assembly, "%rdi") != NULL;
+        
+        if (has_constructor_call) {
+            printf("✓ Found enum constructor call pattern\n");
         }
+        if (has_value_100) {
+            printf("✓ Found value 100 in assembly\n");
+        }
+        if (has_target_register) {
+            printf("✓ Found target register usage\n");
+        }
+        
+        free(assembly);
         
     } else {
         printf("✗ Failed to generate code for Option.Some(100)\n");

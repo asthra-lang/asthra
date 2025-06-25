@@ -1,5 +1,5 @@
-; ModuleID = 'test.asthra'
-source_filename = "test.asthra"
+; ModuleID = 'asthra_module'
+source_filename = "asthra_module"
 target triple = "arm64-apple-darwin24.5.0"
 
 declare ptr @asthra_alloc(i64, i32)
@@ -19,8 +19,3 @@ declare ptr @asthra_string_create(ptr, i64)
 declare void @asthra_string_free(ptr)
 
 declare i32 @printf(ptr, ...)
-
-define i32 @main() {
-entry:
-  ret i32 42
-}

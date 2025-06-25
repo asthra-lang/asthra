@@ -22,27 +22,36 @@ CodeGenTestFixture* setup_codegen_fixture(void) {
     CodeGenTestFixture* fixture = calloc(1, sizeof(CodeGenTestFixture));
     if (!fixture) return NULL;
     
-    fixture->generator = code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!fixture->generator) {
+    // Create compiler options for backend initialization
+    AsthraCompilerOptions options = {
+        .backend_type = ASTHRA_BACKEND_LLVM_IR,
+        .target_arch = ASTHRA_TARGET_X86_64,
+        .opt_level = ASTHRA_OPT_NONE,
+        .debug_info = true,
+        .verbose = false
+    };
+    
+    fixture->backend = asthra_backend_create(&options);
+    if (!fixture->backend) {
         free(fixture);
         return NULL;
     }
     
     fixture->analyzer = setup_semantic_analyzer();
     if (!fixture->analyzer) {
-        code_generator_destroy(fixture->generator);
+        asthra_backend_destroy(fixture->backend);
         free(fixture);
         return NULL;
     }
     
-    // Connect the semantic analyzer to the code generator
-    fixture->generator->semantic_analyzer = fixture->analyzer;
+    // Note: Backend doesn't directly store semantic analyzer
+    // The analyzer will be passed through the compiler context during generation
     
     fixture->output_buffer_size = 4096;
     fixture->output_buffer = malloc(fixture->output_buffer_size);
     if (!fixture->output_buffer) {
         destroy_semantic_analyzer(fixture->analyzer);
-        code_generator_destroy(fixture->generator);
+        asthra_backend_destroy(fixture->backend);
         free(fixture);
         return NULL;
     }
@@ -65,8 +74,8 @@ void cleanup_codegen_fixture(CodeGenTestFixture* fixture) {
     if (fixture->analyzer) {
         destroy_semantic_analyzer(fixture->analyzer);
     }
-    if (fixture->generator) {
-        code_generator_destroy(fixture->generator);
+    if (fixture->backend) {
+        asthra_backend_destroy(fixture->backend);
     }
     free(fixture);
 }
@@ -86,7 +95,19 @@ bool generate_and_verify_statement(AsthraTestContext* context,
         return false;
     }
     
-    bool result = code_generate_statement(fixture->generator, ast);
+    // Create a minimal compiler context for the backend
+    AsthraCompilerOptions opts = asthra_compiler_default_options();
+    opts.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    AsthraCompilerContext ctx = {
+        .options = opts,
+        .error_count = 0,
+        .errors = NULL,
+        .error_capacity = 0
+    };
+    
+    // For statement generation, we need to generate the whole AST
+    // The backend expects a complete program AST
+    bool result = (asthra_backend_generate(fixture->backend, &ctx, ast, NULL) == 0);
     if (!result) {
         if (context) {
             context->result = ASTHRA_TEST_FAIL;
@@ -429,13 +450,23 @@ AsthraTestResult test_statement_generation_pattern(AsthraTestContext* context,
             return ASTHRA_TEST_FAIL;
         }
         
-        // Set the semantic analyzer for the code generator
-        fixture->generator->semantic_analyzer = fixture->analyzer;
+        // Note: Semantic analyzer is passed through compiler context, not stored in backend
     }
+    
+    // Create a compiler context with semantic analyzer
+    AsthraCompilerOptions opts = asthra_compiler_default_options();
+    opts.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    AsthraCompilerContext ctx = {
+        .options = opts,
+        .error_count = 0,
+        .errors = NULL,
+        .error_capacity = 0
+        // Note: Add semantic analyzer to context if needed by backend
+    };
     
     // For now, generate code for the entire program
     // In a more sophisticated implementation, we would extract just the statement
-    bool success = code_generate_program(fixture->generator, program);
+    bool success = (asthra_backend_generate(fixture->backend, &ctx, program, NULL) == 0);
     
     if (!success && context) {
         context->result = ASTHRA_TEST_FAIL;

@@ -12,7 +12,7 @@ foreach(test_file ${ENUM_VARIANT_TESTS})
     get_filename_component(test_name ${test_file} NAME_WE)
     set(test_target "codegen_${test_name}")
     
-    add_executable(${test_target} ${test_file} test_enum_variant_common.c)
+    add_executable(${test_target} ${test_file} test_enum_variant_common.c ../codegen_test_stubs.c)
     
     if(TARGET asthra_test_framework)
         target_link_libraries(${test_target} asthra_test_framework)

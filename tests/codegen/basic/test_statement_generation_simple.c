@@ -16,12 +16,12 @@
 // Define to use real parser
 #define ASTHRA_PARSER_REAL_IMPLEMENTATION
 
-#include "lexer.h"
-#include "parser.h"
-#include "ast.h"
-#include "semantic_analyzer.h"
-#include "code_generator.h"
-#include "code_generator_core.h"
+#include "../../../src/parser/lexer.h"
+#include "../../../src/parser/parser.h"
+#include "../../../src/parser/ast.h"
+#include "../../../src/analysis/semantic_analyzer.h"
+#include "../../../src/codegen/backend_interface.h"
+#include "../../../src/compiler.h"
 
 bool test_variable_declaration(void) {
     printf("Testing variable declaration generation...\n");
@@ -88,10 +88,15 @@ bool test_variable_declaration(void) {
         return false;
     }
     
-    // Create code generator
-    CodeGenerator* codegen = code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!codegen) {
-        printf("  FAIL: Could not create code generator\n");
+    // Create backend for code generation
+    AsthraCompilerOptions options = asthra_compiler_default_options();
+    options.target_arch = ASTHRA_TARGET_X86_64;
+    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    options.output_file = "test_output.ll";
+    
+    AsthraBackend* backend = asthra_backend_create(&options);
+    if (!backend) {
+        printf("  FAIL: Could not create backend\n");
         semantic_analyzer_destroy(analyzer);
         ast_free_node(ast);
         parser_destroy(parser);
@@ -99,14 +104,28 @@ bool test_variable_declaration(void) {
         return false;
     }
     
-    // Set semantic analyzer
-    codegen->semantic_analyzer = analyzer;
+    if (asthra_backend_initialize(backend, &options) != 0) {
+        printf("  FAIL: Could not initialize backend\n");
+        asthra_backend_destroy(backend);
+        semantic_analyzer_destroy(analyzer);
+        ast_free_node(ast);
+        parser_destroy(parser);
+        lexer_destroy(lexer);
+        return false;
+    }
+    
+    // Create compiler context
+    AsthraCompilerContext ctx = {0};
+    ctx.options = options;
+    ctx.ast = ast;
+    ctx.symbol_table = analyzer->global_scope;
+    ctx.type_checker = analyzer;
     
     // Generate code
-    bool gen_ok = code_generate_program(codegen, ast);
+    bool gen_ok = asthra_backend_generate(backend, &ctx, ast, NULL) == 0;
     if (!gen_ok) {
         printf("  FAIL: Code generation failed\n");
-        code_generator_destroy(codegen);
+        asthra_backend_destroy(backend);
         semantic_analyzer_destroy(analyzer);
         ast_free_node(ast);
         parser_destroy(parser);
@@ -117,7 +136,7 @@ bool test_variable_declaration(void) {
     printf("  PASS: Variable declaration generation successful\n");
     
     // Cleanup
-    code_generator_destroy(codegen);
+    asthra_backend_destroy(backend);
     semantic_analyzer_destroy(analyzer);
     ast_free_node(ast);
     parser_destroy(parser);
@@ -193,10 +212,15 @@ bool test_control_flow_statements(void) {
         return false;
     }
     
-    // Create code generator
-    CodeGenerator* codegen = code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!codegen) {
-        printf("  FAIL: Could not create code generator\n");
+    // Create backend for code generation
+    AsthraCompilerOptions options = asthra_compiler_default_options();
+    options.target_arch = ASTHRA_TARGET_X86_64;
+    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    options.output_file = "test_output.ll";
+    
+    AsthraBackend* backend = asthra_backend_create(&options);
+    if (!backend) {
+        printf("  FAIL: Could not create backend\n");
         semantic_analyzer_destroy(analyzer);
         ast_free_node(ast);
         parser_destroy(parser);
@@ -204,14 +228,28 @@ bool test_control_flow_statements(void) {
         return false;
     }
     
-    // Set semantic analyzer
-    codegen->semantic_analyzer = analyzer;
+    if (asthra_backend_initialize(backend, &options) != 0) {
+        printf("  FAIL: Could not initialize backend\n");
+        asthra_backend_destroy(backend);
+        semantic_analyzer_destroy(analyzer);
+        ast_free_node(ast);
+        parser_destroy(parser);
+        lexer_destroy(lexer);
+        return false;
+    }
+    
+    // Create compiler context
+    AsthraCompilerContext ctx = {0};
+    ctx.options = options;
+    ctx.ast = ast;
+    ctx.symbol_table = analyzer->global_scope;
+    ctx.type_checker = analyzer;
     
     // Generate code
-    bool gen_ok = code_generate_program(codegen, ast);
+    bool gen_ok = asthra_backend_generate(backend, &ctx, ast, NULL) == 0;
     if (!gen_ok) {
         printf("  FAIL: Code generation failed\n");
-        code_generator_destroy(codegen);
+        asthra_backend_destroy(backend);
         semantic_analyzer_destroy(analyzer);
         ast_free_node(ast);
         parser_destroy(parser);
@@ -222,7 +260,7 @@ bool test_control_flow_statements(void) {
     printf("  PASS: Control flow statement generation successful\n");
     
     // Cleanup
-    code_generator_destroy(codegen);
+    asthra_backend_destroy(backend);
     semantic_analyzer_destroy(analyzer);
     ast_free_node(ast);
     parser_destroy(parser);

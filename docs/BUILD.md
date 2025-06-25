@@ -6,7 +6,7 @@ The Asthra compiler requires the following dependencies:
 
 - **CMake 3.20+**: Modern CMake for build configuration
 - **C Compiler**: GCC, Clang, or MSVC with C17 support
-- **LLVM 15.0+**: Required for the LLVM backend (now the default)
+- **LLVM 18.0+**: Required for the LLVM backend (version 18.0 or later)
 - **json-c**: Optional, will be downloaded automatically if not found
 
 ## Installing Dependencies

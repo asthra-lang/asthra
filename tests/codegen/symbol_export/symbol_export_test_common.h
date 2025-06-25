@@ -26,9 +26,8 @@
 #include "parser.h"
 #include "ast.h"
 #include "semantic_analyzer.h"
-#include "code_generator.h"
+#include "backend_interface.h"
 #include "parser_core.h"
-#include "code_generator_core.h"
 // =============================================================================
 // SHARED TEST UTILITIES
 // =============================================================================
@@ -62,7 +61,7 @@ typedef struct {
     Parser* parser;
     ASTNode* program;
     SemanticAnalyzer* analyzer;
-    CodeGenerator* codegen;
+    AsthraBackend* backend;
 } CodegenTestResult;
 
 CodegenTestResult run_codegen_pipeline(AsthraTestContext* context, const char* source);

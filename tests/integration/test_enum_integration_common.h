@@ -16,7 +16,7 @@
 #include "lexer.h"
 #include "ast.h"
 #include "semantic_core.h"
-#include "code_generator_core.h"
+#include "backend_interface.h"
 
 // Test helper function to create a lexer from source code
 static inline Lexer *create_test_lexer(const char *source) {

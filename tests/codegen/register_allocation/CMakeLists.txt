@@ -2,11 +2,12 @@
 # Tests for graph coloring, spill handling, and register allocation algorithms
 
 # Graph coloring tests that depend on graph_coloring_common.c
+# REMOVED: All register allocation tests depend on deleted register_allocator.h
 set(GRAPH_COLORING_TESTS
-    test_graph_coloring_algorithms_minimal.c
-    test_register_pressure_minimal.c
-    test_interference_graph_minimal.c
-    test_linear_scan_allocation_minimal.c
+    # REMOVED: test_graph_coloring_algorithms_minimal.c (depends on deleted register_allocator.h)
+    # REMOVED: test_register_pressure_minimal.c (depends on deleted register_allocator.h)
+    # REMOVED: test_interference_graph_minimal.c (depends on deleted register_allocator.h)
+    # REMOVED: test_linear_scan_allocation_minimal.c (depends on deleted register_allocator.h)
 )
 
 # Additional graph coloring tests (REMOVED - compilation errors)
@@ -16,13 +17,14 @@ set(GRAPH_COLORING_FULL_TESTS
     # REMOVED: test_graph_coloring_heuristics.c (compilation errors)
     # REMOVED: test_interference_graph.c (compilation errors)
     # REMOVED: test_linear_scan_allocation.c (compilation errors)
-    test_register_allocation_minimal.c
+    # REMOVED: test_register_allocation_minimal.c (depends on deleted register_allocator.h)
 )
 
 # Spill handling tests that depend on spill_handling_common.c
+# REMOVED: All spill handling tests depend on deleted register allocator code
 set(SPILL_HANDLING_TESTS
-    test_spill_handling_minimal.c
-    test_register_coalescing_minimal.c
+    # REMOVED: test_spill_handling_minimal.c (depends on deleted register allocator code)
+    # REMOVED: test_register_coalescing_minimal.c (depends on deleted register allocator code)
 )
 
 # Additional spill handling tests (REMOVED - compilation errors)

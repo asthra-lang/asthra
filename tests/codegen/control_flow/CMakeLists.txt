@@ -1,5 +1,12 @@
 # Control Flow Analysis Tests
 # Tests that depend on test_control_flow_common.c
+# DISABLED: These tests depend on the removed optimizer infrastructure
+
+# The optimizer was removed along with the C/Assembly backends
+# These tests would need to be rewritten to use LLVM's optimization passes
+# if control flow analysis is needed in the future
+
+return()  # Skip this directory
 
 set(CONTROL_FLOW_TESTS
     test_cfg_construction.c

@@ -23,7 +23,7 @@
 #include "lexer.h"
 #include "semantic_analyzer.h"
 #include "semantic_core.h"
-#include "code_generator_core.h"
+#include "backend_interface.h"
 #include "generic_instantiation.h"
 
 #ifdef __cplusplus

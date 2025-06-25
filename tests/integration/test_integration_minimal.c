@@ -30,7 +30,7 @@
 #include "lexer.h"
 #include "parser_core.h"
 #include "semantic_core.h"
-#include "code_generator_core.h"
+#include "backend_interface.h"
 
 // =============================================================================
 // MINIMAL INTEGRATION TESTS - SIMPLIFIED APPROACH (PHASE 1.2)

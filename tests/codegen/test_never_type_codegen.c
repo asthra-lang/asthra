@@ -13,7 +13,8 @@
 #include "../framework/compiler_test_utils.h"
 #include "../framework/test_data.h"
 #include "semantic_analyzer.h"
-#include "code_generator_core.h"
+#include "backend_interface.h"
+#include "compiler.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -88,19 +89,35 @@ static AsthraTestResult test_never_function_codegen(AsthraTestContext* context) 
         return ASTHRA_TEST_FAIL;
     }
     
-    // Run code generation
-    CodeGenerator* codegen = code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!asthra_test_assert_not_null(context, codegen, "Failed to create code generator")) {
+    // Run code generation using backend interface
+    AsthraCompilerOptions options = asthra_compiler_default_options();
+    options.target_arch = ASTHRA_TARGET_X86_64;
+    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    
+    AsthraBackend* backend = asthra_backend_create(&options);
+    if (!asthra_test_assert_not_null(context, backend, "Failed to create backend")) {
         semantic_analyzer_destroy(analyzer);
         ast_free_node(ast);
         destroy_test_parser(parser);
         return ASTHRA_TEST_FAIL;
     }
     
-    // CRITICAL: Link semantic analyzer to code generator to prevent architectural violations
-    code_generator_set_semantic_analyzer(codegen, analyzer);
+    if (asthra_backend_initialize(backend, &options) != 0) {
+        asthra_backend_destroy(backend);
+        semantic_analyzer_destroy(analyzer);
+        ast_free_node(ast);
+        destroy_test_parser(parser);
+        return ASTHRA_TEST_FAIL;
+    }
     
-    bool codegen_result = code_generate_program(codegen, ast);
+    // Create a minimal compiler context for the backend
+    AsthraCompilerContext ctx = {0};
+    ctx.options = options;
+    ctx.ast = ast;
+    ctx.symbol_table = analyzer->global_scope;
+    ctx.type_checker = analyzer;
+    
+    bool codegen_result = asthra_backend_generate(backend, &ctx, ast, "test_never.ll") == 0;
     
     // For TDD: This might fail if Never type codegen is not implemented
     printf("Debug: test_never_function_codegen result: %s\n", 
@@ -109,14 +126,14 @@ static AsthraTestResult test_never_function_codegen(AsthraTestContext* context) 
     // For now, just expect it to work without crashing
     if (!asthra_test_assert_bool_eq(context, codegen_result, true, 
                                    "Should generate code without errors")) {
-        code_generator_destroy(codegen);
+        asthra_backend_destroy(backend);
         semantic_analyzer_destroy(analyzer);
         ast_free_node(ast);
         destroy_test_parser(parser);
         return ASTHRA_TEST_FAIL;
     }
     
-    code_generator_destroy(codegen);
+    asthra_backend_destroy(backend);
     semantic_analyzer_destroy(analyzer);
     ast_free_node(ast);
     destroy_test_parser(parser);
@@ -169,19 +186,35 @@ static AsthraTestResult test_never_unreachable_code_detection(AsthraTestContext*
         return ASTHRA_TEST_FAIL;
     }
     
-    // Run code generation
-    CodeGenerator* codegen = code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!asthra_test_assert_not_null(context, codegen, "Failed to create code generator")) {
+    // Run code generation using backend interface
+    AsthraCompilerOptions options = asthra_compiler_default_options();
+    options.target_arch = ASTHRA_TARGET_X86_64;
+    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    
+    AsthraBackend* backend = asthra_backend_create(&options);
+    if (!asthra_test_assert_not_null(context, backend, "Failed to create backend")) {
         semantic_analyzer_destroy(analyzer);
         ast_free_node(ast);
         destroy_test_parser(parser);
         return ASTHRA_TEST_FAIL;
     }
     
-    // CRITICAL: Link semantic analyzer to code generator to prevent architectural violations
-    code_generator_set_semantic_analyzer(codegen, analyzer);
+    if (asthra_backend_initialize(backend, &options) != 0) {
+        asthra_backend_destroy(backend);
+        semantic_analyzer_destroy(analyzer);
+        ast_free_node(ast);
+        destroy_test_parser(parser);
+        return ASTHRA_TEST_FAIL;
+    }
     
-    bool codegen_result = code_generate_program(codegen, ast);
+    // Create a minimal compiler context for the backend
+    AsthraCompilerContext ctx = {0};
+    ctx.options = options;
+    ctx.ast = ast;
+    ctx.symbol_table = analyzer->global_scope;
+    ctx.type_checker = analyzer;
+    
+    bool codegen_result = asthra_backend_generate(backend, &ctx, ast, "test_unreachable.ll") == 0;
     
     // For TDD: This should work even if unreachable code detection isn't implemented yet
     printf("Debug: test_never_unreachable_code_detection result: %s\n", 
@@ -189,14 +222,14 @@ static AsthraTestResult test_never_unreachable_code_detection(AsthraTestContext*
     
     if (!asthra_test_assert_bool_eq(context, codegen_result, true, 
                                    "Should generate code without errors")) {
-        code_generator_destroy(codegen);
+        asthra_backend_destroy(backend);
         semantic_analyzer_destroy(analyzer);
         ast_free_node(ast);
         destroy_test_parser(parser);
         return ASTHRA_TEST_FAIL;
     }
     
-    code_generator_destroy(codegen);
+    asthra_backend_destroy(backend);
     semantic_analyzer_destroy(analyzer);
     ast_free_node(ast);
     destroy_test_parser(parser);
@@ -250,18 +283,35 @@ static AsthraTestResult test_never_complex_control_flow(AsthraTestContext* conte
         return ASTHRA_TEST_FAIL;
     }
     
-    CodeGenerator* codegen = code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!asthra_test_assert_not_null(context, codegen, "Failed to create code generator")) {
+    // Run code generation using backend interface
+    AsthraCompilerOptions options = asthra_compiler_default_options();
+    options.target_arch = ASTHRA_TARGET_X86_64;
+    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    
+    AsthraBackend* backend = asthra_backend_create(&options);
+    if (!asthra_test_assert_not_null(context, backend, "Failed to create backend")) {
         semantic_analyzer_destroy(analyzer);
         ast_free_node(ast);
         destroy_test_parser(parser);
         return ASTHRA_TEST_FAIL;
     }
     
-    // CRITICAL: Link semantic analyzer to code generator to prevent architectural violations
-    code_generator_set_semantic_analyzer(codegen, analyzer);
+    if (asthra_backend_initialize(backend, &options) != 0) {
+        asthra_backend_destroy(backend);
+        semantic_analyzer_destroy(analyzer);
+        ast_free_node(ast);
+        destroy_test_parser(parser);
+        return ASTHRA_TEST_FAIL;
+    }
     
-    bool codegen_result = code_generate_program(codegen, ast);
+    // Create a minimal compiler context for the backend
+    AsthraCompilerContext ctx = {0};
+    ctx.options = options;
+    ctx.ast = ast;
+    ctx.symbol_table = analyzer->global_scope;
+    ctx.type_checker = analyzer;
+    
+    bool codegen_result = asthra_backend_generate(backend, &ctx, ast, "test_complex.ll") == 0;
     
     printf("Debug: test_never_complex_control_flow result: %s\n", 
            codegen_result ? "SUCCESS" : "FAILURE");
@@ -269,14 +319,14 @@ static AsthraTestResult test_never_complex_control_flow(AsthraTestContext* conte
     // For TDD: Should work with current implementation
     if (!asthra_test_assert_bool_eq(context, codegen_result, true, 
                                    "Should generate code for complex control flow")) {
-        code_generator_destroy(codegen);
+        asthra_backend_destroy(backend);
         semantic_analyzer_destroy(analyzer);
         ast_free_node(ast);
         destroy_test_parser(parser);
         return ASTHRA_TEST_FAIL;
     }
     
-    code_generator_destroy(codegen);
+    asthra_backend_destroy(backend);
     semantic_analyzer_destroy(analyzer);
     ast_free_node(ast);
     destroy_test_parser(parser);

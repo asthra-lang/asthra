@@ -20,7 +20,7 @@
 #include "ast.h"
 #include "lexer.h"
 #include "semantic_analyzer.h"
-#include "code_generator_core.h"
+#include "backend_interface.h"
 #include "generic_instantiation.h"
 
 // ============================================================================
@@ -57,7 +57,7 @@ typedef struct {
     bool success;
     ASTNode *ast;
     SemanticAnalyzer *analyzer;
-    CodeGenerator *generator;
+    AsthraBackend *generator;
     char *c_code_output;
     char *error_message;
 } CompilationResult;

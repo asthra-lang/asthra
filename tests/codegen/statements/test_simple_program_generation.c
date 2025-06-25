@@ -59,11 +59,18 @@ AsthraTestResult test_generate_minimal_program(AsthraTestContext* context) {
         return ASTHRA_TEST_FAIL;
     }
     
-    // Set the semantic analyzer for the code generator
-    fixture->generator->semantic_analyzer = fixture->analyzer;
+    // Create compiler context for backend
+    AsthraCompilerOptions opts = asthra_compiler_default_options();
+    opts.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    AsthraCompilerContext ctx = {
+        .options = opts,
+        .error_count = 0,
+        .errors = NULL,
+        .error_capacity = 0
+    };
     
     // Generate code
-    bool success = code_generate_program(fixture->generator, program);
+    bool success = (asthra_backend_generate(fixture->backend, &ctx, program, NULL) == 0);
     
     ast_free_node(program);
     
@@ -117,11 +124,18 @@ AsthraTestResult test_generate_program_with_variables(AsthraTestContext* context
         return ASTHRA_TEST_FAIL;
     }
     
-    // Set the semantic analyzer for the code generator
-    fixture->generator->semantic_analyzer = fixture->analyzer;
+    // Create compiler context for backend
+    AsthraCompilerOptions opts = asthra_compiler_default_options();
+    opts.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    AsthraCompilerContext ctx = {
+        .options = opts,
+        .error_count = 0,
+        .errors = NULL,
+        .error_capacity = 0
+    };
     
     // Generate code
-    bool success = code_generate_program(fixture->generator, program);
+    bool success = (asthra_backend_generate(fixture->backend, &ctx, program, NULL) == 0);
     
     ast_free_node(program);
     cleanup_codegen_fixture(fixture);
@@ -173,11 +187,18 @@ AsthraTestResult test_generate_program_with_control_flow(AsthraTestContext* cont
         return ASTHRA_TEST_FAIL;
     }
     
-    // Set the semantic analyzer for the code generator
-    fixture->generator->semantic_analyzer = fixture->analyzer;
+    // Create compiler context for backend
+    AsthraCompilerOptions opts = asthra_compiler_default_options();
+    opts.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    AsthraCompilerContext ctx = {
+        .options = opts,
+        .error_count = 0,
+        .errors = NULL,
+        .error_capacity = 0
+    };
     
     // Generate code
-    bool success = code_generate_program(fixture->generator, program);
+    bool success = (asthra_backend_generate(fixture->backend, &ctx, program, NULL) == 0);
     
     ast_free_node(program);
     cleanup_codegen_fixture(fixture);

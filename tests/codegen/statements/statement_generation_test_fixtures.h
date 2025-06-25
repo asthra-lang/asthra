@@ -20,8 +20,8 @@
 #include "../framework/test_framework.h"
 #include "../framework/compiler_test_utils.h"
 #endif
-#include "code_generator.h"
-#include "code_generator_core.h"
+#include "backend_interface.h"
+#include "compiler.h"
 // code_generator_types.h is already included by code_generator_core.h
 // code_generator_instructions.h also includes code_generator_types.h, so we avoid double inclusion
 #include "ast.h"
@@ -38,8 +38,8 @@
  * Test fixture for code generator testing
  */
 typedef struct {
-    CodeGenerator* generator;
-    SemanticAnalyzer* analyzer;
+    AsthraBackend* backend;
+    struct SemanticAnalyzer* analyzer;
     ASTNode* test_ast;
     char* output_buffer;
     size_t output_buffer_size;

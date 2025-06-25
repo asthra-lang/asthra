@@ -9,7 +9,7 @@
 
 #include <stdbool.h>
 #include "ast.h"
-#include "code_generator.h"
+#include "backend_interface.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,10 +41,10 @@ void cleanup_elf_writer_fixture(ELFWriterFixture* fixture);
 // Note: variant creation functions are in test_variant_types_common.c
 
 // Code Generation Test Functions
-char* test_code_generate_expression(CodeGenerator* gen, ASTNode* expr);
-char* test_code_generate_enum_variant_construction(CodeGenerator* gen, const char* enum_name, 
+char* test_code_generate_expression(AsthraBackend* backend, ASTNode* expr);
+char* test_code_generate_enum_variant_construction(AsthraBackend* backend, const char* enum_name, 
                                              const char* variant_name, ASTNode* payload);
-char* test_code_generate_impl_block(CodeGenerator* gen, ASTNode* impl_block);
+char* test_code_generate_impl_block(AsthraBackend* backend, ASTNode* impl_block);
 
 // Note: test_generate_while_loops is in test_control_flow_statements.c
 

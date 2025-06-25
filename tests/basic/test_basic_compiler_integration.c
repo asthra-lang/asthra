@@ -19,8 +19,7 @@
 #include "lexer.h"
 #include "semantic_analyzer_core.h"
 #include "semantic_core.h"
-#include "code_generator_core.h"
-#include "code_generator_types.h"
+#include "backend_interface.h"
 // #include "../performance/performance_validation.h" // Removed - will define inline
 
 // Performance validation stub - defined inline to avoid linking issues
@@ -42,7 +41,7 @@ typedef struct {
     PipelineOrchestrator* orchestrator;
     Parser* parser;
     SemanticAnalyzer* semantic_analyzer;
-    CodeGenerator* code_generator;
+    AsthraBackend* backend;
     
     // Error management
     AsthraCompilerError* errors;
@@ -313,18 +312,17 @@ bool test_component_isolation(void) {
     semantic_analyzer_destroy(semantic_only);
     free(dummy_ast);
 
-    // Test Code Generator Isolation
-    printf("  Testing Code Generator Isolation...\n");
-    CodeGenerator *codegen_only = code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!codegen_only) {
-        printf("❌ Code generator creation failed\n");
+    // Test Backend Isolation
+    printf("  Testing Backend Isolation...\n");
+    AsthraBackend *backend_only = asthra_backend_create_by_type(ASTHRA_BACKEND_LLVM_IR);
+    if (!backend_only) {
+        printf("❌ Backend creation failed\n");
         return false;
     }
     
-    // For now, just test creation/destruction since the actual code generation
-    // is done via generate_c_code function
-    printf("  ✓ Code generator isolation test passed\n");
-    code_generator_destroy(codegen_only);
+    // For now, just test creation/destruction
+    printf("  ✓ Backend isolation test passed\n");
+    asthra_backend_destroy(backend_only);
 
     printf("✅ All component isolation tests passed.\n");
     return true;

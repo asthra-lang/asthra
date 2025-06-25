@@ -22,51 +22,47 @@ static void test_option_some_codegen(void) {
     // Set up code generator context
     TestCodeGenContext *ctx = create_test_code_gen_context();
     assert(ctx != NULL);
-    CodeGenerator *generator = ctx->generator;
+    AsthraBackend *backend = ctx->backend;
     
     // Run semantic analysis on the expression first
     analyze_expression_for_test(ctx, expr);
     
     // Generate code for the enum variant expression
-    Register target_reg = ASTHRA_REG_RBX; // Use a different test register
-    bool success = code_generate_enum_variant_construction(generator, expr, target_reg);
+    // Use the test helper function for enum variant construction
+    char *assembly = test_code_generate_enum_variant_construction(backend, "Option", "Some", 
+                                                                  expr->data.enum_variant.value);
     
-    if (success) {
+    if (assembly) {
         printf("✓ Successfully generated code for Option.Some(\"hello\")\n");
         
-        // Verify the generated assembly instructions
-        char assembly_buffer[4096];
-        bool assembly_success = code_generator_emit_assembly(generator, assembly_buffer, sizeof(assembly_buffer));
+        // The test helper returns the assembly directly
+        printf("✓ Assembly generation succeeded\n");
         
-        if (assembly_success) {
-            printf("✓ Assembly generation succeeded\n");
-            
-            // Check for expected assembly patterns
-            bool has_constructor_call = strstr(assembly_buffer, "Option_Some") != NULL ||
-                                       strstr(assembly_buffer, "enum_constructor") != NULL ||
-                                       strstr(assembly_buffer, "variant_create") != NULL;
-            
-            bool has_string_hello = strstr(assembly_buffer, "hello") != NULL ||
-                                   strstr(assembly_buffer, "string") != NULL;
-            
-            bool has_target_register = strstr(assembly_buffer, "rbx") != NULL ||
-                                      strstr(assembly_buffer, "%rbx") != NULL;
-            
-            if (has_constructor_call) {
-                printf("✓ Found enum constructor call pattern\n");
-            }
-            if (has_string_hello) {
-                printf("✓ Found string handling in assembly\n");
-            }
-            if (has_target_register) {
-                printf("✓ Found target register usage\n");
-            }
-            
-            // For debugging, uncomment to see generated assembly
-            // printf("Generated assembly:\n%s\n", assembly_buffer);
-        } else {
-            printf("⚠ Assembly generation failed, but codegen succeeded\n");
+        // Check for expected assembly patterns
+        bool has_constructor_call = strstr(assembly, "Option_Some") != NULL ||
+                                   strstr(assembly, "enum_constructor") != NULL ||
+                                   strstr(assembly, "variant_create") != NULL;
+        
+        bool has_string_hello = strstr(assembly, "hello") != NULL ||
+                               strstr(assembly, "string") != NULL;
+        
+        bool has_target_register = strstr(assembly, "rbx") != NULL ||
+                                  strstr(assembly, "%rbx") != NULL;
+        
+        if (has_constructor_call) {
+            printf("✓ Found enum constructor call pattern\n");
         }
+        if (has_string_hello) {
+            printf("✓ Found string handling in assembly\n");
+        }
+        if (has_target_register) {
+            printf("✓ Found target register usage\n");
+        }
+        
+        // For debugging, uncomment to see generated assembly
+        // printf("Generated assembly:\n%s\n", assembly);
+        
+        free(assembly);
         
     } else {
         printf("✗ Failed to generate code for Option.Some(\"hello\")\n");
@@ -96,52 +92,47 @@ static void test_option_none_codegen(void) {
     // Set up code generator context
     TestCodeGenContext *ctx = create_test_code_gen_context();
     assert(ctx != NULL);
-    CodeGenerator *generator = ctx->generator;
+    AsthraBackend *backend = ctx->backend;
     
     // Run semantic analysis on the expression first
     analyze_expression_for_test(ctx, expr);
     
     // Generate code for the enum variant expression
-    Register target_reg = ASTHRA_REG_RDX; // Use another test register
-    bool success = code_generate_enum_variant_construction(generator, expr, target_reg);
+    // For None variants, pass NULL as the payload
+    char *assembly = test_code_generate_enum_variant_construction(backend, "Option", "None", NULL);
     
-    if (success) {
+    if (assembly) {
         printf("✓ Successfully generated code for Option.None\n");
         
-        // Verify the generated assembly instructions
-        char assembly_buffer[4096];
-        bool assembly_success = code_generator_emit_assembly(generator, assembly_buffer, sizeof(assembly_buffer));
+        // The test helper returns the assembly directly
+        printf("✓ Assembly generation succeeded\n");
         
-        if (assembly_success) {
-            printf("✓ Assembly generation succeeded\n");
-            
-            // Check for expected assembly patterns
-            bool has_constructor_call = strstr(assembly_buffer, "Option_None") != NULL ||
-                                       strstr(assembly_buffer, "enum_constructor") != NULL ||
-                                       strstr(assembly_buffer, "variant_create") != NULL;
-            
-            // For None variants, we don't expect complex argument passing
-            bool simple_construction = strstr(assembly_buffer, "mov") != NULL ||
-                                      strstr(assembly_buffer, "lea") != NULL;
-            
-            bool has_target_register = strstr(assembly_buffer, "rdx") != NULL ||
-                                      strstr(assembly_buffer, "%rdx") != NULL;
-            
-            if (has_constructor_call) {
-                printf("✓ Found enum constructor call pattern\n");
-            }
-            if (simple_construction) {
-                printf("✓ Found simple construction pattern (no arguments)\n");
-            }
-            if (has_target_register) {
-                printf("✓ Found target register usage\n");
-            }
-            
-            // For debugging, uncomment to see generated assembly
-            // printf("Generated assembly:\n%s\n", assembly_buffer);
-        } else {
-            printf("⚠ Assembly generation failed, but codegen succeeded\n");
+        // Check for expected assembly patterns
+        bool has_constructor_call = strstr(assembly, "Option_None") != NULL ||
+                                   strstr(assembly, "enum_constructor") != NULL ||
+                                   strstr(assembly, "variant_create") != NULL;
+        
+        // For None variants, we don't expect complex argument passing
+        bool simple_construction = strstr(assembly, "mov") != NULL ||
+                                  strstr(assembly, "lea") != NULL;
+        
+        bool has_target_register = strstr(assembly, "rdx") != NULL ||
+                                  strstr(assembly, "%rdx") != NULL;
+        
+        if (has_constructor_call) {
+            printf("✓ Found enum constructor call pattern\n");
         }
+        if (simple_construction) {
+            printf("✓ Found simple construction pattern (no arguments)\n");
+        }
+        if (has_target_register) {
+            printf("✓ Found target register usage\n");
+        }
+        
+        // For debugging, uncomment to see generated assembly
+        // printf("Generated assembly:\n%s\n", assembly);
+        
+        free(assembly);
         
     } else {
         printf("✗ Failed to generate code for Option.None\n");

@@ -13,7 +13,7 @@
 #include "../../src/compiler/pipeline_orchestrator.h"
 #include "../../src/parser/parser.h"
 #include "../../src/analysis/semantic_analyzer.h"
-#include "../../src/codegen/code_generator.h"
+#include "../../src/codegen/backend_interface.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,17 +51,17 @@ static bool compile_option_program(const char* source, char* assembly_output, si
     }
     
     // Code generation
-    CodeGenerator* generator = code_generator_create(TARGET_ARCH_AARCH64, CALLING_CONV_AARCH64_AAPCS);
-    if (!generator) {
+    AsthraBackend* backend = asthra_backend_create_by_type(ASTHRA_BACKEND_LLVM_IR);
+    if (!backend) {
         semantic_analyzer_destroy(analyzer);
         ast_free_node(ast);
         destroy_test_parser(parser);
         return false;
     }
     
-    bool codegen_success = code_generate_program(generator, ast);
+    bool codegen_success = asthra_backend_generate_program(backend, ast);
     if (!codegen_success) {
-        code_generator_destroy(generator);
+        asthra_backend_destroy(backend);
         semantic_analyzer_destroy(analyzer);
         ast_free_node(ast);
         destroy_test_parser(parser);
@@ -71,11 +71,11 @@ static bool compile_option_program(const char* source, char* assembly_output, si
     // Generate assembly
     bool assembly_success = false;
     if (assembly_output && output_size > 0) {
-        assembly_success = code_generator_emit_assembly(generator, assembly_output, output_size);
+        assembly_success = asthra_backend_emit_assembly(backend, assembly_output, output_size);
     }
     
     // Cleanup
-    code_generator_destroy(generator);
+    asthra_backend_destroy(backend);
     semantic_analyzer_destroy(analyzer);
     ast_free_node(ast);
     destroy_test_parser(parser);
