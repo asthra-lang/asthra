@@ -11,8 +11,8 @@
 #ifndef ASTHRA_AST_NODE_CREATION_H
 #define ASTHRA_AST_NODE_CREATION_H
 
-#include "ast_types.h"
 #include "ast_generic.h" // For ASTNodeData
+#include "ast_types.h"
 
 #ifdef __cplusplus
 extern "C" {

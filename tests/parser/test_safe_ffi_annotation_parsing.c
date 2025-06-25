@@ -96,8 +96,9 @@ static AsthraTestResult test_parse_transfer_full_annotation(AsthraTestContext *c
         return ASTHRA_TEST_FAIL;
     }
 
-    if (!asthra_test_assert_bool(context, validate_ffi_annotation_ast(annotation, FFI_TRANSFER_FULL),
-                            "Should create correct FFI_TRANSFER_FULL AST node")) {
+    if (!asthra_test_assert_bool(context,
+                                 validate_ffi_annotation_ast(annotation, FFI_TRANSFER_FULL),
+                                 "Should create correct FFI_TRANSFER_FULL AST node")) {
         ast_free_node(annotation);
         return ASTHRA_TEST_FAIL;
     }
@@ -120,8 +121,9 @@ static AsthraTestResult test_parse_transfer_none_annotation(AsthraTestContext *c
         return ASTHRA_TEST_FAIL;
     }
 
-    if (!asthra_test_assert_bool(context, validate_ffi_annotation_ast(annotation, FFI_TRANSFER_NONE),
-                            "Should create correct FFI_TRANSFER_NONE AST node")) {
+    if (!asthra_test_assert_bool(context,
+                                 validate_ffi_annotation_ast(annotation, FFI_TRANSFER_NONE),
+                                 "Should create correct FFI_TRANSFER_NONE AST node")) {
         ast_free_node(annotation);
         return ASTHRA_TEST_FAIL;
     }
@@ -144,7 +146,7 @@ static AsthraTestResult test_parse_borrowed_annotation(AsthraTestContext *contex
     }
 
     if (!asthra_test_assert_bool(context, validate_ffi_annotation_ast(annotation, FFI_BORROWED),
-                            "Should create correct FFI_BORROWED AST node")) {
+                                 "Should create correct FFI_BORROWED AST node")) {
         ast_free_node(annotation);
         return ASTHRA_TEST_FAIL;
     }
@@ -161,8 +163,8 @@ static AsthraTestResult test_parse_borrowed_annotation(AsthraTestContext *contex
  * Create SafeFFIAnnotation core parsing test suite
  */
 AsthraTestSuite *create_safe_ffi_annotation_parsing_test_suite(void) {
-    AsthraTestSuite *suite =
-        asthra_test_suite_create("SafeFFIAnnotation Core Parsing", "Basic parsing of FFI annotations");
+    AsthraTestSuite *suite = asthra_test_suite_create("SafeFFIAnnotation Core Parsing",
+                                                      "Basic parsing of FFI annotations");
 
     if (!suite)
         return NULL;
@@ -173,11 +175,13 @@ AsthraTestSuite *create_safe_ffi_annotation_parsing_test_suite(void) {
 
     // Core annotation parsing tests
     asthra_test_suite_add_test(suite, "test_parse_transfer_full_annotation",
-                               "Parse Transfer Full Annotation", test_parse_transfer_full_annotation);
+                               "Parse Transfer Full Annotation",
+                               test_parse_transfer_full_annotation);
     asthra_test_suite_add_test(suite, "test_parse_transfer_none_annotation",
-                               "Parse Transfer None Annotation", test_parse_transfer_none_annotation);
-    asthra_test_suite_add_test(suite, "test_parse_borrowed_annotation",
-                               "Parse Borrowed Annotation", test_parse_borrowed_annotation);
+                               "Parse Transfer None Annotation",
+                               test_parse_transfer_none_annotation);
+    asthra_test_suite_add_test(suite, "test_parse_borrowed_annotation", "Parse Borrowed Annotation",
+                               test_parse_borrowed_annotation);
 
     return suite;
 }

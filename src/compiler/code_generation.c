@@ -1,623 +1,100 @@
 /**
  * Asthra Programming Language Compiler
- * Code generation - AST to C code translation
+ * Code generation - AST to C code translation (Main Dispatcher)
  *
  * Copyright (c) 2024 Asthra Project
  * Licensed under the terms specified in LICENSE
  */
 
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "../parser/ast.h"
 #include "code_generation.h"
-
-// Forward declaration for type generation
-static const char *get_c_type_string(ASTNode *type_node);
-
-// Helper to check if an AST node ends with a return statement
-static bool ends_with_return(ASTNode *node) {
-    if (!node)
-        return false;
-
-    switch (node->type) {
-    case AST_RETURN_STMT:
-        return true;
-
-    case AST_BLOCK:
-        if (node->data.block.statements && node->data.block.statements->count > 0) {
-            size_t last_idx = node->data.block.statements->count - 1;
-            return ends_with_return(node->data.block.statements->nodes[last_idx]);
-        }
-        return false;
-
-    case AST_IF_STMT:
-        // Both branches must end with return for the if-else to count as ending with return
-        return node->data.if_stmt.else_block != NULL &&
-               ends_with_return(node->data.if_stmt.then_block) &&
-               ends_with_return(node->data.if_stmt.else_block);
-
-    default:
-        return false;
-    }
-}
+#include "codegen/codegen_internal.h"
 
 // =============================================================================
-// CODE GENERATION
+// CODE GENERATION DISPATCHER
 // =============================================================================
 
-// Global context for tracking current function during code generation
-static const char *current_function_name = NULL;
-static bool current_function_returns_void = false;
-
-// Helper function to generate C code from AST
+// Main dispatcher function to generate C code from AST
 int generate_c_code(FILE *output, ASTNode *node) {
     if (!output || !node) {
         return -1;
     }
 
     switch (node->type) {
+    // Program and function declarations
     case AST_PROGRAM:
-        // First pass: Generate forward declarations for all functions
-        if (node->data.program.declarations) {
-            ASTNodeList *declarations = node->data.program.declarations;
-            for (size_t i = 0; i < declarations->count; i++) {
-                ASTNode *decl = declarations->nodes[i];
-                if (decl && decl->type == AST_FUNCTION_DECL) {
-                    const char *func_name = decl->data.function_decl.name;
+        return c_generate_program(output, node);
 
-                    // Skip forward declaration for main function
-                    if (strcmp(func_name, "main") == 0) {
-                        continue;
-                    }
+    case AST_FUNCTION_DECL:
+        return c_generate_function_decl(output, node);
 
-                    // Generate forward declaration
-                    const char *return_type = "void"; // Default to void
-                    if (decl->data.function_decl.return_type) {
-                        return_type = get_c_type_string(decl->data.function_decl.return_type);
-                    }
-                    fprintf(output, "%s %s();\n", return_type, func_name);
-                }
-            }
-            fprintf(output, "\n");
-
-            // Second pass: Generate function definitions
-            for (size_t i = 0; i < declarations->count; i++) {
-                if (declarations->nodes[i]) {
-                    generate_c_code(output, declarations->nodes[i]);
-                }
-            }
-        }
-        break;
-
-    case AST_FUNCTION_DECL: {
-        // Generate proper C function definition
-        const char *func_name = node->data.function_decl.name;
-        const char *return_type = "void"; // Default to void
-
-        if (node->data.function_decl.return_type) {
-            return_type = get_c_type_string(node->data.function_decl.return_type);
-        }
-
-        // Check if this is the main function
-        bool is_main = strcmp(func_name, "main") == 0;
-        bool main_returns_int = false;
-        bool main_returns_void = false;
-
-        if (is_main) {
-            // Check if main returns int/i32 or void
-            if (node->data.function_decl.return_type &&
-                node->data.function_decl.return_type->type == AST_BASE_TYPE &&
-                node->data.function_decl.return_type->data.base_type.name) {
-                const char *type_name = node->data.function_decl.return_type->data.base_type.name;
-                if (strcmp(type_name, "i32") == 0 || strcmp(type_name, "int") == 0) {
-                    main_returns_int = true;
-                } else if (strcmp(type_name, "void") == 0) {
-                    main_returns_void = true;
-                }
-            }
-            // Generate C main function
-            fprintf(output, "int main() {\n");
-        } else {
-            // Generate regular function
-            fprintf(output, "%s %s() {\n", return_type, func_name);
-        }
-
-        // Set context for return statement handling
-        const char *old_function_name = current_function_name;
-        bool old_function_returns_void = current_function_returns_void;
-        current_function_name = func_name;
-        current_function_returns_void = (strcmp(return_type, "void") == 0) || main_returns_void;
-
-        // Generate function body
-        if (node->data.function_decl.body) {
-            generate_c_code(output, node->data.function_decl.body);
-        }
-
-        // Add return statement only if main doesn't already end with one
-        if (is_main && !ends_with_return(node->data.function_decl.body)) {
-            fprintf(output, "    return 0;\n");
-        }
-
-        fprintf(output, "}\n\n");
-
-        // Restore context
-        current_function_name = old_function_name;
-        current_function_returns_void = old_function_returns_void;
-    } break;
-
+    // Statements
     case AST_BLOCK:
-        // Process all statements in the block
-        if (node->data.block.statements) {
-            ASTNodeList *statements = node->data.block.statements;
-            for (size_t i = 0; i < statements->count; i++) {
-                if (statements->nodes[i]) {
-                    generate_c_code(output, statements->nodes[i]);
-                }
-            }
-        }
-        break;
+        return c_generate_block(output, node);
 
     case AST_EXPR_STMT:
-        // Generate code for expression statement
-        if (node->data.expr_stmt.expression) {
-            generate_c_code(output, node->data.expr_stmt.expression);
-            fprintf(output, ";\n");
-        }
-        break;
-
-    case AST_CALL_EXPR:
-        // Handle function calls (especially log() and panic())
-        if (node->data.call_expr.function &&
-            node->data.call_expr.function->type == AST_IDENTIFIER &&
-            strcmp(node->data.call_expr.function->data.identifier.name, "log") == 0) {
-            fprintf(output, "    printf(");
-
-            // Process arguments
-            if (node->data.call_expr.args) {
-                ASTNodeList *args = node->data.call_expr.args;
-                for (size_t i = 0; i < args->count; i++) {
-                    if (args->nodes[i]) {
-                        if (i > 0) {
-                            fprintf(output, ", ");
-                        }
-                        generate_c_code(output, args->nodes[i]);
-                    }
-                }
-            }
-
-            fprintf(output, ");\n    printf(\"\\n\")");
-        } else if (node->data.call_expr.function &&
-                   node->data.call_expr.function->type == AST_IDENTIFIER &&
-                   strcmp(node->data.call_expr.function->data.identifier.name, "panic") == 0) {
-            // Handle panic() - print to stderr and exit
-            fprintf(output, "    fprintf(stderr, \"panic: \");\n");
-            fprintf(output, "    fprintf(stderr, ");
-
-            // Process arguments (expect one string argument)
-            if (node->data.call_expr.args && node->data.call_expr.args->count > 0) {
-                generate_c_code(output, node->data.call_expr.args->nodes[0]);
-            }
-
-            fprintf(output, ");\n");
-            fprintf(output, "    fprintf(stderr, \"\\n\");\n");
-            fprintf(output, "    exit(1)");
-        } else if (node->data.call_expr.function &&
-                   node->data.call_expr.function->type == AST_IDENTIFIER &&
-                   strcmp(node->data.call_expr.function->data.identifier.name, "args") == 0) {
-            // Handle args() - generate inline stub for testing
-            // TODO: Use asthra_runtime_get_args() once runtime linking is implemented
-            fprintf(
-                output,
-                "((AsthraSliceHeader){.ptr = NULL, .len = 0, .cap = 0, .element_size = "
-                "sizeof(char*), .ownership = ASTHRA_OWNERSHIP_GC, .is_mutable = 0, .type_id = 0})");
-        } else {
-            // Other function calls
-            if (node->data.call_expr.function) {
-                generate_c_code(output, node->data.call_expr.function);
-                fprintf(output, "(");
-
-                if (node->data.call_expr.args) {
-                    ASTNodeList *args = node->data.call_expr.args;
-                    for (size_t i = 0; i < args->count; i++) {
-                        if (args->nodes[i]) {
-                            if (i > 0) {
-                                fprintf(output, ", ");
-                            }
-                            generate_c_code(output, args->nodes[i]);
-                        }
-                    }
-                }
-
-                fprintf(output, ")");
-            }
-        }
-        break;
-
-    case AST_STRING_LITERAL:
-        // Output string literal
-        if (node->data.string_literal.value) {
-            fprintf(output, "\"%s\"", node->data.string_literal.value);
-        }
-        break;
-
-    case AST_BOOL_LITERAL:
-        // Output boolean literal
-        fprintf(output, "%s", node->data.bool_literal.value ? "1" : "0");
-        break;
-
-    case AST_UNIT_LITERAL:
-        // Output unit literal as empty (void)
-        // In C, unit type is typically represented as void or no value
-        break;
-
-    case AST_RETURN_STMT:
-        // Handle return statements
-        fprintf(output, "    return");
-
-        // Special case: main function with void return type needs to return 0
-        bool is_main_void_return = current_function_name &&
-                                   strcmp(current_function_name, "main") == 0 &&
-                                   current_function_returns_void;
-
-        if (node->data.return_stmt.expression) {
-            // Check if the expression is a unit literal
-            if (node->data.return_stmt.expression->type == AST_UNIT_LITERAL) {
-                // For unit literals in void main, return 0
-                if (is_main_void_return) {
-                    fprintf(output, " 0");
-                }
-                // Otherwise, don't output anything for unit literals
-            } else {
-                fprintf(output, " ");
-                generate_c_code(output, node->data.return_stmt.expression);
-            }
-        } else if (is_main_void_return) {
-            // Empty return in void main should return 0
-            fprintf(output, " 0");
-        }
-        fprintf(output, ";\n");
-        break;
-
-    case AST_INTEGER_LITERAL:
-        // Output integer literal
-        fprintf(output, "%lld", (long long)node->data.integer_literal.value);
-        break;
-
-    case AST_FLOAT_LITERAL:
-        // Output float literal
-        fprintf(output, "%f", node->data.float_literal.value);
-        break;
-
-    case AST_BINARY_EXPR:
-        // Handle binary expressions
-        generate_c_code(output, node->data.binary_expr.left);
-
-        // Output the correct operator
-        switch (node->data.binary_expr.operator) {
-        case BINOP_ADD:
-            fprintf(output, " + ");
-            break;
-        case BINOP_SUB:
-            fprintf(output, " - ");
-            break;
-        case BINOP_MUL:
-            fprintf(output, " * ");
-            break;
-        case BINOP_DIV:
-            fprintf(output, " / ");
-            break;
-        case BINOP_MOD:
-            fprintf(output, " %% ");
-            break;
-        case BINOP_EQ:
-            fprintf(output, " == ");
-            break;
-        case BINOP_NE:
-            fprintf(output, " != ");
-            break;
-        case BINOP_LT:
-            fprintf(output, " < ");
-            break;
-        case BINOP_LE:
-            fprintf(output, " <= ");
-            break;
-        case BINOP_GT:
-            fprintf(output, " > ");
-            break;
-        case BINOP_GE:
-            fprintf(output, " >= ");
-            break;
-        case BINOP_AND:
-            fprintf(output, " && ");
-            break;
-        case BINOP_OR:
-            fprintf(output, " || ");
-            break;
-        case BINOP_BITWISE_AND:
-            fprintf(output, " & ");
-            break;
-        case BINOP_BITWISE_OR:
-            fprintf(output, " | ");
-            break;
-        case BINOP_BITWISE_XOR:
-            fprintf(output, " ^ ");
-            break;
-        case BINOP_LSHIFT:
-            fprintf(output, " << ");
-            break;
-        case BINOP_RSHIFT:
-            fprintf(output, " >> ");
-            break;
-        default:
-            fprintf(output, " /* unknown op */ ");
-            break;
-        }
-
-        generate_c_code(output, node->data.binary_expr.right);
-        break;
-
-    case AST_UNARY_EXPR:
-        // Handle unary expressions
-        switch (node->data.unary_expr.operator) {
-        case UNOP_MINUS:
-            fprintf(output, "-");
-            break;
-        case UNOP_NOT:
-            fprintf(output, "!");
-            break;
-        case UNOP_BITWISE_NOT:
-            fprintf(output, "~");
-            break;
-        case UNOP_DEREF:
-            fprintf(output, "*");
-            break;
-        case UNOP_ADDRESS_OF:
-            fprintf(output, "&");
-            break;
-        default:
-            fprintf(output, "/* unknown unary op */");
-            break;
-        }
-        generate_c_code(output, node->data.unary_expr.operand);
-        break;
+        return c_generate_expr_stmt(output, node);
 
     case AST_LET_STMT:
-        // Handle variable declarations with immutable-by-default semantics
-        if (node->data.let_stmt.name) {
-            // Use our type helper function to get the correct C type
-            const char *c_type = get_c_type_string(node->data.let_stmt.type);
+        return c_generate_let_stmt(output, node);
 
-            // PHASE 3 ENHANCEMENT: Generate appropriate C const/mutable semantics
-            if (node->data.let_stmt.is_mutable) {
-                // Mutable variable - normal C variable
-                fprintf(output, "    %s %s", c_type, node->data.let_stmt.name);
-            } else {
-                // Immutable variable - C const
-                fprintf(output, "    const %s %s", c_type, node->data.let_stmt.name);
-            }
+    case AST_RETURN_STMT:
+        return c_generate_return_stmt(output, node);
 
-            if (node->data.let_stmt.initializer) {
-                fprintf(output, " = ");
-                generate_c_code(output, node->data.let_stmt.initializer);
-            }
-            fprintf(output, ";\n");
-        }
-        break;
-
+    // Control flow
     case AST_IF_STMT:
-        // Handle if statements
-        fprintf(output, "    if (");
-        if (node->data.if_stmt.condition) {
-            generate_c_code(output, node->data.if_stmt.condition);
-        }
-        fprintf(output, ") {\n");
-        if (node->data.if_stmt.then_block) {
-            generate_c_code(output, node->data.if_stmt.then_block);
-        }
-        fprintf(output, "    }\n");
-        if (node->data.if_stmt.else_block) {
-            fprintf(output, "    else {\n");
-            generate_c_code(output, node->data.if_stmt.else_block);
-            fprintf(output, "    }\n");
-        }
-        break;
+        return c_generate_if_stmt(output, node);
 
     case AST_FOR_STMT:
-        // Handle for loops (for-in style)
-        if (node->data.for_stmt.variable && node->data.for_stmt.iterable) {
-            const char *iterator_var_name = node->data.for_stmt.variable;
-
-            // Generate proper slice iteration
-            fprintf(output, "    // Generated from Asthra for-in loop\n");
-            fprintf(output, "    {\n");
-
-            // Get the slice to iterate over
-            fprintf(output, "        AsthraSliceHeader _slice = ");
-            generate_c_code(output, node->data.for_stmt.iterable);
-            fprintf(output, ";\n");
-
-            // Determine element type from the iterable's type info
-            const char *element_type = "int"; // Default
-            // TODO: Once TypeInfo is properly exposed in code generation,
-            // we can check if the iterable is a slice and get its element type
-
-            // Generate the for loop
-            fprintf(output, "        for (size_t _idx = 0; _idx < _slice.len; _idx++) {\n");
-            fprintf(
-                output,
-                "            %s %s = *((%s*)((char*)_slice.ptr + _idx * _slice.element_size));\n",
-                element_type, iterator_var_name, element_type);
-
-            // Generate loop body
-            if (node->data.for_stmt.body) {
-                generate_c_code(output, node->data.for_stmt.body);
-            }
-
-            fprintf(output, "        }\n");
-            fprintf(output, "    }\n");
-
-        } else {
-            // Other types of for loops (not implemented yet)
-            fprintf(output, "    // TODO: Implement other for loop types\n");
-        }
-        break;
-
-    case AST_IDENTIFIER:
-        // Output identifier
-        if (node->data.identifier.name) {
-            fprintf(output, "%s", node->data.identifier.name);
-        }
-        break;
+        return c_generate_for_stmt(output, node);
 
     case AST_MATCH_STMT:
-        // Generate code for match statement using if-else if structure
-        if (node->data.match_stmt.expression && node->data.match_stmt.arms) {
-            // Analyze the match expression once
-            fprintf(output, "    // Generated from Asthra match statement (simplified)\n");
-            fprintf(output, "    // Match expression: ");
-            // generate_c_code(output, node->data.match_stmt.expression); // Would generate expr
-            fprintf(output, " (expression evaluated)\n");
+        return c_generate_match_stmt(output, node);
 
-            // Generate if-else if chain for each arm
-            for (size_t i = 0; i < node->data.match_stmt.arms->count; i++) {
-                ASTNode *arm = node->data.match_stmt.arms->nodes[i];
-                if (arm->type != AST_MATCH_ARM)
-                    continue; // Should be validated by semantic analysis
+    // Expressions
+    case AST_BINARY_EXPR:
+        return c_generate_binary_expr(output, node);
 
-                ASTNode *pattern = arm->data.match_arm.pattern;
-                ASTNode *body = arm->data.match_arm.body;
+    case AST_UNARY_EXPR:
+        return c_generate_unary_expr(output, node);
 
-                if (i == 0) {
-                    fprintf(output, "    if (");
-                } else {
-                    fprintf(output, "    else if (");
-                }
+    case AST_CALL_EXPR:
+        return c_generate_call_expr(output, node);
 
-                // Generate condition for pattern (simplified)
-                if (pattern->type == AST_WILDCARD_PATTERN) {
-                    fprintf(output, "1 /* _ */"); // Wildcard always true
-                } else if (pattern->type == AST_IDENTIFIER) {
-                    // For identifier patterns, bind variable. Simplified for now.
-                    fprintf(output, "1 /* let %s = expr */", pattern->data.identifier.name);
-                } else {
-                    // Other patterns (enum, struct, literal) - highly complex, will be simplified
-                    fprintf(output, "0 /* Complex pattern not generated */");
-                }
+    case AST_IDENTIFIER:
+        return c_generate_identifier(output, node);
 
-                fprintf(output, ") {\n");
-                generate_c_code(output, body);
-                fprintf(output, "    }\n");
-            }
+    // Literals
+    case AST_STRING_LITERAL:
+        return c_generate_string_literal(output, node);
 
-            // Add an else block for non-exhaustive matches (if no wildcard)
-            // A real implementation would check for exhaustiveness here.
-            // For now, we assume semantic analysis handles exhaustiveness warnings.
-            fprintf(
-                output,
-                "    // Optional else for non-exhaustive matches (semantic check should warn)\n");
-        }
-        break;
+    case AST_INTEGER_LITERAL:
+        return c_generate_integer_literal(output, node);
 
+    case AST_FLOAT_LITERAL:
+        return c_generate_float_literal(output, node);
+
+    case AST_BOOL_LITERAL:
+        return c_generate_bool_literal(output, node);
+
+    case AST_UNIT_LITERAL:
+        return c_generate_unit_literal(output, node);
+
+    // Arrays and slices
     case AST_ARRAY_LITERAL:
-        // Generate array literal as slice initialization
-        if (node->data.array_literal.elements) {
-            ASTNodeList *elements = node->data.array_literal.elements;
-
-            // For now, we'll generate a static array and create a slice from it
-            // This is a simplified approach - a real implementation would use heap allocation
-            fprintf(output, "({\n");
-
-            // Determine element type from first element or type info
-            const char *element_type = "int"; // Default to int
-            // TODO: Once TypeInfo is properly exposed in code generation,
-            // we can check the actual slice element type
-            if (elements->count > 0 && elements->nodes[0]) {
-                // Infer from first element
-                ASTNode *first = elements->nodes[0];
-                if (first->type == AST_STRING_LITERAL) {
-                    element_type = "char*";
-                } else if (first->type == AST_FLOAT_LITERAL) {
-                    element_type = "double";
-                } else if (first->type == AST_BOOL_LITERAL) {
-                    element_type = "int";
-                }
-            }
-
-            // Generate static array
-            fprintf(output, "        static %s _arr[] = {", element_type);
-            for (size_t i = 0; i < elements->count; i++) {
-                if (i > 0)
-                    fprintf(output, ", ");
-                generate_c_code(output, elements->nodes[i]);
-            }
-            fprintf(output, "};\n");
-
-            // Create slice header - note the expression must evaluate to the struct, not void
-            fprintf(output,
-                    "        AsthraSliceHeader _slice = {.ptr = _arr, .len = %zu, .cap = %zu, "
-                    ".element_size = sizeof(%s), .ownership = ASTHRA_OWNERSHIP_GC, .is_mutable = "
-                    "0, .type_id = 0};\n",
-                    elements->count, elements->count, element_type);
-            fprintf(output, "        _slice;\n"); // Return the slice
-            fprintf(output, "    })");
-        }
-        break;
+        return c_generate_array_literal(output, node);
 
     case AST_SLICE_EXPR:
-        // Generate slice expression array[start:end]
-        if (node->data.slice_expr.array) {
-            fprintf(output, "asthra_slice_subslice(");
-            generate_c_code(output, node->data.slice_expr.array);
-            fprintf(output, ", ");
-
-            // Start index (default to 0 if NULL)
-            if (node->data.slice_expr.start) {
-                generate_c_code(output, node->data.slice_expr.start);
-            } else {
-                fprintf(output, "0");
-            }
-            fprintf(output, ", ");
-
-            // End index (default to length if NULL)
-            if (node->data.slice_expr.end) {
-                generate_c_code(output, node->data.slice_expr.end);
-            } else {
-                // Need to get the length of the array
-                fprintf(output, "asthra_slice_get_len(");
-                generate_c_code(output, node->data.slice_expr.array);
-                fprintf(output, ")");
-            }
-            fprintf(output, ")");
-        }
-        break;
+        return c_generate_slice_expr(output, node);
 
     case AST_INDEX_ACCESS:
-        // Generate array index access array[index]
-        if (node->data.index_access.array && node->data.index_access.index) {
-            // We need to dereference the element pointer and cast to the correct type
-            const char *element_type = "int"; // Default to int
-            // For now, we'll use a simple heuristic based on the expected result type
-            // A proper implementation would use type inference from semantic analysis
-
-            fprintf(output, "(*(%s*)asthra_slice_get_element(", element_type);
-            generate_c_code(output, node->data.index_access.array);
-            fprintf(output, ", ");
-            generate_c_code(output, node->data.index_access.index);
-            fprintf(output, "))");
-        }
-        break;
+        return c_generate_index_access(output, node);
 
     case AST_SLICE_LENGTH_ACCESS:
-        // Generate slice.len access
-        if (node->data.slice_length_access.slice) {
-            fprintf(output, "asthra_slice_get_len(");
-            generate_c_code(output, node->data.slice_length_access.slice);
-            fprintf(output, ")");
-        }
-        break;
+        return c_generate_slice_length_access(output, node);
 
     case AST_SLICE_TYPE:
         // This shouldn't appear in expression context, but handle it for completeness
@@ -630,43 +107,4 @@ int generate_c_code(FILE *output, ASTNode *node) {
     }
 
     return 0;
-}
-
-// Helper function to convert AST type nodes to C type strings
-static const char *get_c_type_string(ASTNode *type_node) {
-    if (!type_node)
-        return "void";
-
-    switch (type_node->type) {
-    case AST_BASE_TYPE:
-        if (type_node->data.base_type.name) {
-            const char *name = type_node->data.base_type.name;
-            if (strcmp(name, "bool") == 0)
-                return "int";
-            if (strcmp(name, "i32") == 0 || strcmp(name, "int") == 0)
-                return "int";
-            if (strcmp(name, "i64") == 0)
-                return "long long";
-            if (strcmp(name, "f32") == 0 || strcmp(name, "float") == 0)
-                return "float";
-            if (strcmp(name, "f64") == 0)
-                return "double";
-            if (strcmp(name, "string") == 0)
-                return "char*";
-            if (strcmp(name, "void") == 0)
-                return "void";
-            if (strcmp(name, "usize") == 0)
-                return "size_t";
-        }
-        break;
-    case AST_SLICE_TYPE:
-        return "AsthraSliceHeader";
-    case AST_PTR_TYPE:
-        // Simplified pointer type handling
-        return "void*";
-    default:
-        break;
-    }
-
-    return "void";
 }

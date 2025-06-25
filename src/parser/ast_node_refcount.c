@@ -12,7 +12,7 @@
 
 #include "ast_node_refcount.h"
 #include "ast.h"
-#include "ast_operations.h"  // For ast_free_node
+#include "ast_operations.h" // For ast_free_node
 #include <assert.h>
 #include <stdatomic.h>
 #include <stdio.h>

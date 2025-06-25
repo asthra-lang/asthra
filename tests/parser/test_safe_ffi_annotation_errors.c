@@ -100,10 +100,10 @@ static AsthraTestResult test_reject_invalid_annotation_names(AsthraTestContext *
  */
 static AsthraTestResult test_reject_malformed_annotation_syntax(AsthraTestContext *context) {
     const char *malformed_annotations[] = {
-        "[transfer_full]",                // Missing #
-        "#transfer_full]",                // Missing [
-        "#[transfer_full",                // Missing ]
-        "#[]"                             // Empty annotation
+        "[transfer_full]", // Missing #
+        "#transfer_full]", // Missing [
+        "#[transfer_full", // Missing ]
+        "#[]"              // Empty annotation
     };
 
     size_t count = sizeof(malformed_annotations) / sizeof(malformed_annotations[0]);
@@ -185,7 +185,8 @@ static AsthraTestResult test_parser_error_recovery(AsthraTestContext *context) {
  */
 AsthraTestSuite *create_safe_ffi_annotation_error_test_suite(void) {
     AsthraTestSuite *suite =
-        asthra_test_suite_create("SafeFFIAnnotation Error Handling", "Error handling and recovery for invalid FFI annotations");
+        asthra_test_suite_create("SafeFFIAnnotation Error Handling",
+                                 "Error handling and recovery for invalid FFI annotations");
 
     if (!suite)
         return NULL;
@@ -196,11 +197,13 @@ AsthraTestSuite *create_safe_ffi_annotation_error_test_suite(void) {
 
     // Error handling tests
     asthra_test_suite_add_test(suite, "test_reject_invalid_annotation_names",
-                               "Reject Invalid Annotation Names", test_reject_invalid_annotation_names);
+                               "Reject Invalid Annotation Names",
+                               test_reject_invalid_annotation_names);
     asthra_test_suite_add_test(suite, "test_reject_malformed_annotation_syntax",
-                               "Reject Malformed Annotation Syntax", test_reject_malformed_annotation_syntax);
-    asthra_test_suite_add_test(suite, "test_parser_error_recovery",
-                               "Parser Error Recovery", test_parser_error_recovery);
+                               "Reject Malformed Annotation Syntax",
+                               test_reject_malformed_annotation_syntax);
+    asthra_test_suite_add_test(suite, "test_parser_error_recovery", "Parser Error Recovery",
+                               test_parser_error_recovery);
 
     return suite;
 }

@@ -124,8 +124,8 @@ static AsthraTestResult test_parse_unsafe_blocks(AsthraTestContext *context) {
  * Register all block tests
  */
 AsthraTestSuite *create_blocks_and_unsafe_test_suite(void) {
-    AsthraTestSuite *suite =
-        asthra_test_suite_create("Blocks and Unsafe Tests", "Block and unsafe block parsing testing");
+    AsthraTestSuite *suite = asthra_test_suite_create("Blocks and Unsafe Tests",
+                                                      "Block and unsafe block parsing testing");
 
     if (!suite)
         return NULL;

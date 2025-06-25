@@ -158,22 +158,22 @@ AsthraTestResult test_symbol_binding_types(AsthraTestContext *context) {
 int main(void) {
     AsthraTestStatistics *stats = asthra_test_statistics_create();
 
-    AsthraTestSuiteConfig config = {
-        .name = "ELF Symbol Binding Types Test",
-        .description = "Test symbol binding types (local, global, weak)",
-        .parallel_execution = false,
-        .stop_on_failure = false,
-        .verbose_output = true,
-        .json_output = false,
-        .default_timeout_ns = 10000000000ULL, // 10 seconds
-        .max_parallel_tests = 1,
-        .statistics = stats};
+    AsthraTestSuiteConfig config = {.name = "ELF Symbol Binding Types Test",
+                                    .description =
+                                        "Test symbol binding types (local, global, weak)",
+                                    .parallel_execution = false,
+                                    .stop_on_failure = false,
+                                    .verbose_output = true,
+                                    .json_output = false,
+                                    .default_timeout_ns = 10000000000ULL, // 10 seconds
+                                    .max_parallel_tests = 1,
+                                    .statistics = stats};
 
     AsthraTestFunction tests[] = {test_symbol_binding_types};
 
-    AsthraTestMetadata metadata[] = {
-        {"test_symbol_binding_types", __FILE__, __LINE__, "test_symbol_binding_types",
-         ASTHRA_TEST_SEVERITY_HIGH, 5000000000ULL, false, NULL}};
+    AsthraTestMetadata metadata[] = {{"test_symbol_binding_types", __FILE__, __LINE__,
+                                      "test_symbol_binding_types", ASTHRA_TEST_SEVERITY_HIGH,
+                                      5000000000ULL, false, NULL}};
 
     size_t test_count = sizeof(tests) / sizeof(tests[0]);
 

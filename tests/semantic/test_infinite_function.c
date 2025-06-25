@@ -150,8 +150,7 @@ ASTHRA_TEST_DEFINE(infinite_function_can_iterate, ASTHRA_TEST_SEVERITY_HIGH) {
 }
 
 int main(void) {
-    AsthraTestFunction tests[] = {infinite_function_exists,
-                                  infinite_function_no_parameters,
+    AsthraTestFunction tests[] = {infinite_function_exists, infinite_function_no_parameters,
                                   infinite_function_can_iterate};
 
     AsthraTestMetadata metadatas[] = {{.name = "infinite_function_exists",
@@ -177,8 +176,7 @@ int main(void) {
                                        .skip = false}};
 
     AsthraTestSuiteConfig config = asthra_test_suite_config_create(
-        "Infinite Function Semantic Tests",
-        "Tests for infinite() predeclared function");
+        "Infinite Function Semantic Tests", "Tests for infinite() predeclared function");
 
     AsthraTestResult result =
         asthra_test_run_suite(tests, metadatas, sizeof(tests) / sizeof(tests[0]), &config);

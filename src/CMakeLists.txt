@@ -67,6 +67,8 @@ target_include_directories(asthra_compiler
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/analysis>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/parser>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/codegen>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/compiler>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/compiler/codegen>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ai_api>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ai_linter>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ai_annotations>
@@ -75,7 +77,6 @@ target_include_directories(asthra_compiler
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/utils>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/diagnostics>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ast>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/compiler>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/fast_check>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ai_server>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/performance>

@@ -48,7 +48,7 @@ static AsthraTestResult test_single_annotation_in_function_context(AsthraTestCon
     // in extern function declarations, not regular function declarations.
     // This makes sense as FFI annotations are for foreign function interface.
     // We'll test this by expecting these to fail to parse.
-    
+
     const char *function_sources[] = {
         "pub fn test_function(param: #[borrowed] *const u8) -> i32 { }",
         "pub fn test_function(param: #[transfer_full] *mut u8) -> i32 { }"};
@@ -72,9 +72,9 @@ static AsthraTestResult test_single_annotation_in_function_context(AsthraTestCon
         ASTNode *func = parse_top_level_decl(parser);
 
         // FFI annotations in regular functions should fail to parse
-        if (!asthra_test_assert_null(context, func,
-                                    "FFI annotations should not be allowed in regular functions: %s",
-                                    function_sources[i])) {
+        if (!asthra_test_assert_null(
+                context, func, "FFI annotations should not be allowed in regular functions: %s",
+                function_sources[i])) {
             ast_free_node(func);
             parser_destroy(parser);
             lexer_destroy(lexer);
@@ -211,8 +211,8 @@ static AsthraTestResult test_annotation_in_complete_program_context(AsthraTestCo
  * Create SafeFFIAnnotation context integration test suite
  */
 AsthraTestSuite *create_safe_ffi_annotation_context_test_suite(void) {
-    AsthraTestSuite *suite =
-        asthra_test_suite_create("SafeFFIAnnotation Context Integration", "FFI annotations in various language contexts");
+    AsthraTestSuite *suite = asthra_test_suite_create(
+        "SafeFFIAnnotation Context Integration", "FFI annotations in various language contexts");
 
     if (!suite)
         return NULL;
@@ -223,11 +223,14 @@ AsthraTestSuite *create_safe_ffi_annotation_context_test_suite(void) {
 
     // Context integration tests
     asthra_test_suite_add_test(suite, "test_single_annotation_in_function_context",
-                               "FFI Annotations Rejected in Regular Functions", test_single_annotation_in_function_context);
+                               "FFI Annotations Rejected in Regular Functions",
+                               test_single_annotation_in_function_context);
     asthra_test_suite_add_test(suite, "test_single_annotation_in_extern_context",
-                               "Single Annotation in Extern Context", test_single_annotation_in_extern_context);
+                               "Single Annotation in Extern Context",
+                               test_single_annotation_in_extern_context);
     asthra_test_suite_add_test(suite, "test_annotation_in_complete_program_context",
-                               "Annotation in Complete Program Context", test_annotation_in_complete_program_context);
+                               "Annotation in Complete Program Context",
+                               test_annotation_in_complete_program_context);
 
     return suite;
 }

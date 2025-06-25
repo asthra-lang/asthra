@@ -8,5 +8,5 @@
 
 // Include the modular pattern parsing components
 #include "grammar_patterns_core.c"
-#include "grammar_patterns_enum.c" 
+#include "grammar_patterns_enum.c"
 #include "grammar_patterns_struct.c"

@@ -231,10 +231,8 @@ ASTHRA_TEST_DEFINE(args_function_can_index, ASTHRA_TEST_SEVERITY_HIGH) {
 }
 
 int main(void) {
-    AsthraTestFunction tests[] = {args_function_exists,
-                                  args_function_returns_string_slice,
-                                  args_function_no_parameters,
-                                  args_function_can_iterate,
+    AsthraTestFunction tests[] = {args_function_exists, args_function_returns_string_slice,
+                                  args_function_no_parameters, args_function_can_iterate,
                                   args_function_can_index};
 
     AsthraTestMetadata metadatas[] = {{.name = "args_function_exists",
@@ -274,8 +272,7 @@ int main(void) {
                                        .skip = false}};
 
     AsthraTestSuiteConfig config = asthra_test_suite_config_create(
-        "Args Function Semantic Tests",
-        "Tests for args() predeclared function");
+        "Args Function Semantic Tests", "Tests for args() predeclared function");
 
     AsthraTestResult result =
         asthra_test_run_suite(tests, metadatas, sizeof(tests) / sizeof(tests[0]), &config);

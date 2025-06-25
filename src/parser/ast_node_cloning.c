@@ -12,8 +12,8 @@
 
 #include "ast_node_cloning.h"
 #include "ast.h"
-#include "ast_node_creation.h"  // For ast_create_node
-#include "ast_node_list.h"      // For ast_node_list_clone_deep
+#include "ast_node_creation.h" // For ast_create_node
+#include "ast_node_list.h"     // For ast_node_list_clone_deep
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>

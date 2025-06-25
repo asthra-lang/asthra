@@ -203,22 +203,21 @@ AsthraTestResult test_symbol_table_creation(AsthraTestContext *context) {
 int main(void) {
     AsthraTestStatistics *stats = asthra_test_statistics_create();
 
-    AsthraTestSuiteConfig config = {
-        .name = "ELF Symbol Table Creation Test",
-        .description = "Test symbol table creation functionality",
-        .parallel_execution = false,
-        .stop_on_failure = false,
-        .verbose_output = true,
-        .json_output = false,
-        .default_timeout_ns = 10000000000ULL, // 10 seconds
-        .max_parallel_tests = 1,
-        .statistics = stats};
+    AsthraTestSuiteConfig config = {.name = "ELF Symbol Table Creation Test",
+                                    .description = "Test symbol table creation functionality",
+                                    .parallel_execution = false,
+                                    .stop_on_failure = false,
+                                    .verbose_output = true,
+                                    .json_output = false,
+                                    .default_timeout_ns = 10000000000ULL, // 10 seconds
+                                    .max_parallel_tests = 1,
+                                    .statistics = stats};
 
     AsthraTestFunction tests[] = {test_symbol_table_creation};
 
-    AsthraTestMetadata metadata[] = {
-        {"test_symbol_table_creation", __FILE__, __LINE__, "test_symbol_table_creation",
-         ASTHRA_TEST_SEVERITY_HIGH, 5000000000ULL, false, NULL}};
+    AsthraTestMetadata metadata[] = {{"test_symbol_table_creation", __FILE__, __LINE__,
+                                      "test_symbol_table_creation", ASTHRA_TEST_SEVERITY_HIGH,
+                                      5000000000ULL, false, NULL}};
 
     size_t test_count = sizeof(tests) / sizeof(tests[0]);
 

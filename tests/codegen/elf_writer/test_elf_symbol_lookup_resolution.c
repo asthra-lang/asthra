@@ -177,22 +177,22 @@ AsthraTestResult test_symbol_lookup_resolution(AsthraTestContext *context) {
 int main(void) {
     AsthraTestStatistics *stats = asthra_test_statistics_create();
 
-    AsthraTestSuiteConfig config = {
-        .name = "ELF Symbol Lookup and Resolution Test",
-        .description = "Test symbol lookup by name and resolution by index",
-        .parallel_execution = false,
-        .stop_on_failure = false,
-        .verbose_output = true,
-        .json_output = false,
-        .default_timeout_ns = 10000000000ULL, // 10 seconds
-        .max_parallel_tests = 1,
-        .statistics = stats};
+    AsthraTestSuiteConfig config = {.name = "ELF Symbol Lookup and Resolution Test",
+                                    .description =
+                                        "Test symbol lookup by name and resolution by index",
+                                    .parallel_execution = false,
+                                    .stop_on_failure = false,
+                                    .verbose_output = true,
+                                    .json_output = false,
+                                    .default_timeout_ns = 10000000000ULL, // 10 seconds
+                                    .max_parallel_tests = 1,
+                                    .statistics = stats};
 
     AsthraTestFunction tests[] = {test_symbol_lookup_resolution};
 
-    AsthraTestMetadata metadata[] = {
-        {"test_symbol_lookup_resolution", __FILE__, __LINE__, "test_symbol_lookup_resolution",
-         ASTHRA_TEST_SEVERITY_HIGH, 5000000000ULL, false, NULL}};
+    AsthraTestMetadata metadata[] = {{"test_symbol_lookup_resolution", __FILE__, __LINE__,
+                                      "test_symbol_lookup_resolution", ASTHRA_TEST_SEVERITY_HIGH,
+                                      5000000000ULL, false, NULL}};
 
     size_t test_count = sizeof(tests) / sizeof(tests[0]);
 

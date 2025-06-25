@@ -147,8 +147,8 @@ static AsthraTestResult test_parse_return_statements(AsthraTestContext *context)
  * Register all assignment and return tests
  */
 AsthraTestSuite *create_assignments_and_returns_test_suite(void) {
-    AsthraTestSuite *suite =
-        asthra_test_suite_create("Assignments and Returns Tests", "Assignment and return statement parsing testing");
+    AsthraTestSuite *suite = asthra_test_suite_create(
+        "Assignments and Returns Tests", "Assignment and return statement parsing testing");
 
     if (!suite)
         return NULL;

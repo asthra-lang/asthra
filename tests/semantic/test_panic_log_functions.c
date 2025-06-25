@@ -325,9 +325,9 @@ int main(void) {
                                        .timeout_ns = 0,
                                        .skip = false}};
 
-    AsthraTestSuiteConfig config = asthra_test_suite_config_create(
-        "Panic and Log Functions Semantic Tests",
-        "Tests for panic() and log() predeclared functions");
+    AsthraTestSuiteConfig config =
+        asthra_test_suite_config_create("Panic and Log Functions Semantic Tests",
+                                        "Tests for panic() and log() predeclared functions");
 
     AsthraTestResult result =
         asthra_test_run_suite(tests, metadatas, sizeof(tests) / sizeof(tests[0]), &config);

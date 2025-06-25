@@ -79,8 +79,8 @@ static AsthraTestResult test_parse_variable_declarations(AsthraTestContext *cont
  * Register all variable declaration tests
  */
 AsthraTestSuite *create_variable_declaration_test_suite(void) {
-    AsthraTestSuite *suite =
-        asthra_test_suite_create("Variable Declaration Tests", "Variable declaration parsing testing");
+    AsthraTestSuite *suite = asthra_test_suite_create("Variable Declaration Tests",
+                                                      "Variable declaration parsing testing");
 
     if (!suite)
         return NULL;

@@ -98,8 +98,8 @@ static AsthraTestResult test_mutual_exclusivity_at_parser_level(AsthraTestContex
                             validate_ffi_annotation_ast(annotation, FFI_BORROWED);
 
             if (!asthra_test_assert_bool(context, is_valid,
-                                    "If annotation parses, it should be valid: %s",
-                                    impossible_sources[i])) {
+                                         "If annotation parses, it should be valid: %s",
+                                         impossible_sources[i])) {
                 ast_free_node(annotation);
                 return ASTHRA_TEST_FAIL;
             }
@@ -135,10 +135,9 @@ static AsthraTestResult test_only_first_annotation_parsed(AsthraTestContext *con
 
         if (annotation) {
             // Verify that only the first annotation was parsed
-            if (!asthra_test_assert_bool(context,
-                                    validate_ffi_annotation_ast(annotation, test_cases[i].expected_type),
-                                    "Should parse only first annotation from: %s",
-                                    test_cases[i].source)) {
+            if (!asthra_test_assert_bool(
+                    context, validate_ffi_annotation_ast(annotation, test_cases[i].expected_type),
+                    "Should parse only first annotation from: %s", test_cases[i].source)) {
                 ast_free_node(annotation);
                 return ASTHRA_TEST_FAIL;
             }
@@ -157,8 +156,8 @@ static AsthraTestResult test_only_first_annotation_parsed(AsthraTestContext *con
  * Create SafeFFIAnnotation mutual exclusivity test suite
  */
 AsthraTestSuite *create_safe_ffi_annotation_exclusivity_test_suite(void) {
-    AsthraTestSuite *suite =
-        asthra_test_suite_create("SafeFFIAnnotation Mutual Exclusivity", "Parser enforcement of annotation exclusivity");
+    AsthraTestSuite *suite = asthra_test_suite_create(
+        "SafeFFIAnnotation Mutual Exclusivity", "Parser enforcement of annotation exclusivity");
 
     if (!suite)
         return NULL;
@@ -169,7 +168,8 @@ AsthraTestSuite *create_safe_ffi_annotation_exclusivity_test_suite(void) {
 
     // Safety validation tests
     asthra_test_suite_add_test(suite, "test_mutual_exclusivity_at_parser_level",
-                               "Mutual Exclusivity at Parser Level", test_mutual_exclusivity_at_parser_level);
+                               "Mutual Exclusivity at Parser Level",
+                               test_mutual_exclusivity_at_parser_level);
     asthra_test_suite_add_test(suite, "test_only_first_annotation_parsed",
                                "Only First Annotation Parsed", test_only_first_annotation_parsed);
 
