@@ -533,4 +533,6 @@ debug_*.astra
 CMAKE_*.md
 README-*.md
 
+prompter*.toml
+
 # End of .gitignore
