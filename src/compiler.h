@@ -110,6 +110,7 @@ struct AsthraCompilerOptions {
     bool emit_llvm;      // Deprecated - LLVM is now always used
     bool emit_asm;       // Deprecated - use output_format instead
     bool no_stdlib;
+    bool coverage;       // Enable coverage instrumentation
     
     // Dynamic path and library management using flexible arrays
     struct AsthraArgumentList *include_paths;

@@ -1,0 +1,13 @@
+// Coverage demonstration example
+// Shows how to use the --coverage flag for code coverage instrumentation
+
+package main;
+
+pub fn main(none) -> i32 {
+    // This simple example demonstrates coverage instrumentation
+    // Compile with: asthra --coverage -o coverage_demo coverage_demo.asthra
+    // Run with: LLVM_PROFILE_FILE=coverage_demo.profraw ./coverage_demo
+    // Generate report with: llvm-cov show ./coverage_demo -instr-profile=coverage_demo.profdata
+    
+    return 0;
+}

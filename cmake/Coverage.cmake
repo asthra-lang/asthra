@@ -39,11 +39,21 @@ if(ENABLE_COVERAGE AND NOT WIN32)
             set(COVERAGE_COMPILE_FLAGS -fprofile-instr-generate -fcoverage-mapping)
             set(COVERAGE_LINK_FLAGS -fprofile-instr-generate -fcoverage-mapping)
             
-            find_program(LLVM_PROFDATA_EXECUTABLE llvm-profdata)
-            find_program(LLVM_COV_EXECUTABLE llvm-cov)
+            # Try to find LLVM tools with version suffixes first
+            find_program(LLVM_PROFDATA_EXECUTABLE 
+                NAMES llvm-profdata-20 llvm-profdata-19 llvm-profdata-18 llvm-profdata
+                HINTS ${LLVM_TOOLS_BINARY_DIR} /usr/bin /usr/local/bin
+            )
+            find_program(LLVM_COV_EXECUTABLE 
+                NAMES llvm-cov-20 llvm-cov-19 llvm-cov-18 llvm-cov
+                HINTS ${LLVM_TOOLS_BINARY_DIR} /usr/bin /usr/local/bin
+            )
             
             if(NOT LLVM_COV_EXECUTABLE)
                 message(WARNING "llvm-cov not found, coverage reports will not be available")
+            else()
+                message(STATUS "Found llvm-cov: ${LLVM_COV_EXECUTABLE}")
+                message(STATUS "Found llvm-profdata: ${LLVM_PROFDATA_EXECUTABLE}")
             endif()
         endif()
         
@@ -85,22 +95,39 @@ if(ENABLE_COVERAGE AND NOT WIN32)
             elseif(CMAKE_C_COMPILER_ID STREQUAL "Clang" AND LLVM_PROFDATA_EXECUTABLE AND LLVM_COV_EXECUTABLE)
                 add_custom_target(coverage-${module}
                     # Clean previous profile data
-                    COMMAND ${CMAKE_COMMAND} -E remove -f default.profraw default.profdata
+                    COMMAND ${CMAKE_COMMAND} -E remove -f ${module}.profraw ${module}.profdata
                     
                     # Run tests for this module
-                    COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE=default.profraw
+                    COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE=${module}.profraw
                             ${CMAKE_CTEST_COMMAND} --output-on-failure -L ${module}
                     
                     # Merge profile data
-                    COMMAND ${LLVM_PROFDATA_EXECUTABLE} merge -sparse default.profraw -o default.profdata
+                    COMMAND ${LLVM_PROFDATA_EXECUTABLE} merge -sparse ${module}.profraw -o ${module}.profdata
                     
-                    # Generate coverage report
+                    # Generate HTML coverage report
                     COMMAND ${LLVM_COV_EXECUTABLE} show $<TARGET_FILE:asthra>
-                            -instr-profile=default.profdata
+                            -instr-profile=${module}.profdata
                             -format=html
                             -output-dir=${module_coverage_dir}/html
-                            -region-coverage-lt=${COVERAGE_THRESHOLD}
+                            -show-line-counts-or-regions
+                            -show-expansions
+                            -show-instantiations
+                            -Xdemangler=c++filt
+                            -path-equivalence="${CMAKE_SOURCE_DIR},."
                             ${CMAKE_SOURCE_DIR}/src/${module}
+                    
+                    # Generate text summary
+                    COMMAND ${LLVM_COV_EXECUTABLE} report $<TARGET_FILE:asthra>
+                            -instr-profile=${module}.profdata
+                            ${CMAKE_SOURCE_DIR}/src/${module}
+                            > ${module_coverage_dir}/summary.txt
+                    
+                    # Generate JSON export for further processing
+                    COMMAND ${LLVM_COV_EXECUTABLE} export $<TARGET_FILE:asthra>
+                            -instr-profile=${module}.profdata
+                            -format=text
+                            ${CMAKE_SOURCE_DIR}/src/${module}
+                            > ${module_coverage_dir}/coverage.json
                     
                     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
                     COMMENT "Generating coverage report for ${module}"
@@ -175,31 +202,90 @@ if(ENABLE_COVERAGE AND NOT WIN32)
             )
             
         elseif(CMAKE_C_COMPILER_ID STREQUAL "Clang" AND LLVM_PROFDATA_EXECUTABLE AND LLVM_COV_EXECUTABLE)
-            # Full coverage report for Clang
+            # Full coverage report for Clang/LLVM
             add_custom_target(coverage
-                COMMAND ${CMAKE_COMMAND} -E remove -f default.profraw default.profdata
-                COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE=default.profraw
+                COMMAND ${CMAKE_COMMAND} -E remove -f asthra_full.profraw asthra_full.profdata
+                COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE=asthra_full.profraw
                         ${CMAKE_CTEST_COMMAND} --output-on-failure --parallel 4
-                COMMAND ${LLVM_PROFDATA_EXECUTABLE} merge -sparse default.profraw -o default.profdata
+                COMMAND ${LLVM_PROFDATA_EXECUTABLE} merge -sparse asthra_full.profraw -o asthra_full.profdata
+                
+                # Generate HTML report with full details
                 COMMAND ${LLVM_COV_EXECUTABLE} show $<TARGET_FILE:asthra>
-                        -instr-profile=default.profdata
+                        -instr-profile=asthra_full.profdata
                         -format=html
                         -output-dir=${COVERAGE_OUTPUT_DIR}/html
-                        "-ignore-filename-regex=(tests/|third-party/)"
+                        -show-line-counts-or-regions
+                        -show-expansions
+                        -show-instantiations
+                        -Xdemangler=c++filt
+                        -path-equivalence="${CMAKE_SOURCE_DIR},."
+                        "-ignore-filename-regex=(tests/|third-party/|build/)"
+                
+                # Generate text report summary
                 COMMAND ${LLVM_COV_EXECUTABLE} report $<TARGET_FILE:asthra>
-                        -instr-profile=default.profdata
-                        "-ignore-filename-regex=(tests/|third-party/)"
+                        -instr-profile=asthra_full.profdata
+                        "-ignore-filename-regex=(tests/|third-party/|build/)"
+                        -show-region-summary=false
+                        > ${COVERAGE_OUTPUT_DIR}/summary.txt
+                
+                # Generate JSON export for CI/CD integration
+                COMMAND ${LLVM_COV_EXECUTABLE} export $<TARGET_FILE:asthra>
+                        -instr-profile=asthra_full.profdata
+                        -format=lcov
+                        "-ignore-filename-regex=(tests/|third-party/|build/)"
+                        > ${COVERAGE_OUTPUT_DIR}/coverage.lcov
+                
+                # Display summary
+                COMMAND ${CMAKE_COMMAND} -E cat ${COVERAGE_OUTPUT_DIR}/summary.txt
+                
                 WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-                COMMENT "Generating complete code coverage report"
+                COMMENT "Generating complete code coverage report with llvm-cov"
             )
             
             # Coverage summary
             add_custom_target(coverage-summary
                 COMMAND ${LLVM_COV_EXECUTABLE} report $<TARGET_FILE:asthra>
-                        -instr-profile=default.profdata
-                        "-ignore-filename-regex=(tests/|third-party/)"
+                        -instr-profile=asthra_full.profdata
+                        "-ignore-filename-regex=(tests/|third-party/|build/)"
+                        -show-functions=true
+                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                COMMENT "Display detailed coverage summary"
+            )
+            
+            # Coverage threshold check with llvm-cov
+            add_custom_target(coverage-check-llvm
+                COMMAND ${CMAKE_COMMAND} -E echo "Checking coverage against threshold: ${COVERAGE_THRESHOLD}%"
+                COMMAND ${CMAKE_COMMAND} -D LLVM_COV_EXECUTABLE=${LLVM_COV_EXECUTABLE}
+                        -D PROFDATA_FILE=asthra_full.profdata
+                        -D THRESHOLD=${COVERAGE_THRESHOLD}
+                        -D TARGET_FILE=$<TARGET_FILE:asthra>
+                        -P ${CMAKE_SOURCE_DIR}/cmake/CheckCoverageThreshold.cmake
+                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
                 DEPENDS coverage
-                COMMENT "Display coverage summary"
+                COMMENT "Check coverage meets threshold of ${COVERAGE_THRESHOLD}%"
+            )
+            
+            # Export coverage for different formats
+            add_custom_target(coverage-export-lcov
+                COMMAND ${LLVM_COV_EXECUTABLE} export $<TARGET_FILE:asthra>
+                        -instr-profile=asthra_full.profdata
+                        -format=lcov
+                        "-ignore-filename-regex=(tests/|third-party/|build/)"
+                        > ${COVERAGE_OUTPUT_DIR}/coverage.lcov
+                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                DEPENDS coverage
+                COMMENT "Export coverage in LCOV format"
+            )
+            
+            add_custom_target(coverage-export-json
+                COMMAND ${LLVM_COV_EXECUTABLE} export $<TARGET_FILE:asthra>
+                        -instr-profile=asthra_full.profdata
+                        -format=text
+                        "-ignore-filename-regex=(tests/|third-party/|build/)"
+                        > ${COVERAGE_OUTPUT_DIR}/coverage.json
+                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                DEPENDS coverage
+                COMMENT "Export coverage in JSON format"
             )
         endif()
         

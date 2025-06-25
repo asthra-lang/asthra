@@ -40,6 +40,7 @@ typedef struct {
     const char *features;           // CPU features (e.g., "+avx2,+fma")
     bool debug_info;
     bool verbose;
+    bool coverage;                  // Enable coverage instrumentation
     
     // Tool-specific options
     bool use_integrated_as;         // Use clang integrated assembler
@@ -207,6 +208,61 @@ AsthraLLVMToolResult asthra_llvm_compile_pipeline(const char *ir_file,
                                                   const char *output_file,
                                                   AsthraOutputFormat format,
                                                   const AsthraCompilerOptions *options);
+
+// =============================================================================
+// COVERAGE SUPPORT
+// =============================================================================
+
+/**
+ * Check if coverage tools (llvm-cov, llvm-profdata) are available
+ */
+bool asthra_llvm_coverage_available(void);
+
+/**
+ * Merge raw profile data into indexed format
+ * 
+ * @param profraw_files Array of .profraw file paths
+ * @param num_files Number of profraw files
+ * @param output_profdata Output .profdata file path
+ * @return Result of merge operation
+ */
+AsthraLLVMToolResult asthra_llvm_merge_profile_data(const char **profraw_files,
+                                                    size_t num_files,
+                                                    const char *output_profdata);
+
+/**
+ * Generate coverage report in various formats
+ * 
+ * @param executable Path to instrumented executable
+ * @param profdata Path to indexed profile data
+ * @param format Output format ("html", "text", "lcov", "json")
+ * @param output_path Output file/directory path
+ * @param source_filters Array of source path filters (can be NULL)
+ * @param num_filters Number of source filters
+ * @return Result of report generation
+ */
+AsthraLLVMToolResult asthra_llvm_coverage_report(const char *executable,
+                                                 const char *profdata,
+                                                 const char *format,
+                                                 const char *output_path,
+                                                 const char **source_filters,
+                                                 size_t num_filters);
+
+/**
+ * Get coverage summary statistics
+ * 
+ * @param executable Path to instrumented executable
+ * @param profdata Path to indexed profile data
+ * @param[out] line_coverage Line coverage percentage
+ * @param[out] function_coverage Function coverage percentage
+ * @param[out] region_coverage Region coverage percentage
+ * @return true if statistics retrieved successfully
+ */
+bool asthra_llvm_coverage_summary(const char *executable,
+                                 const char *profdata,
+                                 double *line_coverage,
+                                 double *function_coverage,
+                                 double *region_coverage);
 
 #ifdef __cplusplus
 }

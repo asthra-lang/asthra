@@ -44,6 +44,7 @@ static const win_option_t win_long_options[] = {
     {"library", true, 'l'},
     {"test-mode", false, 1003},
     {"version", false, 1004},
+    {"coverage", false, 1006},
     {"help", false, 'h'},
     {NULL, false, 0}
 };
@@ -130,6 +131,7 @@ void cli_print_usage(const char *program_name) {
     printf("  -I, --include <path>    Add include path\n");
     printf("  -L, --library-path <path> Add library search path\n");
     printf("  -l, --library <name>    Link library\n");
+    printf("  --coverage              Enable coverage instrumentation\n");
     printf("  --test-mode             Run in test mode\n");
     printf("  --version               Show version information\n");
     printf("  -h, --help              Show this help message\n");
@@ -320,6 +322,7 @@ int cli_parse_arguments(int argc, char *argv[], CliOptions *options) {
         {.name = "library",      .has_arg = required_argument, .flag = 0, .val = 'l'},
         {.name = "test-mode",    .has_arg = no_argument,       .flag = 0, .val = 1003},
         {.name = "version",      .has_arg = no_argument,       .flag = 0, .val = 1004},
+        {.name = "coverage",     .has_arg = no_argument,       .flag = 0, .val = 1006},
         {.name = "help",         .has_arg = no_argument,       .flag = 0, .val = 'h'},
         {0, 0, 0, 0}
     };
@@ -411,6 +414,9 @@ int cli_parse_arguments(int argc, char *argv[], CliOptions *options) {
                 options->show_version = true;
                 options->exit_code = 0;
                 goto cleanup_and_exit;
+            case 1006: // --coverage
+                options->compiler_options.coverage = true;
+                break;
             case 'h':
                 options->show_help = true;
                 options->exit_code = 0;

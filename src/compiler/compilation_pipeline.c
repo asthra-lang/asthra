@@ -184,6 +184,13 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file, cons
     if (false) {
         // For C backend, generate temporary file for compilation
         backend_output_file = strdup("temp_asthra_output.c");
+    } else if (ctx->options.backend_type == ASTHRA_BACKEND_LLVM_IR && 
+               ctx->options.coverage && 
+               ctx->options.output_format == ASTHRA_FORMAT_DEFAULT) {
+        // For LLVM backend with coverage, always generate a temporary .ll file first
+        char temp_name[256];
+        snprintf(temp_name, sizeof(temp_name), "%s.tmp.ll", output_file);
+        backend_output_file = strdup(temp_name);
     } else {
         // For other backends, use the final output file directly
         backend_output_file = asthra_backend_get_output_filename(ctx->options.backend_type, 
