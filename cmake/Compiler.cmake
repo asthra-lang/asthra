@@ -10,17 +10,27 @@ else()
     message(FATAL_ERROR "Unsupported compiler: ${CMAKE_C_COMPILER_ID}. Asthra requires Clang/LLVM.")
 endif()
 
-# C17 feature detection
+# C23 feature detection
 include(CheckCCompilerFlag)
 if(NOT MSVC)
-    check_c_compiler_flag("-std=c17" COMPILER_SUPPORTS_C17)
-    if(COMPILER_SUPPORTS_C17)
-        set(CMAKE_C_STANDARD 17)
+    check_c_compiler_flag("-std=c23" COMPILER_SUPPORTS_C23)
+    if(COMPILER_SUPPORTS_C23)
+        set(CMAKE_C_STANDARD 23)
+        message(STATUS "Using C23 standard")
     else()
-        message(FATAL_ERROR "Compiler does not support C17")
+        # Fallback to C17 if C23 not supported
+        check_c_compiler_flag("-std=c17" COMPILER_SUPPORTS_C17)
+        if(COMPILER_SUPPORTS_C17)
+            set(CMAKE_C_STANDARD 17)
+            message(STATUS "C23 not supported, falling back to C17")
+        else()
+            message(FATAL_ERROR "Compiler does not support C17 or C23")
+        endif()
     endif()
 else()
-    set(CMAKE_C_STANDARD 17)
+    # MSVC: Try C23, fallback to C17
+    set(CMAKE_C_STANDARD 23)
+    message(STATUS "MSVC: Attempting C23 support")
 endif()
 
 # Common warning flags

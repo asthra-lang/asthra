@@ -5,8 +5,8 @@ project(asthra
     DESCRIPTION "Asthra Programming Language - AI-Friendly Systems Programming"
 )
 
-# Set C standard
-set(CMAKE_C_STANDARD 17)
+# Set C23 standard globally (with C17 fallback)
+set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
