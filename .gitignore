@@ -21,6 +21,10 @@ RelWithDebInfo/
 *.slo
 *.ko
 
+# LLVM intermediate files
+*.ll
+*.bc
+
 # Shared libraries
 *.so
 *.so.*
