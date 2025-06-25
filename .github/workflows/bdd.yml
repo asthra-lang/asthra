@@ -15,13 +15,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Linux
+          # Linux - Clang only
           - platform: linux
             os: ubuntu-22.04
-            cc: gcc
-            cxx: g++
+            cc: clang
+            cxx: clang++
             
-          # macOS
+          # macOS - Clang only
           - platform: macos
             os: macos-14
             cc: clang

@@ -32,7 +32,7 @@ The Asthra compiler uses a modern CMake build system designed for cross-platform
 ### Prerequisites
 
 - **CMake 3.20+**: Modern CMake with good C support
-- **C Compiler**: Clang or MSVC
+- **C Compiler**: Clang with LLVM
 - **json-c**: Optional system library (will download if not found)
 
 ### Basic Build
@@ -87,15 +87,15 @@ graph TD
 **Key Functionality**:
 - **Operating System Detection**: Windows, macOS, Linux with automatic configuration
 - **Architecture Detection**: x86_64, ARM64, ARM with optimizations
-- **Compiler Detection**: MSVC, Clang with feature detection
+- **Compiler Detection**: Clang with LLVM feature detection
 - **Path Configuration**: Platform-appropriate install paths and file extensions
 - **Capability Detection**: SIMD, threading, atomics support
 
 **Key Variables**:
 ```cmake
-ASTHRA_PLATFORM        # windows, macos, linux
-ASTHRA_ARCH           # x64, arm64, arm, x86
-ASTHRA_COMPILER_TYPE  # msvc, clang
+ASTHRA_PLATFORM        # macos, linux
+ASTHRA_ARCH           # x64, arm64, arm
+ASTHRA_COMPILER_TYPE  # clang
 ASTHRA_HAS_SIMD       # TRUE/FALSE for SIMD support
 ASTHRA_HAS_THREADS    # TRUE/FALSE for threading
 ```
@@ -119,12 +119,6 @@ set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG -march=native")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG")
 ```
 
-**MSVC Configuration**:
-```cmake
-set(CMAKE_C_FLAGS "/std:c17 /W4 /WX")
-set(CMAKE_C_FLAGS_DEBUG "/Od /Zi /DDEBUG")
-set(CMAKE_C_FLAGS_RELEASE "/O2 /DNDEBUG")
-```
 
 ### Dependency Management (`cmake/ThirdParty.cmake`)
 
@@ -386,17 +380,6 @@ CLion has native CMake support:
 
 ## Cross-Platform Builds
 
-### Windows (MSVC)
-```cmd
-cmake -B build -G "Visual Studio 16 2019"
-cmake --build build --config Release
-```
-
-### Windows (MinGW)
-```bash
-cmake -B build -G "MinGW Makefiles"
-cmake --build build -j$(nproc)
-```
 
 ### macOS
 ```bash
@@ -456,16 +439,16 @@ sudo yum install pkgconfig json-c-devel
 ```
 No CMAKE_C_COMPILER could be found
 ```
-**Solution**: Install a C compiler:
+**Solution**: Install Clang:
 ```bash
 # Ubuntu/Debian
-sudo apt-get install build-essential
+sudo apt-get install clang llvm
 
 # CentOS/RHEL
-sudo yum groupinstall "Development Tools"
+sudo yum install clang llvm-devel
 
 # macOS
-xcode-select --install
+xcode-select --install  # Includes Clang
 ```
 
 ### Build Failures

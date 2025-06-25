@@ -154,9 +154,7 @@ if (result != 0) {
 
 The GitHub Actions CI tests on:
 - Linux with Clang (Ubuntu, strict warnings)
-- Linux with Clang (Ubuntu)
 - macOS with Clang (Apple Silicon and Intel)
-- Windows with MSVC (planned)
 
 ## Checklist for New Code
 
@@ -164,7 +162,6 @@ Before submitting platform-specific code:
 
 - [ ] Include `platform.h` before any platform-specific headers
 - [ ] Guard all POSIX headers with `#if ASTHRA_PLATFORM_UNIX`
-- [ ] Guard all Windows headers with `#if ASTHRA_PLATFORM_WINDOWS`
 - [ ] Check all `fread()`/`fwrite()` return values
 - [ ] Handle `system()` return values correctly for each platform
 - [ ] Provide fallbacks for platform-specific features

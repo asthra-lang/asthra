@@ -32,7 +32,7 @@ Before writing BDD tests, ensure you have:
 
 1. **Build Tools**
    - CMake 3.20 or higher
-   - C17-compatible compiler (Clang 14+ or MSVC 2019+)
+   - C17-compatible compiler (Clang 14+ with LLVM)
    - Make or Ninja build system
 
 2. **Optional Dependencies**
@@ -589,15 +589,12 @@ ast_node_free(parse.ast);
 
 #### Linux
 - Ensure Clang 14+ is installed
-- Install development headers: `sudo apt-get install build-essential`
+- Install development headers: `sudo apt-get install clang llvm libc6-dev`
 
 #### macOS
 - Use Homebrew for dependencies
 - Ensure Xcode Command Line Tools are installed: `xcode-select --install`
 
-#### Windows
-- BDD tests currently not supported on Windows
-- Use WSL2 for Linux-based testing
 
 ### Getting Help
 

@@ -1,32 +1,93 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: false
 ---
-# Testing and Benchmarking Standards for Asthra
+# Testing and Benchmarking Standards for Asthra (C23 + LLVM-Only)
 
 ## Overview
 
-This rule defines comprehensive testing and benchmarking standards for the Asthra programming language project. Given the project's complexity and performance requirements, rigorous testing is essential for maintaining code quality and ensuring reliable performance characteristics.
+This rule defines comprehensive testing and benchmarking standards for the Asthra programming language project using C23 standard with Clang/LLVM toolchain exclusively. Given the project's performance requirements and modern C23 features, rigorous testing ensures code quality and reliable performance characteristics.
+
+## Toolchain Requirements
+
+### Compiler and Tools
+- **Compiler**: Clang 16+ (C23 support required)
+- **Backend**: LLVM IR generation only
+- **Build System**: CMake with C23 standard
+- **Sanitizers**: Clang's AddressSanitizer, ThreadSanitizer, UBSanitizer
+- **Static Analysis**: Clang Static Analyzer, clang-tidy
+- **Profiling**: LLVM profiling tools (llvm-profdata, llvm-cov)
+
+### C23 Feature Testing
+
+**LEVERAGE** modern C23 features in tests:
+
+```c
+#include "test_framework.h"
+#include <stdbit.h>
+
+// Use C23 keywords and features
+TEST_CASE("c23_features_validation") {
+    // Native bool, true, false (no stdbool.h needed)
+    bool success = true;
+    ASSERT_TRUE(success);
+    
+    // Static assertions without message
+    static_assert(sizeof(size_t) >= 4);
+    static_assert(sizeof(void*) >= 4, "Pointer size requirement");
+    
+    // constexpr for compile-time constants
+    constexpr int MAX_TOKENS = 1024;
+    constexpr size_t BUFFER_SIZE = MAX_TOKENS * sizeof(AsthraToken);
+    
+    // Binary literals with digit separators
+    enum TokenFlags {
+        TOKEN_KEYWORD    = 0b0000'0001,
+        TOKEN_OPERATOR   = 0b0000'0010,
+        TOKEN_LITERAL    = 0b0000'0100,
+        TOKEN_IDENTIFIER = 0b0000'1000
+    };
+    
+    // typeof for type deduction
+    int sample = 42;
+    typeof(sample) another = 84;
+    ASSERT_EQ(sizeof(sample), sizeof(another));
+    
+    // nullptr instead of NULL
+    void *ptr = nullptr;
+    ASSERT_NULL(ptr);
+}
+```
 
 ## Test Framework Architecture
 
-### Core Test Framework (`test_framework.h`)
+### Core Test Framework with C23 Enhancements
 
-**USE** the established test framework for all testing:
+**USE** modern C23 features in the test framework:
 
 ```c
 #include "test_framework.h"
 
-// Basic test structure
+// Function attributes for better diagnostics
+[[nodiscard]] static inline bool setup_test_environment(void) {
+    return asthra_runtime_initialize();
+}
+
+[[maybe_unused]] static void debug_test_state(void) {
+    // Debug helper that may not be used in all builds
+}
+
+// Basic test structure with C23 features
 TEST_CASE("descriptive_test_name") {
-    // Setup phase
-    AsthraResult result = {0};
+    // Setup phase with constexpr
+    constexpr size_t TEST_BUFFER_SIZE = 256;
+    char buffer[TEST_BUFFER_SIZE] = {};  // C23 empty initializer
     
     // Test execution
-    result = function_under_test();
+    [[nodiscard]] AsthraResult result = function_under_test();
     
-    // Assertions
+    // C23 enhanced assertions
     ASSERT_TRUE(result.success);
     ASSERT_EQ(result.error_code, ASTHRA_ERROR_NONE);
     ASSERT_NOT_NULL(result.data);
@@ -40,345 +101,328 @@ TEST_SUITE("component_name") {
     RUN_TEST(test_basic_functionality);
     RUN_TEST(test_error_conditions);
     RUN_TEST(test_edge_cases);
-    RUN_TEST(test_performance_characteristics);
+    RUN_TEST(test_llvm_integration);
 }
 ```
 
-### Test Categories
+### LLVM-Specific Testing
 
-**ORGANIZE** tests into these categories:
+**VERIFY** LLVM IR generation and optimization:
 
-1. **Unit Tests**: Individual function/component testing
-2. **Integration Tests**: Component interaction testing
-3. **Performance Tests**: Benchmarking and performance validation
-4. **Memory Tests**: Memory safety and leak detection
-5. **Concurrency Tests**: Thread safety and race condition detection
-6. **Cross-Platform Tests**: Platform-specific behavior validation
+```c
+TEST_CASE("llvm_ir_generation") {
+    const char *source_code = "let x: i32 = 42;";
+    
+    // Parse and generate LLVM IR
+    AsthraCompileResult result = asthra_compile_to_llvm_ir(source_code);
+    ASSERT_TRUE(result.success);
+    ASSERT_NOT_NULL(result.llvm_ir);
+    
+    // Verify LLVM IR contains expected patterns
+    ASSERT_STRCONTAINS(result.llvm_ir, "i32 42");
+    ASSERT_STRCONTAINS(result.llvm_ir, "alloca");
+    
+    // Validate IR with LLVM verifier
+    bool ir_valid = llvm_verify_module(result.llvm_module);
+    ASSERT_TRUE(ir_valid);
+    
+    asthra_compile_result_destroy(&result);
+}
+
+TEST_CASE("llvm_optimization_verification") {
+    const char *source_code = "let x = 1 + 2 + 3;";
+    
+    // Compile with optimization
+    AsthraCompileOptions opts = {
+        .optimization_level = ASTHRA_OPT_AGGRESSIVE,
+        .emit_llvm_ir = true
+    };
+    
+    AsthraCompileResult result = asthra_compile_with_options(source_code, &opts);
+    ASSERT_TRUE(result.success);
+    
+    // Verify constant folding occurred
+    ASSERT_STRCONTAINS(result.llvm_ir, "i32 6");  // Should be folded to 6
+    ASSERT_STRNOTCONTAINS(result.llvm_ir, "add");  // No add instructions
+    
+    asthra_compile_result_destroy(&result);
+}
+```
 
 ## Unit Testing Standards
 
-### 1. Function-Level Testing
+### 1. Function-Level Testing with C23
 
-**EVERY** public function must have corresponding tests:
+**EVERY** public function must have corresponding tests using C23 features:
 
 ```c
-// Test normal operation
+// Test normal operation with modern C features
 TEST_CASE("slice_create_normal_operation") {
-    const char *test_string = "Hello, World!";
+    constexpr size_t TEST_STRING_LEN = 13;
+    const char test_string[] = "Hello, World!";
+    
     AsthraSlice slice = asthra_slice_from_string(test_string);
     
     ASSERT_NOT_NULL(slice.ptr);
-    ASSERT_EQ(slice.len, 13);
+    ASSERT_EQ(slice.len, TEST_STRING_LEN);
     ASSERT_EQ(slice.element_size, sizeof(char));
     ASSERT_EQ(slice.ownership, ASTHRA_OWNERSHIP_BORROWED);
     ASSERT_FALSE(slice.is_mutable);
     
-    // Verify content
-    ASSERT_STREQ((char*)slice.ptr, test_string);
+    // Verify content with typeof
+    typeof(test_string[0]) *content = (typeof(test_string[0])*)slice.ptr;
+    ASSERT_STREQ(content, test_string);
 }
 
-// Test error conditions
+// Test error conditions with nullptr
 TEST_CASE("slice_create_null_input") {
-    AsthraSlice slice = asthra_slice_from_string(NULL);
+    AsthraSlice slice = asthra_slice_from_string(nullptr);
     
     ASSERT_NULL(slice.ptr);
     ASSERT_EQ(slice.len, 0);
     ASSERT_EQ(slice.element_size, 0);
 }
 
-// Test edge cases
-TEST_CASE("slice_create_empty_string") {
-    AsthraSlice slice = asthra_slice_from_string("");
+// Test with binary constants and bit operations
+TEST_CASE("token_flag_operations") {
+    // Use C23 binary literals
+    constexpr uint32_t KEYWORD_FLAG = 0b0001;
+    constexpr uint32_t OPERATOR_FLAG = 0b0010;
+    constexpr uint32_t COMBINED_FLAGS = KEYWORD_FLAG | OPERATOR_FLAG;
     
-    ASSERT_NOT_NULL(slice.ptr);
-    ASSERT_EQ(slice.len, 0);
-    ASSERT_EQ(slice.element_size, sizeof(char));
+    // Use stdbit.h functions
+    ASSERT_EQ(stdc_popcount(COMBINED_FLAGS), 2);
+    ASSERT_TRUE(stdc_has_single_bit(KEYWORD_FLAG));
+    ASSERT_FALSE(stdc_has_single_bit(COMBINED_FLAGS));
 }
 ```
 
-### 2. Error Path Testing
+### 2. Error Path Testing with Attributes
 
-**ALWAYS** test error conditions and edge cases:
+**ALWAYS** test error conditions using function attributes:
 
 ```c
+[[nodiscard]] static AsthraResult simulate_memory_failure(void) {
+    return (AsthraResult){
+        .success = false,
+        .error_code = ASTHRA_ERROR_OUT_OF_MEMORY,
+        .data = nullptr
+    };
+}
+
 TEST_CASE("memory_allocation_failure_handling") {
-    // Simulate memory pressure
-    size_t large_size = SIZE_MAX / 2;
-    AsthraResult result = asthra_allocate_memory(large_size);
+    AsthraResult result = simulate_memory_failure();
     
     ASSERT_FALSE(result.success);
     ASSERT_EQ(result.error_code, ASTHRA_ERROR_OUT_OF_MEMORY);
     ASSERT_NULL(result.data);
 }
 
-TEST_CASE("parser_invalid_syntax_handling") {
-    const char *invalid_code = "let x = ;";  // Missing value
-    AsthraParseResult result = asthra_parse_string(invalid_code);
+[[deprecated("Use new parser API")]]
+static AsthraParseResult old_parse_function(const char *code) {
+    // Legacy parser implementation
+    return (AsthraParseResult){.success = false};
+}
+
+TEST_CASE("deprecated_api_warning_test") {
+    // This should generate a compiler warning
+    const char *invalid_code = "let x = ;";
+    AsthraParseResult result = old_parse_function(invalid_code);
     
     ASSERT_FALSE(result.success);
-    ASSERT_EQ(result.error.type, ASTHRA_PARSE_ERROR_SYNTAX);
-    ASSERT_NOT_NULL(result.error.message);
-    ASSERT_GT(result.error.line, 0);
-    ASSERT_GT(result.error.column, 0);
 }
 ```
 
-### 3. Boundary Testing
+## Performance Testing with LLVM Tools
 
-**TEST** boundary conditions and limits:
+### 1. Benchmark Framework with C23
 
-```c
-TEST_CASE("slice_boundary_conditions") {
-    // Test maximum size slice
-    size_t max_elements = SIZE_MAX / sizeof(int);
-    AsthraSlice slice = asthra_slice_create(sizeof(int), max_elements);
-    
-    if (slice.ptr != NULL) {  // May fail on memory-constrained systems
-        ASSERT_EQ(slice.cap, max_elements);
-        ASSERT_EQ(slice.element_size, sizeof(int));
-        asthra_slice_destroy(&slice);
-    }
-    
-    // Test zero-size slice
-    AsthraSlice zero_slice = asthra_slice_create(sizeof(int), 0);
-    ASSERT_EQ(zero_slice.len, 0);
-    ASSERT_EQ(zero_slice.cap, 0);
-}
-```
-
-## Integration Testing Standards
-
-### 1. Component Interaction Testing
-
-**VERIFY** that components work together correctly:
-
-```c
-TEST_CASE("parser_to_codegen_integration") {
-    const char *source_code = "let x: i32 = 42;";
-    
-    // Parse source code
-    AsthraParseResult parse_result = asthra_parse_string(source_code);
-    ASSERT_TRUE(parse_result.success);
-    ASSERT_NOT_NULL(parse_result.ast);
-    
-    // Generate code
-    AsthraCodegenResult codegen_result = asthra_codegen_from_ast(parse_result.ast);
-    ASSERT_TRUE(codegen_result.success);
-    ASSERT_NOT_NULL(codegen_result.bytecode);
-    
-    // Verify generated code properties
-    ASSERT_GT(codegen_result.bytecode_size, 0);
-    
-    // Cleanup
-    asthra_ast_destroy(parse_result.ast);
-    asthra_bytecode_destroy(codegen_result.bytecode);
-}
-```
-
-### 2. Runtime Integration Testing
-
-**TEST** runtime system integration:
-
-```c
-TEST_CASE("gc_integration_with_allocator") {
-    // Allocate objects that should be GC-managed
-    void *obj1 = asthra_gc_alloc(sizeof(AsthraObject));
-    void *obj2 = asthra_gc_alloc(sizeof(AsthraObject));
-    
-    ASSERT_NOT_NULL(obj1);
-    ASSERT_NOT_NULL(obj2);
-    
-    // Create references
-    asthra_gc_add_root(obj1);
-    asthra_gc_add_reference(obj1, obj2);
-    
-    // Force garbage collection
-    size_t objects_before = asthra_gc_get_object_count();
-    asthra_gc_collect();
-    size_t objects_after = asthra_gc_get_object_count();
-    
-    // Verify GC behavior
-    ASSERT_LE(objects_after, objects_before);
-    
-    // Cleanup
-    asthra_gc_remove_root(obj1);
-}
-```
-
-## Performance Testing Standards
-
-### 1. Benchmark Framework Usage
-
-**USE** the established benchmark framework:
+**USE** C23 features for cleaner benchmarks:
 
 ```c
 #include "test_benchmark_framework.h"
+#include <stdbit.h>
 
-BENCHMARK("slice_creation_performance") {
-    const size_t iterations = 100000;
-    const size_t element_count = 1000;
+BENCHMARK("slice_creation_performance_c23") {
+    constexpr size_t ITERATIONS = 100'000;  // Digit separator
+    constexpr size_t ELEMENT_COUNT = 1'000;
     
     BENCHMARK_START();
     
-    for (size_t i = 0; i < iterations; i++) {
-        AsthraSlice slice = asthra_slice_create(sizeof(int), element_count);
+    for (size_t i = 0; i < ITERATIONS; i++) {
+        AsthraSlice slice = asthra_slice_create(sizeof(int), ELEMENT_COUNT);
         asthra_slice_destroy(&slice);
     }
     
     BENCHMARK_END();
     
     // Performance assertions
-    ASSERT_BENCHMARK_TIME_LESS_THAN(1.0);  // Less than 1 second
-    ASSERT_BENCHMARK_MEMORY_USAGE_STABLE(); // No memory leaks
+    ASSERT_BENCHMARK_TIME_LESS_THAN(1.0);
+    ASSERT_BENCHMARK_MEMORY_USAGE_STABLE();
 }
-```
 
-### 2. Memory Performance Testing
-
-**MONITOR** memory usage and allocation patterns:
-
-```c
-BENCHMARK("memory_allocation_efficiency") {
-    const size_t allocation_count = 10000;
-    void **allocations = malloc(allocation_count * sizeof(void*));
-    
-    BENCHMARK_START_MEMORY_TRACKING();
-    
-    // Allocation phase
-    for (size_t i = 0; i < allocation_count; i++) {
-        allocations[i] = asthra_gc_alloc(64);  // 64-byte allocations
-    }
-    
-    // Deallocation phase (via GC)
-    asthra_gc_collect();
-    
-    BENCHMARK_END_MEMORY_TRACKING();
-    
-    // Verify memory efficiency
-    ASSERT_MEMORY_OVERHEAD_LESS_THAN(20);  // Less than 20% overhead
-    ASSERT_NO_MEMORY_LEAKS();
-    
-    free(allocations);
-}
-```
-
-### 3. Compilation Performance Testing
-
-**MEASURE** compilation speed and efficiency:
-
-```c
-BENCHMARK("compilation_speed") {
-    const char *large_source = generate_large_source_file(10000);  // 10k lines
+BENCHMARK("bit_operations_performance") {
+    constexpr size_t TEST_VALUES = 10'000;
+    constexpr uint64_t TEST_PATTERN = 0xAAAA'BBBB'CCCC'DDDD;
     
     BENCHMARK_START();
     
-    AsthraCompileResult result = asthra_compile_string(large_source);
+    for (size_t i = 0; i < TEST_VALUES; i++) {
+        // Use C23 stdbit.h functions
+        [[maybe_unused]] unsigned leading_zeros = stdc_leading_zeros(TEST_PATTERN);
+        [[maybe_unused]] unsigned popcount = stdc_popcount(TEST_PATTERN);
+        [[maybe_unused]] unsigned bit_width = stdc_bit_width(TEST_PATTERN);
+    }
+    
+    BENCHMARK_END();
+    
+    ASSERT_BENCHMARK_TIME_LESS_THAN(0.1);
+}
+```
+
+### 2. LLVM-Specific Performance Testing
+
+**MEASURE** LLVM compilation and optimization performance:
+
+```c
+BENCHMARK("llvm_compilation_speed") {
+    const char *large_source = generate_large_source_file(10'000);
+    
+    BENCHMARK_START();
+    
+    AsthraCompileResult result = asthra_compile_to_llvm_ir(large_source);
     
     BENCHMARK_END();
     
     ASSERT_TRUE(result.success);
     ASSERT_BENCHMARK_TIME_LESS_THAN(5.0);  // Less than 5 seconds
     
-    // Cleanup
+    // Verify LLVM IR quality
+    ASSERT_NOT_NULL(result.llvm_ir);
+    ASSERT_GT(strlen(result.llvm_ir), 0);
+    
     asthra_compile_result_destroy(&result);
     free((void*)large_source);
 }
+
+BENCHMARK("llvm_optimization_impact") {
+    const char *test_code = "fn fibonacci(n: i32) -> i32 { if n <= 1 { n } else { fibonacci(n-1) + fibonacci(n-2) } }";
+    
+    // Compile without optimization
+    AsthraCompileOptions no_opt = {.optimization_level = ASTHRA_OPT_NONE};
+    BENCHMARK_START();
+    AsthraCompileResult unopt = asthra_compile_with_options(test_code, &no_opt);
+    BENCHMARK_END_PHASE("unoptimized");
+    
+    // Compile with optimization
+    AsthraCompileOptions with_opt = {.optimization_level = ASTHRA_OPT_AGGRESSIVE};
+    BENCHMARK_START();
+    AsthraCompileResult opt = asthra_compile_with_options(test_code, &with_opt);
+    BENCHMARK_END_PHASE("optimized");
+    
+    ASSERT_TRUE(unopt.success && opt.success);
+    
+    // Optimized should be significantly smaller
+    size_t unopt_size = strlen(unopt.llvm_ir);
+    size_t opt_size = strlen(opt.llvm_ir);
+    ASSERT_LT(opt_size, unopt_size * 0.8);  // At least 20% reduction
+    
+    asthra_compile_result_destroy(&unopt);
+    asthra_compile_result_destroy(&opt);
+}
 ```
 
-## Concurrency Testing Standards
+## Concurrency Testing with C23 Atomics
 
 ### 1. Thread Safety Testing
 
-**VERIFY** thread safety of concurrent operations:
+**VERIFY** thread safety using C23 atomic operations:
 
 ```c
-#include <pthread.h>
+#include <stdatomic.h>
+#include <threads.h>  // C23 threading
 
 typedef struct {
     atomic_size_t counter;
     size_t iterations;
 } ThreadTestData;
 
-void* thread_increment_worker(void *arg) {
+int thread_increment_worker(void *arg) {
     ThreadTestData *data = (ThreadTestData*)arg;
     
     for (size_t i = 0; i < data->iterations; i++) {
         atomic_fetch_add_explicit(&data->counter, 1, memory_order_relaxed);
     }
     
-    return NULL;
+    return 0;
 }
 
-TEST_CASE("atomic_counter_thread_safety") {
-    const size_t thread_count = 8;
-    const size_t iterations_per_thread = 10000;
+TEST_CASE("atomic_counter_thread_safety_c23") {
+    constexpr size_t THREAD_COUNT = 8;
+    constexpr size_t ITERATIONS_PER_THREAD = 10'000;
     
     ThreadTestData data = {
         .counter = ATOMIC_VAR_INIT(0),
-        .iterations = iterations_per_thread
+        .iterations = ITERATIONS_PER_THREAD
     };
     
-    pthread_t threads[thread_count];
+    thrd_t threads[THREAD_COUNT];
     
-    // Start threads
-    for (size_t i = 0; i < thread_count; i++) {
-        int result = pthread_create(&threads[i], NULL, thread_increment_worker, &data);
-        ASSERT_EQ(result, 0);
+    // Start threads using C23 threading
+    for (size_t i = 0; i < THREAD_COUNT; i++) {
+        int result = thrd_create(&threads[i], thread_increment_worker, &data);
+        ASSERT_EQ(result, thrd_success);
     }
     
     // Wait for completion
-    for (size_t i = 0; i < thread_count; i++) {
-        pthread_join(threads[i], NULL);
+    for (size_t i = 0; i < THREAD_COUNT; i++) {
+        thrd_join(threads[i], nullptr);
     }
     
     // Verify final count
-    size_t expected = thread_count * iterations_per_thread;
+    constexpr size_t EXPECTED = THREAD_COUNT * ITERATIONS_PER_THREAD;
     size_t actual = atomic_load(&data.counter);
-    ASSERT_EQ(actual, expected);
+    ASSERT_EQ(actual, EXPECTED);
 }
 ```
 
-### 2. Race Condition Detection
+## Memory Safety Testing (Clang-Only)
 
-**USE** ThreadSanitizer for race condition detection:
+### 1. Clang Sanitizers
 
-```bash
-# Build with ThreadSanitizer
-make benchmark-tsan
-
-# Run specific concurrency tests
-./bin/test_concurrency_bridge
-```
-
-## Memory Safety Testing
-
-### 1. Memory Leak Detection
-
-**USE** Valgrind and AddressSanitizer:
+**USE** Clang's sanitizers exclusively:
 
 ```bash
-# Valgrind testing
-make benchmark-valgrind
+# AddressSanitizer
+clang -fsanitize=address -g -O1 -fno-omit-frame-pointer
 
-# AddressSanitizer testing
-make benchmark-asan
+# ThreadSanitizer  
+clang -fsanitize=thread -g -O1
+
+# UndefinedBehaviorSanitizer
+clang -fsanitize=undefined -g -O1
+
+# MemorySanitizer
+clang -fsanitize=memory -g -O1 -fno-omit-frame-pointer
 ```
 
-### 2. Bounds Checking
+### 2. Bounds Checking with C23
 
-**VERIFY** memory bounds are respected:
+**VERIFY** memory bounds using modern features:
 
 ```c
-TEST_CASE("slice_bounds_checking") {
-    AsthraSlice slice = asthra_slice_create(sizeof(int), 10);
+TEST_CASE("slice_bounds_checking_c23") {
+    constexpr size_t SLICE_SIZE = 10;
+    AsthraSlice slice = asthra_slice_create(sizeof(int), SLICE_SIZE);
     ASSERT_NOT_NULL(slice.ptr);
     
     // Valid access
-    AsthraResult result = asthra_slice_set_element(&slice, 5, &(int){42});
+    constexpr int TEST_VALUE = 42;
+    AsthraResult result = asthra_slice_set_element(&slice, 5, &TEST_VALUE);
     ASSERT_TRUE(result.success);
     
     // Invalid access (out of bounds)
-    result = asthra_slice_set_element(&slice, 15, &(int){42});
+    result = asthra_slice_set_element(&slice, 15, &TEST_VALUE);
     ASSERT_FALSE(result.success);
     ASSERT_EQ(result.error_code, ASTHRA_ERROR_INDEX_OUT_OF_BOUNDS);
     
@@ -386,177 +430,159 @@ TEST_CASE("slice_bounds_checking") {
 }
 ```
 
-## Cross-Platform Testing
+## LLVM-Only Platform Testing
 
-### 1. Platform-Specific Behavior
+### 1. Clang/LLVM Feature Testing
 
-**TEST** platform differences explicitly:
+**VERIFY** Clang and LLVM specific features:
 
 ```c
-TEST_CASE("platform_specific_path_handling") {
-#ifdef _WIN32
-    const char *expected_separator = "\\";
-    const char *test_path = "src\\main.c";
-#else
-    const char *expected_separator = "/";
-    const char *test_path = "src/main.c";
-#endif
+TEST_CASE("clang_llvm_feature_validation") {
+    // Verify C23 support
+    static_assert(__STDC_VERSION__ >= 202311L);
     
-    char normalized_path[256];
-    AsthraResult result = asthra_normalize_path(test_path, normalized_path, sizeof(normalized_path));
+    // Test Clang-specific features
+    #if defined(__clang__)
+        // Clang version check
+        static_assert(__clang_major__ >= 16, "Clang 16+ required for C23");
+        
+        // Test __has_include (C23 feature)
+        #if __has_include(<stdbit.h>)
+            ASSERT_TRUE(true);  // stdbit.h should be available
+        #else
+            ASSERT_FAIL("stdbit.h not available");
+        #endif
+        
+        // Test __has_c_attribute (C23 feature)
+        #if __has_c_attribute(nodiscard)
+            ASSERT_TRUE(true);  // nodiscard attribute should be supported
+        #else
+            ASSERT_FAIL("nodiscard attribute not supported");
+        #endif
+    #else
+        ASSERT_FAIL("Only Clang compiler is supported");
+    #endif
+}
+
+TEST_CASE("llvm_backend_integration") {
+    // Test LLVM-specific functionality
+    AsthraLLVMContext *ctx = asthra_llvm_create_context();
+    ASSERT_NOT_NULL(ctx);
     
-    ASSERT_TRUE(result.success);
-    ASSERT_STRCONTAINS(normalized_path, expected_separator);
+    // Create a simple module
+    AsthraLLVMModule *module = asthra_llvm_create_module(ctx, "test_module");
+    ASSERT_NOT_NULL(module);
+    
+    // Verify module
+    bool is_valid = asthra_llvm_verify_module(module);
+    ASSERT_TRUE(is_valid);
+    
+    // Cleanup
+    asthra_llvm_destroy_module(module);
+    asthra_llvm_destroy_context(ctx);
 }
 ```
 
-### 2. Compiler-Specific Testing
-
-**VERIFY** behavior across different compilers:
-
-```c
-TEST_CASE("c17_feature_availability") {
-    // Test static assertions
-    _Static_assert(sizeof(int) >= 4, "int must be at least 32 bits");
-    
-    // Test generic selections
-    int test_int = 42;
-    double test_double = 3.14;
-    
-    ASSERT_EQ(TYPE_SIZE(test_int), sizeof(int));
-    ASSERT_EQ(TYPE_SIZE(test_double), sizeof(double));
-    
-    // Test atomic operations
-    atomic_int atomic_counter = ATOMIC_VAR_INIT(0);
-    atomic_fetch_add(&atomic_counter, 1);
-    ASSERT_EQ(atomic_load(&atomic_counter), 1);
-}
-```
-
-## Test Execution Guidelines
+## Test Execution Guidelines (Clang-Only)
 
 ### 1. Pre-Commit Testing
 
 **ALWAYS** run before committing changes:
 
 ```bash
-# Full test suite
-make clean && make test
+# Full test suite with Clang
+make clean && make test CC=clang
 
 # Performance regression testing
-make test-benchmark
+make test-benchmark CC=clang
 
-# Memory safety testing
-make benchmark-asan
+# Memory safety testing with Clang sanitizers
+make test-asan CC=clang
+make test-tsan CC=clang  
+make test-ubsan CC=clang
 
-# Static analysis
-make analyze
+# Static analysis with Clang tools
+make analyze CC=clang
+clang-tidy src/**/*.c
 ```
 
-### 2. Continuous Integration Testing
+### 2. Continuous Integration (Clang-Only)
 
-**ENSURE** CI pipeline covers:
+**ENSURE** CI pipeline uses Clang exclusively:
 
-- Multiple platforms (macOS, Linux, Windows)
-- Multiple compilers (GCC, Clang, MSVC)
-- Debug and release builds
-- Memory safety tools
-- Performance benchmarks
+```yaml
+# .github/workflows/test.yml
+strategy:
+  matrix:
+    os: [ubuntu-latest, macos-latest]
+    clang-version: [16, 17, 18, 19, 20]
+    build-type: [Debug, Release]
+    
+steps:
+  - name: Install Clang
+    run: |
+      # Install specific Clang version
+      sudo apt-get install clang-${{ matrix.clang-version }}
+      
+  - name: Configure with Clang
+    run: |
+      cmake -B build \
+        -DCMAKE_C_COMPILER=clang-${{ matrix.clang-version }} \
+        -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
+        -DCMAKE_C_STANDARD=23
+        
+  - name: Build and Test
+    run: |
+      cmake --build build
+      ctest --test-dir build --output-on-failure
+```
 
-### 3. Test Result Analysis
+### 3. Performance Analysis with LLVM Tools
 
-**ANALYZE** test results systematically:
+**ANALYZE** performance using LLVM profiling:
 
 ```bash
-# Generate test report
-make test > test_results.txt 2>&1
+# Profile-guided optimization
+clang -fprofile-instr-generate -fcoverage-mapping
+./asthra_compiler test_program.as
+llvm-profdata merge default.profraw -o default.profdata
+clang -fprofile-instr-use=default.profdata -O3
 
-# Check for failures
-grep -i "failed\|error" test_results.txt
-
-# Performance analysis
-make benchmark | grep "Performance:"
+# Coverage analysis
+llvm-cov report ./asthra_compiler -instr-profile=default.profdata
+llvm-cov show ./asthra_compiler -instr-profile=default.profdata
 ```
 
-## Test Maintenance
-
-### 1. Test Code Quality
-
-**MAINTAIN** high-quality test code:
-
-- Clear, descriptive test names
-- Comprehensive setup and cleanup
-- Meaningful assertions with good error messages
-- Proper resource management
-- Documentation for complex test scenarios
-
-### 2. Test Data Management
-
-**ORGANIZE** test data effectively:
-
-```c
-// Use const data for immutable test inputs
-static const char* const VALID_EXPRESSIONS[] = {
-    "42",
-    "x + y",
-    "func(a, b, c)",
-    NULL  // Sentinel
-};
-
-// Use helper functions for complex setup
-static AsthraAST* create_test_ast(void) {
-    AsthraAST *ast = asthra_ast_create();
-    // ... setup logic
-    return ast;
-}
-```
-
-### 3. Test Documentation
-
-**DOCUMENT** test purposes and expectations:
-
-```c
-/**
- * Test: slice_resize_performance
- * Purpose: Verify that slice resizing operations maintain O(1) amortized complexity
- * Expected: Resizing 100,000 elements should complete in under 100ms
- * Platform: All supported platforms
- * Dependencies: asthra_slice_resize, high-resolution timer
- */
-BENCHMARK("slice_resize_performance") {
-    // Test implementation
-}
-```
-
-## Success Criteria
+## Success Criteria (LLVM-Only)
 
 ### 1. Coverage Metrics
 
 **ACHIEVE** comprehensive test coverage:
 
 - 100% of public API functions tested
-- 90%+ line coverage for core components
-- All error paths tested
-- All platform-specific code paths tested
+- 90%+ line coverage for core components  
+- All LLVM IR generation paths tested
+- All C23 features properly utilized
 
 ### 2. Performance Benchmarks
 
-**MAINTAIN** performance standards:
+**MAINTAIN** LLVM-optimized performance standards:
 
-- Compilation speed within 25% of baseline
-- Runtime performance improvements preserved
+- LLVM IR generation within performance targets
+- Optimization passes improve code quality measurably
+- No performance regressions in LLVM pipeline
 - Memory usage optimizations maintained
-- No performance regressions in CI
 
-### 3. Quality Metrics
+### 3. Quality Metrics (Clang Tools)
 
-**ENSURE** high code quality:
+**ENSURE** high code quality with Clang tooling:
 
-- Zero memory leaks in Valgrind testing
-- Zero race conditions in ThreadSanitizer testing
-- All static analysis warnings addressed
-- 100% test pass rate across all platforms
+- Zero memory leaks in Clang AddressSanitizer
+- Zero race conditions in Clang ThreadSanitizer
+- Zero undefined behavior in UBSanitizer
+- All Clang Static Analyzer warnings addressed
+- 100% test pass rate on all Clang versions 16+
 
 ---
 
-**Remember**: Testing is not just about finding bugs—it's about ensuring the reliability, performance, and maintainability of the Asthra programming language for its users.
+**Remember**: With C23 and LLVM-only approach, we can leverage the most modern C features and the most advanced compiler infrastructure for optimal performance, safety, and maintainability.

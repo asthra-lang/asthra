@@ -27,15 +27,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Linux builds - simplified to avoid conflicts
-          - platform: linux
-            os: ubuntu-22.04
-            compiler: gcc
-            arch: x64
-            cc: gcc
-            cxx: g++
-            build_type: Release
-            
+          # Linux builds - Clang only
           - platform: linux
             os: ubuntu-22.04
             compiler: clang
@@ -44,7 +36,7 @@ jobs:
             cxx: clang++
             build_type: Release
             
-          # macOS builds - simplified
+          # macOS builds - Clang only
           - platform: macos
             os: macos-14
             compiler: clang

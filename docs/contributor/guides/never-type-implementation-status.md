@@ -137,4 +137,4 @@ The Never type (`!`) represents computations that never return normally, such as
 ## References
 - [Rust Never Type RFC](https://github.com/rust-lang/rfcs/blob/master/text/1216-bang-type.md)
 - [LLVM Unreachable Instruction](https://llvm.org/docs/LangRef.html#unreachable-instruction)
-- [GCC __builtin_unreachable](https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html)
+- [Clang __builtin_unreachable](https://clang.llvm.org/docs/LanguageExtensions.html#builtin-unreachable)

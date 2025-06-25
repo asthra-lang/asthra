@@ -5,7 +5,7 @@
 The Asthra compiler requires the following dependencies:
 
 - **CMake 3.20+**: Modern CMake for build configuration
-- **C Compiler**: Clang or MSVC with C17 support (Clang preferred)
+- **C Compiler**: Clang with C17 support and LLVM
 - **LLVM 18.0+**: Required for the LLVM backend (version 18.0 or later)
 - **json-c**: Optional, will be downloaded automatically if not found
 
@@ -28,7 +28,7 @@ brew install llvm cmake git
 sudo apt update
 
 # Install required dependencies
-sudo apt install -y llvm-dev cmake git build-essential
+sudo apt install -y llvm-dev cmake git clang
 ```
 
 ### Fedora

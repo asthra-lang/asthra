@@ -20,8 +20,8 @@ cmake -B build -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
 # Linux with specific compiler
 CC=clang CXX=clang++ cmake -B build
 
-# Windows with MSVC
-cmake -B build -G "Visual Studio 17 2022"
+# All platforms use Clang
+CC=clang CXX=clang++ cmake -B build
 ```
 
 ## Testing Commands

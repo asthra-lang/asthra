@@ -9,17 +9,13 @@ set(ASTHRA_SANITIZERS_INCLUDED TRUE)
 
 include(CheckCCompilerFlag)
 
-# Check for sanitizer support
+# Check for sanitizer support (Clang)
 function(check_sanitizer_support sanitizer flag var)
-    if(NOT MSVC)
-        check_c_compiler_flag(${flag} ${var})
-        if(${var})
-            message(STATUS "Sanitizer ${sanitizer} is supported")
-        else()
-            message(STATUS "Sanitizer ${sanitizer} is NOT supported")
-        endif()
+    check_c_compiler_flag(${flag} ${var})
+    if(${var})
+        message(STATUS "Sanitizer ${sanitizer} is supported")
     else()
-        set(${var} FALSE PARENT_SCOPE)
+        message(STATUS "Sanitizer ${sanitizer} is NOT supported")
     endif()
 endfunction()
 

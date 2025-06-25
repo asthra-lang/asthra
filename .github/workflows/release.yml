@@ -48,7 +48,6 @@ jobs:
             - **Linux x86_64**: `asthra-${{ steps.get_version.outputs.VERSION }}-linux-x86_64.tar.gz`
             - **macOS x86_64**: `asthra-${{ steps.get_version.outputs.VERSION }}-macos-x86_64.tar.gz`
             - **macOS ARM64**: `asthra-${{ steps.get_version.outputs.VERSION }}-macos-arm64.tar.gz`
-            - **Windows x86_64**: `asthra-${{ steps.get_version.outputs.VERSION }}-windows-x86_64.zip`
             
             ### Installation
             
@@ -64,18 +63,6 @@ jobs:
             asthra --version
             ```
             
-            #### Windows
-            ```cmd
-            REM Extract the ZIP archive to your desired location
-            REM Run the installation script (optional)
-            asthra-${{ steps.get_version.outputs.VERSION }}\install.bat "C:\Program Files\Asthra"
-            
-            REM Or manually add to PATH
-            set PATH=%PATH%;C:\path\to\asthra-${{ steps.get_version.outputs.VERSION }}\bin
-            
-            REM Verify installation
-            asthra.exe --version
-            ```
             
             ### Documentation
             - [Language Manual](https://github.com/asthra-lang/asthra/blob/main/docs/manual.md)
@@ -92,18 +79,13 @@ jobs:
         include:
           - os: ubuntu-latest
             target: linux-x86_64
-            cc: gcc
+            cc: clang
           - os: macos-latest
             target: macos-x86_64
             cc: clang
           - os: macos-latest
             target: macos-arm64
             cc: clang
-          # Windows MSVC builds
-          - os: windows-2022
-            target: windows-x86_64
-            cc: cl
-            compiler: msvc
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -119,39 +101,23 @@ jobs:
       # PLATFORM-SPECIFIC SETUP
       # =============================================================================
 
-      - name: Setup MSVC (Windows)
-        if: matrix.compiler == 'msvc'
-        uses: microsoft/setup-msbuild@v2
-        
-      - name: Setup Visual Studio environment (Windows)
-        if: matrix.compiler == 'msvc'
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
 
       - name: Install dependencies (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential clang libc6-dev gperf
+          sudo apt-get install -y clang llvm libc6-dev gperf
 
       - name: Install dependencies (macOS)
         if: matrix.os == 'macos-latest'
         run: |
-          brew install gperf
-
-      - name: Install dependencies (Windows)
-        if: matrix.compiler == 'msvc'
-        shell: cmd
-        run: |
-          echo Windows dependencies are included with Visual Studio
+          brew install llvm gperf
 
       # =============================================================================
       # COMPILER AND ARCHITECTURE SETUP
       # =============================================================================
 
-      - name: Set compiler and architecture (Unix)
-        if: matrix.compiler != 'msvc'
+      - name: Set compiler and architecture
         run: |
           echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
           if [ "${{ matrix.target }}" = "macos-arm64" ]; then
@@ -159,52 +125,29 @@ jobs:
             echo "LDFLAGS=-target arm64-apple-macos11" >> $GITHUB_ENV
           fi
 
-      - name: Set compiler and architecture (Windows)
-        if: matrix.compiler == 'msvc'
-        shell: cmd
-        run: |
-          echo CC=cl>> %GITHUB_ENV%
-          echo CXX=cl>> %GITHUB_ENV%
-
       # =============================================================================
       # BUILD PROCESS
       # =============================================================================
 
-      - name: Build optimized release (Unix)
-        if: matrix.compiler != 'msvc'
+      - name: Build optimized release
         run: |
           make clean
           make release
-
-      - name: Build optimized release (Windows)
-        if: matrix.compiler == 'msvc'
-        shell: cmd
-        run: |
-          nmake /f Makefile clean
-          nmake /f Makefile release-windows
 
       # =============================================================================
       # TESTING
       # =============================================================================
 
-      - name: Run tests to verify build (Unix)
-        if: matrix.compiler != 'msvc'
+      - name: Run tests to verify build
         run: |
           make test-runtime
           make test-parser
-
-      - name: Run tests to verify build (Windows)
-        if: matrix.compiler == 'msvc'
-        shell: cmd
-        run: |
-          nmake /f Makefile test-windows
 
       # =============================================================================
       # PACKAGE CREATION
       # =============================================================================
 
-      - name: Create release package (Unix)
-        if: matrix.compiler != 'msvc'
+      - name: Create release package
         run: |
           mkdir -p asthra-${{ steps.get_version.outputs.VERSION }}
           mkdir -p asthra-${{ steps.get_version.outputs.VERSION }}/bin
@@ -261,67 +204,12 @@ jobs:
           # Create archive
           tar -czf asthra-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}.tar.gz asthra-${{ steps.get_version.outputs.VERSION }}
 
-      - name: Create release package (Windows)
-        if: matrix.compiler == 'msvc'
-        shell: cmd
-        run: |
-          mkdir asthra-${{ steps.get_version.outputs.VERSION }}
-          mkdir asthra-${{ steps.get_version.outputs.VERSION }}\bin
-          mkdir asthra-${{ steps.get_version.outputs.VERSION }}\lib
-          mkdir asthra-${{ steps.get_version.outputs.VERSION }}\include
-          mkdir asthra-${{ steps.get_version.outputs.VERSION }}\docs
-          mkdir asthra-${{ steps.get_version.outputs.VERSION }}\examples
-          
-          REM Copy binaries
-          copy bin\asthra.exe asthra-${{ steps.get_version.outputs.VERSION }}\bin\ 2>nul || echo "Binary copy failed"
-          
-          REM Copy libraries
-          copy build\*.lib asthra-${{ steps.get_version.outputs.VERSION }}\lib\ 2>nul || echo "Library copy failed"
-          
-          REM Copy headers
-          copy runtime\*.h asthra-${{ steps.get_version.outputs.VERSION }}\include\ 2>nul || echo "Header copy failed"
-          
-          REM Copy documentation
-          copy README.md asthra-${{ steps.get_version.outputs.VERSION }}\ 2>nul || echo "README copy failed"
-          copy LICENSE asthra-${{ steps.get_version.outputs.VERSION }}\ 2>nul || echo "LICENSE copy failed"
-          xcopy docs asthra-${{ steps.get_version.outputs.VERSION }}\docs\ /E /I /Q 2>nul || echo "Docs copy failed"
-          
-          REM Copy examples
-          xcopy examples asthra-${{ steps.get_version.outputs.VERSION }}\examples\ /E /I /Q 2>nul || echo "Examples copy failed"
-          
-          REM Create installation batch script
-          echo @echo off > asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
-          echo setlocal >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
-          echo. >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
-          echo set INSTALL_DIR=%%1 >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
-          echo if "%%INSTALL_DIR%%"=="" set INSTALL_DIR=C:\Program Files\Asthra >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
-          echo. >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
-          echo echo Installing Asthra to %%INSTALL_DIR%% >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
-          echo. >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
-          echo mkdir "%%INSTALL_DIR%%\bin" 2^>nul >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
-          echo mkdir "%%INSTALL_DIR%%\lib" 2^>nul >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
-          echo mkdir "%%INSTALL_DIR%%\include" 2^>nul >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
-          echo. >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
-          echo copy bin\asthra.exe "%%INSTALL_DIR%%\bin\" >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
-          echo copy lib\*.lib "%%INSTALL_DIR%%\lib\" 2^>nul ^|^| echo Library copy failed >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
-          echo copy include\*.h "%%INSTALL_DIR%%\include\" 2^>nul ^|^| echo Header copy failed >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
-          echo. >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
-          echo echo Asthra installed successfully! >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
-          echo echo Add %%INSTALL_DIR%%\bin to your PATH environment variable. >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
-          echo endlocal >> asthra-${{ steps.get_version.outputs.VERSION }}\install.bat
-
-      - name: Create Windows archive
-        if: matrix.compiler == 'msvc'
-        shell: powershell
-        run: |
-          Compress-Archive -Path "asthra-${{ steps.get_version.outputs.VERSION }}" -DestinationPath "asthra-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}.zip"
 
       # =============================================================================
       # UPLOAD ARTIFACTS
       # =============================================================================
 
-      - name: Upload Release Asset (Unix)
-        if: matrix.compiler != 'msvc'
+      - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -330,17 +218,6 @@ jobs:
           asset_path: ./asthra-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}.tar.gz
           asset_name: asthra-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}.tar.gz
           asset_content_type: application/gzip
-
-      - name: Upload Release Asset (Windows)
-        if: matrix.compiler == 'msvc'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./asthra-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}.zip
-          asset_name: asthra-${{ steps.get_version.outputs.VERSION }}-${{ matrix.target }}.zip
-          asset_content_type: application/zip
 
   build-documentation:
     name: Build and Upload Documentation

@@ -9,7 +9,7 @@ The Asthra project uses CMake as its primary build system. This guide covers how
 ### Prerequisites
 
 - **CMake 3.20+**: Modern CMake with good C support
-- **C Compiler**: Clang or MSVC
+- **C Compiler**: Clang with LLVM
 - **LLVM 18.0+**: Required for LLVM backend (version 18.0 or later)
 - **json-c**: Optional system library (will download if not found)
 
@@ -417,17 +417,6 @@ CLion has native CMake support:
 
 ## Cross-Platform Builds
 
-### Windows (MSVC)
-```cmd
-cmake -B build -G "Visual Studio 16 2019"
-cmake --build build --config Release
-```
-
-### Windows (MinGW)
-```bash
-cmake -B build -G "MinGW Makefiles"
-cmake --build build -j$(nproc)
-```
 
 ### macOS
 ```bash
@@ -506,16 +495,16 @@ sudo yum install pkgconfig json-c-devel
 ```
 No CMAKE_C_COMPILER could be found
 ```
-**Solution**: Install a C compiler:
+**Solution**: Install Clang:
 ```bash
 # Ubuntu/Debian
-sudo apt-get install build-essential
+sudo apt-get install clang llvm
 
 # CentOS/RHEL
-sudo yum groupinstall "Development Tools"
+sudo yum install clang llvm-devel
 
 # macOS
-xcode-select --install
+xcode-select --install  # Includes Clang
 ```
 
 ### Build Failures

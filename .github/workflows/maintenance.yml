@@ -96,7 +96,7 @@ jobs:
       - name: Install cleanup tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential clang libc6-dev
+          sudo apt-get install -y clang llvm libc6-dev
 
       - name: Remove trailing whitespace
         run: |
@@ -190,8 +190,8 @@ jobs:
           
           echo "## System Information" | tee -a dependency-audit.txt
           echo "OS: $(uname -a)" | tee -a dependency-audit.txt
-          echo "GCC Version: $(gcc --version | head -1)" | tee -a dependency-audit.txt
           echo "Clang Version: $(clang --version | head -1)" | tee -a dependency-audit.txt
+          echo "LLVM Version: $(llvm-config --version 2>/dev/null || echo 'Not available')" | tee -a dependency-audit.txt
           echo "Make Version: $(make --version | head -1)" | tee -a dependency-audit.txt
           echo "" | tee -a dependency-audit.txt
 
@@ -214,7 +214,7 @@ jobs:
           echo "## Build Tool Versions" | tee -a dependency-audit.txt
           
           # Check versions of key build tools
-          tools=("gcc" "clang" "make" "gperf" "doxygen")
+          tools=("clang" "llvm-config" "make" "gperf" "doxygen")
           for tool in "${tools[@]}"; do
             if command -v "$tool" >/dev/null 2>&1; then
               version=$($tool --version 2>/dev/null | head -1 || echo "Version unknown")
@@ -292,7 +292,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential clang libc6-dev gperf
+          sudo apt-get install -y clang llvm libc6-dev gperf
 
       - name: Verify build after maintenance
         run: |

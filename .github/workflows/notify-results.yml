@@ -64,11 +64,8 @@ jobs:
         
         echo ""
         echo "Platform Support Status:"
-        echo "- Linux (GCC): Implemented"
         echo "- Linux (Clang): Implemented"  
         echo "- macOS (Clang): Implemented"
-        echo "- Windows (MSVC): Implemented"
-        echo "- Windows (MinGW): Implemented"
         
         echo ""
         echo "Test Coverage Status:"

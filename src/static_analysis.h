@@ -44,11 +44,9 @@ extern "C" {
 // C17 ANNOTATION ATTRIBUTES FOR STATIC ANALYSIS
 // =============================================================================
 
-// Compiler-specific attribute detection
+// Compiler-specific attribute detection (Clang only)
 #ifdef __clang__
     #define ASTHRA_HAS_ATTRIBUTES 1
-#elif defined(_MSC_VER)
-    #define ASTHRA_HAS_ATTRIBUTES 0  // MSVC has different attribute syntax
 #else
     #error "Unsupported compiler. Asthra requires Clang/LLVM."
 #endif
@@ -78,8 +76,8 @@ extern "C" {
     #define ASTHRA_UNLIKELY(x)         (x)
 #endif
 
-// Memory safety attributes
-#if ASTHRA_HAS_CLANG_ATTRIBUTES
+// Memory safety attributes (Clang attributes)
+#if ASTHRA_HAS_ATTRIBUTES
     #define ASTHRA_NO_SANITIZE(x)      __attribute__((no_sanitize(x)))
     #define ASTHRA_FALLTHROUGH         __attribute__((fallthrough))
     #define ASTHRA_ASSUME_ALIGNED(n)   __attribute__((assume_aligned(n)))

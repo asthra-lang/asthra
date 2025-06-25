@@ -170,17 +170,6 @@ else()
     message(STATUS "clang-tidy not found - static analysis will use alternative tools if available")
 endif()
 
-# MSVC static analysis
-if(MSVC)
-    add_custom_target(analyze-msvc
-        COMMAND ${CMAKE_COMMAND} --build . -- /analyze
-        COMMENT "Running MSVC static analysis"
-    )
-    
-    if(NOT CLANG_TIDY_EXECUTABLE)
-        add_custom_target(analyze DEPENDS analyze-msvc)
-    endif()
-endif()
 
 # Cppcheck analysis
 if(CPPCHECK_EXECUTABLE)
@@ -198,11 +187,11 @@ if(CPPCHECK_EXECUTABLE)
         VERBATIM
     )
     
-    if(NOT CLANG_TIDY_EXECUTABLE AND NOT MSVC)
+    if(NOT CLANG_TIDY_EXECUTABLE)
         add_custom_target(analyze DEPENDS analyze-cppcheck)
     endif()
 else()
-    if(NOT CLANG_TIDY_EXECUTABLE AND NOT MSVC)
+    if(NOT CLANG_TIDY_EXECUTABLE)
         add_custom_target(analyze
             COMMAND ${CMAKE_COMMAND} -E echo "No static analysis tools found. Install clang-tidy or cppcheck."
             COMMENT "Static analysis not available"

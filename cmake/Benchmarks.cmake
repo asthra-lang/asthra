@@ -21,14 +21,12 @@ if(ENABLE_BENCHMARKS)
         add_executable(asthra-benchmark src/main.c)
         target_link_libraries(asthra-benchmark asthra_compiler)
         
-        # Apply aggressive optimizations for benchmarking
+        # Apply aggressive optimizations for benchmarking (Clang)
         target_compile_options(asthra-benchmark PRIVATE
-            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O3 -march=native -mtune=native -flto>
-            $<$<CXX_COMPILER_ID:MSVC>:/O2 /GL>
+            -O3 -march=native -mtune=native -flto
         )
         target_link_options(asthra-benchmark PRIVATE
-            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-flto>
-            $<$<CXX_COMPILER_ID:MSVC>:/LTCG>
+            -flto
         )
     endif()
     
