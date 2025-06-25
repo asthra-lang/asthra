@@ -410,3 +410,33 @@ void llvm_backend_print_errors(const LLVMBackendData *data) {
     
     fprintf(stderr, "Total errors: %d\n\n", error_count);
 }
+
+// ===== Loop Context Management Implementation =====
+
+// Push a new loop context onto the stack
+void llvm_backend_push_loop_context(LLVMBackendData *data, LLVMBasicBlockRef continue_block, LLVMBasicBlockRef break_block) {
+    if (!data) return;
+    
+    LoopContext *new_context = malloc(sizeof(LoopContext));
+    if (!new_context) return; // Out of memory
+    
+    new_context->continue_block = continue_block;
+    new_context->break_block = break_block;
+    new_context->parent = data->current_loop;
+    
+    data->current_loop = new_context;
+}
+
+// Pop the current loop context from the stack
+void llvm_backend_pop_loop_context(LLVMBackendData *data) {
+    if (!data || !data->current_loop) return;
+    
+    LoopContext *old_context = data->current_loop;
+    data->current_loop = old_context->parent;
+    free(old_context);
+}
+
+// Get the current loop context
+LoopContext* llvm_backend_get_current_loop(const LLVMBackendData *data) {
+    return data ? data->current_loop : NULL;
+}

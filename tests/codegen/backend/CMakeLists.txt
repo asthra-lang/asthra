@@ -301,3 +301,132 @@ set_tests_properties(test_llvm_cast_expr PROPERTIES
     LABELS "codegen;backend;llvm;expressions;cast"
     TIMEOUT 30
 )
+
+# LLVM break/continue statements module test
+add_executable(test_llvm_break_continue
+    test_llvm_break_continue.c
+    backend_test_stubs.c
+)
+
+# Include directories for LLVM break/continue test
+target_include_directories(test_llvm_break_continue PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/parser
+    ${CMAKE_SOURCE_DIR}/src/analysis
+    ${CMAKE_SOURCE_DIR}/src/codegen
+)
+
+# Define minimal stubs to avoid linking issues
+target_compile_definitions(test_llvm_break_continue PRIVATE
+    MINIMAL_TEST_BUILD=1
+)
+
+# Link libraries for LLVM break/continue test
+target_link_libraries(test_llvm_break_continue PRIVATE
+    asthra_compiler
+    ${COMMON_LIBRARIES}
+)
+
+# Conditionally link LLVM if enabled
+if(ENABLE_LLVM_BACKEND)
+    target_link_libraries(test_llvm_break_continue PRIVATE llvm::llvm)
+endif()
+
+# Set output directory for LLVM break/continue test
+set_target_properties(test_llvm_break_continue PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+# Register LLVM break/continue test
+add_test(NAME test_llvm_break_continue 
+         COMMAND test_llvm_break_continue)
+set_tests_properties(test_llvm_break_continue PROPERTIES
+    LABELS "codegen;backend;llvm;statements;control_flow"
+    TIMEOUT 30
+)
+
+# LLVM pattern matching (match statements) module test
+add_executable(test_llvm_pattern_matching
+    test_llvm_pattern_matching.c
+    backend_test_stubs.c
+)
+
+# Include directories for LLVM pattern matching test
+target_include_directories(test_llvm_pattern_matching PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/parser
+    ${CMAKE_SOURCE_DIR}/src/analysis
+    ${CMAKE_SOURCE_DIR}/src/codegen
+)
+
+# Define minimal stubs to avoid linking issues
+target_compile_definitions(test_llvm_pattern_matching PRIVATE
+    MINIMAL_TEST_BUILD=1
+)
+
+# Link libraries for LLVM pattern matching test
+target_link_libraries(test_llvm_pattern_matching PRIVATE
+    asthra_compiler
+    ${COMMON_LIBRARIES}
+)
+
+# Conditionally link LLVM if enabled
+if(ENABLE_LLVM_BACKEND)
+    target_link_libraries(test_llvm_pattern_matching PRIVATE llvm::llvm)
+endif()
+
+# Set output directory for LLVM pattern matching test
+set_target_properties(test_llvm_pattern_matching PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+# Register LLVM pattern matching test
+add_test(NAME test_llvm_pattern_matching 
+         COMMAND test_llvm_pattern_matching)
+set_tests_properties(test_llvm_pattern_matching PROPERTIES
+    LABELS "codegen;backend;llvm;statements;pattern_matching"
+    TIMEOUT 30
+)
+
+# LLVM for loop iteration module test
+add_executable(test_llvm_for_loops
+    test_llvm_for_loops.c
+    backend_test_stubs.c
+)
+
+# Include directories for LLVM for loops test
+target_include_directories(test_llvm_for_loops PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/parser
+    ${CMAKE_SOURCE_DIR}/src/analysis
+    ${CMAKE_SOURCE_DIR}/src/codegen
+)
+
+# Define minimal stubs to avoid linking issues
+target_compile_definitions(test_llvm_for_loops PRIVATE
+    MINIMAL_TEST_BUILD=1
+)
+
+# Link libraries for LLVM for loops test
+target_link_libraries(test_llvm_for_loops PRIVATE
+    asthra_compiler
+    ${COMMON_LIBRARIES}
+)
+
+# Conditionally link LLVM if enabled
+if(ENABLE_LLVM_BACKEND)
+    target_link_libraries(test_llvm_for_loops PRIVATE llvm::llvm)
+endif()
+
+# Set output directory for LLVM for loops test
+set_target_properties(test_llvm_for_loops PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+# Register LLVM for loops test
+add_test(NAME test_llvm_for_loops 
+         COMMAND test_llvm_for_loops)
+set_tests_properties(test_llvm_for_loops PROPERTIES
+    LABELS "codegen;backend;llvm;statements;for_loops"
+    TIMEOUT 30
+)

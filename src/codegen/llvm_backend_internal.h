@@ -44,6 +44,13 @@ typedef struct LLVMBackendError {
     struct LLVMBackendError *next;
 } LLVMBackendError;
 
+// Loop context for break/continue statements
+typedef struct LoopContext {
+    LLVMBasicBlockRef continue_block;  // Block to jump to for continue
+    LLVMBasicBlockRef break_block;     // Block to jump to for break
+    struct LoopContext *parent;        // Parent loop context (for nested loops)
+} LoopContext;
+
 // Private data for LLVM backend
 typedef struct LLVMBackendData {
     LLVMContextRef context;
@@ -87,10 +94,18 @@ typedef struct LLVMBackendData {
     // Local variable tracking
     LocalVar *local_vars;
     
+    // Loop context tracking
+    LoopContext *current_loop;
+    
     // Error handling
     LLVMBackendError *error_list;
     bool has_errors;
 } LLVMBackendData;
+
+// Loop context management functions - implemented in llvm_backend.c
+void llvm_backend_push_loop_context(LLVMBackendData *data, LLVMBasicBlockRef continue_block, LLVMBasicBlockRef break_block);
+void llvm_backend_pop_loop_context(LLVMBackendData *data);
+LoopContext* llvm_backend_get_current_loop(const LLVMBackendData *data);
 
 // Error handling functions - implemented in llvm_backend.c
 void llvm_backend_report_error(LLVMBackendData *data, const ASTNode *node, const char *message);
