@@ -69,7 +69,7 @@ bool enhanced_ffi_generate_parameter_marshaling(void *param, size_t size,
         .type = AST_PARAM_DECL,
         .location = {0}, // Default source location
         .type_info = NULL,
-        .ref_count = ATOMIC_VAR_INIT(1),
+        .ref_count = 1,
         .flags = {0}
     };
     
@@ -111,7 +111,7 @@ bool enhanced_ffi_generate_extern_call(const char *function_name, void **params,
         .type = AST_CALL_EXPR,
         .location = {0}, // Default source location
         .type_info = NULL,
-        .ref_count = ATOMIC_VAR_INIT(1),
+        .ref_count = 1,
         .flags = {0}
     };
     
@@ -150,7 +150,7 @@ bool enhanced_ffi_generate_variadic_call(const char *function_name, void **param
         .type = AST_CALL_EXPR,
         .location = {0}, // Default source location
         .type_info = NULL,
-        .ref_count = ATOMIC_VAR_INIT(1),
+        .ref_count = 1,
         .flags = {0}
     };
     

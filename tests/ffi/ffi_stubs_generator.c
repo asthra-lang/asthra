@@ -174,7 +174,7 @@ bool enhanced_generate_task_creation(EnhancedFFIGenerator *gen, const char *task
         .type = AST_SPAWN_STMT,
         .location = {0}, // Default source location
         .type_info = NULL,
-        .ref_count = ATOMIC_VAR_INIT(1),
+        .ref_count = 1,
         .flags = {0}
     };
     

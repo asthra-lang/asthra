@@ -15,7 +15,7 @@
 BridgeState bridge_state = {
     .initialized = false,
     .mutex = PTHREAD_MUTEX_INITIALIZER,
-    .next_task_id = ATOMIC_VAR_INIT(1)
+    .next_task_id = 1
 };
 
 // =============================================================================

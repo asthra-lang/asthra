@@ -144,7 +144,7 @@ ASTNode* parser_parse(const char *input) {
         // Initialize all fields to default values
         node->location = (SourceLocation){0};
         node->type_info = NULL;
-        node->ref_count = ATOMIC_VAR_INIT(1);
+        node->ref_count = 1;
         memset(&node->flags, 0, sizeof(node->flags));
     }
     return node;
