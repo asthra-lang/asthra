@@ -172,12 +172,14 @@ static void test_llvm_output_formats(void) {
     options.backend_type = ASTHRA_BACKEND_LLVM_IR;
 
     // Test default extension
-    char *output_default = asthra_backend_get_output_filename(options.backend_type, "test.as", NULL);
+    char *output_default =
+        asthra_backend_get_output_filename(options.backend_type, "test.as", NULL);
     assert(strcmp(output_default, "test.ll") == 0);
     free(output_default);
 
     // Test with explicit output file
-    char *output_explicit = asthra_backend_get_output_filename(options.backend_type, "test.as", "output.ll");
+    char *output_explicit =
+        asthra_backend_get_output_filename(options.backend_type, "test.as", "output.ll");
     assert(strcmp(output_explicit, "output.ll") == 0);
     free(output_explicit);
 

@@ -45,35 +45,31 @@ static int test_failed = 0;
 
 TEST_CASE(test_enhanced_diagnostics_split_works) {
     // Test creating a basic diagnostic
-    EnhancedDiagnostic *diagnostic = enhanced_diagnostic_create("E001", DIAGNOSTIC_ERROR, 
-                                                               "Test error message");
+    EnhancedDiagnostic *diagnostic =
+        enhanced_diagnostic_create("E001", DIAGNOSTIC_ERROR, "Test error message");
     ASSERT_NOT_NULL(diagnostic);
     ASSERT_STREQ(diagnostic->code, "E001");
     ASSERT_EQ(diagnostic->level, DIAGNOSTIC_ERROR);
     ASSERT_STREQ(diagnostic->message, "Test error message");
 
     // Test adding a span
-    DiagnosticSpan span = {
-        .start_line = 10,
-        .start_column = 5,
-        .end_line = 10,
-        .end_column = 15,
-        .file_path = "test.asthra",
-        .label = "here",
-        .snippet = NULL
-    };
+    DiagnosticSpan span = {.start_line = 10,
+                           .start_column = 5,
+                           .end_line = 10,
+                           .end_column = 15,
+                           .file_path = "test.asthra",
+                           .label = "here",
+                           .snippet = NULL};
     bool result = enhanced_diagnostic_add_span(diagnostic, &span);
     ASSERT_TRUE(result);
     ASSERT_EQ(diagnostic->span_count, 1);
 
     // Test adding a suggestion
-    DiagnosticSuggestion suggestion = {
-        .type = SUGGESTION_REPLACE,
-        .span = span,
-        .text = "fixed_text",
-        .confidence = CONFIDENCE_HIGH,
-        .rationale = "This is the correct syntax"
-    };
+    DiagnosticSuggestion suggestion = {.type = SUGGESTION_REPLACE,
+                                       .span = span,
+                                       .text = "fixed_text",
+                                       .confidence = CONFIDENCE_HIGH,
+                                       .rationale = "This is the correct syntax"};
     result = enhanced_diagnostic_add_suggestion(diagnostic, &suggestion);
     ASSERT_TRUE(result);
     ASSERT_EQ(diagnostic->suggestion_count, 1);
@@ -89,25 +85,25 @@ TEST_CASE(test_enhanced_diagnostics_split_works) {
 
     free(json);
     enhanced_diagnostic_destroy(diagnostic);
-    
+
     return 1; // Test passed
 }
 
 int main(void) {
     printf("=== Enhanced Diagnostics Split Test ===\n\n");
-    
+
     RUN_TEST(test_enhanced_diagnostics_split_works);
-    
+
     printf("\n=== Test Summary ===\n");
     printf("Total tests: %d\n", test_count);
     printf("Passed: %d\n", test_passed);
     printf("Failed: %d\n", test_failed);
-    
+
     if (test_failed == 0) {
         printf("\n✅ All enhanced diagnostics split tests passed!\n");
     } else {
         printf("\n❌ Some tests failed.\n");
     }
-    
+
     return test_failed > 0 ? 1 : 0;
 }

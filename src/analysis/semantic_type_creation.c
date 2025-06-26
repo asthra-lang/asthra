@@ -113,7 +113,7 @@ TypeDescriptor *type_descriptor_create_slice(TypeDescriptor *element_type) {
 
     slice_type->size = sizeof(void *) + sizeof(size_t); // ptr + len
     slice_type->alignment = _Alignof(void *);
-    
+
     // Create name like "[]i32"
     char name_buffer[256];
     const char *elem_name = element_type->name ? element_type->name : "unknown";

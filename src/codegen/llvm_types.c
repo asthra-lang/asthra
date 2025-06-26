@@ -95,7 +95,7 @@ LLVMTypeRef asthra_type_to_llvm(LLVMBackendData *data, const TypeInfo *type) {
                 return LLVMArrayType(elem_type, (unsigned)desc->data.array.size);
             }
         }
-        
+
         // Regular slice: struct with ptr + length
         {
             LLVMTypeRef elem_type = asthra_type_to_llvm(data, type->data.slice.element_type);

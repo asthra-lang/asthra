@@ -111,35 +111,35 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
 
     // Create function
     LLVMValueRef function = NULL;
-    
+
     // Special handling for main function - create a C-compatible wrapper
     if (strcmp(func_name, "main") == 0) {
         // Create the Asthra main function with a different name
         function = LLVMAddFunction(data->module, "asthra_main", fn_type);
-        
+
         // Create the C main function signature: int main(int argc, char **argv)
         LLVMTypeRef c_param_types[] = {
-            data->i32_type,                              // int argc
-            LLVMPointerType(data->ptr_type, 0)          // char **argv
+            data->i32_type,                    // int argc
+            LLVMPointerType(data->ptr_type, 0) // char **argv
         };
         LLVMTypeRef c_main_type = LLVMFunctionType(data->i32_type, c_param_types, 2, false);
-        
+
         // Create the C main function
         LLVMValueRef c_main = LLVMAddFunction(data->module, "main", c_main_type);
-        
+
         // Save current builder position
         LLVMBasicBlockRef current_block = LLVMGetInsertBlock(data->builder);
-        
+
         // Create the entry block for C main
         LLVMBasicBlockRef c_entry = LLVMAppendBasicBlockInContext(data->context, c_main, "entry");
         LLVMPositionBuilderAtEnd(data->builder, c_entry);
-        
+
         // Call the Asthra main function
         LLVMBuildCall2(data->builder, fn_type, function, NULL, 0, "");
-        
+
         // Return 0
         LLVMBuildRet(data->builder, LLVMConstInt(data->i32_type, 0, false));
-        
+
         // Restore builder position
         if (current_block) {
             LLVMPositionBuilderAtEnd(data->builder, current_block);
@@ -270,7 +270,7 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
         if (LLVMVerifyFunction(function, LLVMPrintMessageAction)) {
             // Function verification failed - this should not happen with our corrected
             // implementation
-            fprintf(stderr, "LLVM function verification failed for %s\n", 
+            fprintf(stderr, "LLVM function verification failed for %s\n",
                     strcmp(func_name, "main") == 0 ? "asthra_main" : func_name);
 
             // Get detailed error info

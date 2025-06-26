@@ -421,7 +421,7 @@ int main(void) {
         // "Call multiple functions in sequence" is no longer @wip - don't skip it
         bdd_skip_scenario("Call a function that returns a value [@wip]");
         // "Nested function calls" is no longer @wip - don't skip it
-        bdd_skip_scenario("Function with multiple parameters of different types [@wip]");
+        // bdd_skip_scenario("Function with multiple parameters of different types [@wip]");
         // Recursive function calls is no longer @wip in the feature file
         bdd_skip_scenario("Function call in expression context [@wip]");
         bdd_skip_scenario("Forward function declaration [@wip]");
@@ -436,6 +436,7 @@ int main(void) {
     test_function_with_params();
     test_nested_calls();
     test_recursive();
+    test_mixed_params();
     
     // Cleanup
     common_cleanup();

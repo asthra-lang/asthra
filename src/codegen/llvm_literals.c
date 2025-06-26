@@ -48,7 +48,22 @@ LLVMValueRef generate_float_literal(LLVMBackendData *data, const ASTNode *node) 
         return NULL;
     }
 
-    return LLVMConstReal(data->f64_type, node->data.float_literal.value);
+    // Use type information from semantic analysis if available
+    LLVMTypeRef float_type = data->f64_type; // default
+    if (node->type_info && node->type_info->category == TYPE_INFO_PRIMITIVE) {
+        switch (node->type_info->data.primitive.kind) {
+        case PRIMITIVE_INFO_F32:
+            float_type = data->f32_type;
+            break;
+        case PRIMITIVE_INFO_F64:
+            float_type = data->f64_type;
+            break;
+        default:
+            float_type = data->f64_type;
+            break;
+        }
+    }
+    return LLVMConstReal(float_type, node->data.float_literal.value);
 }
 
 // Generate code for string literals

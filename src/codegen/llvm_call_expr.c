@@ -84,7 +84,7 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
                 if (fn_type && LLVMGetReturnType(fn_type) != data->void_type) {
                     method_result_name = "method_call";
                 }
-                
+
                 LLVMValueRef result = LLVMBuildCall2(data->builder, fn_type, function, args,
                                                      (unsigned)total_args, method_result_name);
                 free(args);
@@ -152,9 +152,9 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
     if (fn_type && LLVMGetReturnType(fn_type) != data->void_type) {
         result_name = "call";
     }
-    
-    LLVMValueRef result =
-        LLVMBuildCall2(data->builder, fn_type, function, args, (unsigned)actual_arg_count, result_name);
+
+    LLVMValueRef result = LLVMBuildCall2(data->builder, fn_type, function, args,
+                                         (unsigned)actual_arg_count, result_name);
 
     if (args)
         free(args);

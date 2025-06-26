@@ -12,8 +12,8 @@
 #ifndef AST_NODE_CLONING_INTERNAL_H
 #define AST_NODE_CLONING_INTERNAL_H
 
-#include "ast_node_cloning.h"
 #include "ast.h"
+#include "ast_node_cloning.h"
 #include "ast_node_creation.h"
 #include "ast_node_list.h"
 

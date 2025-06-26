@@ -44,18 +44,16 @@ AsthraLLVMToolResult asthra_llvm_link(const char **object_files, size_t num_obje
 
     // Add optimization level
     argv[argc++] = asthra_llvm_opt_level_flag(options->opt_level);
-    
+
     // Link with Asthra runtime library
     // Try to find the runtime library in multiple locations
-    const char* lib_paths[] = {
-        "./build/lib",         // From project root
-        "../build/lib",        // From bdd directory
-        "./lib",               // From build directory
-        NULL
-    };
-    
+    const char *lib_paths[] = {"./build/lib",  // From project root
+                               "../build/lib", // From bdd directory
+                               "./lib",        // From build directory
+                               NULL};
+
     // Find the first existing library path
-    const char* lib_path = NULL;
+    const char *lib_path = NULL;
     for (int i = 0; lib_paths[i] != NULL; i++) {
         char test_path[1024];
         snprintf(test_path, sizeof(test_path), "%s/libasthra_runtime.a", lib_paths[i]);
@@ -64,7 +62,7 @@ AsthraLLVMToolResult asthra_llvm_link(const char **object_files, size_t num_obje
             break;
         }
     }
-    
+
     if (lib_path) {
         argv[argc++] = "-L";
         argv[argc++] = lib_path;

@@ -53,7 +53,7 @@ bool analyze_array_literal(SemanticAnalyzer *analyzer, ASTNode *expr) {
             // Extract element type from expected type if available
             TypeDescriptor *expected_element_type = NULL;
             TypeDescriptor *saved_expected_type = analyzer->expected_type;
-            
+
             if (analyzer->expected_type && analyzer->expected_type->category == TYPE_ARRAY) {
                 expected_element_type = analyzer->expected_type->data.array.element_type;
                 analyzer->expected_type = expected_element_type;
@@ -64,7 +64,7 @@ bool analyze_array_literal(SemanticAnalyzer *analyzer, ASTNode *expr) {
                 analyzer->expected_type = saved_expected_type;
                 return false;
             }
-            
+
             // Restore the expected type
             analyzer->expected_type = saved_expected_type;
 
@@ -75,7 +75,7 @@ bool analyze_array_literal(SemanticAnalyzer *analyzer, ASTNode *expr) {
 
             // Get the element type - prefer expected type if available
             TypeDescriptor *element_type = NULL;
-            
+
             // If we extracted an expected element type earlier, use it
             if (expected_element_type) {
                 element_type = expected_element_type;
@@ -182,11 +182,11 @@ bool analyze_array_literal(SemanticAnalyzer *analyzer, ASTNode *expr) {
     TypeDescriptor *common_element_type = NULL;
     bool all_elements_constant = true;
     bool has_side_effects = false;
-    
+
     // Extract expected element type if available
     TypeDescriptor *expected_element_type = NULL;
     TypeDescriptor *saved_expected_type = analyzer->expected_type;
-    
+
     if (analyzer->expected_type && analyzer->expected_type->category == TYPE_ARRAY) {
         expected_element_type = analyzer->expected_type->data.array.element_type;
         analyzer->expected_type = expected_element_type;
@@ -233,13 +233,14 @@ bool analyze_array_literal(SemanticAnalyzer *analyzer, ASTNode *expr) {
         }
         type_descriptor_release(element_type);
     }
-    
+
     // Restore the expected type
     analyzer->expected_type = saved_expected_type;
 
     // If we have an expected element type and no conflicts, use it
     if (expected_element_type && common_element_type) {
-        if (semantic_check_type_compatibility(analyzer, common_element_type, expected_element_type)) {
+        if (semantic_check_type_compatibility(analyzer, common_element_type,
+                                              expected_element_type)) {
             type_descriptor_release(common_element_type);
             common_element_type = expected_element_type;
             type_descriptor_retain(common_element_type);

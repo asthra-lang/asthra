@@ -122,9 +122,32 @@ bool analyze_binary_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
         return false;
     }
 
-    // Recursively analyze operands
-    if (!semantic_analyze_expression(analyzer, left) ||
-        !semantic_analyze_expression(analyzer, right)) {
+    // Recursively analyze left operand first
+    if (!semantic_analyze_expression(analyzer, left)) {
+        return false;
+    }
+
+    // Get left operand type to use as context for right operand
+    TypeDescriptor *left_type_hint = NULL;
+    if (left->type_info && left->type_info->type_descriptor) {
+        left_type_hint = (TypeDescriptor *)left->type_info->type_descriptor;
+    }
+
+    // For comparison and arithmetic operations, set expected type for right operand
+    TypeDescriptor *old_expected_type = analyzer->expected_type;
+    if (left_type_hint && (op == BINOP_EQ || op == BINOP_NE || op == BINOP_LT || op == BINOP_GT ||
+                           op == BINOP_LE || op == BINOP_GE || op == BINOP_ADD || op == BINOP_SUB ||
+                           op == BINOP_MUL || op == BINOP_DIV || op == BINOP_MOD)) {
+        analyzer->expected_type = left_type_hint;
+    }
+
+    // Analyze right operand with expected type context
+    bool right_result = semantic_analyze_expression(analyzer, right);
+
+    // Restore previous expected type
+    analyzer->expected_type = old_expected_type;
+
+    if (!right_result) {
         return false;
     }
 

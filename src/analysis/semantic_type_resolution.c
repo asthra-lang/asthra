@@ -332,24 +332,26 @@ TypeDescriptor *analyze_type_node(SemanticAnalyzer *analyzer, ASTNode *type_node
 
         // Evaluate the constant expression to get the size
         ConstValue *size_value = NULL;
-        
+
         // Handle different types of constant expressions
         if (size_node->type == AST_INTEGER_LITERAL) {
             // Direct integer literal
             size_value = const_value_create_integer(size_node->data.integer_literal.value);
         } else if (size_node->type == AST_IDENTIFIER) {
             // Const identifier - look up in symbol table
-            SymbolEntry *symbol = semantic_resolve_identifier(analyzer, size_node->data.identifier.name);
+            SymbolEntry *symbol =
+                semantic_resolve_identifier(analyzer, size_node->data.identifier.name);
             if (symbol && symbol->kind == SYMBOL_CONST && symbol->const_value) {
                 if (symbol->const_value->type == CONST_VALUE_INTEGER) {
-                    size_value = const_value_create_integer(symbol->const_value->data.integer_value);
+                    size_value =
+                        const_value_create_integer(symbol->const_value->data.integer_value);
                 }
             }
         } else {
             // Try the general const expression evaluator
             size_value = evaluate_literal_as_const(analyzer, size_node);
         }
-        
+
         if (!size_value) {
             semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_EXPRESSION, size_node->location,
                                   "Failed to evaluate array size");

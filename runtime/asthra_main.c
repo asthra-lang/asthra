@@ -12,10 +12,10 @@ void _main(void);
 // C entry point
 int main(int argc, char *argv[]) {
     // Initialize runtime if needed
-    
+
     // Call the Asthra main function
     _main();
-    
+
     // Return success
     return 0;
 }

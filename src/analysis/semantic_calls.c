@@ -415,8 +415,17 @@ bool validate_function_arguments(SemanticAnalyzer *analyzer, ASTNode *call_expr,
                 continue;
             }
 
-            // Analyze the argument expression
-            if (!semantic_analyze_expression(analyzer, arg)) {
+            // Set expected type context for the argument
+            TypeDescriptor *old_expected_type = analyzer->expected_type;
+            analyzer->expected_type = expected_param_type;
+
+            // Analyze the argument expression with type context
+            bool analyze_result = semantic_analyze_expression(analyzer, arg);
+
+            // Restore previous expected type
+            analyzer->expected_type = old_expected_type;
+
+            if (!analyze_result) {
                 return false;
             }
 
@@ -490,8 +499,17 @@ bool validate_method_arguments(SemanticAnalyzer *analyzer, ASTNode *call_expr,
                 continue;
             }
 
-            // Analyze the argument expression
-            if (!semantic_analyze_expression(analyzer, arg)) {
+            // Set expected type context for the argument
+            TypeDescriptor *old_expected_type = analyzer->expected_type;
+            analyzer->expected_type = expected_param_type;
+
+            // Analyze the argument expression with type context
+            bool analyze_result = semantic_analyze_expression(analyzer, arg);
+
+            // Restore previous expected type
+            analyzer->expected_type = old_expected_type;
+
+            if (!analyze_result) {
                 return false;
             }
 

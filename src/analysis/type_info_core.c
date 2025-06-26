@@ -185,7 +185,7 @@ TypeInfo *type_info_from_descriptor(TypeDescriptor *descriptor) {
         type_info->category = TYPE_INFO_SLICE;
         // Create TypeInfo for element type
         if (descriptor->data.slice.element_type) {
-            type_info->data.slice.element_type = 
+            type_info->data.slice.element_type =
                 type_info_from_descriptor(descriptor->data.slice.element_type);
         }
         break;

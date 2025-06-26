@@ -163,14 +163,14 @@ bool analyze_function_declaration(SemanticAnalyzer *analyzer, ASTNode *func_decl
             TypeDescriptor *param_type = func_type->data.function.param_types[i];
             if (param_type) {
                 type_descriptor_retain(param_type);
-                
+
                 // Set TypeInfo on the parameter node for code generation
                 TypeInfo *param_type_info = type_info_from_descriptor(param_type);
                 if (param_type_info) {
                     ast_node_set_type_info(param, param_type_info);
                     type_info_release(param_type_info); // ast_node_set_type_info retains it
                 }
-                
+
                 if (!semantic_declare_symbol(analyzer, param_name, SYMBOL_VARIABLE, param_type,
                                              param)) {
                     semantic_report_error(

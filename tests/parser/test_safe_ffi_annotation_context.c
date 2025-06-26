@@ -97,7 +97,8 @@ static AsthraTestResult test_single_annotation_in_extern_context(AsthraTestConte
         "extern \"C\" fn malloc(size: usize) -> #[transfer_full] *mut u8;",
         "extern \"C\" fn free(#[transfer_full] ptr: *mut u8);",
         "extern \"C\" fn strlen(#[borrowed] s: *const u8) -> usize;",
-        "extern fn custom_function(#[transfer_none] data: *const u8) -> #[transfer_none] *const i32;"};
+        "extern fn custom_function(#[transfer_none] data: *const u8) -> #[transfer_none] *const "
+        "i32;"};
 
     size_t count = sizeof(extern_sources) / sizeof(extern_sources[0]);
 

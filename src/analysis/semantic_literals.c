@@ -89,7 +89,7 @@ bool analyze_literal_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
     switch (expr->type) {
     case AST_INTEGER_LITERAL: {
         TypeDescriptor *int_type = NULL;
-        
+
         // Check if we have an expected type context
         if (analyzer->expected_type) {
             // Check if expected type is an integer type
@@ -105,7 +105,7 @@ bool analyze_literal_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
                 }
             }
         }
-        
+
         // Default to i32 if no expected type or not an integer type
         if (!int_type) {
             int_type = semantic_get_builtin_type(analyzer, "i32");
@@ -115,18 +115,37 @@ bool analyze_literal_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
                 return false;
             }
         }
-        
+
         expr->type_info = create_type_info_from_descriptor(int_type);
         return expr->type_info != NULL;
     }
 
     case AST_FLOAT_LITERAL: {
-        TypeDescriptor *float_type = semantic_get_builtin_type(analyzer, "f32");
-        if (!float_type) {
-            semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, expr->location,
-                                  "Failed to get builtin type 'f32'");
-            return false;
+        TypeDescriptor *float_type = NULL;
+
+        // Check if we have an expected type context
+        if (analyzer->expected_type) {
+            // Check if expected type is a float type
+            if (analyzer->expected_type->category == TYPE_FLOAT ||
+                analyzer->expected_type->category == TYPE_PRIMITIVE) {
+                // Use the expected type if it's a valid float type
+                const char *type_name = analyzer->expected_type->name;
+                if (type_name && (strcmp(type_name, "f32") == 0 || strcmp(type_name, "f64") == 0)) {
+                    float_type = analyzer->expected_type;
+                }
+            }
         }
+
+        // Default to f64 if no expected type or not a float type
+        if (!float_type) {
+            float_type = semantic_get_builtin_type(analyzer, "f64");
+            if (!float_type) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, expr->location,
+                                      "Failed to get builtin type 'f64'");
+                return false;
+            }
+        }
+
         expr->type_info = create_type_info_from_descriptor(float_type);
         return expr->type_info != NULL;
     }

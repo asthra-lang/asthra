@@ -154,7 +154,6 @@ Feature: Function Call Functionality
     And the output should contain "Nested calls result: 21"
     And the exit code should be 0
 
-  @wip
   Scenario: Function with multiple parameters of different types
     Given I have a file "mixed_params.asthra" with:
       """
