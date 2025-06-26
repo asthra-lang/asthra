@@ -113,7 +113,6 @@ Feature: Function Call Functionality
     Then the output should contain "The answer is 42"
     And the exit code should be 0
 
-  @wip
   Scenario: Nested function calls
     Given I have a file "nested_calls.asthra" with:
       """

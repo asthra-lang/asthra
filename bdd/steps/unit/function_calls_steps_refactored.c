@@ -285,7 +285,7 @@ BddTestCase function_calls_test_cases[] = {
     BDD_WIP_TEST_CASE(multiple_functions, test_multiple_functions),
     BDD_WIP_TEST_CASE(function_with_params, test_function_with_params),
     BDD_WIP_TEST_CASE(function_return, test_function_return),
-    BDD_WIP_TEST_CASE(nested_calls, test_nested_calls),
+    BDD_TEST_CASE(nested_calls, test_nested_calls),
     BDD_WIP_TEST_CASE(undefined_function_error, test_undefined_function_error),
     BDD_WIP_TEST_CASE(wrong_arg_count_error, test_wrong_arg_count_error),
     BDD_WIP_TEST_CASE(type_mismatch_error, test_type_mismatch_error),
