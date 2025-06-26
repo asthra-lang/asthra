@@ -28,7 +28,6 @@ Feature: Function Call Functionality
     Then the output should contain "Hello from greet function!"
     And the exit code should be 0
 
-  @wip
   Scenario: Call multiple functions in sequence
     Given I have a file "multiple_functions.asthra" with:
       """

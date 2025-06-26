@@ -418,7 +418,7 @@ int main(void) {
     // @wip scenarios - skip all function call tests until compiler is available
     if (bdd_should_skip_wip()) {
         // "Call a simple function with no parameters" is not @wip - don't skip it
-        bdd_skip_scenario("Call multiple functions in sequence [@wip]");
+        // "Call multiple functions in sequence" is no longer @wip - don't skip it
         bdd_skip_scenario("Call a function that returns a value [@wip]");
         bdd_skip_scenario("Nested function calls [@wip]");
         bdd_skip_scenario("Function with multiple parameters of different types [@wip]");
@@ -432,6 +432,7 @@ int main(void) {
     
     // Run scenarios that are not marked @wip
     test_simple_function();
+    test_multiple_functions();
     test_function_with_params();
     test_recursive();
     
