@@ -534,5 +534,6 @@ CMAKE_*.md
 README-*.md
 
 prompter*.toml
+.prompter_state.json
 
 # End of .gitignore

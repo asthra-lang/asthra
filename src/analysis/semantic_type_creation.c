@@ -113,7 +113,12 @@ TypeDescriptor *type_descriptor_create_slice(TypeDescriptor *element_type) {
 
     slice_type->size = sizeof(void *) + sizeof(size_t); // ptr + len
     slice_type->alignment = _Alignof(void *);
-    slice_type->name = NULL;
+    
+    // Create name like "[]i32"
+    char name_buffer[256];
+    const char *elem_name = element_type->name ? element_type->name : "unknown";
+    snprintf(name_buffer, sizeof(name_buffer), "[]%s", elem_name);
+    slice_type->name = strdup(name_buffer);
 
     slice_type->data.slice.element_type = element_type;
     type_descriptor_retain(element_type); // Retain the element type

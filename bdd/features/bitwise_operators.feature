@@ -77,7 +77,6 @@ Feature: Bitwise Operators
     And the output should contain "Flag combination: 0 | 1 | 4 | 8 = 13"
     And the exit code should be 0
 
-  @wip
   Scenario: Bitwise XOR operation
     Given I have a file "bitwise_xor.asthra" with:
       """

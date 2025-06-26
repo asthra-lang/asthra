@@ -79,8 +79,14 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
                     return NULL;
                 }
 
+                // Only name the result if the function returns a non-void value
+                const char *method_result_name = "";
+                if (fn_type && LLVMGetReturnType(fn_type) != data->void_type) {
+                    method_result_name = "method_call";
+                }
+                
                 LLVMValueRef result = LLVMBuildCall2(data->builder, fn_type, function, args,
-                                                     (unsigned)total_args, "method_call");
+                                                     (unsigned)total_args, method_result_name);
                 free(args);
                 return result;
             }
@@ -141,8 +147,14 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
         return NULL;
     }
 
+    // Only name the result if the function returns a non-void value
+    const char *result_name = "";
+    if (fn_type && LLVMGetReturnType(fn_type) != data->void_type) {
+        result_name = "call";
+    }
+    
     LLVMValueRef result =
-        LLVMBuildCall2(data->builder, fn_type, function, args, (unsigned)actual_arg_count, "call");
+        LLVMBuildCall2(data->builder, fn_type, function, args, (unsigned)actual_arg_count, result_name);
 
     if (args)
         free(args);

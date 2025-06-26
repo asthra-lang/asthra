@@ -155,6 +155,8 @@ static int llvm_backend_generate(AsthraBackend *backend, AsthraCompilerContext *
         finalize_debug_info(data);
     }
 
+    // No wrapper generation here - we'll handle it differently
+
     // Verify module
     char *error = NULL;
     if (LLVMVerifyModule(data->module, LLVMReturnStatusAction, &error)) {

@@ -417,32 +417,23 @@ int main(void) {
     
     // @wip scenarios - skip all function call tests until compiler is available
     if (bdd_should_skip_wip()) {
-        bdd_skip_scenario("Call a simple function with no parameters [@wip]");
+        // "Call a simple function with no parameters" is not @wip - don't skip it
         bdd_skip_scenario("Call multiple functions in sequence [@wip]");
-        bdd_skip_scenario("Call a function with integer parameters [@wip]");
         bdd_skip_scenario("Call a function that returns a value [@wip]");
         bdd_skip_scenario("Nested function calls [@wip]");
         bdd_skip_scenario("Function with multiple parameters of different types [@wip]");
-        bdd_skip_scenario("Recursive function calls [@wip]");
+        // Recursive function calls is no longer @wip in the feature file
         bdd_skip_scenario("Function call in expression context [@wip]");
         bdd_skip_scenario("Forward function declaration [@wip]");
         bdd_skip_scenario("Error - calling undefined function [@wip]");
         bdd_skip_scenario("Error - incorrect number of arguments [@wip]");
         bdd_skip_scenario("Error - type mismatch in function arguments [@wip]");
-    } else {
-        test_simple_function();
-        // test_multiple_functions();
-        // test_function_with_params();
-        // test_function_return();
-        // test_nested_calls();
-        // test_mixed_params();
-        // test_recursive();
-        // test_function_in_expression();
-        // test_forward_declaration();
-        // test_undefined_function_error();
-        // test_wrong_arg_count_error();
-        // test_type_mismatch_error();
     }
+    
+    // Run scenarios that are not marked @wip
+    test_simple_function();
+    test_function_with_params();
+    test_recursive();
     
     // Cleanup
     common_cleanup();

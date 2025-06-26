@@ -132,6 +132,22 @@ LLVMValueRef generate_binary_op(LLVMBackendData *data, const ASTNode *node) {
     case BINOP_OR:
         return LLVMBuildOr(data->builder, left, right, "or");
 
+    case BINOP_BITWISE_AND:
+        return LLVMBuildAnd(data->builder, left, right, "bitand");
+
+    case BINOP_BITWISE_OR:
+        return LLVMBuildOr(data->builder, left, right, "bitor");
+
+    case BINOP_BITWISE_XOR:
+        return LLVMBuildXor(data->builder, left, right, "bitxor");
+
+    case BINOP_LSHIFT:
+        return LLVMBuildShl(data->builder, left, right, "shl");
+
+    case BINOP_RSHIFT:
+        // TODO: Handle signed vs unsigned right shift
+        return LLVMBuildAShr(data->builder, left, right, "ashr");
+
     default:
         return NULL;
     }

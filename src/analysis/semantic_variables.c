@@ -9,11 +9,13 @@
  */
 
 #include "semantic_variables.h"
+#include "../parser/ast.h"
 #include "../parser/ast_node_list.h"
 #include "semantic_core.h"
 #include "semantic_symbols.h"
 #include "semantic_types.h"
 #include "semantic_utilities.h"
+#include "type_info.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -151,6 +153,13 @@ bool analyze_let_statement(SemanticAnalyzer *analyzer, ASTNode *stmt) {
         semantic_report_error(analyzer, SEMANTIC_ERROR_DUPLICATE_SYMBOL, stmt->location,
                               "Failed to register variable '%s' in symbol table", var_name);
         return false;
+    }
+
+    // Attach TypeInfo to the AST node for codegen
+    TypeInfo *type_info = type_info_from_descriptor(var_type);
+    if (type_info) {
+        ast_node_set_type_info(stmt, type_info);
+        type_info_release(type_info); // ast_node_set_type_info retains it
     }
 
     return true;

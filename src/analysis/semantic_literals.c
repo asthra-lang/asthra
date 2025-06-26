@@ -62,6 +62,11 @@ bool analyze_identifier_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
         }
     }
 
+    // Mark identifier as constant expression if it refers to a constant
+    if (symbol->kind == SYMBOL_CONST) {
+        expr->flags.is_constant_expr = true;
+    }
+
     return true;
 }
 
@@ -83,12 +88,34 @@ bool analyze_literal_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
     // Handle other literal types
     switch (expr->type) {
     case AST_INTEGER_LITERAL: {
-        TypeDescriptor *int_type = semantic_get_builtin_type(analyzer, "i32");
-        if (!int_type) {
-            semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, expr->location,
-                                  "Failed to get builtin type 'i32'");
-            return false;
+        TypeDescriptor *int_type = NULL;
+        
+        // Check if we have an expected type context
+        if (analyzer->expected_type) {
+            // Check if expected type is an integer type
+            if (analyzer->expected_type->category == TYPE_INTEGER ||
+                analyzer->expected_type->category == TYPE_PRIMITIVE) {
+                // Use the expected type if it's a valid integer type
+                const char *type_name = analyzer->expected_type->name;
+                if (type_name && (strstr(type_name, "i8") || strstr(type_name, "i16") ||
+                                  strstr(type_name, "i32") || strstr(type_name, "i64") ||
+                                  strstr(type_name, "u8") || strstr(type_name, "u16") ||
+                                  strstr(type_name, "u32") || strstr(type_name, "u64"))) {
+                    int_type = analyzer->expected_type;
+                }
+            }
         }
+        
+        // Default to i32 if no expected type or not an integer type
+        if (!int_type) {
+            int_type = semantic_get_builtin_type(analyzer, "i32");
+            if (!int_type) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, expr->location,
+                                      "Failed to get builtin type 'i32'");
+                return false;
+            }
+        }
+        
         expr->type_info = create_type_info_from_descriptor(int_type);
         return expr->type_info != NULL;
     }

@@ -65,7 +65,6 @@ Feature: Function Call Functionality
     And the output should contain "Third function called"
     And the exit code should be 0
 
-  @wip
   Scenario: Call a function with integer parameters
     Given I have a file "function_with_params.asthra" with:
       """
@@ -194,7 +193,6 @@ Feature: Function Call Functionality
     And the output should contain "Processing with flag disabled"
     And the exit code should be 0
 
-  @wip
   Scenario: Recursive function calls
     Given I have a file "recursive.asthra" with:
       """

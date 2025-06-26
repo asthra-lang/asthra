@@ -7,6 +7,7 @@
  */
 
 #include "llvm_types.h"
+#include "../analysis/type_info_lifecycle.h"
 #include <assert.h>
 #include <stdlib.h>
 
@@ -83,7 +84,19 @@ LLVMTypeRef asthra_type_to_llvm(LLVMBackendData *data, const TypeInfo *type) {
         }
 
     case TYPE_INFO_SLICE:
-        // Slices are represented as structs with ptr + length
+        // Check if this is actually a fixed-size array by looking at the TypeDescriptor
+        if (type->type_descriptor && type->type_descriptor->category == TYPE_ARRAY) {
+            // This is a fixed-size array, not a slice
+            const TypeDescriptor *desc = type->type_descriptor;
+            TypeInfo *elem_type_info = type_info_from_descriptor(desc->data.array.element_type);
+            if (elem_type_info) {
+                LLVMTypeRef elem_type = asthra_type_to_llvm(data, elem_type_info);
+                type_info_release(elem_type_info);
+                return LLVMArrayType(elem_type, (unsigned)desc->data.array.size);
+            }
+        }
+        
+        // Regular slice: struct with ptr + length
         {
             LLVMTypeRef elem_type = asthra_type_to_llvm(data, type->data.slice.element_type);
             LLVMTypeRef fields[2] = {

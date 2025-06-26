@@ -57,7 +57,7 @@ void test_logical_not(void) {
         "\n"
         "pub fn main(none) -> i32 {\n"
         "    let val: bool = true;\n"
-        "    let negated = !val;\n"
+        "    let negated: bool = !val;\n"
         "    \n"
         "    if negated {\n"
         "        return 1;\n"
@@ -88,8 +88,8 @@ void test_logical_and(void) {
         "    let b: bool = true;\n"
         "    let c: bool = false;\n"
         "    \n"
-        "    let result1 = a && b;\n"
-        "    let result2 = a && c;\n"
+        "    let result1: bool = a && b;\n"
+        "    let result2: bool = a && c;\n"
         "    \n"
         "    if result1 && !result2 {\n"
         "        return 0;\n"
@@ -510,8 +510,6 @@ int main(void) {
     // Check if @wip scenarios should be skipped
     if (bdd_should_skip_wip()) {
         // Skip @wip scenarios
-        bdd_skip_scenario("Logical NOT operator [@wip]");
-        bdd_skip_scenario("Logical AND operator [@wip]");
         bdd_skip_scenario("Boolean expressions as values [@wip]");
         bdd_skip_scenario("Short-circuit evaluation with AND [@wip]");
         bdd_skip_scenario("Short-circuit evaluation with OR [@wip]");
@@ -521,6 +519,8 @@ int main(void) {
         
         // Run only non-@wip scenarios
         test_boolean_literals();
+        test_logical_not();
+        test_logical_and();
         test_logical_or();
         test_boolean_precedence();
         test_complex_boolean();

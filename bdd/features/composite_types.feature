@@ -6,7 +6,6 @@ Feature: Composite Types
   Background:
     Given the Asthra compiler is available
 
-  @wip
   Scenario: Fixed-size array declaration
     Given I have a file "fixed_array.asthra" with:
       """
@@ -26,7 +25,6 @@ Feature: Composite Types
     Then the output should contain "Fixed arrays work"
     And the exit code should be 0
 
-  @wip
   Scenario: Array with constant size expression
     Given I have a file "array_const_size.asthra" with:
       """

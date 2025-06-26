@@ -13,6 +13,7 @@
 #include "semantic_macros.h"
 #include "semantic_symbols.h"
 #include "semantic_types.h"
+#include "semantic_type_creation.h"
 #include "semantic_utilities.h"
 #include "symbol_utilities.h"
 #include "type_checking.h"
@@ -170,8 +171,8 @@ TypeDescriptor *semantic_get_expression_type(SemanticAnalyzer *analyzer, ASTNode
             return NULL;
         }
 
-        // Create slice type for the array literal
-        TypeDescriptor *array_type = type_descriptor_create_slice(element_type);
+        // Create fixed-size array type for the array literal
+        TypeDescriptor *array_type = type_descriptor_create_array(element_type, element_count);
         type_descriptor_release(element_type);
 
         return array_type;

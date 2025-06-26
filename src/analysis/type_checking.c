@@ -138,6 +138,12 @@ bool semantic_check_type_compatibility(SemanticAnalyzer *analyzer, TypeDescripto
                                       type2->data.pointer.pointee_type);
     }
 
+    // Array to slice conversion: [N]T can be assigned to []T
+    if (type1->category == TYPE_ARRAY && type2->category == TYPE_SLICE) {
+        return type_descriptor_equals(type1->data.array.element_type,
+                                      type2->data.slice.element_type);
+    }
+
     // Tuple compatibility (all element types must be compatible)
     if (type1->category == TYPE_TUPLE && type2->category == TYPE_TUPLE) {
         // Check element count matches

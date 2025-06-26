@@ -50,23 +50,46 @@ bool analyze_array_literal(SemanticAnalyzer *analyzer, ASTNode *expr) {
             ASTNode *value_expr = elements->nodes[1];
             ASTNode *count_expr = elements->nodes[2];
 
-            // Analyze the value expression
+            // Extract element type from expected type if available
+            TypeDescriptor *expected_element_type = NULL;
+            TypeDescriptor *saved_expected_type = analyzer->expected_type;
+            
+            if (analyzer->expected_type && analyzer->expected_type->category == TYPE_ARRAY) {
+                expected_element_type = analyzer->expected_type->data.array.element_type;
+                analyzer->expected_type = expected_element_type;
+            }
+
+            // Analyze the value expression with the expected element type context
             if (!semantic_analyze_expression(analyzer, value_expr)) {
+                analyzer->expected_type = saved_expected_type;
                 return false;
             }
+            
+            // Restore the expected type
+            analyzer->expected_type = saved_expected_type;
 
             // Analyze the count expression (should be a constant integer)
             if (!semantic_analyze_expression(analyzer, count_expr)) {
                 return false;
             }
 
-            // Get the element type from the value expression
-            TypeDescriptor *element_type = semantic_get_expression_type(analyzer, value_expr);
-            if (!element_type) {
-                semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_INFERENCE_FAILED,
-                                      value_expr->location,
-                                      "Failed to determine type for repeated array value");
-                return false;
+            // Get the element type - prefer expected type if available
+            TypeDescriptor *element_type = NULL;
+            
+            // If we extracted an expected element type earlier, use it
+            if (expected_element_type) {
+                element_type = expected_element_type;
+                // Increase ref count since we'll be using it
+                type_descriptor_retain(element_type);
+            } else {
+                // Otherwise, use the type from the value expression
+                element_type = semantic_get_expression_type(analyzer, value_expr);
+                if (!element_type) {
+                    semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_INFERENCE_FAILED,
+                                          value_expr->location,
+                                          "Failed to determine type for repeated array value");
+                    return false;
+                }
             }
 
             // Verify count is a constant expression
@@ -141,7 +164,7 @@ bool analyze_array_literal(SemanticAnalyzer *analyzer, ASTNode *expr) {
             // Set the type info for the expression
             semantic_set_expression_type(analyzer, expr, array_type);
 
-            // Release references
+            // Release references (we always own element_type now)
             type_descriptor_release(element_type);
             type_descriptor_release(array_type);
 
@@ -159,10 +182,20 @@ bool analyze_array_literal(SemanticAnalyzer *analyzer, ASTNode *expr) {
     TypeDescriptor *common_element_type = NULL;
     bool all_elements_constant = true;
     bool has_side_effects = false;
+    
+    // Extract expected element type if available
+    TypeDescriptor *expected_element_type = NULL;
+    TypeDescriptor *saved_expected_type = analyzer->expected_type;
+    
+    if (analyzer->expected_type && analyzer->expected_type->category == TYPE_ARRAY) {
+        expected_element_type = analyzer->expected_type->data.array.element_type;
+        analyzer->expected_type = expected_element_type;
+    }
 
     for (size_t i = 0; i < elements->count; i++) {
         ASTNode *element = elements->nodes[i];
         if (!semantic_analyze_expression(analyzer, element)) {
+            analyzer->expected_type = saved_expected_type;
             if (common_element_type) {
                 type_descriptor_release(common_element_type);
             }
@@ -199,6 +232,18 @@ bool analyze_array_literal(SemanticAnalyzer *analyzer, ASTNode *expr) {
             }
         }
         type_descriptor_release(element_type);
+    }
+    
+    // Restore the expected type
+    analyzer->expected_type = saved_expected_type;
+
+    // If we have an expected element type and no conflicts, use it
+    if (expected_element_type && common_element_type) {
+        if (semantic_check_type_compatibility(analyzer, common_element_type, expected_element_type)) {
+            type_descriptor_release(common_element_type);
+            common_element_type = expected_element_type;
+            type_descriptor_retain(common_element_type);
+        }
     }
 
     if (!common_element_type) {

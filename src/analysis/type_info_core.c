@@ -183,8 +183,17 @@ TypeInfo *type_info_from_descriptor(TypeDescriptor *descriptor) {
         break;
     case TYPE_SLICE:
         type_info->category = TYPE_INFO_SLICE;
-        // Don't create nested TypeInfo for now to avoid infinite loops
-        // The element type TypeInfo can be created lazily when needed
+        // Create TypeInfo for element type
+        if (descriptor->data.slice.element_type) {
+            type_info->data.slice.element_type = 
+                type_info_from_descriptor(descriptor->data.slice.element_type);
+        }
+        break;
+    case TYPE_ARRAY:
+        // Fixed-size arrays are treated as slices with known size
+        type_info->category = TYPE_INFO_SLICE;
+        // Store the array size in the size field (element count)
+        type_info->size = descriptor->data.array.size;
         break;
     case TYPE_POINTER:
         type_info->category = TYPE_INFO_POINTER;
