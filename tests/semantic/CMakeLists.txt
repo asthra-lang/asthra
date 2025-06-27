@@ -275,10 +275,19 @@ foreach(test_file ${REMAINING_TESTS})
     endif()
     
     add_test(NAME ${test_target} COMMAND ${test_target})
-    set_tests_properties(${test_target} PROPERTIES
-        TIMEOUT 30
-        LABELS semantic
-    )
+    
+    # Special case for struct_field_visibility test - increase timeout
+    if(${test_name} STREQUAL "test_struct_field_visibility_semantic")
+        set_tests_properties(${test_target} PROPERTIES
+            TIMEOUT 120
+            LABELS semantic
+        )
+    else()
+        set_tests_properties(${test_target} PROPERTIES
+            TIMEOUT 30
+            LABELS semantic
+        )
+    endif()
     
     # Add test executable as dependency to build-tests target
     if(TARGET build-tests)

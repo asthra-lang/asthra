@@ -26,13 +26,13 @@ TypeDescriptor *get_promoted_type(SemanticAnalyzer *analyzer, TypeDescriptor *le
         return NULL;
 
     // DEBUG: Log type promotion attempts
-    printf("DEBUG: get_promoted_type called with left='%s', right='%s'\n",
-           left_type->name ? left_type->name : "NULL",
-           right_type->name ? right_type->name : "NULL");
+    // printf("DEBUG: get_promoted_type called with left='%s', right='%s'\n",
+    //        left_type->name ? left_type->name : "NULL",
+    //        right_type->name ? right_type->name : "NULL");
 
     // If same type, return it
     if (semantic_types_equal(left_type, right_type)) {
-        printf("DEBUG: Types are equal, returning left type\n");
+        // printf("DEBUG: Types are equal, returning left type\n");
         return left_type;
     }
 
@@ -68,16 +68,16 @@ TypeDescriptor *get_promoted_type(SemanticAnalyzer *analyzer, TypeDescriptor *le
         bool right_is_size_type =
             (strcmp(right_type->name, "usize") == 0 || strcmp(right_type->name, "isize") == 0);
 
-        printf("DEBUG: left_is_size_type=%d, right_is_size_type=%d\n", left_is_size_type,
-               right_is_size_type);
+        // printf("DEBUG: left_is_size_type=%d, right_is_size_type=%d\n", left_is_size_type,
+        //        right_is_size_type);
 
         // If one operand is usize/isize, prefer that type (platform size)
         if (left_is_size_type && !right_is_size_type) {
-            printf("DEBUG: Promoting to left type (size type): %s\n", left_type->name);
+            // printf("DEBUG: Promoting to left type (size type): %s\n", left_type->name);
             return left_type;
         }
         if (right_is_size_type && !left_is_size_type) {
-            printf("DEBUG: Promoting to right type (size type): %s\n", right_type->name);
+            // printf("DEBUG: Promoting to right type (size type): %s\n", right_type->name);
             return right_type;
         }
 

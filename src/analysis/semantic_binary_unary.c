@@ -179,18 +179,18 @@ bool analyze_binary_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
     }
 
     // DEBUG: Log binary operation type checking
-    printf("DEBUG: Binary operation %d with left='%s', right='%s'\n", op,
-           left_type->name ? left_type->name : "NULL",
-           right_type->name ? right_type->name : "NULL");
+    // printf("DEBUG: Binary operation %d with left='%s', right='%s'\n", op,
+    //        left_type->name ? left_type->name : "NULL",
+    //        right_type->name ? right_type->name : "NULL");
 
     // Determine result type and check compatibility
     TypeDescriptor *result_type_descriptor =
         get_binary_op_result_type(analyzer, op, left_type, right_type, &expr->location);
 
-    printf("DEBUG: get_binary_op_result_type returned: %s\n",
-           result_type_descriptor
-               ? (result_type_descriptor->name ? result_type_descriptor->name : "NULL")
-               : "NULL");
+    // printf("DEBUG: get_binary_op_result_type returned: %s\n",
+    //        result_type_descriptor
+    //            ? (result_type_descriptor->name ? result_type_descriptor->name : "NULL")
+    //            : "NULL");
 
     if (!result_type_descriptor) {
         return false; // Error already reported by get_binary_op_result_type

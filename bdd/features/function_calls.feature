@@ -88,7 +88,6 @@ Feature: Function Call Functionality
     Then the output should contain "Addition result is correct: 8"
     And the exit code should be 0
 
-  @wip
   Scenario: Call a function that returns a value
     Given I have a file "function_return.asthra" with:
       """
