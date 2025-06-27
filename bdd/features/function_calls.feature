@@ -256,7 +256,6 @@ Feature: Function Call Functionality
     And the output should contain "Double of 2 is 4"
     And the exit code should be 0
 
-  @wip
   Scenario: Forward function declaration
     Given I have a file "forward_declaration.asthra" with:
       """

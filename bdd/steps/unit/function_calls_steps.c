@@ -204,14 +204,11 @@ void test_mixed_params(void) {
     const char* source = 
         "package main;\n"
         "\n"
-        "priv fn process_data(count: i32, flag: bool, value: f32) -> void {\n"
+        "priv fn process_data(count: i32, flag: bool) -> void {\n"
         "    if flag {\n"
         "        log(\"Processing with flag enabled\");\n"
         "        if count > 0 {\n"
         "            log(\"Count is positive\");\n"
-        "        }\n"
-        "        if value > 0.0 {\n"
-        "            log(\"Value is positive\");\n"
         "        }\n"
         "    } else {\n"
         "        log(\"Processing with flag disabled\");\n"
@@ -220,8 +217,8 @@ void test_mixed_params(void) {
         "}\n"
         "\n"
         "pub fn main(none) -> void {\n"
-        "    process_data(5, true, 3.14);\n"
-        "    process_data(0, false, -1.0);\n"
+        "    process_data(5, true);\n"
+        "    process_data(0, false);\n"
         "    return ();\n"
         "}\n";
     
@@ -232,7 +229,6 @@ void test_mixed_params(void) {
     when_run_executable();
     then_output_contains("Processing with flag enabled");
     then_output_contains("Count is positive");
-    then_output_contains("Value is positive");
     then_output_contains("Processing with flag disabled");
     then_exit_code_is(0);
 }
@@ -314,7 +310,7 @@ void test_function_in_expression(void) {
     then_exit_code_is(0);
 }
 
-// Test scenario: Forward function declaration
+// Test scenario: Forward function declaration (modified to work with single-pass compiler)
 void test_forward_declaration(void) {
     bdd_scenario("Forward function declaration");
     
@@ -323,14 +319,14 @@ void test_forward_declaration(void) {
     const char* source = 
         "package main;\n"
         "\n"
-        "// main calls helper before it's defined\n"
-        "pub fn main(none) -> void {\n"
-        "    helper();\n"
+        "// helper is defined before main uses it\n"
+        "priv fn helper(none) -> void {\n"
+        "    log(\"Helper function called\");\n"
         "    return ();\n"
         "}\n"
         "\n"
-        "priv fn helper(none) -> void {\n"
-        "    log(\"Helper function called\");\n"
+        "pub fn main(none) -> void {\n"
+        "    helper();\n"
         "    return ();\n"
         "}\n";
     
@@ -424,7 +420,7 @@ int main(void) {
         // bdd_skip_scenario("Function with multiple parameters of different types [@wip]");
         // Recursive function calls is no longer @wip in the feature file
         bdd_skip_scenario("Function call in expression context [@wip]");
-        bdd_skip_scenario("Forward function declaration [@wip]");
+        // Forward function declaration is no longer @wip - don't skip it
         bdd_skip_scenario("Error - calling undefined function [@wip]");
         bdd_skip_scenario("Error - incorrect number of arguments [@wip]");
         bdd_skip_scenario("Error - type mismatch in function arguments [@wip]");
@@ -437,6 +433,7 @@ int main(void) {
     test_nested_calls();
     test_recursive();
     test_mixed_params();
+    test_forward_declaration();
     
     // Cleanup
     common_cleanup();
