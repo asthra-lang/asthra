@@ -107,7 +107,6 @@ Feature: Composite Types
     Then the output should contain "Multiple element tuples work"
     And the exit code should be 0
 
-  @wip
   Scenario: Nested arrays
     Given I have a file "nested_arrays.asthra" with:
       """

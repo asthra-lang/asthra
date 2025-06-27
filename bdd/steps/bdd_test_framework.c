@@ -51,7 +51,9 @@ void bdd_cleanup_result(BddResult* result) {
 void bdd_run_test_case(BddTestCase* test_case) {
     if (!test_case || !test_case->function) return;
     
+    fprintf(stderr, "DEBUG: Running test case: %s\n", test_case->name);
     test_case->function();
+    fprintf(stderr, "DEBUG: Completed test case: %s\n", test_case->name);
 }
 
 int bdd_should_skip_test_case(BddTestCase* test_case) {

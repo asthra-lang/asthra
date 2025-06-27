@@ -69,7 +69,8 @@ static void execute_cli_command_with_path(const char* command_args) {
     }
     
     char full_command[1024];
-    snprintf(full_command, sizeof(full_command), "%s %s", compiler, command_args);
+    // Redirect stderr to stdout to capture error messages
+    snprintf(full_command, sizeof(full_command), "%s %s 2>&1", compiler, command_args);
     
     // Use BDD utilities for command execution
     if (cli_output) {
@@ -78,19 +79,28 @@ static void execute_cli_command_with_path(const char* command_args) {
     }
     
     cli_output = bdd_execute_command(full_command, &cli_exit_code);
+    
+    // If command returns NULL, set empty string to avoid NULL pointer issues
+    if (!cli_output) {
+        cli_output = strdup("");
+    }
 }
 
 // Consolidated cleanup function
 static void cleanup_cli_state(void) {
+    fprintf(stderr, "DEBUG: cleanup_cli_state called\n");
     if (cli_output) {
+        fprintf(stderr, "DEBUG: Freeing cli_output (length: %zu)\n", strlen(cli_output));
         free(cli_output);
         cli_output = NULL;
     }
     if (asthra_path) {
+        fprintf(stderr, "DEBUG: Freeing asthra_path\n");
         free(asthra_path);
         asthra_path = NULL;
     }
     cli_exit_code = -1;
+    fprintf(stderr, "DEBUG: cleanup_cli_state completed\n");
 }
 
 // Consolidated configuration file creation
@@ -166,6 +176,7 @@ void test_cli_version_command(void) {
 
 // Test scenario: Handle invalid command line flag
 void test_cli_invalid_flag(void) {
+    fprintf(stderr, "DEBUG: Starting test_cli_invalid_flag\n");
     bdd_given("the Asthra CLI is installed");
     const char* compiler = find_asthra_compiler();
     
@@ -176,18 +187,22 @@ void test_cli_invalid_flag(void) {
     bdd_assert(compiler != NULL, "Asthra compiler should be found");
     
     bdd_when("I run 'asthra --invalid-flag'");
+    fprintf(stderr, "DEBUG: About to execute invalid flag command\n");
     execute_cli_command_with_path("--invalid-flag");
+    fprintf(stderr, "DEBUG: Invalid flag command executed, exit code: %d\n", cli_exit_code);
     
     bdd_then("the CLI should fail");
     bdd_assert(cli_exit_code != 0, "Invalid flag should cause failure");
     
     bdd_then("the output should contain error about invalid option");
     bdd_assert(cli_output != NULL, "Error output should be provided");
+    fprintf(stderr, "DEBUG: CLI output length: %zu\n", cli_output ? strlen(cli_output) : 0);
     // Look for common error patterns
     int has_error = (strstr(cli_output, "unrecognized") != NULL) ||
                    (strstr(cli_output, "invalid") != NULL) ||
                    (strstr(cli_output, "unknown") != NULL);
     bdd_assert(has_error, "Should contain error about invalid option");
+    fprintf(stderr, "DEBUG: test_cli_invalid_flag completed\n");
 }
 
 // Test scenario: Build command without source files
@@ -206,12 +221,13 @@ void test_cli_build_without_source(void) {
     snprintf(temp_dir, sizeof(temp_dir), "/tmp/empty_project_%d", getpid());
     bdd_create_temp_directory(temp_dir);
     
-    // Save and change directory
-    char saved_dir[1024];
-    if (getcwd(saved_dir, sizeof(saved_dir)) == NULL) {
+    // Save current directory using global original_dir as fallback
+    char test_saved_dir[1024];
+    if (getcwd(test_saved_dir, sizeof(test_saved_dir)) == NULL) {
         bdd_assert(0, "Failed to get current directory");
         return;
     }
+    
     if (chdir(temp_dir) != 0) {
         bdd_assert(0, "Failed to change to temp directory");
         return;
@@ -231,9 +247,12 @@ void test_cli_build_without_source(void) {
                    (strstr(cli_output, "Error") != NULL);
     bdd_assert(has_error, "Should contain file error message");
     
-    // Restore directory
-    if (chdir(saved_dir) != 0) {
-        fprintf(stderr, "WARNING: Failed to restore directory in test_cli_build_without_source\n");
+    // Restore directory - use test_saved_dir first, then fall back to original_dir
+    if (chdir(test_saved_dir) != 0) {
+        fprintf(stderr, "WARNING: Failed to restore test directory, falling back to original\n");
+        if (chdir(original_dir) != 0) {
+            fprintf(stderr, "CRITICAL: Cannot restore working directory\n");
+        }
     }
 }
 
@@ -253,12 +272,13 @@ void test_cli_project_config(void) {
     snprintf(temp_dir, sizeof(temp_dir), "/tmp/asthra_project_%d", getpid());
     bdd_create_temp_directory(temp_dir);
     
-    // Save and change directory
-    char saved_dir[1024];
-    if (getcwd(saved_dir, sizeof(saved_dir)) == NULL) {
+    // Save current directory using global original_dir as fallback
+    char test_saved_dir[1024];
+    if (getcwd(test_saved_dir, sizeof(test_saved_dir)) == NULL) {
         bdd_assert(0, "Failed to get current directory");
         return;
     }
+    
     if (chdir(temp_dir) != 0) {
         bdd_assert(0, "Failed to change to temp directory");
         return;
@@ -295,9 +315,12 @@ void test_cli_project_config(void) {
     }
     bdd_assert(processed, "Should attempt to process the source file");
     
-    // Restore directory
-    if (chdir(saved_dir) != 0) {
-        fprintf(stderr, "WARNING: Failed to restore directory in test_cli_project_config\n");
+    // Restore directory - use test_saved_dir first, then fall back to original_dir
+    if (chdir(test_saved_dir) != 0) {
+        fprintf(stderr, "WARNING: Failed to restore test directory, falling back to original\n");
+        if (chdir(original_dir) != 0) {
+            fprintf(stderr, "CRITICAL: Cannot restore working directory\n");
+        }
     }
 }
 
@@ -387,18 +410,37 @@ int main(void) {
     }
     fprintf(stderr, "DEBUG: Starting CLI tests from directory: %s\n", original_dir);
     
-    int result = bdd_run_test_suite(
-        "CLI Functionality",
-        cli_test_cases,
-        sizeof(cli_test_cases) / sizeof(cli_test_cases[0]),
-        cleanup_cli_state
-    );
+    // Initialize BDD support before running tests
+    bdd_init("CLI Functionality");
     
-    // Final cleanup and restore directory
-    cleanup_cli_state();
-    if (chdir(original_dir) != 0) {
-        fprintf(stderr, "ERROR: Failed to restore original directory: %s\n", original_dir);
+    // Run tests individually with proper cleanup between each
+    int skip_wip = bdd_should_skip_wip();
+    
+    for (int i = 0; i < sizeof(cli_test_cases) / sizeof(cli_test_cases[0]); i++) {
+        if (skip_wip && cli_test_cases[i].is_wip) {
+            continue;
+        }
+        
+        fprintf(stderr, "DEBUG: About to run test %d: %s\n", i, cli_test_cases[i].name);
+        bdd_run_test_case(&cli_test_cases[i]);
+        
+        // Clean up after each test
+        cleanup_cli_state();
+        
+        // Ensure we're in the correct directory
+        if (chdir(original_dir) != 0) {
+            fprintf(stderr, "ERROR: Failed to restore directory after test %s\n", cli_test_cases[i].name);
+            if (getcwd(original_dir, sizeof(original_dir)) != NULL) {
+                fprintf(stderr, "Current directory is: %s\n", original_dir);
+            }
+            return 1;
+        }
     }
+    
+    int result = bdd_report();
+    
+    // Final cleanup
+    cleanup_cli_state();
     
     return result;
 }

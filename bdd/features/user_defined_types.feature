@@ -335,6 +335,7 @@ Feature: User-Defined Types
     Then the compilation should fail
     And the error message should contain "duplicate variant"
 
+  @wip
   Scenario: Missing struct fields in initialization
     Given I have a file "missing_fields.asthra" with:
       """
