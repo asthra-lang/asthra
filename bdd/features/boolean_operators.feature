@@ -164,7 +164,6 @@ Feature: Boolean operators
     When I compile and run the program
     Then the exit code should be 0
 
-  @wip
   Scenario: Short-circuit evaluation with AND
     Given I have the following Asthra code:
       """
