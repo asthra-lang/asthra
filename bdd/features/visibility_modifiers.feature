@@ -141,7 +141,6 @@ Feature: Visibility Modifiers
     Then the output should contain "Private enum works"
     And the exit code should be 0
 
-  @wip
   Scenario: Struct with mixed field visibility
     Given I have a file "mixed_field_visibility.asthra" with:
       """
