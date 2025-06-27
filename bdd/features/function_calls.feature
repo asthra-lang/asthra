@@ -278,7 +278,6 @@ Feature: Function Call Functionality
     Then the output should contain "Helper function called"
     And the exit code should be 0
 
-  @wip
   Scenario: Function with string parameters
     Given I have a file "string_function.asthra" with:
       """
