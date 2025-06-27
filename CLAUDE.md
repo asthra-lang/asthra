@@ -65,6 +65,7 @@ ctest --test-dir build -R "parser.*expr"       # Test parser expressions
 | **Expression-Oriented** | All constructs return values. Explicit `return ();` for void. Unit type `()` support | `docs/architecture/expression-oriented-design.md` |
 | **Gitignore Compliance** | Check files with `git check-ignore -v`. Use `test_*.c` pattern | `docs/contributor/guides/gitignore-compliance.md` |
 | **Temporary Test Files** | ALL temporary test files (source and executables) MUST be saved in a temporary directory (e.g., `/tmp/asthra-tests/` or `mktemp -d`). NEVER create temporary test files in the project directory | N/A |
+| **GitHub Access** | Always use the `gh` command when accessing GitHub issues, pull requests, or any GitHub-related information. Never guess or assume issue content - always fetch the actual data using commands like `gh issue view`, `gh pr view`, etc. | N/A |
 
 ### C17 Standards
 - **Must use** modern C17 features appropriately: `_Static_assert`, `_Generic`, `<stdatomic.h>`, `_Thread_local`
