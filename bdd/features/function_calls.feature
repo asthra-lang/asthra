@@ -219,7 +219,6 @@ Feature: Function Call Functionality
     Then the output should contain "Factorial of 5 is 120"
     And the exit code should be 0
 
-  @wip
   Scenario: Function call in expression context
     Given I have a file "function_in_expression.asthra" with:
       """
@@ -306,18 +305,17 @@ Feature: Function Call Functionality
     And the output should contain "Hello, Bob!"
     And the exit code should be 0
 
-  @wip
   Scenario: Function overloading (if supported)
     Given I have a file "function_overload.asthra" with:
       """
       package main;
       
-      fn print_value(x: i32) -> void {
+      priv fn print_value(x: i32) -> void {
           log("Integer value");
           return ();
       }
       
-      fn print_value(x: f32) -> void {
+      priv fn print_value(x: f32) -> void {
           log("Float value");
           return ();
       }
@@ -329,12 +327,8 @@ Feature: Function Call Functionality
       }
       """
     When I compile the file
-    Then the compilation should succeed
-    And an executable should be created
-    When I run the executable
-    Then the output should contain "Integer value"
-    And the output should contain "Float value"
-    And the exit code should be 0
+    Then the compilation should fail
+    And the error message should contain "Duplicate function declaration"
 
   @wip
   Scenario: Error - calling undefined function

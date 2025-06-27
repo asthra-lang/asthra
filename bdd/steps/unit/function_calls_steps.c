@@ -407,6 +407,38 @@ void test_type_mismatch_error(void) {
     then_error_contains("type mismatch");
 }
 
+// Test scenario: Function overloading (if supported)
+void test_function_overloading(void) {
+    bdd_scenario("Function overloading (if supported)");
+    
+    given_asthra_compiler_available();
+    
+    const char* source = 
+        "package main;\n"
+        "\n"
+        "priv fn print_value(x: i32) -> void {\n"
+        "    log(\"Integer value\");\n"
+        "    return ();\n"
+        "}\n"
+        "\n"
+        "priv fn print_value(x: f32) -> void {\n"
+        "    log(\"Float value\");\n"
+        "    return ();\n"
+        "}\n"
+        "\n"
+        "pub fn main(none) -> void {\n"
+        "    print_value(42);\n"
+        "    print_value(3.14);\n"
+        "    return ();\n"
+        "}\n";
+    
+    given_file_with_content("function_overload.asthra", source);
+    when_compile_file();
+    // Function overloading is not currently supported - expect compilation to fail
+    then_compilation_should_fail();
+    then_error_contains("Duplicate function declaration");
+}
+
 // Main test runner
 int main(void) {
     bdd_init("Function Call Functionality");
@@ -434,6 +466,7 @@ int main(void) {
     test_recursive();
     test_mixed_params();
     test_forward_declaration();
+    test_function_overloading();
     
     // Cleanup
     common_cleanup();
