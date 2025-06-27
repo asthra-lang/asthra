@@ -28,7 +28,7 @@ void test_array_const_size(void) {
         "pub const BUFFER_SIZE: i32 = 256;\n"
         "\n"
         "pub fn main(none) -> void {\n"
-        "    let buffer: [BUFFER_SIZE]u8 = [0; BUFFER_SIZE];\n"
+        "    let buffer: [BUFFER_SIZE]i32 = [0; BUFFER_SIZE];\n"
         "    log(\"Array with const size works\");\n"
         "    return ();\n"
         "}\n";
@@ -112,6 +112,24 @@ void test_invalid_single_tuple(void) {
                                  "tuple must have at least 2 elements");
 }
 
+void test_mutable_pointer_type(void) {
+    const char* source = 
+        "package main;\n"
+        "\n"
+        "pub fn main(none) -> void {\n"
+        "    let mut x: i32 = 42;\n"
+        "    let ptr: *mut i32 = &x;\n"
+        "    log(\"Mutable pointer works\");\n"
+        "    return ();\n"
+        "}\n";
+    
+    bdd_run_execution_scenario("Mutable pointer type",
+                               "mut_pointer.asthra",
+                               source,
+                               "Mutable pointer works",
+                               0);
+}
+
 // Define test cases using the new framework with @wip tags matching the feature file
 BddTestCase composite_types_test_cases[] = {
     BDD_TEST_CASE(fixed_size_array, test_fixed_size_array),
@@ -120,6 +138,7 @@ BddTestCase composite_types_test_cases[] = {
     BDD_TEST_CASE(dynamic_slice_type, test_dynamic_slice_type),  // This one passes
     BDD_WIP_TEST_CASE(array_size_mismatch, test_array_size_mismatch),
     BDD_WIP_TEST_CASE(invalid_single_tuple, test_invalid_single_tuple),
+    BDD_TEST_CASE(mutable_pointer_type, test_mutable_pointer_type),
 };
 
 // Main test runner using the new framework

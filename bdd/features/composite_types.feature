@@ -234,7 +234,6 @@ Feature: Composite Types
     Then the compilation should fail
     And the error message should contain "array size must be greater than 0"
 
-  @wip
   Scenario: Mutable pointer type
     Given I have a file "mut_pointer.asthra" with:
       """
