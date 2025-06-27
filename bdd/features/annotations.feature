@@ -213,7 +213,6 @@ Feature: Annotations
     Then the output should contain "Non-deterministic annotation works"
     And the exit code should be 0
 
-  @wip
   Scenario: Generic semantic annotation
     Given I have a file "generic_annotation.asthra" with:
       """
