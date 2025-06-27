@@ -23,6 +23,7 @@ LLVMValueRef generate_string_literal(LLVMBackendData *data, const ASTNode *node)
 LLVMValueRef generate_bool_literal(LLVMBackendData *data, const ASTNode *node);
 LLVMValueRef generate_char_literal(LLVMBackendData *data, const ASTNode *node);
 LLVMValueRef generate_unit_literal(LLVMBackendData *data, const ASTNode *node);
+LLVMValueRef generate_tuple_literal(LLVMBackendData *data, const ASTNode *node);
 
 #ifdef __cplusplus
 }

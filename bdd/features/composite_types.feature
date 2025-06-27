@@ -68,7 +68,6 @@ Feature: Composite Types
     Then the output should contain "Processing slice"
     And the exit code should be 0
 
-  @wip
   Scenario: Tuple type with two elements
     Given I have a file "tuple_two.asthra" with:
       """

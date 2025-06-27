@@ -106,3 +106,62 @@ LLVMValueRef generate_unit_literal(LLVMBackendData *data, const ASTNode *node) {
     // Unit value is an empty struct
     return LLVMConstNamedStruct(data->unit_type, NULL, 0);
 }
+
+// Generate code for tuple literals
+LLVMValueRef generate_tuple_literal(LLVMBackendData *data, const ASTNode *node) {
+    if (!data || !node) {
+        return NULL;
+    }
+
+    // Need forward declaration of generate_expression
+    extern LLVMValueRef generate_expression(LLVMBackendData *data, const ASTNode *node);
+
+    // Get the elements from the tuple literal
+    ASTNodeList *elements = node->data.tuple_literal.elements;
+    if (!elements) {
+        LLVM_REPORT_ERROR(data, node, "Tuple literal has no elements");
+    }
+
+    size_t element_count = ast_node_list_size(elements);
+    if (element_count < 2) {
+        LLVM_REPORT_ERROR(data, node, "Tuple literals must have at least 2 elements");
+    }
+
+    // Generate values for each element
+    LLVMValueRef *element_values = malloc(element_count * sizeof(LLVMValueRef));
+    LLVMTypeRef *element_types = malloc(element_count * sizeof(LLVMTypeRef));
+    
+    if (!element_values || !element_types) {
+        free(element_values);
+        free(element_types);
+        LLVM_REPORT_ERROR(data, node, "Failed to allocate memory for tuple elements");
+    }
+
+    // Generate each element
+    for (size_t i = 0; i < element_count; i++) {
+        ASTNode *element = ast_node_list_get(elements, i);
+        element_values[i] = generate_expression(data, element);
+        if (!element_values[i]) {
+            free(element_values);
+            free(element_types);
+            LLVM_REPORT_ERROR(data, node, "Failed to generate tuple element");
+        }
+        element_types[i] = LLVMTypeOf(element_values[i]);
+    }
+
+    // Create anonymous struct type for the tuple
+    LLVMTypeRef tuple_type = LLVMStructTypeInContext(data->context, element_types, 
+                                                      (unsigned)element_count, false);
+
+    // Create the tuple value as a struct
+    LLVMValueRef tuple_value = LLVMGetUndef(tuple_type);
+    for (size_t i = 0; i < element_count; i++) {
+        tuple_value = LLVMBuildInsertValue(data->builder, tuple_value, 
+                                           element_values[i], (unsigned)i, "");
+    }
+
+    free(element_values);
+    free(element_types);
+
+    return tuple_value;
+}

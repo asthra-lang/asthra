@@ -134,7 +134,7 @@ void test_mutable_pointer_type(void) {
 BddTestCase composite_types_test_cases[] = {
     BDD_TEST_CASE(fixed_size_array, test_fixed_size_array),
     BDD_TEST_CASE(array_const_size, test_array_const_size),
-    BDD_WIP_TEST_CASE(tuple_two_elements, test_tuple_two_elements),
+    BDD_TEST_CASE(tuple_two_elements, test_tuple_two_elements),
     BDD_TEST_CASE(dynamic_slice_type, test_dynamic_slice_type),  // This one passes
     BDD_WIP_TEST_CASE(array_size_mismatch, test_array_size_mismatch),
     BDD_WIP_TEST_CASE(invalid_single_tuple, test_invalid_single_tuple),

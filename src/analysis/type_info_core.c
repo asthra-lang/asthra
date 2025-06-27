@@ -223,6 +223,21 @@ TypeInfo *type_info_from_descriptor(TypeDescriptor *descriptor) {
         // For now, we'll treat them as structs (since Vec<i32> is a struct)
         type_info->category = TYPE_INFO_STRUCT;
         break;
+    case TYPE_TUPLE:
+        type_info->category = TYPE_INFO_TUPLE;
+        // Copy tuple-specific data
+        type_info->data.tuple.element_count = descriptor->data.tuple.element_count;
+        if (descriptor->data.tuple.element_count > 0 && descriptor->data.tuple.element_types) {
+            type_info->data.tuple.element_types = 
+                malloc(descriptor->data.tuple.element_count * sizeof(TypeInfo *));
+            if (type_info->data.tuple.element_types) {
+                for (size_t i = 0; i < descriptor->data.tuple.element_count; i++) {
+                    type_info->data.tuple.element_types[i] =
+                        type_info_from_descriptor(descriptor->data.tuple.element_types[i]);
+                }
+            }
+        }
+        break;
     default:
         type_info->category = TYPE_INFO_UNKNOWN;
         break;
