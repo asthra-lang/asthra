@@ -226,7 +226,7 @@ void test_type_mismatch(void) {
     given_file_with_content("type_mismatch.asthra", source);
     when_compile_file();
     then_compilation_should_fail();
-    then_error_contains("type mismatch");
+    then_error_contains("Type mismatch");
 }
 
 // Test scenario: Integer overflow error
@@ -246,7 +246,7 @@ void test_integer_overflow(void) {
     given_file_with_content("int_overflow.asthra", source);
     when_compile_file();
     then_compilation_should_fail();
-    then_error_contains("integer overflow");
+    then_error_contains("exceeds range");
 }
 
 // Test scenario: Binary literals

@@ -26,7 +26,6 @@ Feature: Primitive Types
     Then the output should contain "i32 type works"
     And the exit code should be 0
 
-  @wip
   Scenario: All signed integer types
     Given I have a file "signed_integers.asthra" with:
       """

@@ -16,6 +16,7 @@
 #include "semantic_types.h"
 #include "semantic_utilities.h"
 #include "type_info.h"
+#include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -99,8 +100,10 @@ bool analyze_literal_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
                 const char *type_name = analyzer->expected_type->name;
                 if (type_name && (strstr(type_name, "i8") || strstr(type_name, "i16") ||
                                   strstr(type_name, "i32") || strstr(type_name, "i64") ||
+                                  strstr(type_name, "i128") || strstr(type_name, "isize") ||
                                   strstr(type_name, "u8") || strstr(type_name, "u16") ||
-                                  strstr(type_name, "u32") || strstr(type_name, "u64"))) {
+                                  strstr(type_name, "u32") || strstr(type_name, "u64") ||
+                                  strstr(type_name, "u128") || strstr(type_name, "usize"))) {
                     int_type = analyzer->expected_type;
                 }
             }
@@ -112,6 +115,41 @@ bool analyze_literal_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
             if (!int_type) {
                 semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, expr->location,
                                       "Failed to get builtin type 'i32'");
+                return false;
+            }
+        }
+
+        // Check if the literal value fits within the bounds of the target type
+        int64_t value = expr->data.integer_literal.value;
+        const char *type_name = int_type->name;
+        
+        if (type_name) {
+            bool overflow = false;
+            
+            // Check bounds for signed types
+            if (strcmp(type_name, "i8") == 0) {
+                overflow = value < -128 || value > 127;
+            } else if (strcmp(type_name, "i16") == 0) {
+                overflow = value < -32768 || value > 32767;
+            } else if (strcmp(type_name, "i32") == 0) {
+                overflow = value < INT32_MIN || value > INT32_MAX;
+            } else if (strcmp(type_name, "i64") == 0) {
+                // Value is stored as int64_t, so no overflow possible
+                overflow = false;
+            } else if (strcmp(type_name, "u8") == 0) {
+                overflow = value < 0 || value > 255;
+            } else if (strcmp(type_name, "u16") == 0) {
+                overflow = value < 0 || value > 65535;
+            } else if (strcmp(type_name, "u32") == 0) {
+                overflow = value < 0 || value > UINT32_MAX;
+            } else if (strcmp(type_name, "u64") == 0) {
+                overflow = value < 0;  // Only check for negative values
+            }
+            
+            if (overflow) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_LITERAL, expr->location,
+                                      "Integer literal %lld exceeds range of type %s", 
+                                      (long long)value, type_name);
                 return false;
             }
         }
