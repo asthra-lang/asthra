@@ -109,6 +109,31 @@ ASTNode *parse_bracketed_annotation(Parser *parser) {
                     free(parameters);
                     return NULL;
                 }
+            }
+            // Special handling for human_review annotation: human_review(low|medium|high)
+            else if (strcmp(annotation_name, "human_review") == 0) {
+                if (!match_token(parser, TOKEN_IDENTIFIER)) {
+                    report_error(parser, "Expected review priority (low, medium, or high)");
+                    free(annotation_name);
+                    return NULL;
+                }
+
+                const char *priority = parser->current_token.data.identifier.name;
+                if (strcmp(priority, "low") != 0 && strcmp(priority, "medium") != 0 &&
+                    strcmp(priority, "high") != 0) {
+                    report_error(parser, "Unknown review priority. Expected 'low', 'medium', or 'high'");
+                    free(annotation_name);
+                    return NULL;
+                }
+
+                parameters = strdup(priority);
+                advance_token(parser);
+
+                if (!expect_token(parser, TOKEN_RIGHT_PAREN)) {
+                    free(annotation_name);
+                    free(parameters);
+                    return NULL;
+                }
             } else {
                 // Parse standard AnnotationParam (',' AnnotationParam)*
                 char param_buffer[1024] = {0};
@@ -215,6 +240,61 @@ ASTNode *parse_bracketed_annotation(Parser *parser) {
         node->data.ownership_tag.ownership = ownership;
         free(annotation_name);
         free(parameters);
+        return node;
+    }
+    
+    // Check if this is a human_review annotation
+    if (strcmp(annotation_name, "human_review") == 0 && parameters) {
+        // Create AST_HUMAN_REVIEW_TAG node for human review annotations
+        ASTNode *node = ast_create_node(AST_HUMAN_REVIEW_TAG, start_loc);
+        if (!node) {
+            free(annotation_name);
+            free(parameters);
+            return NULL;
+        }
+
+        // Set review priority based on parameter
+        ReviewPriority priority;
+        if (strcmp(parameters, "low") == 0) {
+            priority = REVIEW_LOW;
+        } else if (strcmp(parameters, "medium") == 0) {
+            priority = REVIEW_MEDIUM;
+        } else if (strcmp(parameters, "high") == 0) {
+            priority = REVIEW_HIGH;
+        } else {
+            // Invalid priority - should have been caught during parsing
+            free(annotation_name);
+            free(parameters);
+            ast_free_node(node);
+            return NULL;
+        }
+
+        node->data.human_review_tag.priority = priority;
+        free(annotation_name);
+        free(parameters);
+        return node;
+    }
+    
+    // Check if this is a security annotation (constant_time or volatile_memory)
+    if ((strcmp(annotation_name, "constant_time") == 0 || 
+         strcmp(annotation_name, "volatile_memory") == 0) && !parameters) {
+        // Create AST_SECURITY_TAG node for security annotations
+        ASTNode *node = ast_create_node(AST_SECURITY_TAG, start_loc);
+        if (!node) {
+            free(annotation_name);
+            return NULL;
+        }
+
+        // Set security type based on annotation name
+        SecurityType security_type;
+        if (strcmp(annotation_name, "constant_time") == 0) {
+            security_type = SECURITY_CONSTANT_TIME;
+        } else {
+            security_type = SECURITY_VOLATILE_MEMORY;
+        }
+
+        node->data.security_tag.security_type = security_type;
+        free(annotation_name);
         return node;
     }
 

@@ -420,7 +420,7 @@ int main(void) {
     // Check if @wip scenarios should be skipped
     if (bdd_should_skip_wip()) {
         // Skip @wip scenarios
-        bdd_skip_scenario("Human review annotation on function [@wip]");
+        // bdd_skip_scenario("Human review annotation on function [@wip]"); // No longer @wip
         bdd_skip_scenario("Multiple human review levels [@wip]");
         bdd_skip_scenario("Security annotation - constant time [@wip]");
         bdd_skip_scenario("Security annotation - volatile memory [@wip]");
@@ -433,6 +433,7 @@ int main(void) {
         bdd_skip_scenario("Annotation with none parameters [@wip]");
         
         // Run only non-@wip scenarios
+        test_human_review_annotation(); // No longer @wip
         test_ownership_annotation();
         test_non_deterministic_annotation();
     } else {

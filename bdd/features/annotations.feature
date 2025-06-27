@@ -6,7 +6,6 @@ Feature: Annotations
   Background:
     Given the Asthra compiler is available
 
-  @wip
   Scenario: Human review annotation on function
     Given I have a file "human_review_function.asthra" with:
       """
