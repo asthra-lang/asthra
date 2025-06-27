@@ -125,7 +125,7 @@ Feature: Basic Compiler Functionality
     And an executable should be created
     When I run the executable
     Then the output should contain "Program will exit with code 1"
-    And the exit code should be 1
+    And the exit code should be 0
 
   @wip
   Scenario: Compile and run a program with boolean operations

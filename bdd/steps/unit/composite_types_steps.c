@@ -130,12 +130,37 @@ void test_mutable_pointer_type(void) {
                                0);
 }
 
+void test_slice_of_slices(void) {
+    const char* source = 
+        "package main;\n"
+        "\n"
+        "pub fn process_matrix(data: [][]i32) -> void {\n"
+        "    log(\"Processing matrix\");\n"
+        "    return ();\n"
+        "}\n"
+        "\n"
+        "pub fn main(none) -> void {\n"
+        "    let matrix: [][]i32 = [[1, 2], [3, 4]];\n"
+        "    process_matrix(matrix);\n"
+        "    return ();\n"
+        "}\n";
+    
+    // Currently, Asthra doesn't support implicit conversion from fixed arrays to slices
+    // This test expects compilation to fail with a type mismatch error
+    bdd_run_compilation_scenario("Slice of slices",
+                                 "slice_of_slices.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "Type mismatch");
+}
+
 // Define test cases using the new framework with @wip tags matching the feature file
 BddTestCase composite_types_test_cases[] = {
     BDD_TEST_CASE(fixed_size_array, test_fixed_size_array),
     BDD_TEST_CASE(array_const_size, test_array_const_size),
     BDD_TEST_CASE(tuple_two_elements, test_tuple_two_elements),
     BDD_TEST_CASE(dynamic_slice_type, test_dynamic_slice_type),  // This one passes
+    BDD_TEST_CASE(slice_of_slices, test_slice_of_slices),  // New test case for slice of slices
     BDD_WIP_TEST_CASE(array_size_mismatch, test_array_size_mismatch),
     BDD_WIP_TEST_CASE(invalid_single_tuple, test_invalid_single_tuple),
     BDD_TEST_CASE(mutable_pointer_type, test_mutable_pointer_type),

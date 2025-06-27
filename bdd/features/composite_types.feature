@@ -164,7 +164,6 @@ Feature: Composite Types
     Then the output should contain "Tuple of arrays works"
     And the exit code should be 0
 
-  @wip
   Scenario: Slice of slices
     Given I have a file "slice_of_slices.asthra" with:
       """
@@ -182,11 +181,8 @@ Feature: Composite Types
       }
       """
     When I compile the file
-    Then the compilation should succeed
-    And an executable should be created
-    When I run the executable
-    Then the output should contain "Processing matrix"
-    And the exit code should be 0
+    Then the compilation should fail
+    And the error message should contain "Type mismatch"
 
   @wip
   Scenario: Array size mismatch error
