@@ -115,7 +115,6 @@ Feature: Special Types
     Then the output should contain "isize type works"
     And the exit code should be 0
 
-  @wip
   Scenario: Size types in array operations
     Given I have a file "size_array_ops.asthra" with:
       """
