@@ -48,7 +48,6 @@ Feature: Special Types
     Then the output should contain "Unit in expressions works"
     And the exit code should be 0
 
-  @wip
   Scenario: Never type for non-returning functions
     Given I have a file "never_type.asthra" with:
       """
