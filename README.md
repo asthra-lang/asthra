@@ -1,4 +1,4 @@
-# Asthra
+# Asthra (Windows CI Test)
 
 A modern, safe, and performant systems programming language with C23-based compiler infrastructure.
 
