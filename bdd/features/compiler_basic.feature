@@ -83,7 +83,6 @@ Feature: Basic Compiler Functionality
     Then the compilation should fail
     And the error message should contain "expected ';'"
 
-  @wip
   Scenario: Compile and run a program with function calls
     Given I have a file "function_calls.asthra" with:
       """
