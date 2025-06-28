@@ -7,6 +7,7 @@
  */
 
 #include "llvm_basic_stmts.h"
+#include "llvm_backend_internal.h"
 #include "llvm_debug.h"
 #include "llvm_expr_gen.h"
 #include "llvm_locals.h"
@@ -25,26 +26,59 @@ void generate_return_statement(LLVMBackendData *data, const ASTNode *node) {
         return;
     }
 
-    LLVMValueRef ret_val = NULL;
-    if (node->data.return_stmt.expression) {
-        // Check if the expression is a unit literal for void return
-        if (node->data.return_stmt.expression->type == AST_UNIT_LITERAL) {
-            // For unit literals in void functions, use RetVoid
-            // In LLVM 15+, use LLVMGlobalGetValueType to get the function type
-            LLVMTypeRef fn_type = LLVMGlobalGetValueType(data->current_function);
-            LLVMTypeRef fn_ret_type = LLVMGetReturnType(fn_type);
-            if (fn_ret_type == data->void_type) {
-                LLVMBuildRetVoid(data->builder);
-                return;
-            }
+    // Get the function return type
+    LLVMTypeRef fn_type = LLVMGlobalGetValueType(data->current_function);
+    LLVMTypeRef fn_ret_type = LLVMGetReturnType(fn_type);
+
+    // Handle no expression case (implicit return)
+    if (!node->data.return_stmt.expression) {
+        if (fn_ret_type == data->void_type) {
+            LLVMBuildRetVoid(data->builder);
+        } else if (fn_ret_type == data->unit_type) {
+            // Return unit value for unit type
+            LLVMValueRef unit_val = LLVMConstNamedStruct(data->unit_type, NULL, 0);
+            LLVMBuildRet(data->builder, unit_val);
+        } else {
+            // For other types, return a default value (e.g., zero)
+            // This handles test cases or error recovery
+            LLVMValueRef default_val = LLVMConstNull(fn_ret_type);
+            LLVMBuildRet(data->builder, default_val);
         }
-        ret_val = generate_expression(data, node->data.return_stmt.expression);
+        return;
     }
 
+    // Special handling for unit literal returns
+    if (node->data.return_stmt.expression->type == AST_UNIT_LITERAL) {
+        if (fn_ret_type == data->void_type) {
+            // For void functions, return void
+            LLVMBuildRetVoid(data->builder);
+        } else if (fn_ret_type == data->unit_type) {
+            // For unit-returning functions, return unit value
+            LLVMValueRef unit_val = LLVMConstNamedStruct(data->unit_type, NULL, 0);
+            LLVMBuildRet(data->builder, unit_val);
+        } else {
+            // For other types, generate the expression normally
+            LLVMValueRef ret_val = generate_expression(data, node->data.return_stmt.expression);
+            if (ret_val) {
+                LLVMBuildRet(data->builder, ret_val);
+            } else {
+                llvm_backend_report_error(data, node, "Failed to generate return value");
+            }
+        }
+        return;
+    }
+
+    // For all other expressions, generate normally
+    LLVMValueRef ret_val = generate_expression(data, node->data.return_stmt.expression);
     if (ret_val) {
         LLVMBuildRet(data->builder, ret_val);
     } else {
-        LLVMBuildRetVoid(data->builder);
+        // If expression generation failed but function expects void, return void
+        if (fn_ret_type == data->void_type) {
+            LLVMBuildRetVoid(data->builder);
+        } else {
+            llvm_backend_report_error(data, node, "Failed to generate return value");
+        }
     }
 }
 
