@@ -45,7 +45,6 @@ Feature: Visibility Modifiers
     Then the output should contain "Private helper"
     And the exit code should be 0
 
-  @wip
   Scenario: Public struct declaration
     Given I have a file "public_struct.asthra" with:
       """
