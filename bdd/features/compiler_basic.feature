@@ -126,7 +126,6 @@ Feature: Basic Compiler Functionality
     Then the output should contain "Program will exit with code 1"
     And the exit code should be 0
 
-  @wip
   Scenario: Compile and run a program with boolean operations
     Given I have a file "boolean_ops.asthra" with:
       """
