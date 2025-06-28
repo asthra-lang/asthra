@@ -1,12 +1,12 @@
 # Cross-Platform Development Guide
 
-**Version:** 1.0  
-**Date:** January 21, 2025  
+**Version:** 1.1  
+**Date:** January 28, 2025  
 **Status:** Active  
 
 ## Overview
 
-This guide provides practical instructions for writing cross-platform code in the Asthra compiler. It covers common pitfalls, platform-specific APIs, and best practices for ensuring code works correctly on all supported platforms.
+This guide provides practical instructions for writing cross-platform code in the Asthra compiler. It covers common pitfalls, platform-specific APIs, and best practices for ensuring code works correctly on macOS and Linux.
 
 ## Quick Reference
 
@@ -19,7 +19,6 @@ Always include `platform.h` first:
 
 Available macros:
 - `ASTHRA_PLATFORM_UNIX` - True for Linux and macOS
-- `ASTHRA_PLATFORM_WINDOWS` - True for Windows
 - `ASTHRA_PLATFORM_LINUX` - True for Linux only
 - `ASTHRA_PLATFORM_MACOS` - True for macOS only
 
@@ -30,14 +29,9 @@ Available macros:
 ```c
 #include "platform.h"
 
-#if ASTHRA_PLATFORM_UNIX
+// Unix headers are always available
 #include <sys/wait.h>
 #include <unistd.h>
-#endif
-
-#if ASTHRA_PLATFORM_WINDOWS
-#include <windows.h>
-#endif
 ```
 
 #### 2. Handling system() Calls
@@ -49,18 +43,11 @@ if (result == -1) {
     return -1;
 }
 
-#if ASTHRA_PLATFORM_UNIX
-    if (!WIFEXITED(result) || WEXITSTATUS(result) != 0) {
-        // Command failed
-        return -1;
-    }
-#else
-    // Windows: system() returns exit code directly
-    if (result != 0) {
-        // Command failed
-        return -1;
-    }
-#endif
+// Unix: check exit status
+if (!WIFEXITED(result) || WEXITSTATUS(result) != 0) {
+    // Command failed
+    return -1;
+}
 ```
 
 #### 3. Checking I/O Return Values
@@ -108,29 +95,30 @@ if (result != 0) {
 
 ### Issue 2: POSIX-Specific Headers
 
-**Problem**: Headers like `<sys/wait.h>` don't exist on Windows.
+**Problem**: Some headers are specific to certain Unix variants.
 
-**Solution**: Use platform guards:
+**Solution**: Use platform guards when needed:
 ```c
-#if ASTHRA_PLATFORM_UNIX
-#include <sys/wait.h>
+#if ASTHRA_PLATFORM_LINUX
+// Linux-specific headers
+#include <linux/limits.h>
 #endif
 ```
 
 ### Issue 3: Platform-Specific System Calls
 
-**Problem**: Functions like `fork()`, `mmap()` are Unix-specific.
+**Problem**: Some system calls vary between macOS and Linux.
 
 **Solution**: Provide platform-specific implementations:
 ```c
-#if ASTHRA_PLATFORM_UNIX
-    // Use mmap for memory allocation
+#if ASTHRA_PLATFORM_MACOS
+    // macOS-specific implementation
+    void* mem = mmap(NULL, size, PROT_READ | PROT_WRITE, 
+                     MAP_PRIVATE | MAP_ANON, -1, 0);
+#elif ASTHRA_PLATFORM_LINUX
+    // Linux-specific implementation
     void* mem = mmap(NULL, size, PROT_READ | PROT_WRITE, 
                      MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-#elif ASTHRA_PLATFORM_WINDOWS
-    // Use VirtualAlloc on Windows
-    void* mem = VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, 
-                            PAGE_READWRITE);
 #endif
 ```
 
@@ -138,16 +126,16 @@ if (result != 0) {
 
 ### Local Testing
 
-1. **On Linux/macOS**: Test with Clang
+1. **On Linux**: Test with Clang
    ```bash
    # Clang with strict warnings
    CC=clang CFLAGS="-Wall -Werror" make
    ```
 
-2. **Cross-compilation**: Use cross-compilers when available
+2. **On macOS**: Test with Apple Clang
    ```bash
-   # Cross-compile for Windows on Linux
-   CC=x86_64-w64-mingw32-clang make
+   # Apple Clang with strict warnings
+   CC=clang CFLAGS="-Wall -Werror" make
    ```
 
 ### CI/CD Testing
@@ -174,10 +162,7 @@ Before submitting platform-specific code:
 
 ```c
 #include "platform.h"
-
-#if ASTHRA_PLATFORM_UNIX
 #include <sys/wait.h>
-#endif
 
 // ... later in code ...
 
@@ -187,17 +172,11 @@ if (result == -1) {
     return -1;
 }
 
-#if ASTHRA_PLATFORM_UNIX
-    if (!WIFEXITED(result) || WEXITSTATUS(result) != 0) {
-        printf("Error: Compilation failed\n");
-        return -1;
-    }
-#else
-    if (result != 0) {
-        printf("Error: Compilation failed (exit code: %d)\n", result);
-        return -1;
-    }
-#endif
+// Unix-specific exit status checking
+if (!WIFEXITED(result) || WEXITSTATUS(result) != 0) {
+    printf("Error: Compilation failed\n");
+    return -1;
+}
 ```
 
 ## Additional Resources

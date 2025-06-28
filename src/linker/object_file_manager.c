@@ -63,8 +63,6 @@ static Asthra_ObjectFile *create_object_file(const char *file_path) {
     // Set default format based on platform
 #if ASTHRA_PLATFORM_LINUX
     obj_file->format = ASTHRA_OBJ_FORMAT_ELF;
-#elif ASTHRA_PLATFORM_WINDOWS
-    obj_file->format = ASTHRA_OBJ_FORMAT_COFF;
 #elif ASTHRA_PLATFORM_MACOS
     obj_file->format = ASTHRA_OBJ_FORMAT_MACH_O;
 #else

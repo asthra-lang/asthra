@@ -38,30 +38,18 @@ extern "C" {
 // PLATFORM DETECTION
 // =============================================================================
 
-#if defined(_WIN32) || defined(_WIN64)
-#define ASTHRA_PLATFORM_WINDOWS 1
-#define ASTHRA_PLATFORM_UNIX 0
-#define ASTHRA_PLATFORM_MACOS 0
-#define ASTHRA_PLATFORM_LINUX 0
-#define ASTHRA_PLATFORM_NAME "Windows"
-#elif defined(__APPLE__) && defined(__MACH__)
-#define ASTHRA_PLATFORM_WINDOWS 0
+#if defined(__APPLE__) && defined(__MACH__)
 #define ASTHRA_PLATFORM_UNIX 1
 #define ASTHRA_PLATFORM_MACOS 1
 #define ASTHRA_PLATFORM_LINUX 0
 #define ASTHRA_PLATFORM_NAME "macOS"
 #elif defined(__linux__)
-#define ASTHRA_PLATFORM_WINDOWS 0
 #define ASTHRA_PLATFORM_UNIX 1
 #define ASTHRA_PLATFORM_MACOS 0
 #define ASTHRA_PLATFORM_LINUX 1
 #define ASTHRA_PLATFORM_NAME "Linux"
 #else
-#define ASTHRA_PLATFORM_WINDOWS 0
-#define ASTHRA_PLATFORM_UNIX 1
-#define ASTHRA_PLATFORM_MACOS 0
-#define ASTHRA_PLATFORM_LINUX 0
-#define ASTHRA_PLATFORM_NAME "Unknown"
+#error "Unsupported platform. Asthra only supports macOS and Linux."
 #endif
 
 // =============================================================================
@@ -81,7 +69,6 @@ extern "C" {
 // PLATFORM-SPECIFIC INCLUDES
 // =============================================================================
 
-#if !ASTHRA_PLATFORM_WINDOWS
 #include <dirent.h>
 #include <dlfcn.h>
 #include <pthread.h>
@@ -91,7 +78,6 @@ extern "C" {
 #if ASTHRA_PLATFORM_LINUX
 #include <linux/limits.h>
 #include <sys/prctl.h>
-#endif
 #endif
 
 // =============================================================================
@@ -211,18 +197,14 @@ typedef wchar_t asthra_wchar_t;
 // =============================================================================
 
 // Validate platform detection
-ASTHRA_STATIC_ASSERT(ASTHRA_PLATFORM_WINDOWS + ASTHRA_PLATFORM_UNIX == 1,
-                     "Exactly one platform must be detected");
+ASTHRA_STATIC_ASSERT(ASTHRA_PLATFORM_UNIX == 1,
+                     "Unix platform must be detected");
 
 // Validate compiler detection
 ASTHRA_STATIC_ASSERT(ASTHRA_COMPILER_CLANG == 1, "Clang compiler must be detected");
 
 // Validate path separator consistency
-#if ASTHRA_PLATFORM_WINDOWS
-ASTHRA_STATIC_ASSERT(ASTHRA_PATH_SEPARATOR == '\\', "Windows path separator must be backslash");
-#else
 ASTHRA_STATIC_ASSERT(ASTHRA_PATH_SEPARATOR == '/', "Unix path separator must be forward slash");
-#endif
 
 // Validate type sizes for cross-platform compatibility
 ASTHRA_STATIC_ASSERT(sizeof(void *) == 8, "64-bit pointers required");
@@ -240,14 +222,6 @@ ASTHRA_STATIC_ASSERT(sizeof(int) == 4, "int must be 32-bit for ABI compatibility
 const char *asthra_get_platform_info(void);
 
 /**
- * @brief Check if running on Windows
- * @return true if Windows platform
- */
-ASTHRA_INLINE bool asthra_is_windows(void) {
-    return ASTHRA_PLATFORM_WINDOWS;
-}
-
-/**
  * @brief Check if running on Unix-like system
  * @return true if Unix platform (Linux/macOS)
  */
@@ -257,7 +231,7 @@ ASTHRA_INLINE bool asthra_is_unix(void) {
 
 /**
  * @brief Get appropriate file extension for executable
- * @return ".exe" on Windows, "" on Unix
+ * @return "" on Unix
  */
 ASTHRA_INLINE const char *asthra_get_exe_extension(void) {
     return ASTHRA_EXE_EXT;
@@ -265,7 +239,7 @@ ASTHRA_INLINE const char *asthra_get_exe_extension(void) {
 
 /**
  * @brief Get appropriate path separator for platform
- * @return '\\' on Windows, '/' on Unix
+ * @return '/' on Unix
  */
 ASTHRA_INLINE char asthra_get_path_separator(void) {
     return ASTHRA_PATH_SEPARATOR;

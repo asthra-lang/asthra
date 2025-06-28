@@ -164,14 +164,10 @@ void *asthra_alloc(size_t size, AsthraMemoryZone zone) {
         break;
 
     case ASTHRA_ZONE_PINNED:
-// Pinned zone: aligned allocation for better performance
-#ifdef _WIN32
-        ptr = _aligned_malloc(size, 64); // 64-byte alignment
-#else
+        // Pinned zone: aligned allocation for better performance
         if (posix_memalign(&ptr, 64, size) != 0) {
             ptr = NULL;
         }
-#endif
         break;
 
     case ASTHRA_ZONE_STACK:
@@ -241,11 +237,7 @@ void asthra_free(void *ptr, AsthraMemoryZone zone) {
         break;
 
     case ASTHRA_ZONE_PINNED:
-#ifdef _WIN32
-        _aligned_free(ptr);
-#else
         free(ptr);
-#endif
         break;
 
     default:

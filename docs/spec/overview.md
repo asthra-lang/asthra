@@ -495,11 +495,11 @@ pub fn main(none) -> Never {
 
 ### Platform Compatibility
 
-All return types are implemented with full platform support:
+All return types are implemented with full Unix platform support:
 
-- **Unix/Linux**: Uses `WEXITSTATUS` macro for exit code extraction
-- **Windows**: Direct exit code return from `system()` calls
-- **Cross-platform**: Consistent behavior across all supported platforms
+- **Linux**: Uses `WEXITSTATUS` macro for exit code extraction
+- **macOS**: Full compatibility with Darwin system calls
+- **Unix Standards**: POSIX-compliant behavior across all features
 
 ### Implementation Status
 

@@ -59,12 +59,7 @@ install(FILES
 # Package generation is now handled by Installation.cmake
 
 # Platform-specific packaging
-if(WIN32)
-    set(CPACK_GENERATOR "NSIS;ZIP")
-    set(CPACK_NSIS_DISPLAY_NAME "Asthra Programming Language")
-    set(CPACK_NSIS_PACKAGE_NAME "Asthra")
-    set(CPACK_NSIS_URL_INFO_ABOUT "https://github.com/asthra-lang/asthra")
-elseif(APPLE)
+if(APPLE)
     set(CPACK_GENERATOR "DragNDrop;TGZ")
     set(CPACK_DMG_VOLUME_NAME "Asthra")
 else()

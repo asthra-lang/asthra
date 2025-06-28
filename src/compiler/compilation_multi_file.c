@@ -291,18 +291,10 @@ int asthra_compile_files(AsthraCompilerContext *ctx, const char **input_files, s
         return -1;
     }
 
-#if ASTHRA_PLATFORM_UNIX
     if (!WIFEXITED(result) || WEXITSTATUS(result) != 0) {
         printf("Error: Linking failed\n");
         return -1;
     }
-#else
-    // On Windows, system() returns the exit code directly
-    if (result != 0) {
-        printf("Error: Linking failed (exit code: %d)\n", result);
-        return -1;
-    }
-#endif
 
     printf("Multi-file compilation completed successfully\n");
     return 0;

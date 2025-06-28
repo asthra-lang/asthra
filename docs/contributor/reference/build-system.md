@@ -11,16 +11,16 @@ The Asthra compiler uses a modern CMake build system designed for cross-platform
 ## Build System Philosophy
 
 ### Modern CMake Design
-- **Cross-platform first**: Native support for Windows, macOS, and Linux
-- **IDE integration**: Seamless integration with VS Code, CLion, and Visual Studio
+- **Cross-platform first**: Native support for macOS and Linux
+- **IDE integration**: Seamless integration with VS Code and CLion
 - **Dependency management**: Automatic detection and linking of system libraries
 - **Maintainability**: 90% less configuration compared to make-based systems
 - **Performance**: Built-in parallel compilation and incremental builds
 
 ### CMake Advantages
 - **Configuration**: Automatic dependency detection and cross-platform support
-- **Cross-platform**: Excellent support for Windows, macOS, and Linux
-- **IDE Integration**: Native support for VS Code, CLion, Visual Studio
+- **Cross-platform**: Excellent support for macOS and Linux
+- **IDE Integration**: Native support for VS Code and CLion
 - **Dependency Management**: Automatic detection and linking of system libraries
 - **Parallel Builds**: Built-in parallel compilation support
 - **Testing Framework**: Integrated CTest with advanced filtering and reporting

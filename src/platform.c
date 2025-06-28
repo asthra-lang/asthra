@@ -12,10 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if ASTHRA_PLATFORM_WINDOWS
-#include <shlwapi.h>
-#pragma comment(lib, "shlwapi.lib")
-#elif ASTHRA_PLATFORM_MACOS
+#if ASTHRA_PLATFORM_MACOS
 #include <libgen.h>
 #include <mach/mach.h>
 #include <mach/mach_time.h>
@@ -27,6 +24,7 @@
 #include <libgen.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <unistd.h>
 #endif
 
 // =============================================================================
@@ -71,15 +69,9 @@ void asthra_normalize_path(char *path) {
 
     char *p = path;
     while (*p) {
-#if ASTHRA_PLATFORM_WINDOWS
-        if (*p == '/') {
-            *p = '\\';
-        }
-#else
         if (*p == '\\') {
             *p = '/';
         }
-#endif
         p++;
     }
 }
@@ -89,13 +81,8 @@ bool asthra_file_exists(const char *path) {
         return false;
     }
 
-#if ASTHRA_PLATFORM_WINDOWS
-    DWORD attributes = GetFileAttributesA(path);
-    return (attributes != INVALID_FILE_ATTRIBUTES && !(attributes & FILE_ATTRIBUTE_DIRECTORY));
-#else
     struct stat st;
     return (stat(path, &st) == 0 && S_ISREG(st.st_mode));
-#endif
 }
 
 bool asthra_create_directory(const char *path) {
@@ -104,17 +91,10 @@ bool asthra_create_directory(const char *path) {
     }
 
     // Check if directory already exists
-#if ASTHRA_PLATFORM_WINDOWS
-    DWORD attributes = GetFileAttributesA(path);
-    if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY)) {
-        return true; // Already exists
-    }
-#else
     struct stat st;
     if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
         return true; // Already exists
     }
-#endif
 
     // Create parent directories first
     char *path_copy = malloc(strlen(path) + 1);
@@ -123,23 +103,6 @@ bool asthra_create_directory(const char *path) {
     }
     strcpy(path_copy, path);
 
-#if ASTHRA_PLATFORM_WINDOWS
-    char *parent = path_copy;
-    char *last_separator = strrchr(parent, '\\');
-    if (!last_separator) {
-        last_separator = strrchr(parent, '/');
-    }
-
-    if (last_separator && last_separator != parent) {
-        *last_separator = '\0';
-        if (!asthra_create_directory(parent)) {
-            free(path_copy);
-            return false;
-        }
-    }
-
-    bool result = CreateDirectoryA(path, NULL) != 0 || GetLastError() == ERROR_ALREADY_EXISTS;
-#else
     char *parent = dirname(path_copy);
     if (strcmp(parent, ".") != 0 && strcmp(parent, "/") != 0) {
         if (!asthra_create_directory(parent)) {
@@ -149,7 +112,6 @@ bool asthra_create_directory(const char *path) {
     }
 
     bool result = mkdir(path, 0755) == 0 || errno == EEXIST;
-#endif
 
     free(path_copy);
     return result;
@@ -159,18 +121,6 @@ bool asthra_create_directory(const char *path) {
 // THREAD UTILITIES
 // =============================================================================
 
-#if ASTHRA_PLATFORM_WINDOWS
-
-asthra_thread_id_t asthra_get_current_thread_id(void) {
-    return GetCurrentThreadId();
-}
-
-asthra_process_id_t asthra_get_current_process_id(void) {
-    return GetCurrentProcessId();
-}
-
-#else
-
 asthra_thread_id_t asthra_get_current_thread_id(void) {
     return pthread_self();
 }
@@ -178,8 +128,6 @@ asthra_thread_id_t asthra_get_current_thread_id(void) {
 asthra_process_id_t asthra_get_current_process_id(void) {
     return getpid();
 }
-
-#endif
 
 // =============================================================================
 // MEMORY UTILITIES
@@ -250,96 +198,16 @@ const char *asthra_get_platform_info(void) {
 // =============================================================================
 
 const char *asthra_get_error_string(asthra_error_t error) {
-#if ASTHRA_PLATFORM_WINDOWS
-    static char buffer[256];
-    DWORD result =
-        FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, error,
-                       MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buffer, sizeof(buffer), NULL);
-
-    if (result == 0) {
-        snprintf(buffer, sizeof(buffer), "Unknown error %lu", error);
-    } else {
-        // Remove trailing newline
-        size_t len = strlen(buffer);
-        if (len > 0 && buffer[len - 1] == '\n') {
-            buffer[len - 1] = '\0';
-            if (len > 1 && buffer[len - 2] == '\r') {
-                buffer[len - 2] = '\0';
-            }
-        }
-    }
-
-    return buffer;
-#else
     return strerror(error);
-#endif
 }
 
-// =============================================================================
-// UNICODE UTILITIES (Windows)
-// =============================================================================
-
-#if ASTHRA_PLATFORM_WINDOWS
-
-char *asthra_wchar_to_utf8(const wchar_t *wstr) {
-    if (!wstr) {
-        return NULL;
-    }
-
-    int size = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
-    if (size <= 0) {
-        return NULL;
-    }
-
-    char *utf8_str = malloc(size);
-    if (!utf8_str) {
-        return NULL;
-    }
-
-    if (WideCharToMultiByte(CP_UTF8, 0, wstr, -1, utf8_str, size, NULL, NULL) <= 0) {
-        free(utf8_str);
-        return NULL;
-    }
-
-    return utf8_str;
-}
-
-wchar_t *asthra_utf8_to_wchar(const char *utf8_str) {
-    if (!utf8_str) {
-        return NULL;
-    }
-
-    int size = MultiByteToWideChar(CP_UTF8, 0, utf8_str, -1, NULL, 0);
-    if (size <= 0) {
-        return NULL;
-    }
-
-    wchar_t *wstr = malloc(size * sizeof(wchar_t));
-    if (!wstr) {
-        return NULL;
-    }
-
-    if (MultiByteToWideChar(CP_UTF8, 0, utf8_str, -1, wstr, size) <= 0) {
-        free(wstr);
-        return NULL;
-    }
-
-    return wstr;
-}
-
-#endif
 
 // =============================================================================
 // PERFORMANCE UTILITIES
 // =============================================================================
 
 uint64_t asthra_get_current_time_ms(void) {
-#if ASTHRA_PLATFORM_WINDOWS
-    LARGE_INTEGER counter, frequency;
-    QueryPerformanceCounter(&counter);
-    QueryPerformanceFrequency(&frequency);
-    return (uint64_t)((counter.QuadPart * 1000) / frequency.QuadPart);
-#elif ASTHRA_PLATFORM_MACOS
+#if ASTHRA_PLATFORM_MACOS
     static mach_timebase_info_data_t timebase = {0};
     if (timebase.denom == 0) {
         mach_timebase_info(&timebase);
@@ -354,11 +222,7 @@ uint64_t asthra_get_current_time_ms(void) {
 }
 
 uint64_t asthra_get_high_resolution_time(void) {
-#if ASTHRA_PLATFORM_WINDOWS
-    LARGE_INTEGER counter;
-    QueryPerformanceCounter(&counter);
-    return (uint64_t)counter.QuadPart;
-#elif ASTHRA_PLATFORM_MACOS
+#if ASTHRA_PLATFORM_MACOS
     return mach_absolute_time();
 #else
     struct timespec ts;
@@ -368,11 +232,7 @@ uint64_t asthra_get_high_resolution_time(void) {
 }
 
 uint64_t asthra_get_high_resolution_frequency(void) {
-#if ASTHRA_PLATFORM_WINDOWS
-    LARGE_INTEGER frequency;
-    QueryPerformanceFrequency(&frequency);
-    return (uint64_t)frequency.QuadPart;
-#elif ASTHRA_PLATFORM_MACOS
+#if ASTHRA_PLATFORM_MACOS
     static mach_timebase_info_data_t timebase = {0};
     if (timebase.denom == 0) {
         mach_timebase_info(&timebase);
@@ -393,14 +253,7 @@ double asthra_get_elapsed_seconds(uint64_t start_time, uint64_t end_time) {
 // =============================================================================
 
 size_t asthra_get_system_memory(void) {
-#if ASTHRA_PLATFORM_WINDOWS
-    MEMORYSTATUSEX status;
-    status.dwLength = sizeof(status);
-    if (GlobalMemoryStatusEx(&status)) {
-        return (size_t)status.ullTotalPhys;
-    }
-    return 0;
-#elif ASTHRA_PLATFORM_MACOS
+#if ASTHRA_PLATFORM_MACOS
     int64_t memory;
     size_t size = sizeof(memory);
     if (sysctlbyname("hw.memsize", &memory, &size, NULL, 0) == 0) {
@@ -418,11 +271,5 @@ size_t asthra_get_system_memory(void) {
 }
 
 int asthra_get_cpu_count(void) {
-#if ASTHRA_PLATFORM_WINDOWS
-    SYSTEM_INFO sysinfo;
-    GetSystemInfo(&sysinfo);
-    return (int)sysinfo.dwNumberOfProcessors;
-#else
     return (int)sysconf(_SC_NPROCESSORS_ONLN);
-#endif
 }

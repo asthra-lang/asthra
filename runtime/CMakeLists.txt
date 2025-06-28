@@ -4,15 +4,8 @@ file(GLOB ASTHRA_RUNTIME_MEMORY "memory/*.c")
 # TODO: Fix safety header dependencies before including
 # file(GLOB ASTHRA_RUNTIME_SAFETY "safety/*.c")
 
-# Conditionally include concurrency files based on platform
-if(WIN32)
-    # On Windows, exclude pthread-dependent concurrency files
-    set(ASTHRA_RUNTIME_CONCURRENCY "")
-    # Add Windows platform stub
-    list(APPEND ASTHRA_RUNTIME_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/platform/asthra_platform_stub.c")
-else()
-    file(GLOB ASTHRA_RUNTIME_CONCURRENCY "concurrency/*.c")
-endif()
+# Include concurrency files
+file(GLOB ASTHRA_RUNTIME_CONCURRENCY "concurrency/*.c")
 
 add_library(asthra_runtime STATIC 
     ${ASTHRA_RUNTIME_SOURCES} 
@@ -35,9 +28,7 @@ target_compile_definitions(asthra_runtime
 )
 
 # Platform-specific runtime features
-if(NOT WIN32)
-    target_link_libraries(asthra_runtime PRIVATE pthread)
-endif()
+target_link_libraries(asthra_runtime PRIVATE pthread)
 
 if(APPLE)
     target_link_libraries(asthra_runtime PRIVATE "-framework CoreFoundation")

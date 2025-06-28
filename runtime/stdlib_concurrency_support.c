@@ -9,13 +9,9 @@
 #include <errno.h>
 #include <string.h>
 
-#ifdef _WIN32
-#include <windows.h>
-#else
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
-#endif
 
 // =============================================================================
 // GLOBAL STATE
@@ -30,25 +26,12 @@ static bool g_initialized = false;
 // =============================================================================
 
 uint64_t Asthra_stdlib_get_current_time_ms(void) {
-#ifdef _WIN32
-    FILETIME ft;
-    GetSystemTimeAsFileTime(&ft);
-    uint64_t time_100ns = ((uint64_t)ft.dwHighDateTime << 32) | ft.dwLowDateTime;
-    const uint64_t WINDOWS_UNIX_EPOCH_DIFF = 116444736000000000ULL;
-    time_100ns -= WINDOWS_UNIX_EPOCH_DIFF;
-    return time_100ns / 10000;
-#else
     struct timeval tv;
     gettimeofday(&tv, NULL);
     return (uint64_t)tv.tv_sec * 1000 + (uint64_t)tv.tv_usec / 1000;
-#endif
 }
 
 AsthraResult Asthra_stdlib_sleep_ms(uint64_t milliseconds) {
-#ifdef _WIN32
-    Sleep((DWORD)milliseconds);
-    return asthra_result_ok(NULL, 0, 0, ASTHRA_OWNERSHIP_GC);
-#else
     struct timespec req;
     req.tv_sec = (time_t)(milliseconds / 1000);
     req.tv_nsec = (long)((milliseconds % 1000) * 1000000);
@@ -60,18 +43,11 @@ AsthraResult Asthra_stdlib_sleep_ms(uint64_t milliseconds) {
         return asthra_result_err((void *)(uintptr_t)"Sleep failed", strlen("Sleep failed"), 0,
                                  ASTHRA_OWNERSHIP_GC);
     }
-#endif
 }
 
 size_t Asthra_stdlib_get_cpu_count(void) {
-#ifdef _WIN32
-    SYSTEM_INFO si;
-    GetSystemInfo(&si);
-    return si.dwNumberOfProcessors;
-#else
     long nprocs = sysconf(_SC_NPROCESSORS_ONLN);
     return (nprocs > 0) ? (size_t)nprocs : 1;
-#endif
 }
 
 // =============================================================================

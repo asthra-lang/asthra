@@ -369,16 +369,9 @@ AsthraTestResult test_security_entropy_testing(AsthraV12TestContext *ctx) {
         // Get random data from system CSPRNG
         FILE *urandom = fopen("/dev/urandom", "rb");
         if (!urandom) {
-// Windows fallback
-#ifdef _WIN32
-            for (size_t j = 0; j < size; j++) {
-                data[j] = (uint8_t)(rand() & 0xFF);
-            }
-#else
             free(data);
             printf("FAIL (no entropy source)\n");
             return ASTHRA_TEST_FAIL;
-#endif
         } else {
             if (fread(data, 1, size, urandom) != size) {
                 fclose(urandom);

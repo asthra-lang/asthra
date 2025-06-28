@@ -45,17 +45,9 @@ typedef enum {
  * Get current timestamp in milliseconds
  */
 static double get_current_time_ms(void) {
-#ifdef _WIN32
-    LARGE_INTEGER frequency;
-    LARGE_INTEGER counter;
-    QueryPerformanceFrequency(&frequency);
-    QueryPerformanceCounter(&counter);
-    return (double)(counter.QuadPart * 1000.0) / frequency.QuadPart;
-#else
     struct timeval tv;
     gettimeofday(&tv, NULL);
     return ((double)tv.tv_sec * 1000.0) + ((double)tv.tv_usec / 1000.0);
-#endif
 }
 
 /**

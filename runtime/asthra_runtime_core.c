@@ -27,10 +27,8 @@
 #include "platform/asthra_platform.h"
 
 // Platform-specific includes
-#ifndef _WIN32
 #include <sys/time.h>
 #include <unistd.h>
-#endif
 
 // C17 modernization includes
 #include <stdalign.h>
@@ -321,24 +319,15 @@ uint64_t asthra_get_timestamp_ms(void) {
 }
 
 void asthra_sleep_ms(uint64_t milliseconds) {
-#ifdef _WIN32
-    Sleep((DWORD)milliseconds);
-#else
     struct timespec ts = {.tv_sec = (time_t)(milliseconds / 1000),
                           .tv_nsec = (long)((milliseconds % 1000) * 1000000)};
     nanosleep(&ts, NULL);
-#endif
 }
 
 void asthra_sleep_ns(uint64_t nanoseconds) {
-#ifdef _WIN32
-    // Windows Sleep only supports millisecond precision
-    Sleep((DWORD)(nanoseconds / 1000000));
-#else
     struct timespec ts = {.tv_sec = (time_t)(nanoseconds / 1000000000ULL),
                           .tv_nsec = (long)(nanoseconds % 1000000000ULL)};
     nanosleep(&ts, NULL);
-#endif
 }
 
 // =============================================================================

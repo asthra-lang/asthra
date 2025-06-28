@@ -14,7 +14,7 @@ set(COVERAGE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/coverage" CACHE PATH "Coverage outp
 # Create coverage output directory
 file(MAKE_DIRECTORY ${COVERAGE_OUTPUT_DIR})
 
-if(ENABLE_COVERAGE AND NOT WIN32)
+if(ENABLE_COVERAGE)
     message(STATUS "Enabling code coverage analysis")
     message(STATUS "Coverage threshold: ${COVERAGE_THRESHOLD}%")
     

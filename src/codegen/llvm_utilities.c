@@ -77,8 +77,6 @@ const char *asthra_llvm_target_triple(AsthraTargetArch arch) {
         return "x86_64-apple-darwin";
 #elif defined(__linux__)
         return "x86_64-pc-linux-gnu";
-#elif defined(_WIN32)
-        return "x86_64-pc-windows-msvc";
 #else
         return "x86_64-unknown-unknown";
 #endif
@@ -88,8 +86,6 @@ const char *asthra_llvm_target_triple(AsthraTargetArch arch) {
         return "arm64-apple-darwin";
 #elif defined(__linux__)
         return "aarch64-unknown-linux-gnu";
-#elif defined(_WIN32)
-        return "aarch64-pc-windows-msvc";
 #else
         return "aarch64-unknown-unknown";
 #endif

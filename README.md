@@ -1,6 +1,6 @@
 # Asthra
 
-A modern, safe, and performant systems programming language with C23-based compiler infrastructure.
+A modern, safe, and performant systems programming language with C23-based compiler infrastructure for Unix-like systems (macOS and Linux).
 
 ## Features
 
@@ -44,6 +44,7 @@ cmake --build build --target analyze
 - LLVM 18.0+
 - CMake 3.20+
 - Clang (C23 support required)
+- Unix-like operating system (macOS or Linux)
 
 ## Documentation
 

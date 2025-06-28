@@ -29,44 +29,6 @@ typedef struct {
     int exit_code;
 } CliOptions;
 
-// =============================================================================
-// WINDOWS GETOPT COMPATIBILITY
-// =============================================================================
-
-#if ASTHRA_PLATFORM_WINDOWS
-
-// Simple command line parsing for Windows
-typedef struct {
-    const char *name;
-    bool has_arg;
-    int val;
-} win_option_t;
-
-// Windows getopt variables
-extern int win_optind;
-extern char *win_optarg;
-
-// Windows getopt function
-int win_getopt_long(int argc, char *argv[], const char *optstring, const win_option_t *longopts);
-
-// Compatibility macros
-#define optind win_optind
-#define optarg win_optarg
-#define getopt_long(argc, argv, optstring, longopts, longindex)                                    \
-    win_getopt_long(argc, argv, optstring, longopts)
-
-// Define option structure for compatibility
-struct option {
-    const char *name;
-    int has_arg;
-    int *flag;
-    int val;
-};
-
-#define no_argument 0
-#define required_argument 1
-
-#endif
 
 // =============================================================================
 // CLI FUNCTIONS

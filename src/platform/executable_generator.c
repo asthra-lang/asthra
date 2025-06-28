@@ -44,8 +44,6 @@ bool asthra_executable_generator_validate(Asthra_ExecutableGenerator *generator,
 Asthra_ExecutableFormatType asthra_executable_get_default_format(void) {
 #ifdef __APPLE__
     return ASTHRA_EXEC_FORMAT_MACH_O;
-#elif defined(_WIN32)
-    return ASTHRA_EXEC_FORMAT_PE;
 #else
     return ASTHRA_EXEC_FORMAT_ELF;
 #endif
@@ -67,11 +65,7 @@ bool asthra_executable_format_supported(Asthra_ExecutableFormatType format) {
         return false;
 #endif
     case ASTHRA_EXEC_FORMAT_PE:
-#ifdef _WIN32
-        return true;
-#else
         return false;
-#endif
     default:
         return false;
     }

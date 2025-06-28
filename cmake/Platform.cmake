@@ -62,37 +62,6 @@ if(APPLE)
     set(CMAKE_MACOSX_RPATH ON)
     set(CMAKE_INSTALL_RPATH "@executable_path/../lib")
     
-elseif(WIN32)
-    set(ASTHRA_PLATFORM "Windows")
-    set(ASTHRA_EXE_EXT ".exe")
-    set(ASTHRA_LIB_EXT ".lib")
-    set(ASTHRA_DLL_EXT ".dll")
-    set(ASTHRA_PATH_SEP "\\")
-    set(ASTHRA_ENV_SEP ";")
-    
-    # Windows version detection
-    execute_process(
-        COMMAND cmd /c "ver"
-        OUTPUT_VARIABLE WINDOWS_VERSION_RAW
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET
-    )
-    
-    # Extract Windows version from ver command output
-    if(WINDOWS_VERSION_RAW)
-        string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+" WINDOWS_VERSION "${WINDOWS_VERSION_RAW}")
-        set(ASTHRA_WINDOWS_VERSION ${WINDOWS_VERSION})
-    else()
-        set(ASTHRA_WINDOWS_VERSION "Unknown")
-    endif()
-    
-    # Windows-specific settings for Clang
-    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-    
-    # Use Unix-style tools on Windows when using Clang
-    set(CMAKE_C_COMPILER_WORKS 1)
-    set(CMAKE_CXX_COMPILER_WORKS 1)
-    
 elseif(UNIX)
     set(ASTHRA_PLATFORM "Linux")
     set(ASTHRA_EXE_EXT "")
@@ -158,52 +127,25 @@ else()
 endif()
 
 # System feature detection
-if(WIN32)
-    # Windows-specific headers
-    check_include_file("windows.h" HAVE_WINDOWS_H)
-    check_include_file("io.h" HAVE_IO_H)
-    check_include_file("process.h" HAVE_PROCESS_H)
-    check_include_file("direct.h" HAVE_DIRECT_H)
-    check_include_file("sys/stat.h" HAVE_SYS_STAT_H)
-    check_include_file("fcntl.h" HAVE_FCNTL_H)
-    
-    # Check for pthread-win32 on Windows
-    check_include_file("pthread.h" HAVE_PTHREAD_H)
-else()
-    # Unix-like systems
-    check_include_file("unistd.h" HAVE_UNISTD_H)
-    check_include_file("sys/mman.h" HAVE_SYS_MMAN_H)
-    check_include_file("sys/stat.h" HAVE_SYS_STAT_H)
-    check_include_file("fcntl.h" HAVE_FCNTL_H)
-    check_include_file("dlfcn.h" HAVE_DLFCN_H)
-    check_include_file("execinfo.h" HAVE_EXECINFO_H)
-    check_include_file("pthread.h" HAVE_PTHREAD_H)
-endif()
+# Unix-like systems
+check_include_file("unistd.h" HAVE_UNISTD_H)
+check_include_file("sys/mman.h" HAVE_SYS_MMAN_H)
+check_include_file("sys/stat.h" HAVE_SYS_STAT_H)
+check_include_file("fcntl.h" HAVE_FCNTL_H)
+check_include_file("dlfcn.h" HAVE_DLFCN_H)
+check_include_file("execinfo.h" HAVE_EXECINFO_H)
+check_include_file("pthread.h" HAVE_PTHREAD_H)
 
 # Function existence checks
-if(WIN32)
-    # Windows-specific functions
-    check_function_exists(VirtualAlloc HAVE_VIRTUALALLOC)
-    check_function_exists(VirtualProtect HAVE_VIRTUALPROTECT)
-    check_function_exists(LoadLibrary HAVE_LOADLIBRARY)
-    check_function_exists(GetProcAddress HAVE_GETPROCADDRESS)
-    check_function_exists(QueryPerformanceCounter HAVE_QUERYPERFORMANCECOUNTER)
-    check_function_exists(_aligned_malloc HAVE_ALIGNED_MALLOC)
-    check_function_exists(GetModuleFileName HAVE_GETMODULEFILENAME)
-    
-    # Check for POSIX-like functions that might be available
-    check_function_exists(aligned_alloc HAVE_ALIGNED_ALLOC)
-else()
-    # Unix-like systems
-    check_function_exists(mmap HAVE_MMAP)
-    check_function_exists(mprotect HAVE_MPROTECT)
-    check_function_exists(backtrace HAVE_BACKTRACE)
-    check_function_exists(dlopen HAVE_DLOPEN)
-    check_function_exists(clock_gettime HAVE_CLOCK_GETTIME)
-    check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
-    check_function_exists(posix_memalign HAVE_POSIX_MEMALIGN)
-    check_function_exists(aligned_alloc HAVE_ALIGNED_ALLOC)
-endif()
+# Unix-like systems
+check_function_exists(mmap HAVE_MMAP)
+check_function_exists(mprotect HAVE_MPROTECT)
+check_function_exists(backtrace HAVE_BACKTRACE)
+check_function_exists(dlopen HAVE_DLOPEN)
+check_function_exists(clock_gettime HAVE_CLOCK_GETTIME)
+check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
+check_function_exists(posix_memalign HAVE_POSIX_MEMALIGN)
+check_function_exists(aligned_alloc HAVE_ALIGNED_ALLOC)
 
 # Create platform configuration header
 configure_file(
@@ -214,19 +156,7 @@ configure_file(
 
 # Platform-specific libraries
 set(ASTHRA_PLATFORM_LIBS "")
-if(WIN32)
-    # Windows system libraries
-    list(APPEND ASTHRA_PLATFORM_LIBS kernel32 user32 advapi32 shell32)
-    list(APPEND ASTHRA_PLATFORM_LIBS ole32 oleaut32 uuid comdlg32 gdi32)
-    
-    # Add pthread library if available (pthread-win32)
-    if(HAVE_PTHREAD_H)
-        list(APPEND ASTHRA_PLATFORM_LIBS pthread)
-    endif()
-    
-    # Add math library equivalent for Windows
-    list(APPEND ASTHRA_PLATFORM_LIBS msvcrt)
-elseif(UNIX)
+if(UNIX)
     list(APPEND ASTHRA_PLATFORM_LIBS m)
     if(NOT APPLE)
         list(APPEND ASTHRA_PLATFORM_LIBS rt dl)
@@ -345,8 +275,5 @@ if(APPLE AND ASTHRA_APPLE_SILICON)
 endif()
 if(ASTHRA_LINUX_DISTRO)
     message(STATUS "Linux Distribution: ${ASTHRA_LINUX_DISTRO}")
-endif()
-if(WIN32 AND ASTHRA_WINDOWS_VERSION)
-    message(STATUS "Windows Version: ${ASTHRA_WINDOWS_VERSION}")
 endif()
 message(STATUS "=====================================")

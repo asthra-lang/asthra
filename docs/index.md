@@ -62,10 +62,8 @@ curl -sSf https://install.asthra-lang.org | sh
 brew install asthra-lang/tap/asthra
 ```
 
-**Chocolatey (Windows):**
-```powershell
-choco install asthra
-```
+**Note:** Asthra is designed for Unix-like systems (macOS and Linux) only.
+
 
 ### Your First Program
 

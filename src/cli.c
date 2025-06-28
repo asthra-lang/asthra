@@ -13,87 +13,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Only include getopt on Unix platforms
-#if ASTHRA_PLATFORM_UNIX
+// Include getopt for command line parsing
 #include <getopt.h>
 #include <unistd.h>
-#endif
 
-// =============================================================================
-// WINDOWS COMMAND LINE PARSING IMPLEMENTATION
-// =============================================================================
-
-#if ASTHRA_PLATFORM_WINDOWS
-
-int win_optind = 1;
-char *win_optarg = NULL;
-
-static const win_option_t win_long_options[] = {
-    {"output", true, 'o'},      {"optimize", true, 'O'},    {"debug", false, 'g'},
-    {"verbose", false, 'v'},    {"target", true, 't'},      {"backend", true, 'b'},
-    {"emit-llvm", false, 1000}, {"emit-asm", false, 1001},  {"emit", true, 1005},
-    {"no-stdlib", false, 1002}, {"include", true, 'I'},     {"library-path", true, 'L'},
-    {"library", true, 'l'},     {"test-mode", false, 1003}, {"version", false, 1004},
-    {"coverage", false, 1006},  {"help", false, 'h'},       {NULL, false, 0}};
-
-int win_getopt_long(int argc, char *argv[], const char *optstring, const win_option_t *longopts) {
-    if (win_optind >= argc) {
-        return -1;
-    }
-
-    char *arg = argv[win_optind];
-
-    // Handle long options (--option)
-    if (arg[0] == '-' && arg[1] == '-') {
-        const char *opt_name = arg + 2;
-        char *eq_pos = strchr(opt_name, '=');
-        size_t name_len = eq_pos ? (size_t)(eq_pos - opt_name) : strlen(opt_name);
-
-        for (const win_option_t *opt = longopts; opt->name; opt++) {
-            if (strncmp(opt->name, opt_name, name_len) == 0 && strlen(opt->name) == name_len) {
-                win_optind++;
-                if (opt->has_arg) {
-                    if (eq_pos) {
-                        win_optarg = eq_pos + 1;
-                    } else if (win_optind < argc) {
-                        win_optarg = argv[win_optind++];
-                    } else {
-                        fprintf(stderr, "Option --%s requires an argument\n", opt->name);
-                        return '?';
-                    }
-                }
-                return opt->val;
-            }
-        }
-        fprintf(stderr, "Unknown option: %s\n", arg);
-        return '?';
-    }
-
-    // Handle short options (-o)
-    if (arg[0] == '-' && arg[1] != '\0') {
-        char opt_char = arg[1];
-        win_optind++;
-
-        // Check if option requires argument
-        char *opt_pos = strchr(optstring, opt_char);
-        if (opt_pos && opt_pos[1] == ':') {
-            if (arg[2] != '\0') {
-                win_optarg = arg + 2;
-            } else if (win_optind < argc) {
-                win_optarg = argv[win_optind++];
-            } else {
-                fprintf(stderr, "Option -%c requires an argument\n", opt_char);
-                return '?';
-            }
-        }
-        return opt_char;
-    }
-
-    // Not an option
-    return -1;
-}
-
-#endif
 
 // =============================================================================
 // CLI FUNCTIONS IMPLEMENTATION

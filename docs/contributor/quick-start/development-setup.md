@@ -121,35 +121,6 @@ sudo dnf install -y llvm-devel clang make cmake git pkg-config
 sudo dnf install -y cppcheck valgrind gdb htop tree
 ```
 
-### Windows
-
-**Option 1: WSL2 (Recommended)**
-```bash
-# Install WSL2 with Ubuntu
-wsl --install -d Ubuntu
-
-# Follow Ubuntu setup instructions above
-```
-
-**Option 2: MinGW-w64**
-```bash
-# Install MSYS2
-# Download from: https://www.msys2.org/
-
-# In MSYS2 terminal:
-pacman -S mingw-w64-x86_64-clang
-pacman -S mingw-w64-x86_64-make
-pacman -S git
-
-# Add to PATH: C:\msys64\mingw64\bin
-```
-
-**Option 3: Visual Studio**
-```bash
-# Install Visual Studio 2019+ with C++ support
-# Install Git for Windows
-# Use Developer Command Prompt for building
-```
 
 ## IDE Configuration
 

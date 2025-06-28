@@ -129,24 +129,6 @@ sudo yum install -y cppcheck valgrind gdb
 sudo dnf install -y cppcheck valgrind gdb
 ```
 
-### Windows (MinGW-w64)
-
-#### Using MSYS2
-```bash
-# Install MSYS2 from https://www.msys2.org/
-# Then in MSYS2 terminal:
-
-# Update package database
-pacman -Syu
-
-# Install development tools
-pacman -S mingw-w64-x86_64-clang \
-          mingw-w64-x86_64-make \
-          git
-
-# Add to PATH
-export PATH="/mingw64/bin:$PATH"
-```
 
 ## IDE Configuration
 

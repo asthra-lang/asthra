@@ -9,9 +9,7 @@ set(COMMON_C_FLAGS "-Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-vari
 set(COMMON_C_FLAGS "${COMMON_C_FLAGS} -Wno-sign-compare -Wno-unused-function")
 
 # Platform-specific PIC and threading flags
-if(NOT WIN32)
-    set(COMMON_C_FLAGS "${COMMON_C_FLAGS} -fPIC -pthread")
-endif()
+set(COMMON_C_FLAGS "${COMMON_C_FLAGS} -fPIC -pthread")
 
 # Platform-specific common flags
 if(APPLE)

@@ -71,8 +71,6 @@ void init_executable_metadata(Asthra_ExecutableMetadata *metadata) {
 
 #if ASTHRA_PLATFORM_LINUX
     metadata->executable_format = "ELF";
-#elif ASTHRA_PLATFORM_WINDOWS
-    metadata->executable_format = "PE";
 #elif ASTHRA_PLATFORM_MACOS
     metadata->executable_format = "Mach-O";
 #else

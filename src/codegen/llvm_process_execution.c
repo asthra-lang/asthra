@@ -41,12 +41,6 @@ AsthraLLVMToolResult execute_command(const char **argv, bool capture_output) {
 
     clock_t start_time = clock();
 
-#ifdef _WIN32
-    // Windows implementation using CreateProcess
-    // TODO: Implement Windows process execution
-    result.stderr_output = strdup("Windows process execution not yet implemented");
-    return result;
-#else
     // Unix implementation using posix_spawn
     int stdout_pipe[2], stderr_pipe[2];
     pid_t pid;
@@ -146,7 +140,6 @@ AsthraLLVMToolResult execute_command(const char **argv, bool capture_output) {
         result.exit_code = -WTERMSIG(status);
         result.success = false;
     }
-#endif
 
     clock_t end_time = clock();
     result.execution_time_ms = ((double)(end_time - start_time) / CLOCKS_PER_SEC) * 1000.0;
