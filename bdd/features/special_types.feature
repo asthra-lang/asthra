@@ -165,7 +165,6 @@ Feature: Special Types
     Then the output should contain "sizeof expressions work"
     And the exit code should be 0
 
-  @wip
   Scenario: Never type in match expressions
     Given I have a file "never_match.asthra" with:
       """
