@@ -28,7 +28,6 @@ Feature: Special Types
     Then the output should contain "Unit type works"
     And the exit code should be 0
 
-  @wip
   Scenario: Unit type in expressions
     Given I have a file "unit_expressions.asthra" with:
       """
