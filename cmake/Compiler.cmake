@@ -8,20 +8,12 @@ set(ASTHRA_COMPILER "Clang")
 
 # C23 feature detection for Clang
 include(CheckCCompilerFlag)
+# C23 feature detection for Clang
 check_c_compiler_flag("-std=c23" COMPILER_SUPPORTS_C23)
-if(COMPILER_SUPPORTS_C23)
-    set(CMAKE_C_STANDARD 23)
-    message(STATUS "Using C23 standard")
-else()
-    # Fallback to C17 if C23 not supported
-    check_c_compiler_flag("-std=c17" COMPILER_SUPPORTS_C17)
-    if(COMPILER_SUPPORTS_C17)
-        set(CMAKE_C_STANDARD 17)
-        message(STATUS "C23 not supported, falling back to C17")
-    else()
-        message(FATAL_ERROR "Compiler does not support C17 or C23")
-    endif()
+if(NOT COMPILER_SUPPORTS_C23)
+    message(FATAL_ERROR "Asthra requires C23 support. Your compiler (${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION}) does not support C23. Please upgrade to a newer version of Clang/LLVM.")
 endif()
+message(STATUS "Using C23 standard")
 
 # Common warning flags for Clang
 set(COMMON_WARNING_FLAGS

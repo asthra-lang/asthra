@@ -228,7 +228,7 @@ TypeInfo *type_info_from_descriptor(TypeDescriptor *descriptor) {
         // Copy tuple-specific data
         type_info->data.tuple.element_count = descriptor->data.tuple.element_count;
         if (descriptor->data.tuple.element_count > 0 && descriptor->data.tuple.element_types) {
-            type_info->data.tuple.element_types = 
+            type_info->data.tuple.element_types =
                 malloc(descriptor->data.tuple.element_count * sizeof(TypeInfo *));
             if (type_info->data.tuple.element_types) {
                 for (size_t i = 0; i < descriptor->data.tuple.element_count; i++) {

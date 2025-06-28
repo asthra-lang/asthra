@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Asthra** is a modern, safe, and performant systems programming language with C17-based compiler infrastructure. It features automatic memory management, strong type safety, built-in concurrency support, and seamless C FFI.
+**Asthra** is a modern, safe, and performant systems programming language with C23-based compiler infrastructure. It features automatic memory management, strong type safety, built-in concurrency support, and seamless C FFI.
 
 ## Essential Commands
 
@@ -67,10 +67,10 @@ ctest --test-dir build -R "parser.*expr"       # Test parser expressions
 | **Temporary Test Files** | ALL temporary test files (source and executables) MUST be saved in a temporary directory (e.g., `/tmp/asthra-tests/` or `mktemp -d`). NEVER create temporary test files in the project directory | N/A |
 | **GitHub Access** | Always use the `gh` command when accessing GitHub issues, pull requests, or any GitHub-related information. Never guess or assume issue content - always fetch the actual data using commands like `gh issue view`, `gh pr view`, etc. | N/A |
 
-### C17 Standards
-- **Must use** modern C17 features appropriately: `_Static_assert`, `_Generic`, `<stdatomic.h>`, `_Thread_local`
-- **Always provide** fallback implementations for older compilers
-- Use feature detection macros for C17 features
+### C23 Standards
+- **Must use** modern C23 features appropriately: `typeof`, `_BitInt`, `#embed`, `_Bool` as `bool`, improved type inference
+- **Leverage** C23 improvements: better Unicode support, improved atomics, enhanced preprocessor
+- **Requires** Clang/LLVM 18.0 or later with C23 support
 
 ### Build System
 - **CMake-based build system** with modular configuration
@@ -113,7 +113,7 @@ ctest --test-dir build -R "parser.*expr"       # Test parser expressions
 - Use Given-When-Then pattern, handle @wip scenarios, register tests in CMakeLists.txt
 
 ## Performance Targets
-- **Compilation speed**: 15-25% faster than baseline with C17 optimizations
+- **Compilation speed**: 15-25% faster than baseline with C23 optimizations
 - **Memory efficiency**: 10-20% reduction in memory usage
 - **Reference counting**: 50-80% faster with atomic operations
 - **Keyword lookup**: ~12.86 nanoseconds average time

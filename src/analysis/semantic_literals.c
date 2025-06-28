@@ -122,10 +122,10 @@ bool analyze_literal_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
         // Check if the literal value fits within the bounds of the target type
         int64_t value = expr->data.integer_literal.value;
         const char *type_name = int_type->name;
-        
+
         if (type_name) {
             bool overflow = false;
-            
+
             // Check bounds for signed types
             if (strcmp(type_name, "i8") == 0) {
                 overflow = value < -128 || value > 127;
@@ -143,12 +143,12 @@ bool analyze_literal_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
             } else if (strcmp(type_name, "u32") == 0) {
                 overflow = value < 0 || value > UINT32_MAX;
             } else if (strcmp(type_name, "u64") == 0) {
-                overflow = value < 0;  // Only check for negative values
+                overflow = value < 0; // Only check for negative values
             }
-            
+
             if (overflow) {
                 semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_LITERAL, expr->location,
-                                      "Integer literal %lld exceeds range of type %s", 
+                                      "Integer literal %lld exceeds range of type %s",
                                       (long long)value, type_name);
                 return false;
             }
