@@ -24,9 +24,9 @@ Source Code (.asthra)
         ↓
 [Semantic Analysis] → Validated AST + Symbol Tables
         ↓
-[Code Generation] → C Code + FFI Assembly
+[Code Generation] → LLVM IR
         ↓
-    [C Compiler] → Object Files
+    [LLVM Backend] → Object Files
         ↓
     [Linker] → Executable Binary
 ```
@@ -36,7 +36,7 @@ Source Code (.asthra)
 1. **AI Generation Efficiency**: Minimal syntax for maximum AI model predictability
 2. **Memory Safety**: Four-zone memory model with ownership tracking
 3. **Modular Architecture**: Component isolation for maintainability
-4. **FFI Safety**: Automatic C binding generation with transfer semantics
+4. **FFI Safety**: Safe C interop through LLVM's foreign function capabilities
 5. **Deterministic Parsing**: No ambiguous constructs for reliable compilation
 
 ## Phase 1: Lexical Analysis

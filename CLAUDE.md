@@ -39,7 +39,7 @@ ctest --test-dir build -R "parser.*expr"       # Test parser expressions
 ### Source Structure (`src/`)
 - **`parser/`** - Modular lexer/parser with AST generation following PEG grammar
 - **`analysis/`** - Semantic analysis, type inference, symbol tables, memory safety
-- **`codegen/`** - ELF generation, FFI assembly, optimization pipeline, register allocation
+- **`codegen/`** - LLVM IR backend exclusively (no direct assembly generation), optimization via LLVM passes
 - **`performance/`** - Benchmarking infrastructure with nanosecond precision
 
 ### Runtime System (`runtime/`)

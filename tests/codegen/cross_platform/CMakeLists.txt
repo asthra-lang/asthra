@@ -1,5 +1,9 @@
 # Cross-Platform Tests
 # Tests for platform detection, cross-compilation, and platform-specific code generation
+# DISABLED: These tests depend on the removed assembly/platform-specific code generation
+# LLVM backend handles cross-platform compilation internally
+
+return()  # Skip this directory
 
 set(CROSS_PLATFORM_TESTS
     test_platform_detection.c

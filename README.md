@@ -34,9 +34,9 @@ cmake --build build --target analyze
 
 ## Architecture
 
-- **Parser**: Modular lexer/parser with AST generation
-- **Analysis**: Semantic analysis, type inference, symbol tables
-- **Codegen**: ELF generation, optimization pipeline
+- **Parser**: Modular lexer/parser with AST generation following PEG grammar
+- **Analysis**: Semantic analysis, type inference, symbol tables, memory safety
+- **Codegen**: LLVM IR backend exclusively (no direct assembly generation)
 - **Runtime**: Memory management, concurrency primitives, FFI safety
 
 ## Requirements

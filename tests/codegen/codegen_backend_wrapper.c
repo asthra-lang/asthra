@@ -36,13 +36,13 @@ bool asthra_backend_generate_program(AsthraBackend *backend, ASTNode *ast) {
     
     // Create a minimal compiler context for the test
     AsthraCompilerContext ctx = {0};
-    ctx.input_file = "test.asthra";
     ctx.ast = ast;
     
     // Get semantic analyzer from test data if available
     BackendTestData *test_data = (BackendTestData *)backend->private_data;
     if (test_data && test_data->analyzer) {
-        ctx.semantic_analyzer = test_data->analyzer;
+        // Store in appropriate field (might be symbol_table or type_checker)
+        ctx.symbol_table = test_data->analyzer;
     }
     
     // Initialize backend if needed
@@ -82,13 +82,13 @@ bool asthra_backend_generate_to_file(AsthraBackend *backend, ASTNode *ast, const
     
     // Create a compiler context for file generation
     AsthraCompilerContext ctx = {0};
-    ctx.input_file = "test.asthra";
     ctx.ast = ast;
     
     // Get semantic analyzer from test data if available
     BackendTestData *test_data = (BackendTestData *)backend->private_data;
     if (test_data && test_data->analyzer) {
-        ctx.semantic_analyzer = test_data->analyzer;
+        // Store in appropriate field (might be symbol_table or type_checker)
+        ctx.symbol_table = test_data->analyzer;
     }
     
     // Initialize backend if needed

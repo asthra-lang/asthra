@@ -97,7 +97,7 @@ int main(void) {
     // Cleanup
     semantic_analyzer_destroy(analyzer);
     ast_free_node(program);
-    code_generator_destroy(generator);
+    asthra_backend_destroy(backend);
 
     return codegen_success ? 0 : 1;
 }

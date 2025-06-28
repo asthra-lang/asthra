@@ -15,7 +15,7 @@ The Asthra compiler is a production-ready implementation featuring a modular arc
                                                           ▼
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │   Executable    │◀────│ Code Generator  │◀────│Semantic Analyzer│
-│  (ELF Binary)   │     │ (Assembly Gen)  │     │ (Type Checker)  │
+│  (ELF Binary)   │     │   (LLVM IR)     │     │ (Type Checker)  │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
                                 │
                                 ▼
@@ -75,20 +75,18 @@ Key modules:
 
 ### 4. Code Generation (`src/codegen/`)
 
-The code generator produces native executables:
-- **Direct ELF generation** for x86_64 and ARM64
-- **Register allocation** with graph coloring
-- **Optimization pipeline** with multiple passes
-- **FFI marshaling** for safe C interop
+The code generator exclusively uses LLVM IR backend:
+- **LLVM IR generation** for all target platforms
+- **LLVM optimization passes** instead of custom optimizers
+- **LLVM's native code generation** for x86_64, ARM64, and other targets
+- **FFI marshaling** through LLVM intrinsics
 - **Generic instantiation** for type parameters
 
 Key components:
-- `code_generator_*.c` - Modular code generation
-- `elf_writer*.c` - ELF binary construction
-- `ffi_assembly*.c` - FFI call generation
-- `optimizer*.c` - Optimization passes
-- `register_allocator.c` - Register management
+- `backend_interface.c` - LLVM backend integration
+- `llvm_backend.c` - LLVM IR generation
 - `generic_instantiation*.c` - Monomorphization
+- FFI support through LLVM's foreign function capabilities
 
 ### 5. Runtime System (`runtime/`)
 
