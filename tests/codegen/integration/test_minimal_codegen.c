@@ -2,7 +2,8 @@
  * Minimal standalone codegen test to isolate issues
  */
 
-#include "code_generator.h"
+#include "backend_interface.h"
+#include "../codegen_backend_wrapper.h"
 #include "lexer.h"
 #include "parser.h"
 #include "semantic_analyzer.h"
@@ -13,15 +14,14 @@
 int main(void) {
     printf("Starting minimal codegen test...\n");
 
-    // Create code generator
-    CodeGenerator *generator =
-        code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!generator) {
-        printf("Failed to create code generator\n");
+    // Create backend
+    AsthraBackend *backend = asthra_backend_create_by_type(ASTHRA_BACKEND_LLVM_IR);
+    if (!backend) {
+        printf("Failed to create backend\n");
         return 1;
     }
 
-    printf("Code generator created successfully\n");
+    printf("Backend created successfully\n");
 
     // Simple program source
     const char *source = "package test;\n"
@@ -36,7 +36,7 @@ int main(void) {
     Lexer *lexer = lexer_create(source, strlen(source), "test.asthra");
     if (!lexer) {
         printf("Failed to create lexer\n");
-        code_generator_destroy(generator);
+        asthra_backend_destroy(backend);
         return 1;
     }
 
@@ -44,7 +44,7 @@ int main(void) {
     if (!parser) {
         printf("Failed to create parser\n");
         lexer_destroy(lexer);
-        code_generator_destroy(generator);
+        asthra_backend_destroy(backend);
         return 1;
     }
 
@@ -53,7 +53,7 @@ int main(void) {
         printf("Failed to parse program\n");
         parser_destroy(parser);
         lexer_destroy(lexer);
-        code_generator_destroy(generator);
+        asthra_backend_destroy(backend);
         return 1;
     }
 
@@ -67,7 +67,7 @@ int main(void) {
     if (!analyzer) {
         printf("Failed to create semantic analyzer\n");
         ast_free_node(program);
-        code_generator_destroy(generator);
+        asthra_backend_destroy(backend);
         return 1;
     }
 
@@ -76,17 +76,17 @@ int main(void) {
         printf("Semantic analysis failed\n");
         semantic_analyzer_destroy(analyzer);
         ast_free_node(program);
-        code_generator_destroy(generator);
+        asthra_backend_destroy(backend);
         return 1;
     }
 
     printf("Semantic analysis successful, generating code...\n");
 
-    // Set semantic analyzer on generator
-    generator->semantic_analyzer = analyzer;
+    // Set semantic analyzer on backend
+    asthra_backend_set_semantic_analyzer(backend, analyzer);
 
     // Generate code
-    bool codegen_success = code_generate_program(generator, program);
+    bool codegen_success = asthra_backend_generate_program(backend, program);
 
     if (codegen_success) {
         printf("Code generation successful!\n");

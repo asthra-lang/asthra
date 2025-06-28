@@ -10,7 +10,7 @@
 #include "../framework/test_framework.h"
 #include "ast.h"
 #include "code_generator_instructions.h"
-#include "codegen_test_stubs.h"
+// #include "codegen_test_stubs.h" - removed, header deleted
 #include "optimizer.h"
 #include "optimizer_cfg.h"
 #include <stdbool.h>

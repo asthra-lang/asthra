@@ -21,7 +21,6 @@ add_subdirectory(patterns)
 add_subdirectory(pattern_engine)
 add_subdirectory(expressions)
 add_subdirectory(functions)
-add_subdirectory(elf_writer)
 
 # Phase 4: Advanced categories
 add_subdirectory(advanced_optimization)

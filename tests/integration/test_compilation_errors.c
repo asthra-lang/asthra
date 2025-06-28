@@ -13,8 +13,6 @@
 #include "../framework/test_framework.h"
 #include "ast.h"
 #include "backend_interface.h"
-#include "elf_writer.h"
-#include "ffi_assembly_generator.h"
 #include "lexer.h"
 #include "parser.h"
 #include "semantic_analyzer.h"
@@ -35,8 +33,6 @@ typedef struct {
     Parser *parser;
     SemanticAnalyzer *analyzer;
     AsthraBackend *backend;
-    ELFWriter *elf_writer;
-    FFIAssemblyGenerator *ffi_generator;
     ASTNode *ast;
     char *source_code;
     char *output_filename;
@@ -102,31 +98,6 @@ static ErrorHandlingTestFixture *setup_error_handling_fixture(const char *source
         return NULL;
     }
 
-    fixture->ffi_generator = ffi_assembly_generator_create();
-    if (!fixture->ffi_generator) {
-        asthra_backend_destroy(fixture->backend);
-        destroy_semantic_analyzer(fixture->analyzer);
-        parser_destroy(fixture->parser);
-        lexer_destroy(fixture->lexer);
-        free(fixture->output_filename);
-        free(fixture->source_code);
-        free(fixture);
-        return NULL;
-    }
-
-    fixture->elf_writer = elf_writer_create(fixture->ffi_generator);
-    if (!fixture->elf_writer) {
-        ffi_assembly_generator_destroy(fixture->ffi_generator);
-        asthra_backend_destroy(fixture->backend);
-        destroy_semantic_analyzer(fixture->analyzer);
-        parser_destroy(fixture->parser);
-        lexer_destroy(fixture->lexer);
-        free(fixture->output_filename);
-        free(fixture->source_code);
-        free(fixture);
-        return NULL;
-    }
-
     return fixture;
 }
 
@@ -139,12 +110,6 @@ static void cleanup_error_handling_fixture(ErrorHandlingTestFixture *fixture) {
 
     if (fixture->ast) {
         ast_free_node(fixture->ast);
-    }
-    if (fixture->elf_writer) {
-        elf_writer_destroy(fixture->elf_writer);
-    }
-    if (fixture->ffi_generator) {
-        ffi_assembly_generator_destroy(fixture->ffi_generator);
     }
     if (fixture->backend) {
         asthra_backend_destroy(fixture->backend);

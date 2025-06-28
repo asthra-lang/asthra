@@ -68,14 +68,13 @@ static void test_option_type_integration(void) {
     assert(semantic_success);
 
     // Perform code generation to ensure Option constructions work
-    CodeGenerator *generator =
-        code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    assert(generator != NULL);
+    AsthraBackend *backend = asthra_backend_create_by_type(ASTHRA_BACKEND_LLVM_IR);
+    assert(backend != NULL);
 
-    // Connect semantic analysis results to code generator
-    code_generator_set_semantic_analyzer(generator, analyzer);
+    // Connect semantic analysis results to backend
+    asthra_backend_set_semantic_analyzer(backend, analyzer);
 
-    bool codegen_success = code_generate_program(generator, program);
+    bool codegen_success = asthra_backend_generate_program(backend, program);
     assert(codegen_success);
 
     printf("✓ Option.Some and Option.None constructions with type inference validated\n");
@@ -83,7 +82,7 @@ static void test_option_type_integration(void) {
     printf("✓ Option integration test structure validated\n");
 
     // Cleanup
-    code_generator_destroy(generator);
+    asthra_backend_destroy(backend);
     semantic_analyzer_destroy(analyzer);
     ast_free_node(program);
 

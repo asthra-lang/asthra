@@ -10,8 +10,8 @@
 
 #include "real_program_test_integration.h"
 #include "ast.h"
-#include "code_generator.h"
-#include "ffi_assembly_generator.h"
+#include "backend_interface.h"
+#include "backend_test_wrapper.h"
 #include "parser_string_interface.h"
 #include "real_program_test_suite.h"
 #include "semantic_analyzer_core.h"
@@ -79,20 +79,20 @@ bool test_source_to_executable(const char *source, const char *output_name,
     }
 
     // Step 4: Code Generation (simplified for now - just verify it generates without error)
-    CodeGenerator *codegen = code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!codegen) {
-        fprintf(config->output_stream, "Failed to create code generator\n");
+    AsthraBackend *backend = asthra_backend_create_by_type(ASTHRA_BACKEND_LLVM_IR);
+    if (!backend) {
+        fprintf(config->output_stream, "Failed to create backend\n");
         semantic_analyzer_destroy(analyzer);
         cleanup_parse_result(&parse_result);
         return false;
     }
 
-    // Set the semantic analyzer in the code generator
-    codegen->semantic_analyzer = analyzer;
+    // Set the semantic analyzer in the backend
+    asthra_backend_set_semantic_analyzer(backend, analyzer);
 
-    bool codegen_success = code_generate_program(codegen, parse_result.ast);
+    bool codegen_success = asthra_backend_generate_program(backend, parse_result.ast);
 
-    code_generator_destroy(codegen);
+    asthra_backend_destroy(backend);
     semantic_analyzer_destroy(analyzer);
     cleanup_parse_result(&parse_result);
 

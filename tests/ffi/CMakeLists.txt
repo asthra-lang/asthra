@@ -139,7 +139,7 @@ set(FFI_ASSEMBLY_EXCLUDE
     test_ffi_assembly_calls.c          # depends on ffi_assembly_generator.h
     test_ffi_assembly_common_impl.c    # depends on ffi_assembly_generator.h
     test_ffi_assembly_master.c         # depends on deleted assembly code
-    test_ffi_complete.c
+    # test_ffi_complete.c              # DELETED - tested non-existent FFI generator
     test_ffi_grammar_compliance.c
     test_ffi_memory_diagnostics.c
     test_ffi_memory_ownership.c
@@ -150,7 +150,7 @@ set(FFI_ASSEMBLY_EXCLUDE
     test_ffi_minimal_runner.c
     test_ffi_minimal_tests.c
     test_ffi_ownership.c
-    test_ffi_simple.c
+    # test_ffi_simple.c                # DELETED - tested non-existent FFI generator
     test_ffi_stubs.c                   # depends on ffi_assembly_generator.h
     # Also exclude memory tests that need special handling
     test_ffi_memory_all.c
@@ -166,7 +166,7 @@ set(FFI_ASSEMBLY_EXCLUDE
     ffi_stubs_memory.c
     ffi_stubs_test_suite.c
     # FFI tests that depend on deleted code generator files
-    test_option_ffi.c                  # depends on deleted ffi_generator_core.h
+    # test_option_ffi.c                # DELETED - depends on deleted ffi_generator_core.h
 )
 
 foreach(exclude_file ${FFI_ASSEMBLY_EXCLUDE})
