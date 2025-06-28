@@ -74,7 +74,7 @@ AsthraConcurrencyChannel *Asthra_channel_create(size_t element_size, size_t buff
 
     // Set channel name
     if (name) {
-        strncpy(channel->name, name, sizeof(channel->name) - 1);
+        asthra_strncpy(channel->name, name, sizeof(channel->name));
         channel->name[sizeof(channel->name) - 1] = '\0';
     } else {
         snprintf(channel->name, sizeof(channel->name), "channel_%p", (void *)channel);
@@ -432,7 +432,7 @@ AsthraConcurrencyChannelInfo Asthra_channel_get_info(AsthraConcurrencyChannel *c
     if (!channel)
         return info;
 
-    strncpy(info.name, channel->name, sizeof(info.name) - 1);
+    asthra_strncpy(info.name, channel->name, sizeof(info.name));
     info.element_size = channel->element_size;
     info.buffer_capacity = channel->buffer_capacity;
     info.current_count = atomic_load(&channel->count);

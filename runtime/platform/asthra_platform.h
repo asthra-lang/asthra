@@ -72,9 +72,15 @@
     // pthread compatibility defines
     #define PTHREAD_MUTEX_RECURSIVE 1
     #define PTHREAD_ONCE_INIT INIT_ONCE_STATIC_INIT
-    #define EAGAIN 11
-    #define EBUSY 16
-    #define ETIMEDOUT 110
+    #ifndef EAGAIN
+        #define EAGAIN 11
+    #endif
+    #ifndef EBUSY
+        #define EBUSY 16
+    #endif
+    #ifndef ETIMEDOUT
+        #define ETIMEDOUT 138  // Use Windows SDK value
+    #endif
     
 #else
     // POSIX systems
@@ -102,6 +108,56 @@
     #define asthra_thread_yield() SwitchToThread()
 #else
     #define asthra_thread_yield() sched_yield()
+#endif
+
+// Time function compatibility
+#ifdef ASTHRA_PLATFORM_WINDOWS
+    // Windows doesn't have clock_gettime, provide compatibility
+    #define CLOCK_REALTIME 0
+    #define CLOCK_MONOTONIC 1
+    
+    static inline int clock_gettime(int clk_id, struct timespec *tp) {
+        LARGE_INTEGER frequency, counter;
+        static LARGE_INTEGER start_counter = {0};
+        static int initialized = 0;
+        
+        if (!initialized) {
+            QueryPerformanceCounter(&start_counter);
+            initialized = 1;
+        }
+        
+        QueryPerformanceFrequency(&frequency);
+        QueryPerformanceCounter(&counter);
+        
+        if (clk_id == CLOCK_MONOTONIC) {
+            // Monotonic clock - time since some unspecified starting point
+            LONGLONG elapsed = counter.QuadPart - start_counter.QuadPart;
+            tp->tv_sec = (time_t)(elapsed / frequency.QuadPart);
+            tp->tv_nsec = (long)((elapsed % frequency.QuadPart) * 1000000000 / frequency.QuadPart);
+        } else {
+            // Real time clock
+            FILETIME ft;
+            ULARGE_INTEGER uli;
+            GetSystemTimeAsFileTime(&ft);
+            uli.LowPart = ft.dwLowDateTime;
+            uli.HighPart = ft.dwHighDateTime;
+            
+            // Convert to Unix epoch (1/1/1970)
+            uli.QuadPart -= 116444736000000000ULL; // Difference between 1601 and 1970
+            tp->tv_sec = (time_t)(uli.QuadPart / 10000000);
+            tp->tv_nsec = (long)((uli.QuadPart % 10000000) * 100);
+        }
+        
+        return 0;
+    }
+#endif
+
+// String function compatibility
+#ifdef ASTHRA_PLATFORM_WINDOWS
+    // Use secure versions on Windows when available
+    #define asthra_strncpy(dst, src, size) strncpy_s(dst, size, src, _TRUNCATE)
+#else
+    #define asthra_strncpy(dst, src, size) strncpy(dst, src, size)
 #endif
 
 #endif // ASTHRA_PLATFORM_H
