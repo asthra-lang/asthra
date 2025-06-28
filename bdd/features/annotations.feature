@@ -149,7 +149,6 @@ Feature: Annotations
     Then the output should contain "Ownership annotations work"
     And the exit code should be 0
 
-  @wip
   Scenario: FFI transfer annotations
     Given I have a file "ffi_transfer.asthra" with:
       """
