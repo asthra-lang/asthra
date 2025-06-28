@@ -6,7 +6,7 @@
 #include <time.h>
 
 // Helper function to escape JSON strings
-char *escape_json_string(const char *str) {
+static char *escape_json_string_internal(const char *str) {
     if (!str)
         return strdup("null");
 
@@ -66,7 +66,7 @@ char *format_source_location(const DiagnosticSpan *location) {
     if (!location)
         return strdup("null");
 
-    char *file_path = escape_json_string(location->file_path);
+    char *file_path = escape_json_string_internal(location->file_path);
     char *result = malloc(256);
     if (!result) {
         free(file_path);
@@ -172,12 +172,12 @@ char *ai_linter_generate_guidance_json(AILintResult **results, size_t count) {
         if (!result)
             continue;
 
-        char *rule_id = escape_json_string(result->rule_id);
-        char *category = escape_json_string(ai_lint_category_to_string(result->category));
-        char *severity = escape_json_string(ai_lint_severity_to_string(result->severity));
-        char *title = escape_json_string(result->title);
-        char *description = escape_json_string(result->description);
-        char *ai_guidance = escape_json_string(result->ai_guidance);
+        char *rule_id = escape_json_string_internal(result->rule_id);
+        char *category = escape_json_string_internal(ai_lint_category_to_string(result->category));
+        char *severity = escape_json_string_internal(ai_lint_severity_to_string(result->severity));
+        char *title = escape_json_string_internal(result->title);
+        char *description = escape_json_string_internal(result->description);
+        char *ai_guidance = escape_json_string_internal(result->ai_guidance);
         char *location = format_source_location(&result->location);
 
         written = snprintf(ptr, remaining,
@@ -293,12 +293,12 @@ char *ai_linter_generate_rule_catalog_json(AILinter *linter) {
     for (size_t i = 0; i < linter->rule_count; i++) {
         AILintRule *rule = &linter->rules[i];
 
-        char *rule_id = escape_json_string(rule->rule_id);
-        char *category = escape_json_string(ai_lint_category_to_string(rule->category));
-        char *severity = escape_json_string(ai_lint_severity_to_string(rule->default_severity));
-        char *title = escape_json_string(rule->title);
-        char *description = escape_json_string(rule->description);
-        char *ai_guidance = escape_json_string(rule->ai_guidance);
+        char *rule_id = escape_json_string_internal(rule->rule_id);
+        char *category = escape_json_string_internal(ai_lint_category_to_string(rule->category));
+        char *severity = escape_json_string_internal(ai_lint_severity_to_string(rule->default_severity));
+        char *title = escape_json_string_internal(rule->title);
+        char *description = escape_json_string_internal(rule->description);
+        char *ai_guidance = escape_json_string_internal(rule->ai_guidance);
 
         written = snprintf(ptr, remaining,
                            "%s{"
@@ -370,8 +370,8 @@ char *ai_linter_generate_fix_suggestions_json(AILintResult **results, size_t cou
         if (!result || !result->auto_fixable)
             continue;
 
-        char *rule_id = escape_json_string(result->rule_id);
-        char *ai_guidance = escape_json_string(result->ai_guidance);
+        char *rule_id = escape_json_string_internal(result->rule_id);
+        char *ai_guidance = escape_json_string_internal(result->ai_guidance);
         char *location = format_source_location(&result->location);
 
         written = snprintf(ptr, remaining,

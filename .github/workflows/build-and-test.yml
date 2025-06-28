@@ -21,7 +21,7 @@ env:
 jobs:
   build-and-test:
     name: Build and Test (${{ matrix.platform }}, ${{ matrix.compiler }}, ${{ matrix.arch }})
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.arch == 'arm64' && matrix.platform == 'linux' && 'ubuntu-24.04-arm' || matrix.os }}
     
     strategy:
       fail-fast: false
@@ -32,6 +32,15 @@ jobs:
             os: ubuntu-24.04
             compiler: clang
             arch: x64
+            cc: clang
+            cxx: clang++
+            build_type: Release
+            
+          # Linux ARM64 builds - Clang only
+          - platform: linux
+            os: ubuntu-24.04
+            compiler: clang
+            arch: arm64
             cc: clang
             cxx: clang++
             build_type: Release
@@ -78,7 +87,13 @@ jobs:
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
         sudo add-apt-repository "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-18 main"
         sudo apt-get update -y
-        sudo apt-get install -y llvm-18 llvm-18-dev clang-18 lld-18
+        sudo apt-get install -y llvm-18 llvm-18-dev clang-18 lld-18 llvm-18-tools
+        
+        # Verify LLVM 18 tools exist
+        echo "Checking LLVM 18 tools..."
+        ls -la /usr/bin/lld-18 || echo "lld-18 not found"
+        ls -la /usr/bin/llvm-ar-18 || echo "llvm-ar-18 not found"
+        ls -la /usr/bin/llvm-ranlib-18 || echo "llvm-ranlib-18 not found"
         
         # Verify installation
         echo "Checking clang-18 version..."
@@ -214,10 +229,38 @@ jobs:
         echo ""
         
         # Use default generator on Unix-like systems
-        cmake .. \
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DCMAKE_C_COMPILER="${CC}" \
-          -DCMAKE_CXX_COMPILER="${CXX}"
+        # For Linux, use LLVM toolchain to avoid version mismatches
+        if [[ "${{ matrix.platform }}" == "linux" ]]; then
+          # Find LLVM tools
+          LLVM_AR_PATH=$(which llvm-ar-18 || which llvm-ar)
+          LLVM_RANLIB_PATH=$(which llvm-ranlib-18 || which llvm-ranlib)
+          
+          echo "Using LLVM AR: $LLVM_AR_PATH"
+          echo "Using LLVM RANLIB: $LLVM_RANLIB_PATH"
+          
+          # Use lld-18 if available, otherwise lld
+          if which lld-18 >/dev/null 2>&1; then
+            LLD_NAME="lld-18"
+          else
+            LLD_NAME="lld"
+          fi
+          echo "Using linker: $LLD_NAME"
+          
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_C_COMPILER="${CC}" \
+            -DCMAKE_CXX_COMPILER="${CXX}" \
+            -DCMAKE_AR="$LLVM_AR_PATH" \
+            -DCMAKE_RANLIB="$LLVM_RANLIB_PATH" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=$LLD_NAME" \
+            -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=$LLD_NAME" \
+            -DCMAKE_MODULE_LINKER_FLAGS="-fuse-ld=$LLD_NAME"
+        else
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_C_COMPILER="${CC}" \
+            -DCMAKE_CXX_COMPILER="${CXX}"
+        fi
         
         echo "✓ CMake configuration completed successfully"
 
@@ -308,7 +351,30 @@ jobs:
         echo "=== Running Sanitizer Tests ==="
         # Reconfigure with sanitizers
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=${{ matrix.cc }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_C_FLAGS="-fsanitize=address,undefined" -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined"
+        
+        # Find LLVM tools (same as in configure step)
+        LLVM_AR_PATH=$(which llvm-ar-18 || which llvm-ar)
+        LLVM_RANLIB_PATH=$(which llvm-ranlib-18 || which llvm-ranlib)
+        
+        # Use lld-18 if available, otherwise lld
+        if which lld-18 >/dev/null 2>&1; then
+          LLD_NAME="lld-18"
+        else
+          LLD_NAME="lld"
+        fi
+        
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_C_COMPILER="${CC}" \
+          -DCMAKE_CXX_COMPILER="${CXX}" \
+          -DCMAKE_AR="$LLVM_AR_PATH" \
+          -DCMAKE_RANLIB="$LLVM_RANLIB_PATH" \
+          -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=$LLD_NAME -fsanitize=address,undefined" \
+          -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=$LLD_NAME -fsanitize=address,undefined" \
+          -DCMAKE_MODULE_LINKER_FLAGS="-fuse-ld=$LLD_NAME -fsanitize=address,undefined" \
+          -DCMAKE_C_FLAGS="-fsanitize=address,undefined" \
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined"
+        
         cmake --build . --config Debug
         ctest --output-on-failure || echo "Sanitizer tests may have failed"
 

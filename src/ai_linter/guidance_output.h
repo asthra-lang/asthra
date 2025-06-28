@@ -60,7 +60,6 @@ char *ai_linter_generate_rule_catalog_json(AILinter *linter);
 char *ai_linter_generate_fix_suggestions_json(AILintResult **results, size_t count);
 
 // Helper functions for JSON generation
-char *escape_json_string(const char *str);
 char *format_source_location(const DiagnosticSpan *location);
 AILintStatistics calculate_statistics(AILintResult **results, size_t count);
 
