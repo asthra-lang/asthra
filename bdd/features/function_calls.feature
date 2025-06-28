@@ -328,7 +328,6 @@ Feature: Function Call Functionality
     Then the compilation should fail
     And the error message should contain "Duplicate function declaration"
 
-  @wip
   Scenario: Error - calling undefined function
     Given I have a file "undefined_function.asthra" with:
       """
@@ -341,7 +340,7 @@ Feature: Function Call Functionality
       """
     When I compile the file
     Then the compilation should fail
-    And the error message should contain "undefined function"
+    And the error message should contain "Undefined function"
 
   @wip
   Scenario: Error - incorrect number of arguments

@@ -356,7 +356,7 @@ void test_undefined_function_error(void) {
     given_file_with_content("undefined_function.asthra", source);
     when_compile_file();
     then_compilation_should_fail();
-    then_error_contains("undefined function");
+    then_error_contains("Undefined function");
 }
 
 // Test scenario: Error - incorrect number of arguments
@@ -453,7 +453,7 @@ int main(void) {
         // Recursive function calls is no longer @wip in the feature file
         bdd_skip_scenario("Function call in expression context [@wip]");
         // Forward function declaration is no longer @wip - don't skip it
-        bdd_skip_scenario("Error - calling undefined function [@wip]");
+        // bdd_skip_scenario("Error - calling undefined function [@wip]");  // No longer @wip
         bdd_skip_scenario("Error - incorrect number of arguments [@wip]");
         bdd_skip_scenario("Error - type mismatch in function arguments [@wip]");
     }
@@ -467,6 +467,7 @@ int main(void) {
     test_mixed_params();
     test_forward_declaration();
     test_function_overloading();
+    test_undefined_function_error();  // Now enabled since @wip tag was removed
     
     // Cleanup
     common_cleanup();
