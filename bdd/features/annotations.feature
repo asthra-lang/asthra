@@ -243,7 +243,6 @@ Feature: Annotations
     And the output should contain "Performance critical"
     And the exit code should be 0
 
-  @wip
   Scenario: Multiple annotations on same element
     Given I have a file "multiple_annotations.asthra" with:
       """
