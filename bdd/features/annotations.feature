@@ -69,7 +69,6 @@ Feature: Annotations
     And the output should contain "High priority review"
     And the exit code should be 0
 
-  @wip
   Scenario: Security annotation - constant time
     Given I have a file "constant_time.asthra" with:
       """
