@@ -247,7 +247,6 @@ Feature: Composite Types
     Then the output should contain "Mutable pointer works"
     And the exit code should be 0
 
-  @wip
   Scenario: Const pointer type
     Given I have a file "const_pointer.asthra" with:
       """
