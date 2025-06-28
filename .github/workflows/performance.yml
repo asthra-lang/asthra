@@ -69,6 +69,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential cmake clang libc6-dev gperf libjson-c-dev
 
+      - name: Set compiler environment
+        run: |
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
+
       - name: Set up performance monitoring
         run: |
           # Enable performance counters
@@ -162,6 +167,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential cmake clang libc6-dev gperf valgrind massif-visualizer libjson-c-dev
 
+      - name: Set compiler environment
+        run: |
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
+
       - name: Build for memory profiling
         run: |
           mkdir -p build
@@ -248,6 +258,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake clang libc6-dev gperf libjson-c-dev
+
+      - name: Set compiler environment
+        run: |
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
 
       - name: Build baseline
         run: |

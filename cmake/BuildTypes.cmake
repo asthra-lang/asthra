@@ -7,7 +7,11 @@ set(CMAKE_CONFIGURATION_TYPES "Debug;Release;Profile;PGO-Generate;PGO-Use" CACHE
 # Common flags for all builds
 set(COMMON_C_FLAGS "-Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-variable")
 set(COMMON_C_FLAGS "${COMMON_C_FLAGS} -Wno-sign-compare -Wno-unused-function")
-set(COMMON_C_FLAGS "${COMMON_C_FLAGS} -fPIC -pthread")
+
+# Platform-specific PIC and threading flags
+if(NOT WIN32)
+    set(COMMON_C_FLAGS "${COMMON_C_FLAGS} -fPIC -pthread")
+endif()
 
 # Platform-specific common flags
 if(APPLE)

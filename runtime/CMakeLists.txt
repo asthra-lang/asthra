@@ -1,9 +1,18 @@
 # Asthra Runtime Library
 file(GLOB ASTHRA_RUNTIME_SOURCES "*.c")
-file(GLOB ASTHRA_RUNTIME_CONCURRENCY "concurrency/*.c")
 file(GLOB ASTHRA_RUNTIME_MEMORY "memory/*.c")
 # TODO: Fix safety header dependencies before including
 # file(GLOB ASTHRA_RUNTIME_SAFETY "safety/*.c")
+
+# Conditionally include concurrency files based on platform
+if(WIN32)
+    # On Windows, exclude pthread-dependent concurrency files
+    set(ASTHRA_RUNTIME_CONCURRENCY "")
+    # Add Windows platform stub
+    list(APPEND ASTHRA_RUNTIME_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/platform/asthra_platform_stub.c")
+else()
+    file(GLOB ASTHRA_RUNTIME_CONCURRENCY "concurrency/*.c")
+endif()
 
 add_library(asthra_runtime STATIC 
     ${ASTHRA_RUNTIME_SOURCES} 

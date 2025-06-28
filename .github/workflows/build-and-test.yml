@@ -80,14 +80,18 @@ jobs:
           libc6-dev \
           pkg-config \
           gperf \
-          clang \
-          llvm \
-          llvm-dev \
-          lld
+          wget \
+          software-properties-common
+        
+        # Install LLVM 18 (required)
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+        sudo add-apt-repository "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-18 main"
+        sudo apt-get update -y
+        sudo apt-get install -y llvm-18 llvm-18-dev clang-18 lld-18
         
         # Verify installation
-        echo "Checking clang version..."
-        which clang && clang --version
+        echo "Checking clang-18 version..."
+        which clang-18 && clang-18 --version
         
         # Install optional dependencies (non-critical)
         sudo apt-get install -y valgrind || echo "Valgrind not available"
@@ -155,11 +159,11 @@ jobs:
         
         # Set compiler environment
         if [[ "${{ matrix.platform }}" == "linux" ]]; then
-          echo "Using clang on Linux"
-          echo "CC=clang" >> $GITHUB_ENV
-          echo "CXX=clang++" >> $GITHUB_ENV
-          CC_TO_USE="clang"
-          CXX_TO_USE="clang++"
+          echo "Using clang-18 on Linux"
+          echo "CC=clang-18" >> $GITHUB_ENV
+          echo "CXX=clang++-18" >> $GITHUB_ENV
+          CC_TO_USE="clang-18"
+          CXX_TO_USE="clang++-18"
         elif [[ "${{ matrix.platform }}" == "macos" ]]; then
           # macOS: Use LLVM 18 from homebrew
           if [[ -x "/opt/homebrew/opt/llvm@18/bin/clang" ]]; then
@@ -193,14 +197,57 @@ jobs:
       run: |
         echo "=== Verifying LLVM Installation ==="
         
-        # Find llvm-config
-        if command -v llvm-config >/dev/null 2>&1; then
-          echo "Found llvm-config"
-          llvm-config --version
-          echo "LLVM_CONFIG=llvm-config" >> $GITHUB_ENV
+        # Find llvm-config - handle different platforms
+        if [[ "${{ matrix.platform }}" == "windows" ]]; then
+          # On Windows, LLVM 18 may not include llvm-config.exe
+          # Check for clang.exe instead as a sign that LLVM is installed
+          echo "Checking for LLVM installation on Windows..."
+          
+          # Try using the LLVM_ROOT if set
+          if [[ -n "$LLVM_ROOT" ]]; then
+            LLVM_BIN_WIN="${LLVM_ROOT}\\bin"
+            LLVM_BIN_BASH=$(echo "$LLVM_BIN_WIN" | sed 's|^C:|/c|' | sed 's|\\|/|g')
+            echo "LLVM_ROOT is set, checking: $LLVM_BIN_BASH"
+            
+            if [[ -f "${LLVM_BIN_BASH}/clang.exe" ]]; then
+              echo "Found LLVM installation with clang.exe at: $LLVM_BIN_BASH"
+              export PATH="${LLVM_BIN_BASH}:$PATH"
+              # Try to get LLVM version from clang
+              "${LLVM_BIN_BASH}/clang.exe" --version | head -1
+              echo "✓ LLVM verified successfully (using clang.exe)"
+            else
+              echo "ERROR: Cannot find clang.exe at expected location"
+              ls -la "$LLVM_BIN_BASH" 2>/dev/null | head -20 || echo "Cannot list directory"
+              exit 1
+            fi
+          else
+            # Fallback: check standard location
+            if [[ -f "/c/Program Files/LLVM/bin/clang.exe" ]]; then
+              echo "Found LLVM at standard location"
+              export PATH="/c/Program Files/LLVM/bin:$PATH"
+              /c/Program\ Files/LLVM/bin/clang.exe --version | head -1
+              echo "✓ LLVM verified successfully (using clang.exe)"
+            else
+              echo "ERROR: LLVM not found on Windows!"
+              echo "Checking standard directories:"
+              ls -la "/c/Program Files/LLVM/bin/" 2>/dev/null | head -20 || echo "LLVM bin directory not found"
+              exit 1
+            fi
+          fi
         else
-          echo "ERROR: LLVM not found!"
-          exit 1
+          # On Unix-like systems
+          if command -v llvm-config-18 >/dev/null 2>&1; then
+            echo "Found llvm-config-18"
+            llvm-config-18 --version
+            echo "LLVM_CONFIG=llvm-config-18" >> $GITHUB_ENV
+          elif command -v llvm-config >/dev/null 2>&1; then
+            echo "Found llvm-config"
+            llvm-config --version
+            echo "LLVM_CONFIG=llvm-config" >> $GITHUB_ENV
+          else
+            echo "ERROR: LLVM not found!"
+            exit 1
+          fi
         fi
         
         echo "✓ LLVM verified successfully"
@@ -244,9 +291,9 @@ jobs:
         echo ""
         
         if [[ "${{ matrix.platform }}" == "windows" ]]; then
-          # Use Ninja generator on Windows for better Clang support
+          # Use Unix Makefiles generator on Windows to avoid Ninja escaping issues
           cmake .. \
-            -G "Ninja" \
+            -G "Unix Makefiles" \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DCMAKE_C_COMPILER="${CC}" \
             -DCMAKE_CXX_COMPILER="${CXX}"
@@ -411,8 +458,9 @@ jobs:
     # ARTIFACT COLLECTION
     # =============================================================================
     
-    - name: Collect build artifacts
-      if: always()
+    - name: Collect build artifacts (Unix)
+      if: always() && matrix.platform != 'windows'
+      shell: bash
       run: |
         echo "=== Collecting Build Artifacts ==="
         mkdir -p artifacts/${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.arch }}
@@ -427,6 +475,26 @@ jobs:
         
         echo "Artifacts collected:"
         ls -la artifacts/${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.arch }}/
+        
+    - name: Collect build artifacts (Windows)
+      if: always() && matrix.platform == 'windows'
+      shell: pwsh
+      run: |
+        Write-Host "=== Collecting Build Artifacts ==="
+        New-Item -ItemType Directory -Force -Path "artifacts\${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.arch }}"
+        
+        # Copy executables and libraries
+        Get-ChildItem -Path build -Recurse -Include "asthra*.exe", "*.lib", "*.dll" -File | ForEach-Object {
+          Copy-Item $_.FullName -Destination "artifacts\${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.arch }}\" -Force
+        }
+        
+        # Copy logs
+        Get-ChildItem -Path . -Filter "*.log" -File | ForEach-Object {
+          Copy-Item $_.FullName -Destination "artifacts\${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.arch }}\" -Force
+        }
+        
+        Write-Host "Artifacts collected:"
+        Get-ChildItem -Path "artifacts\${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.arch }}"
         
     - name: Upload build artifacts
       if: always()

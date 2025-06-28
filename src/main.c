@@ -13,8 +13,16 @@
 #include "../runtime/asthra_runtime.h"
 #include "cli.h"
 #include "compiler.h"
+#include "platform.h"
 #include "platform_utils.h"
 #include "version.h"
+
+// TEMPORARY: Forward declare functions to debug CI issue
+// These are declared in platform.h but CI can't see them
+char *asthra_strdup(const char *str);
+void asthra_normalize_path(char *path);
+bool asthra_file_exists(const char *path);
+const char *asthra_get_platform_info(void);
 
 // C17 compile-time validation of main.c assumptions
 ASTHRA_STATIC_ASSERT(sizeof(int) >= 4, "int must be at least 32 bits");

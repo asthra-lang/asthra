@@ -18,7 +18,7 @@ AsthraConcurrencyMutex *Asthra_mutex_create(const char *name, bool recursive) {
         return NULL;
     }
 
-    pthread_mutexattr_t attr;
+    asthra_mutexattr_t attr;
     if (pthread_mutexattr_init(&attr) != 0) {
         free(mutex);
         return NULL;

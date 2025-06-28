@@ -37,7 +37,7 @@ extern "C" {
 typedef struct AsthraConcurrencyMutex {
     asthra_concurrency_mutex_t mutex; // Underlying mutex
 #if !ASTHRA_HAS_C11_THREADS
-    pthread_mutexattr_t attr; // Mutex attributes (POSIX only)
+    asthra_mutexattr_t attr; // Mutex attributes
 #endif
     _Atomic(asthra_concurrency_thread_t) owner;           // Atomic current owner
     asthra_concurrency_atomic_int recursion_count;        // Atomic recursion count
@@ -53,7 +53,7 @@ typedef struct AsthraConcurrencyMutex {
 typedef struct AsthraConcurrencyCondVar {
     asthra_concurrency_cond_t cond; // Underlying condition variable
 #if !ASTHRA_HAS_C11_THREADS
-    pthread_condattr_t attr; // Condition variable attributes (POSIX only)
+    asthra_condattr_t attr; // Condition variable attributes
 #endif
     asthra_concurrency_atomic_size_t waiter_count;       // Atomic waiter count
     asthra_concurrency_atomic_counter_t signal_count;    // Total signals
@@ -92,8 +92,8 @@ typedef struct AsthraConcurrencySemaphore {
  */
 typedef struct AsthraConcurrencyRWLock {
 #if !ASTHRA_HAS_C11_THREADS
-    pthread_rwlock_t rwlock;   // Underlying POSIX rwlock
-    pthread_rwlockattr_t attr; // RWLock attributes
+    asthra_rwlock_t rwlock;   // Underlying rwlock
+    asthra_rwlockattr_t attr; // RWLock attributes
 #else
     asthra_concurrency_mutex_t rw_mutex;  // Fallback mutex for C11 threads
     asthra_concurrency_cond_t read_cond;  // Condition for readers

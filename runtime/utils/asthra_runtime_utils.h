@@ -24,8 +24,9 @@ extern "C" {
 
 uint64_t asthra_get_timestamp_ns(void);
 uint64_t asthra_get_timestamp_ms(void);
-void asthra_sleep_ms(uint64_t milliseconds);
-void asthra_sleep_ns(uint64_t nanoseconds);
+// Sleep functions are provided by platform layer as macros
+// void asthra_sleep_ms(uint64_t milliseconds);
+// void asthra_sleep_ns(uint64_t nanoseconds);
 
 // =============================================================================
 // I/O SUPPORT FUNCTIONS

@@ -101,8 +101,11 @@ target_compile_definitions(asthra_compiler
         ASTHRA_COMPILER_BUILD
 )
 
-# Compiler executable
+# Compiler executable  
 add_executable(asthra main.c)
+target_include_directories(asthra PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
 target_link_libraries(asthra asthra_compiler)
 
 # Export targets
