@@ -164,7 +164,6 @@ Feature: Visibility Modifiers
     Then the output should contain "Mixed visibility works"
     And the exit code should be 0
 
-  @wip
   Scenario: Missing visibility modifier on function
     Given I have a file "no_visibility_function.asthra" with:
       """

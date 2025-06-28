@@ -258,7 +258,7 @@ BddTestCase visibility_test_cases[] = {
     BDD_WIP_TEST_CASE(public_enum, test_public_enum),
     BDD_WIP_TEST_CASE(private_enum, test_private_enum),
     BDD_TEST_CASE(mixed_field_visibility, test_mixed_field_visibility),
-    BDD_WIP_TEST_CASE(no_visibility_function, test_no_visibility_function),
+    BDD_TEST_CASE(no_visibility_function, test_no_visibility_function),
     BDD_WIP_TEST_CASE(no_visibility_struct, test_no_visibility_struct),
     BDD_WIP_TEST_CASE(no_visibility_enum, test_no_visibility_enum),
     BDD_TEST_CASE(public_const, test_public_const),
