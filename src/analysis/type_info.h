@@ -27,7 +27,7 @@
 #include "type_info_integration.h"
 
 // Debug and introspection functions
-#include "type_info_debug.h"
+#include "type_info_diagnostics.h"
 
 // Built-in type constants
 #include "type_info_builtins.h"

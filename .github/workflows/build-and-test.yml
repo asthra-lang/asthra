@@ -29,7 +29,7 @@ jobs:
         include:
           # Linux builds - Clang only
           - platform: linux
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             compiler: clang
             arch: x64
             cc: clang
@@ -69,25 +69,28 @@ jobs:
       run: |
         set -e
         echo "=== Installing Linux Dependencies ==="
+        
+        # Update package lists
         sudo apt-get update -y
+        
+        # Install build essentials and development tools
         sudo apt-get install -y \
           build-essential \
           cmake \
           libc6-dev \
           pkg-config \
-          gperf
+          gperf \
+          clang \
+          llvm \
+          llvm-dev \
+          lld
         
-        # Install LLVM 18 (required)
-        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-        sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main"
-        sudo apt-get update -y
-        sudo apt-get install -y llvm-18 llvm-18-dev clang-18 || {
-          echo "Failed to install LLVM 18, trying default version"
-          sudo apt-get install -y llvm llvm-dev clang
-        }
+        # Verify installation
+        echo "Checking clang version..."
+        which clang && clang --version
         
         # Install optional dependencies (non-critical)
-        sudo apt-get install -y valgrind clang-tools || echo "Optional tools not available"
+        sudo apt-get install -y valgrind || echo "Valgrind not available"
         sudo apt-get install -y libjson-c-dev || echo "json-c package not available, CMake will handle it"
         
         echo "✓ Linux dependencies installed successfully"
@@ -149,14 +152,39 @@ jobs:
       shell: bash
       run: |
         echo "=== Setting Compiler Environment ==="
-        echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
-        echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
+        
+        # Set compiler environment
+        if [[ "${{ matrix.platform }}" == "linux" ]]; then
+          echo "Using clang on Linux"
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
+          CC_TO_USE="clang"
+          CXX_TO_USE="clang++"
+        elif [[ "${{ matrix.platform }}" == "macos" ]]; then
+          # macOS: Use LLVM 18 from homebrew
+          if [[ -x "/opt/homebrew/opt/llvm@18/bin/clang" ]]; then
+            echo "CC=/opt/homebrew/opt/llvm@18/bin/clang" >> $GITHUB_ENV
+            echo "CXX=/opt/homebrew/opt/llvm@18/bin/clang++" >> $GITHUB_ENV
+            CC_TO_USE="/opt/homebrew/opt/llvm@18/bin/clang"
+            CXX_TO_USE="/opt/homebrew/opt/llvm@18/bin/clang++"
+          else
+            echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
+            echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
+            CC_TO_USE="${{ matrix.cc }}"
+            CXX_TO_USE="${{ matrix.cxx }}"
+          fi
+        else
+          echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
+          echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
+          CC_TO_USE="${{ matrix.cc }}"
+          CXX_TO_USE="${{ matrix.cxx }}"
+        fi
         
         # Verify compilers are available
-        echo "Verifying C compiler: ${{ matrix.cc }}"
-        ${{ matrix.cc }} --version
-        echo "Verifying C++ compiler: ${{ matrix.cxx }}"
-        ${{ matrix.cxx }} --version
+        echo "Verifying C compiler: $CC_TO_USE"
+        $CC_TO_USE --version
+        echo "Verifying C++ compiler: $CXX_TO_USE"
+        $CXX_TO_USE --version
         
         echo "✓ Compiler environment set successfully"
     
@@ -165,30 +193,14 @@ jobs:
       run: |
         echo "=== Verifying LLVM Installation ==="
         
-        if [[ "${{ matrix.platform }}" == "windows" ]]; then
-          # Windows LLVM verification
-          if command -v llvm-config >/dev/null 2>&1; then
-            echo "Found llvm-config"
-            llvm-config --version
-            echo "LLVM_CONFIG=llvm-config" >> $GITHUB_ENV
-          else
-            echo "ERROR: LLVM not found on Windows!"
-            exit 1
-          fi
+        # Find llvm-config
+        if command -v llvm-config >/dev/null 2>&1; then
+          echo "Found llvm-config"
+          llvm-config --version
+          echo "LLVM_CONFIG=llvm-config" >> $GITHUB_ENV
         else
-          # Unix-like systems
-          if command -v llvm-config-18 >/dev/null 2>&1; then
-            echo "Found llvm-config-18"
-            llvm-config-18 --version
-            echo "LLVM_CONFIG=llvm-config-18" >> $GITHUB_ENV
-          elif command -v llvm-config >/dev/null 2>&1; then
-            echo "Found llvm-config"
-            llvm-config --version
-            echo "LLVM_CONFIG=llvm-config" >> $GITHUB_ENV
-          else
-            echo "ERROR: LLVM not found!"
-            exit 1
-          fi
+          echo "ERROR: LLVM not found!"
+          exit 1
         fi
         
         echo "✓ LLVM verified successfully"
@@ -208,7 +220,7 @@ jobs:
         echo "Build Type: ${{ matrix.build_type }}"
         echo ""
         echo "=== Compiler Information ==="
-        ${{ matrix.cc }} --version || true
+        ${CC} --version || true
         echo ""
         echo "=== CMake Information ==="
         cmake --version
@@ -227,8 +239,8 @@ jobs:
         echo "Working directory: $(pwd)"
         echo "CMakeLists.txt exists: $(test -f ../CMakeLists.txt && echo 'YES' || echo 'NO')"
         echo "CMAKE_BUILD_TYPE: ${{ matrix.build_type }}"
-        echo "CMAKE_C_COMPILER: ${{ matrix.cc }}"
-        echo "CMAKE_CXX_COMPILER: ${{ matrix.cxx }}"
+        echo "CMAKE_C_COMPILER: ${CC}"
+        echo "CMAKE_CXX_COMPILER: ${CXX}"
         echo ""
         
         if [[ "${{ matrix.platform }}" == "windows" ]]; then
@@ -236,14 +248,14 @@ jobs:
           cmake .. \
             -G "Ninja" \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DCMAKE_C_COMPILER=${{ matrix.cc }} \
-            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+            -DCMAKE_C_COMPILER="${CC}" \
+            -DCMAKE_CXX_COMPILER="${CXX}"
         else
           # Use default generator on Unix-like systems
           cmake .. \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DCMAKE_C_COMPILER=${{ matrix.cc }} \
-            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+            -DCMAKE_C_COMPILER="${CC}" \
+            -DCMAKE_CXX_COMPILER="${CXX}"
         fi
         
         echo "✓ CMake configuration completed successfully"

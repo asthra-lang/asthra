@@ -69,10 +69,11 @@ test_runner
 debug_*
 debug_*.c
 debug_*.h
-*_debug
-*_debug.c
-*_debug.h
-*_test
+# Debug executables and test executables (but not source files)
+/debug
+/test_debug
+*/test_debug
+*/debug
 parser_test
 lexer_test
 ast_test

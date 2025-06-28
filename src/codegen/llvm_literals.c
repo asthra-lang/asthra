@@ -114,7 +114,7 @@ LLVMValueRef generate_tuple_literal(LLVMBackendData *data, const ASTNode *node) 
     }
 
     // Need forward declaration of generate_expression
-    extern LLVMValueRef generate_expression(LLVMBackendData *data, const ASTNode *node);
+    extern LLVMValueRef generate_expression(LLVMBackendData * data, const ASTNode *node);
 
     // Get the elements from the tuple literal
     ASTNodeList *elements = node->data.tuple_literal.elements;
@@ -130,7 +130,7 @@ LLVMValueRef generate_tuple_literal(LLVMBackendData *data, const ASTNode *node) 
     // Generate values for each element
     LLVMValueRef *element_values = malloc(element_count * sizeof(LLVMValueRef));
     LLVMTypeRef *element_types = malloc(element_count * sizeof(LLVMTypeRef));
-    
+
     if (!element_values || !element_types) {
         free(element_values);
         free(element_types);
@@ -150,14 +150,14 @@ LLVMValueRef generate_tuple_literal(LLVMBackendData *data, const ASTNode *node) 
     }
 
     // Create anonymous struct type for the tuple
-    LLVMTypeRef tuple_type = LLVMStructTypeInContext(data->context, element_types, 
-                                                      (unsigned)element_count, false);
+    LLVMTypeRef tuple_type =
+        LLVMStructTypeInContext(data->context, element_types, (unsigned)element_count, false);
 
     // Create the tuple value as a struct
     LLVMValueRef tuple_value = LLVMGetUndef(tuple_type);
     for (size_t i = 0; i < element_count; i++) {
-        tuple_value = LLVMBuildInsertValue(data->builder, tuple_value, 
-                                           element_values[i], (unsigned)i, "");
+        tuple_value =
+            LLVMBuildInsertValue(data->builder, tuple_value, element_values[i], (unsigned)i, "");
     }
 
     free(element_values);

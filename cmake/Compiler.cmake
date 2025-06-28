@@ -6,21 +6,24 @@ if(NOT (CMAKE_C_COMPILER_ID STREQUAL "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "Ap
 endif()
 set(ASTHRA_COMPILER "Clang")
 
-# C23 feature detection for Clang
-include(CheckCCompilerFlag)
-check_c_compiler_flag("-std=c23" COMPILER_SUPPORTS_C23)
-if(COMPILER_SUPPORTS_C23)
-    set(CMAKE_C_STANDARD 23)
-    message(STATUS "Using C23 standard")
-else()
-    # Fallback to C17 if C23 not supported
-    check_c_compiler_flag("-std=c17" COMPILER_SUPPORTS_C17)
-    if(COMPILER_SUPPORTS_C17)
-        set(CMAKE_C_STANDARD 17)
-        message(STATUS "C23 not supported, falling back to C17")
-    else()
-        message(FATAL_ERROR "Compiler does not support C17 or C23")
-    endif()
+# Print compiler info
+message(STATUS "Detected C compiler: ${CMAKE_C_COMPILER}")
+message(STATUS "Compiler ID: ${CMAKE_C_COMPILER_ID}")
+message(STATUS "Compiler version: ${CMAKE_C_COMPILER_VERSION}")
+
+# For Clang 16+, we can use C23 features
+# CMake will automatically select the right flag (-std=c23 or -std=c2x)
+if(CMAKE_C_COMPILER_VERSION VERSION_LESS "16.0")
+    message(FATAL_ERROR "Asthra requires Clang 16 or later for C23 support. Found: ${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION}")
+endif()
+
+message(STATUS "Using C23 standard")
+
+# Define feature test macros for POSIX compatibility
+if(UNIX AND NOT APPLE)
+    # Linux needs these for pthread types
+    add_compile_definitions(_GNU_SOURCE)
+    add_compile_definitions(_POSIX_C_SOURCE=200809L)
 endif()
 
 # Common warning flags for Clang
