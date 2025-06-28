@@ -11,13 +11,14 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <pthread.h>
 #include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
+// Use platform compatibility layer instead of direct pthread.h
+#include "../platform/asthra_platform.h"
 #include "../asthra_concurrency_bridge_modular.h"
 
 #ifdef __cplusplus

@@ -12,12 +12,8 @@
 #ifndef ASTHRA_RUNTIME_CORE_H
 #define ASTHRA_RUNTIME_CORE_H
 
-#include <pthread.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
+// Use the platform compatibility layer
+#include "../platform/asthra_platform.h"
 
 // C17 modernization includes
 #include <stdalign.h>

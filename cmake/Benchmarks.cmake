@@ -21,6 +21,11 @@ if(ENABLE_BENCHMARKS)
         add_executable(asthra-benchmark src/main.c)
         target_link_libraries(asthra-benchmark asthra_compiler)
         
+        # Add include directories to find platform.h and other headers
+        target_include_directories(asthra-benchmark PRIVATE
+            ${CMAKE_SOURCE_DIR}/src
+        )
+        
         # Apply aggressive optimizations for benchmarking (Clang)
         target_compile_options(asthra-benchmark PRIVATE
             -O3 -march=native -mtune=native -flto

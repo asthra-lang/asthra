@@ -9,6 +9,7 @@
 #include "platform.h"
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #if ASTHRA_PLATFORM_WINDOWS
@@ -231,6 +232,17 @@ bool asthra_string_starts_with(const char *str, const char *prefix) {
     }
 
     return strncmp(str, prefix, strlen(prefix)) == 0;
+}
+
+// =============================================================================
+// PLATFORM INFO UTILITIES
+// =============================================================================
+
+const char *asthra_get_platform_info(void) {
+    static char info[256];
+    snprintf(info, sizeof(info), "%s (%s %d)", ASTHRA_PLATFORM_NAME, ASTHRA_COMPILER_NAME,
+             ASTHRA_COMPILER_VERSION);
+    return info;
 }
 
 // =============================================================================

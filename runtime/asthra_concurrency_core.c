@@ -12,15 +12,8 @@
  * - Statistics and monitoring infrastructure
  */
 
-#include <assert.h>
-#include <errno.h>
-#include <sched.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/time.h>
-#include <time.h>
-#include <unistd.h>
+// Use platform compatibility layer
+#include "platform/asthra_platform.h"
 
 #ifndef ASTHRA_CONCURRENCY_HAS_C17_THREADS
 #define ASTHRA_CONCURRENCY_HAS_C17_THREADS 0

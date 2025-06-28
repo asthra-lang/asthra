@@ -237,12 +237,7 @@ ASTHRA_STATIC_ASSERT(sizeof(int) == 4, "int must be 32-bit for ABI compatibility
  * @brief Get platform information string
  * @return Platform name and compiler information
  */
-ASTHRA_INLINE const char *asthra_get_platform_info(void) {
-    static char info[256];
-    snprintf(info, sizeof(info), "%s (%s %d)", ASTHRA_PLATFORM_NAME, ASTHRA_COMPILER_NAME,
-             ASTHRA_COMPILER_VERSION);
-    return info;
-}
+const char *asthra_get_platform_info(void);
 
 /**
  * @brief Check if running on Windows
@@ -312,10 +307,6 @@ bool asthra_create_directory(const char *path);
  */
 char *asthra_strdup(const char *str);
 
-#ifdef __cplusplus
-}
-#endif
-
 // Additional platform functions
 asthra_thread_id_t asthra_get_current_thread_id(void);
 asthra_process_id_t asthra_get_current_process_id(void);
@@ -342,4 +333,9 @@ size_t asthra_get_system_memory(void);
 
 // asthra_get_cpu_count
 int asthra_get_cpu_count(void);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* ASTHRA_PLATFORM_H */

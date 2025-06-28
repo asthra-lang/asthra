@@ -140,17 +140,48 @@ typedef tss_t asthra_concurrency_tss_t;
 #define ASTHRA_CONCURRENCY_TSS_GET(key) tss_get(key)
 #define ASTHRA_CONCURRENCY_TSS_SET(key, value) (tss_set(key, value) == thrd_success)
 #else
-#include <errno.h>
-#include <pthread.h>
-#include <sched.h>
-#include <time.h>
+// Use platform compatibility layer
+#include "../platform/asthra_platform.h"
 
-typedef pthread_t asthra_concurrency_thread_t;
-typedef pthread_mutex_t asthra_concurrency_mutex_t;
-typedef pthread_cond_t asthra_concurrency_cond_t;
-typedef pthread_once_t asthra_concurrency_once_flag_t;
-typedef pthread_key_t asthra_concurrency_tss_t;
+// Use platform-specific thread types
+typedef asthra_thread_t asthra_concurrency_thread_t;
+typedef asthra_mutex_t asthra_concurrency_mutex_t;
+typedef asthra_cond_t asthra_concurrency_cond_t;
+typedef asthra_once_t asthra_concurrency_once_flag_t;
+typedef asthra_tls_t asthra_concurrency_tss_t;
 
+// Platform-specific threading macros
+#ifdef ASTHRA_PLATFORM_WINDOWS
+// Windows threading macros
+#define ASTHRA_CONCURRENCY_THREAD_CREATE(thread, func, arg)                                        \
+    ((*(thread) = (HANDLE)_beginthreadex(NULL, 0, (_beginthreadex_proc_type)(func), (arg), 0, NULL)) != NULL)
+#define ASTHRA_CONCURRENCY_THREAD_JOIN(thread) (WaitForSingleObject(thread, INFINITE) == WAIT_OBJECT_0)
+#define ASTHRA_CONCURRENCY_THREAD_DETACH(thread) CloseHandle(thread)
+#define ASTHRA_CONCURRENCY_THREAD_CURRENT() GetCurrentThread()
+#define ASTHRA_CONCURRENCY_THREAD_YIELD() asthra_thread_yield()
+#define ASTHRA_CONCURRENCY_THREAD_SLEEP(duration) asthra_sleep_ms((duration)->tv_sec * 1000 + (duration)->tv_nsec / 1000000)
+
+#define ASTHRA_CONCURRENCY_MUTEX_INIT(mutex) (InitializeCriticalSection(mutex), 1)
+#define ASTHRA_CONCURRENCY_MUTEX_LOCK(mutex) (EnterCriticalSection(mutex), 1)
+#define ASTHRA_CONCURRENCY_MUTEX_UNLOCK(mutex) (LeaveCriticalSection(mutex), 1)
+#define ASTHRA_CONCURRENCY_MUTEX_TRYLOCK(mutex) TryEnterCriticalSection(mutex)
+#define ASTHRA_CONCURRENCY_MUTEX_DESTROY(mutex) DeleteCriticalSection(mutex)
+
+#define ASTHRA_CONCURRENCY_COND_INIT(cond) (InitializeConditionVariable(cond), 1)
+#define ASTHRA_CONCURRENCY_COND_WAIT(cond, mutex) SleepConditionVariableCS(cond, mutex, INFINITE)
+#define ASTHRA_CONCURRENCY_COND_TIMEDWAIT(cond, mutex, timeout)                                    \
+    SleepConditionVariableCS(cond, mutex, (timeout)->tv_sec * 1000 + (timeout)->tv_nsec / 1000000)
+#define ASTHRA_CONCURRENCY_COND_SIGNAL(cond) (WakeConditionVariable(cond), 1)
+#define ASTHRA_CONCURRENCY_COND_BROADCAST(cond) (WakeAllConditionVariable(cond), 1)
+#define ASTHRA_CONCURRENCY_COND_DESTROY(cond) /* No-op on Windows */
+
+#define ASTHRA_CONCURRENCY_CALL_ONCE(flag, func) InitOnceExecuteOnce(flag, (_PINIT_ONCE_FN)(func), NULL, NULL)
+#define ASTHRA_CONCURRENCY_TSS_CREATE(key, destructor) ((*(key) = TlsAlloc()) != TLS_OUT_OF_INDEXES)
+#define ASTHRA_CONCURRENCY_TSS_GET(key) TlsGetValue(key)
+#define ASTHRA_CONCURRENCY_TSS_SET(key, value) TlsSetValue(key, value)
+
+#else
+// POSIX threading macros
 #define ASTHRA_CONCURRENCY_THREAD_CREATE(thread, func, arg)                                        \
     (pthread_create(thread, NULL, func, arg) == 0)
 #define ASTHRA_CONCURRENCY_THREAD_JOIN(thread) pthread_join(thread, NULL)
@@ -177,6 +208,7 @@ typedef pthread_key_t asthra_concurrency_tss_t;
 #define ASTHRA_CONCURRENCY_TSS_CREATE(key, destructor) (pthread_key_create(key, destructor) == 0)
 #define ASTHRA_CONCURRENCY_TSS_GET(key) pthread_getspecific(key)
 #define ASTHRA_CONCURRENCY_TSS_SET(key, value) (pthread_setspecific(key, value) == 0)
+#endif
 #endif
 
 // =============================================================================
