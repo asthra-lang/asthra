@@ -204,6 +204,34 @@ LLVMTypeRef asthra_type_to_llvm(LLVMBackendData *data, const TypeInfo *type) {
             return LLVMStructTypeInContext(data->context, fields, 2, 0);
         }
 
+    case TYPE_INFO_RESULT:
+        // Result<T, E> is represented as a struct { i8 discriminant; union { T ok; E err; } }
+        // For simplicity, we use a struct with discriminant and both values
+        {
+            // Handle NULL type info cases - this can happen if type resolution failed
+            if (!type->data.result.ok_type || !type->data.result.err_type) {
+                // Return a placeholder struct with discriminant and two i32s
+                LLVMTypeRef fields[3] = {
+                    LLVMInt8TypeInContext(data->context), // discriminant
+                    data->i32_type,                       // placeholder ok value
+                    data->i32_type                        // placeholder err value
+                };
+                return LLVMStructTypeInContext(data->context, fields, 3, 0);
+            }
+            
+            LLVMTypeRef ok_type = asthra_type_to_llvm(data, type->data.result.ok_type);
+            LLVMTypeRef err_type = asthra_type_to_llvm(data, type->data.result.err_type);
+            
+            // Create a union-like structure by using the larger of the two types
+            // For now, we'll use a simple approach with both fields
+            LLVMTypeRef fields[3] = {
+                LLVMInt8TypeInContext(data->context), // discriminant (0 = Ok, 1 = Err)
+                ok_type,                               // ok value
+                err_type                               // err value
+            };
+            return LLVMStructTypeInContext(data->context, fields, 3, 0);
+        }
+
     default:
         return data->void_type;
     }
@@ -287,6 +315,10 @@ LLVMMetadataRef asthra_type_to_debug_type(LLVMBackendData *data, const TypeInfo 
 
     case TYPE_INFO_OPTION:
         // TODO: Implement Option<T> debug info as composite type
+        return data->di_ptr_type;
+
+    case TYPE_INFO_RESULT:
+        // TODO: Implement Result<T, E> debug info as composite type
         return data->di_ptr_type;
 
     default:

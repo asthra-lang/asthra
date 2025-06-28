@@ -180,10 +180,10 @@ static bool test_function_parameter_codegen(void) {
     ParsedProgram *program = parse_and_analyze_source(source);
     CODEGEN_TEST_ASSERT(program != NULL, "Source should parse and analyze successfully");
 
-    // Just verify that code generation succeeds - we're generating assembly, not C code
-    bool codegen_success = generate_and_validate_code(program, ".global main");
+    // Just verify that code generation succeeds - we're generating LLVM IR
+    bool codegen_success = generate_and_validate_code(program, "define");
     CODEGEN_TEST_ASSERT(codegen_success == true,
-                        "Function with 'none' parameters should generate valid assembly");
+                        "Function with 'none' parameters should generate valid LLVM IR");
 
     free_parsed_program(program);
 
@@ -211,9 +211,9 @@ static bool test_struct_content_codegen(void) {
     CODEGEN_TEST_ASSERT(program != NULL, "Source should parse and analyze successfully");
 
     // Just verify that code generation succeeds for the function
-    bool codegen_success = generate_and_validate_code(program, ".global create_empty");
+    bool codegen_success = generate_and_validate_code(program, "define");
     CODEGEN_TEST_ASSERT(codegen_success == true,
-                        "Struct-related function should generate valid assembly");
+                        "Struct-related function should generate valid LLVM IR");
 
     free_parsed_program(program);
 
@@ -266,9 +266,9 @@ static bool test_function_call_codegen(void) {
     CODEGEN_TEST_ASSERT(program != NULL, "Source should parse and analyze successfully");
 
     // Just verify that both functions are generated
-    bool codegen_success = generate_and_validate_code(program, ".global helper");
+    bool codegen_success = generate_and_validate_code(program, "define");
     CODEGEN_TEST_ASSERT(codegen_success == true,
-                        "Function call with 'none' should generate valid assembly");
+                        "Function call with 'none' should generate valid LLVM IR");
 
     free_parsed_program(program);
 
@@ -295,7 +295,7 @@ static bool test_return_type_codegen(void) {
     CODEGEN_TEST_ASSERT(program != NULL, "Source should parse and analyze successfully");
 
     bool codegen_success = generate_and_validate_code(program, "void");
-    CODEGEN_TEST_ASSERT(codegen_success == true, "Void return type should generate 'void' in C");
+    CODEGEN_TEST_ASSERT(codegen_success == true, "Void return type should generate 'void' in LLVM IR");
 
     free_parsed_program(program);
 

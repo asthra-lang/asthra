@@ -23,6 +23,10 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node);
 LLVMValueRef generate_option_function_call(LLVMBackendData *data, const ASTNode *node,
                                            const char *func_name);
 
+// Helper for Result.Ok/Err function calls
+LLVMValueRef generate_result_function_call(LLVMBackendData *data, const ASTNode *node,
+                                           const char *func_name);
+
 #ifdef __cplusplus
 }
 #endif

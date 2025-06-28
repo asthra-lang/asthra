@@ -107,6 +107,10 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
                 if (strcmp(type_name, "Option") == 0) {
                     return generate_option_function_call(data, node, func_name);
                 }
+                // Handle Result.Ok and Result.Err
+                if (strcmp(type_name, "Result") == 0) {
+                    return generate_result_function_call(data, node, func_name);
+                }
             }
         }
 
@@ -224,6 +228,96 @@ LLVMValueRef generate_option_function_call(LLVMBackendData *data, const ASTNode 
 
         // Load and return the struct
         return LLVMBuildLoad2(data->builder, option_type, option_alloca, "option_none_value");
+    }
+
+    return NULL;
+}
+
+// Generate code for Result.Ok and Result.Err function calls
+LLVMValueRef generate_result_function_call(LLVMBackendData *data, const ASTNode *node,
+                                           const char *func_name) {
+    if (strcmp(func_name, "Ok") == 0) {
+        // Result.Ok(value) - create a Result struct with discriminant = 0
+        if (node->data.call_expr.args && node->data.call_expr.args->count == 1) {
+            // Generate the value
+            LLVMValueRef ok_value = generate_expression(data, node->data.call_expr.args->nodes[0]);
+            if (!ok_value)
+                return NULL;
+
+            // Create Result struct { i8 discriminant; T ok; E err; }
+            LLVMTypeRef ok_type = LLVMTypeOf(ok_value);
+            // For now, use i32 as default error type - this should come from type info
+            LLVMTypeRef err_type = data->i32_type;
+            
+            LLVMTypeRef fields[3] = {
+                LLVMInt8TypeInContext(data->context), // discriminant
+                ok_type,                               // ok value
+                err_type                               // err value
+            };
+            LLVMTypeRef result_type = LLVMStructTypeInContext(data->context, fields, 3, 0);
+
+            // Create the struct value
+            LLVMValueRef result_alloca = LLVMBuildAlloca(data->builder, result_type, "result");
+
+            // Set discriminant = 0 (Ok)
+            LLVMValueRef disc_ptr =
+                LLVMBuildStructGEP2(data->builder, result_type, result_alloca, 0, "disc_ptr");
+            LLVMBuildStore(data->builder, LLVMConstInt(LLVMInt8TypeInContext(data->context), 0, false), disc_ptr);
+
+            // Set ok value
+            LLVMValueRef ok_ptr =
+                LLVMBuildStructGEP2(data->builder, result_type, result_alloca, 1, "ok_ptr");
+            LLVMBuildStore(data->builder, ok_value, ok_ptr);
+
+            // Initialize err value (not used but should be initialized)
+            LLVMValueRef err_ptr =
+                LLVMBuildStructGEP2(data->builder, result_type, result_alloca, 2, "err_ptr");
+            LLVMBuildStore(data->builder, LLVMConstInt(err_type, 0, false), err_ptr);
+
+            // Load and return the struct
+            return LLVMBuildLoad2(data->builder, result_type, result_alloca, "result_value");
+        }
+    } else if (strcmp(func_name, "Err") == 0) {
+        // Result.Err(error) - create a Result struct with discriminant = 1
+        if (node->data.call_expr.args && node->data.call_expr.args->count == 1) {
+            // Generate the error value
+            LLVMValueRef err_value = generate_expression(data, node->data.call_expr.args->nodes[0]);
+            if (!err_value)
+                return NULL;
+
+            // Create Result struct { i8 discriminant; T ok; E err; }
+            // For now, use i32 as default ok type - this should come from type info
+            LLVMTypeRef ok_type = data->i32_type;
+            LLVMTypeRef err_type = LLVMTypeOf(err_value);
+            
+            LLVMTypeRef fields[3] = {
+                LLVMInt8TypeInContext(data->context), // discriminant
+                ok_type,                               // ok value
+                err_type                               // err value
+            };
+            LLVMTypeRef result_type = LLVMStructTypeInContext(data->context, fields, 3, 0);
+
+            // Create the struct value
+            LLVMValueRef result_alloca = LLVMBuildAlloca(data->builder, result_type, "result");
+
+            // Set discriminant = 1 (Err)
+            LLVMValueRef disc_ptr =
+                LLVMBuildStructGEP2(data->builder, result_type, result_alloca, 0, "disc_ptr");
+            LLVMBuildStore(data->builder, LLVMConstInt(LLVMInt8TypeInContext(data->context), 1, false), disc_ptr);
+
+            // Initialize ok value (not used but should be initialized)
+            LLVMValueRef ok_ptr =
+                LLVMBuildStructGEP2(data->builder, result_type, result_alloca, 1, "ok_ptr");
+            LLVMBuildStore(data->builder, LLVMConstInt(ok_type, 0, false), ok_ptr);
+
+            // Set err value
+            LLVMValueRef err_ptr =
+                LLVMBuildStructGEP2(data->builder, result_type, result_alloca, 2, "err_ptr");
+            LLVMBuildStore(data->builder, err_value, err_ptr);
+
+            // Load and return the struct
+            return LLVMBuildLoad2(data->builder, result_type, result_alloca, "result_value");
+        }
     }
 
     return NULL;
