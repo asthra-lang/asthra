@@ -138,13 +138,10 @@ set(INTEGRATION_EXCLUDE
     test_static_analysis_main.c
     generic_structs_phase5_core_helper.c  # Helper file, not a test
     test_enum_integration_common.h  # Common header file for enum tests
-    test_enum_compilation_pipeline.c  # uses CodeGenerator directly
     test_enum_end_to_end.c  # uses CodeGenerator directly
     test_enum_error_handling.c  # uses CodeGenerator directly
-    test_enum_memory_management.c  # uses CodeGenerator directly
     test_enum_nested_variants.c  # uses CodeGenerator directly
     test_enum_option_type.c  # uses CodeGenerator directly
-    test_enum_pattern_matching.c  # likely uses CodeGenerator directly
     test_loop_control_flow_integration.c  # Has its own explicit configuration above
     test_args_integration.c  # Disabled: requires runtime function implementations
     test_option_integration.c  # uses asthra_backend_emit_assembly which doesn't exist
@@ -164,8 +161,11 @@ foreach(test_file ${INDIVIDUAL_INTEGRATION_TEST_FILES})
         # These tests need the common concurrency implementation
         add_executable(${test_target} ${test_file} test_concurrency_tiers_common.c)
     elseif(test_name MATCHES "^test_generic_structs_(basic_integration|advanced_integration|performance_consistency)$")
-        # These tests need the generic structs common implementation
-        add_executable(${test_target} ${test_file} generic_structs_phase5_core_helper.c)
+        # These tests need the generic structs common implementation and backend wrapper
+        add_executable(${test_target} ${test_file} generic_structs_phase5_core_helper.c backend_test_wrapper.c)
+    elseif(test_name MATCHES "^test_enum_(compilation_pipeline|end_to_end|error_handling|memory_management|nested_variants|option_type|pattern_matching)$")
+        # These tests need the backend wrapper for migration from old CodeGenerator API
+        add_executable(${test_target} ${test_file} backend_test_wrapper.c)
     else()
         add_executable(${test_target} ${test_file})
     endif()

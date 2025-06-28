@@ -44,14 +44,13 @@ static void test_enum_variant_end_to_end(void) {
     printf("✓ Semantic analysis completed successfully\n");
 
     // Perform code generation
-    CodeGenerator *generator =
-        code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    assert(generator != NULL);
+    AsthraBackend *backend = asthra_backend_create_by_type(ASTHRA_BACKEND_LLVM_IR);
+    assert(backend != NULL);
 
-    // Connect semantic analysis results to code generator
-    code_generator_set_semantic_analyzer(generator, analyzer);
+    // Connect semantic analysis results to backend
+    asthra_backend_set_semantic_analyzer(backend, analyzer);
 
-    bool codegen_success = code_generate_program(generator, program);
+    bool codegen_success = asthra_backend_generate_program(backend, program);
     if (!codegen_success) {
         printf("Code generation failed\n");
     }
@@ -62,7 +61,7 @@ static void test_enum_variant_end_to_end(void) {
     // Generate assembly output for verification
     char assembly_buffer[4096];
     bool assembly_success =
-        code_generator_emit_assembly(generator, assembly_buffer, sizeof(assembly_buffer));
+        asthra_backend_emit_assembly(backend, assembly_buffer, sizeof(assembly_buffer));
     if (assembly_success) {
         printf("✓ Assembly generation completed\n");
         // For debugging, you can uncomment the next line to see the generated assembly
@@ -74,7 +73,7 @@ static void test_enum_variant_end_to_end(void) {
     printf("✓ End-to-end test structure validated\n");
 
     // Cleanup
-    code_generator_destroy(generator);
+    asthra_backend_destroy(backend);
     semantic_analyzer_destroy(analyzer);
     ast_free_node(program);
 

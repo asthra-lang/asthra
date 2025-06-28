@@ -15,7 +15,6 @@
 // Include the necessary headers for code generation testing
 #include "ast.h"
 #include "backend_interface.h"
-#include "codegen_test_stubs.h"
 #include "compiler.h"
 #include "lexer.h"
 #include "parser.h"
@@ -33,5 +32,10 @@ ASTNode *parse_enum_test_expression(const char *source);
 TestCodeGenContext *create_test_code_gen_context(void);
 void destroy_test_code_gen_context(TestCodeGenContext *ctx);
 void analyze_expression_for_test(TestCodeGenContext *ctx, ASTNode *expr);
+
+// Functions from codegen_test_stubs.c
+char *test_code_generate_expression(AsthraBackend *backend, ASTNode *expr);
+char *test_code_generate_enum_variant_construction(AsthraBackend *backend, const char *enum_name,
+                                                   const char *variant_name, ASTNode *payload);
 
 #endif // TEST_ENUM_VARIANT_COMMON_H

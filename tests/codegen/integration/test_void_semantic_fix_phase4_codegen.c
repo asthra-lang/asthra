@@ -9,8 +9,8 @@
  * Tests that code generation correctly handles void/none semantic boundaries
  */
 
-#include "code_generator.h"
-#include "code_generator_types.h"
+#include "backend_interface.h"
+#include "../codegen_backend_wrapper.h"
 #include "lexer.h"
 #include "parser.h"
 #include "semantic_analyzer.h"
@@ -127,25 +127,24 @@ static bool generate_and_validate_code(ParsedProgram *program, const char *expec
     if (!program || !program->ast || !program->analyzer)
         return false;
 
-    CodeGenerator *generator =
-        code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!generator)
+    AsthraBackend *backend = asthra_backend_create_by_type(ASTHRA_BACKEND_LLVM_IR);
+    if (!backend)
         return false;
 
     // Use the existing semantic analyzer that has already analyzed the AST
-    generator->semantic_analyzer = program->analyzer;
+    asthra_backend_set_semantic_analyzer(backend, program->analyzer);
 
-    bool generation_success = code_generate_program(generator, program->ast);
+    bool generation_success = asthra_backend_generate_program(backend, program->ast);
 
     if (!generation_success) {
-        code_generator_destroy(generator);
+        asthra_backend_destroy(backend);
         return false;
     }
 
     // Get generated assembly output
     char output_buffer[4096];
     bool emit_success =
-        code_generator_emit_assembly(generator, output_buffer, sizeof(output_buffer));
+        asthra_backend_emit_assembly(backend, output_buffer, sizeof(output_buffer));
     const char *generated_code = emit_success ? output_buffer : NULL;
     bool contains_pattern =
         (expected_pattern == NULL) ||
@@ -157,7 +156,7 @@ static bool generate_and_validate_code(ParsedProgram *program, const char *expec
         printf("DEBUG: Looking for pattern: %s\n", expected_pattern ? expected_pattern : "NULL");
     }
 
-    code_generator_destroy(generator);
+    asthra_backend_destroy(backend);
     return contains_pattern;
 }
 

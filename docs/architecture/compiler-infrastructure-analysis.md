@@ -43,17 +43,17 @@ The Asthra compiler represents a **production-ready**, modern programming langua
 - `const_evaluator.c` - Compile-time evaluation
 
 #### 3. Code Generation (`src/codegen/`)
-- **Multi-target**: x86_64, ARM64, and WASM32 support
-- **Direct ELF**: Native binary generation without intermediate steps
-- **Optimization**: Multiple passes including peephole and CFG optimization
-- **Register allocation**: Graph coloring with spill optimization
-- **FFI marshaling**: Safe parameter conversion and calling conventions
+- **LLVM IR Backend**: Exclusive use of LLVM for all code generation
+- **Multi-target**: x86_64, ARM64, WASM32, and more via LLVM
+- **Optimization**: LLVM's powerful optimization passes
+- **FFI marshaling**: Safe parameter conversion through LLVM intrinsics
+- **No direct assembly**: All code generation through LLVM IR
 
 **Key Files:**
-- `code_generator_*.c` - Modular generation by construct type
-- `elf_writer*.c` - Binary format construction
-- `optimizer*.c` - Multi-pass optimization pipeline
-- `ffi_assembly*.c` - Foreign function interface
+- `backend_interface.c` - LLVM backend integration
+- `llvm_backend.c` - LLVM IR generation
+- `generic_instantiation*.c` - Type monomorphization
+- FFI support through LLVM's foreign function capabilities
 
 #### 4. Runtime System (`runtime/`)
 - **Memory management**: Four-tier system (GC, reference counting, manual, pinned)

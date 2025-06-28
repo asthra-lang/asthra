@@ -121,7 +121,8 @@ ASTNode *parse_bracketed_annotation(Parser *parser) {
                 const char *priority = parser->current_token.data.identifier.name;
                 if (strcmp(priority, "low") != 0 && strcmp(priority, "medium") != 0 &&
                     strcmp(priority, "high") != 0) {
-                    report_error(parser, "Unknown review priority. Expected 'low', 'medium', or 'high'");
+                    report_error(parser,
+                                 "Unknown review priority. Expected 'low', 'medium', or 'high'");
                     free(annotation_name);
                     return NULL;
                 }
@@ -242,7 +243,7 @@ ASTNode *parse_bracketed_annotation(Parser *parser) {
         free(parameters);
         return node;
     }
-    
+
     // Check if this is a human_review annotation
     if (strcmp(annotation_name, "human_review") == 0 && parameters) {
         // Create AST_HUMAN_REVIEW_TAG node for human review annotations
@@ -274,10 +275,11 @@ ASTNode *parse_bracketed_annotation(Parser *parser) {
         free(parameters);
         return node;
     }
-    
+
     // Check if this is a security annotation (constant_time or volatile_memory)
-    if ((strcmp(annotation_name, "constant_time") == 0 || 
-         strcmp(annotation_name, "volatile_memory") == 0) && !parameters) {
+    if ((strcmp(annotation_name, "constant_time") == 0 ||
+         strcmp(annotation_name, "volatile_memory") == 0) &&
+        !parameters) {
         // Create AST_SECURITY_TAG node for security annotations
         ASTNode *node = ast_create_node(AST_SECURITY_TAG, start_loc);
         if (!node) {

@@ -46,21 +46,20 @@ static void test_compilation_pipeline_integration(void) {
     printf("✓ Semantic analysis phase completed\n");
 
     // 3. Code generation phase
-    CodeGenerator *generator =
-        code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    assert(generator != NULL);
+    AsthraBackend *backend = asthra_backend_create_by_type(ASTHRA_BACKEND_LLVM_IR);
+    assert(backend != NULL);
 
-    // Connect semantic analysis results to code generator
-    code_generator_set_semantic_analyzer(generator, analyzer);
+    // Connect semantic analysis results to backend
+    asthra_backend_set_semantic_analyzer(backend, analyzer);
 
-    bool codegen_success = code_generate_program(generator, program);
+    bool codegen_success = asthra_backend_generate_program(backend, program);
     assert(codegen_success);
     printf("✓ Code generation phase completed\n");
 
     // 4. Assembly generation
     char assembly_buffer[4096];
     bool assembly_success =
-        code_generator_emit_assembly(generator, assembly_buffer, sizeof(assembly_buffer));
+        asthra_backend_emit_assembly(backend, assembly_buffer, sizeof(assembly_buffer));
     if (assembly_success) {
         printf("✓ Assembly generation phase completed\n");
     } else {
@@ -72,7 +71,7 @@ static void test_compilation_pipeline_integration(void) {
     printf("✓ Compilation pipeline test structure validated\n");
 
     // Cleanup
-    code_generator_destroy(generator);
+    asthra_backend_destroy(backend);
     semantic_analyzer_destroy(analyzer);
     ast_free_node(program);
 

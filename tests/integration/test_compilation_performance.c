@@ -12,9 +12,7 @@
 #include "../framework/compiler_test_utils.h"
 #include "../framework/test_framework.h"
 #include "ast.h"
-#include "code_generator.h"
-#include "elf_writer.h"
-#include "ffi_assembly_generator.h"
+#include "backend_interface.h"
 #include "lexer.h"
 #include "parser.h"
 #include "semantic_analyzer.h"
@@ -41,9 +39,7 @@ typedef struct {
     Lexer *lexer;
     Parser *parser;
     SemanticAnalyzer *analyzer;
-    CodeGenerator *generator;
-    ELFWriter *elf_writer;
-    FFIAssemblyGenerator *ffi_generator;
+    AsthraBackend *backend;
     ASTNode *ast;
     char *source_code;
     char *output_filename;
@@ -99,34 +95,8 @@ static PerformanceTestFixture *setup_performance_fixture(const char *source, con
         return NULL;
     }
 
-    fixture->generator = code_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!fixture->generator) {
-        destroy_semantic_analyzer(fixture->analyzer);
-        parser_destroy(fixture->parser);
-        lexer_destroy(fixture->lexer);
-        free(fixture->output_filename);
-        free(fixture->source_code);
-        free(fixture);
-        return NULL;
-    }
-
-    fixture->ffi_generator =
-        ffi_assembly_generator_create(TARGET_ARCH_X86_64, CALLING_CONV_SYSTEM_V_AMD64);
-    if (!fixture->ffi_generator) {
-        code_generator_destroy(fixture->generator);
-        destroy_semantic_analyzer(fixture->analyzer);
-        parser_destroy(fixture->parser);
-        lexer_destroy(fixture->lexer);
-        free(fixture->output_filename);
-        free(fixture->source_code);
-        free(fixture);
-        return NULL;
-    }
-
-    fixture->elf_writer = elf_writer_create(fixture->ffi_generator);
-    if (!fixture->elf_writer) {
-        ffi_assembly_generator_destroy(fixture->ffi_generator);
-        code_generator_destroy(fixture->generator);
+    fixture->backend = asthra_backend_create_by_type(ASTHRA_BACKEND_LLVM_IR);
+    if (!fixture->backend) {
         destroy_semantic_analyzer(fixture->analyzer);
         parser_destroy(fixture->parser);
         lexer_destroy(fixture->lexer);
@@ -149,14 +119,8 @@ static void cleanup_performance_fixture(PerformanceTestFixture *fixture) {
     if (fixture->ast) {
         ast_free_node(fixture->ast);
     }
-    if (fixture->elf_writer) {
-        elf_writer_destroy(fixture->elf_writer);
-    }
-    if (fixture->ffi_generator) {
-        ffi_assembly_generator_destroy(fixture->ffi_generator);
-    }
-    if (fixture->generator) {
-        code_generator_destroy(fixture->generator);
+    if (fixture->backend) {
+        asthra_backend_destroy(fixture->backend);
     }
     if (fixture->analyzer) {
         destroy_semantic_analyzer(fixture->analyzer);
@@ -195,12 +159,12 @@ static bool compile_performance_pipeline(PerformanceTestFixture *fixture) {
     }
 
     // Step 3: Code generation
-    if (!code_generate_program(fixture->generator, fixture->ast)) {
+    if (!asthra_backend_generate_program(fixture->backend, fixture->ast)) {
         return false;
     }
 
-    // Step 4: ELF generation
-    if (!elf_write_object_file(fixture->elf_writer, fixture->output_filename)) {
+    // Step 4: Emit output file
+    if (!asthra_backend_emit_object_file(fixture->backend, fixture->output_filename)) {
         return false;
     }
 

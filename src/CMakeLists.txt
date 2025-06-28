@@ -12,6 +12,9 @@ list(FILTER ASTHRA_COMPILER_SOURCES EXCLUDE REGEX "ai_server/.*\\.c$")
 # Exclude json_utils.c that also depends on json-c
 list(FILTER ASTHRA_COMPILER_SOURCES EXCLUDE REGEX "utils/json_utils\\.c$")
 
+# Exclude benchmark_stubs.c which contains stub implementations for benchmarking
+list(FILTER ASTHRA_COMPILER_SOURCES EXCLUDE REGEX "fast_check/benchmark_stubs\\.c$")
+
 # All semantic analysis files are now compiled separately - no exclusions needed
 
 # Platform-specific exclusions
