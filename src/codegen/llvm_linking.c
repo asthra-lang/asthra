@@ -69,7 +69,7 @@ AsthraLLVMToolResult asthra_llvm_link(const char **object_files, size_t num_obje
         argv[argc++] = "-L";
         argv[argc++] = lib_path;
         argv[argc++] = "-lasthra_runtime";
-        
+
         if (options->verbose) {
             fprintf(stderr, "Found Asthra runtime library at: %s\n", lib_path);
         }
@@ -77,9 +77,10 @@ AsthraLLVMToolResult asthra_llvm_link(const char **object_files, size_t num_obje
         // Still try to link with the runtime library even if we can't find it
         // The system might have it in a standard location
         argv[argc++] = "-lasthra_runtime";
-        
+
         if (options->verbose) {
-            fprintf(stderr, "Warning: Could not find Asthra runtime library in expected locations\n");
+            fprintf(stderr,
+                    "Warning: Could not find Asthra runtime library in expected locations\n");
         }
     }
 

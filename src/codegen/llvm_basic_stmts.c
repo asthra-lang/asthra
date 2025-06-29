@@ -98,7 +98,18 @@ void generate_let_statement(LLVMBackendData *data, const ASTNode *node) {
         var_type = asthra_type_to_llvm(data, node->data.let_stmt.type->type_info);
     }
 
-    // Allocate space on stack
+    // Check if the type is void - void types don't allocate space
+    if (var_type == data->void_type) {
+        // For void types, we don't allocate any memory
+        // Initialize if there's an initializer (evaluate for side effects)
+        if (node->data.let_stmt.initializer) {
+            generate_expression(data, node->data.let_stmt.initializer);
+        }
+        // Don't register void variables - they have no storage
+        return;
+    }
+
+    // Allocate space on stack for non-void types
     LLVMValueRef alloca = LLVMBuildAlloca(data->builder, var_type, var_name);
 
     // Initialize if there's an initializer
