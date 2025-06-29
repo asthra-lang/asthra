@@ -8,7 +8,7 @@ on:
       - 'src/**'
       - 'runtime/**'
       - 'README.md'
-      - 'Doxyfile'
+      - 'Doxyfile.in'
       - '.github/workflows/docs.yml'
   pull_request:
     branches: [ main, develop ]
@@ -17,7 +17,8 @@ on:
       - 'src/**'
       - 'runtime/**'
       - 'README.md'
-      - 'Doxyfile'
+      - 'Doxyfile.in'
+      - '.github/workflows/docs.yml'
   workflow_dispatch:
 
 permissions:
@@ -30,7 +31,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CFLAGS: -std=c17 -Wall -Wextra -Wpedantic
+  CFLAGS: -std=c23 -Wall -Wextra -Wpedantic
 
 jobs:
   documentation-quality:
@@ -117,12 +118,54 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y doxygen graphviz build-essential clang libc6-dev
+          sudo apt-get install -y doxygen graphviz
+
+      - name: Generate Doxyfile from template
+        run: |
+          # Create build directory
+          mkdir -p build/docs
+          
+          # Get project version from CMakeLists.txt
+          PROJECT_VERSION=$(grep -E "VERSION [0-9]" CMakeLists.txt | head -1 | sed 's/.*VERSION \([0-9.]*\).*/\1/')
+          echo "Project version: $PROJECT_VERSION"
+          
+          # Process Doxyfile.in template
+          sed -e "s|@CMAKE_PROJECT_VERSION@|$PROJECT_VERSION|g" \
+              -e "s|@CMAKE_SOURCE_DIR@|$(pwd)|g" \
+              -e "s|@ASTHRA_DOC_OUTPUT_DIR@|$(pwd)/build/docs|g" \
+              Doxyfile.in > build/Doxyfile
+          
+          echo "✓ Generated Doxyfile from template"
+          
+          # Verify Doxyfile was created
+          if [ -f "build/Doxyfile" ]; then
+            echo "✓ Doxyfile exists at build/Doxyfile"
+            echo "First few lines of generated Doxyfile:"
+            head -20 build/Doxyfile
+          else
+            echo "✗ Failed to generate Doxyfile"
+            exit 1
+          fi
 
       - name: Generate Doxygen documentation
         run: |
           echo "=== Generating Doxygen Documentation ===" | tee doxygen-build.log
-          doxygen Doxyfile 2>&1 | tee -a doxygen-build.log
+          
+          # Run doxygen with the generated Doxyfile
+          doxygen build/Doxyfile 2>&1 | tee -a doxygen-build.log
+          
+          # Check what was created
+          echo "=== Checking generated files ==="
+          if [ -d "build/docs" ]; then
+            echo "Contents of build/docs:"
+            ls -la build/docs/
+            if [ -d "build/docs/html" ]; then
+              echo "HTML documentation generated successfully"
+              echo "Number of HTML files: $(find build/docs/html -name "*.html" | wc -l)"
+            fi
+          else
+            echo "build/docs/ directory not found"
+          fi
 
       - name: Check for Doxygen warnings
         run: |
@@ -136,10 +179,10 @@ jobs:
 
       - name: Verify documentation output
         run: |
-          if [ -d "docs/html" ]; then
+          if [ -d "build/docs/html" ]; then
             echo "✅ HTML documentation generated successfully"
-            echo "Documentation size: $(du -sh docs/html)"
-            echo "Number of HTML files: $(find docs/html -name "*.html" | wc -l)"
+            echo "Documentation size: $(du -sh build/docs/html)"
+            echo "Number of HTML files: $(find build/docs/html -name "*.html" | wc -l)"
           else
             echo "❌ HTML documentation not found"
             exit 1
@@ -150,7 +193,7 @@ jobs:
         with:
           name: doxygen-docs
           path: |
-            docs/html/
+            build/docs/html/
             doxygen-build.log
 
   build-manual:
@@ -276,9 +319,9 @@ jobs:
           fi
           
           # Copy Doxygen HTML to api subdirectory
-          if [ -d combined-docs/docs/html ]; then
+          if [ -d combined-docs/build/docs/html ]; then
             mkdir -p combined-docs/final/api
-            cp -r combined-docs/docs/html/* combined-docs/final/api/
+            cp -r combined-docs/build/docs/html/* combined-docs/final/api/
           fi
           
           # Update index.html to point to correct API location
