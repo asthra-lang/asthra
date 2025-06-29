@@ -78,7 +78,7 @@ env:
 jobs:
   on-demand-test:
     name: Test ${{ inputs.target_test_name }} (${{ inputs.operating_system }}, ${{ inputs.compiler }}, ${{ matrix.build_type }}, ${{ inputs.sanitizer }}, ${{ inputs.advanced_testing }}, ${{ matrix.target_arch }})
-    runs-on: ${{ inputs.operating_system == 'Linux' && 'ubuntu-22.04' || inputs.operating_system == 'Mac' && 'macos-14' }}
+    runs-on: ${{ inputs.operating_system == 'Linux' && 'ubuntu-24.04' || inputs.operating_system == 'Mac' && 'macos-14' }}
     strategy:
       fail-fast: false
       matrix:
