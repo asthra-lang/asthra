@@ -46,6 +46,11 @@ static PredeclaredIdentifier g_predeclared_identifiers[] = {
      .kind = SYMBOL_FUNCTION,
      .type = NULL, // Will be created dynamically
      .is_predeclared = true},
+    {.name = "exit",
+     .signature = "fn(status: i32) -> Never",
+     .kind = SYMBOL_FUNCTION,
+     .type = NULL, // Will be created dynamically
+     .is_predeclared = true},
 
     // Range functions (overloaded)
     {.name = "range",
@@ -121,6 +126,12 @@ TypeDescriptor *create_predeclared_function_type(const char *name, const char *s
         func_type->data.function.param_count = 1;
         func_type->data.function.param_types = malloc(sizeof(TypeDescriptor *));
         func_type->data.function.param_types[0] = &primitive_types[PRIMITIVE_STRING];
+        func_type->data.function.return_type = &primitive_types[PRIMITIVE_NEVER];
+    } else if (strcmp(name, "exit") == 0) {
+        // exit(status: i32) -> Never
+        func_type->data.function.param_count = 1;
+        func_type->data.function.param_types = malloc(sizeof(TypeDescriptor *));
+        func_type->data.function.param_types[0] = &primitive_types[PRIMITIVE_I32];
         func_type->data.function.return_type = &primitive_types[PRIMITIVE_NEVER];
     } else if (strcmp(name, "range") == 0 && strstr(signature, "fn(end: i32)")) {
         // range(end: i32) -> []i32
