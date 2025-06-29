@@ -64,6 +64,16 @@ AsthraLLVMToolResult asthra_llvm_compile(const char *input_file,
         argv[argc++] = options->features;
     }
 
+    // Add relocation model based on PIE mode
+    if (options->pie_mode == ASTHRA_PIE_FORCE_ENABLED ||
+        (options->pie_mode == ASTHRA_PIE_DEFAULT &&
+         options->output_format == ASTHRA_FORMAT_OBJECT)) {
+        argv[argc++] = "-relocation-model=pic";
+    } else if (options->pie_mode == ASTHRA_PIE_FORCE_DISABLED) {
+        argv[argc++] = "-relocation-model=static";
+    }
+    // For ASTHRA_PIE_DEFAULT with non-object output, let llc use its default
+
     argv[argc] = NULL;
 
     return execute_command(argv, options->verbose);

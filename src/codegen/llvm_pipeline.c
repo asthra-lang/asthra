@@ -170,7 +170,8 @@ AsthraLLVMToolResult asthra_llvm_compile_pipeline(const char *ir_file, const cha
                 .target_triple = asthra_llvm_target_triple(options->target_arch),
                 .debug_info = options->debug_info,
                 .verbose = options->verbose,
-                .coverage = options->coverage};
+                .coverage = options->coverage,
+                .pie_mode = options->pie_mode};
 
             result = asthra_llvm_compile(compile_input, &compile_options);
             if (result.success) {
