@@ -277,7 +277,7 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file,
         // We need LLVM tools if:
         // 1. The desired format is not LLVM IR, OR
         // 2. The backend output file is different from the final output file
-        if (final_format != ASTHRA_FORMAT_LLVM_IR || 
+        if (final_format != ASTHRA_FORMAT_LLVM_IR ||
             strcmp(backend_output_file, output_file) != 0) {
             needs_llvm_tools = true;
         } else {
