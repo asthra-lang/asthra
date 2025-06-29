@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-We provide security updates for the following versions of Asthra:
+Asthra has not yet reached version 1.0, so there are currently no officially supported versions. Once we reach version 1.0, we will provide security updates for the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
@@ -43,7 +43,7 @@ We aim to respond to security reports according to the following timeline:
 - **Initial Response**: Within 48 hours
 - **Confirmation**: Within 7 days
 - **Fix Development**: Within 30 days for critical issues
-- **Public Disclosure**: After fix is released and users have time to update
+- **Public Disclosure**: After the fix is released and users have time to update
 
 ## Security Features
 
@@ -52,7 +52,7 @@ Asthra is designed with security as a core principle:
 ### Memory Safety
 - **Four-Zone Memory Model**: Automatic memory management with safety guarantees
 - **Bounds Checking**: All array and slice operations are bounds-checked
-- **Ownership Semantics**: Transfer semantics prevent use-after-free and double-free
+- **Ownership Semantics**: Transfer semantics prevent use-after-free and double-free errors
 - **Safe FFI**: Automatic C interoperability with memory safety
 
 ### Compilation Security
