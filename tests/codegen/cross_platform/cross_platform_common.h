@@ -1,6 +1,6 @@
 /**
  * Cross Platform Test Common Header - Stub Implementation
- * 
+ *
  * This is a stub header to allow cross platform tests to compile.
  * The original implementation was removed with the old code generator.
  */
@@ -8,9 +8,9 @@
 #ifndef CROSS_PLATFORM_COMMON_H
 #define CROSS_PLATFORM_COMMON_H
 
+#include "../framework/test_framework.h"
 #include <stdbool.h>
 #include <stddef.h>
-#include "../framework/test_framework.h"
 
 // Platform count for tests
 #define PLATFORM_COUNT 3
@@ -40,8 +40,9 @@ typedef struct {
 
 // Stub functions
 static inline void init_cross_platform_context(CrossPlatformContext *ctx) {
-    if (!ctx) return;
-    
+    if (!ctx)
+        return;
+
     ctx->platforms[0] = (PlatformConfig){"x86_64", 0, 0};
     ctx->platforms[1] = (PlatformConfig){"arm64", 1, 1};
     ctx->platforms[2] = (PlatformConfig){"wasm32", 2, 2};
@@ -52,12 +53,11 @@ static inline bool validate_platform_configuration(const PlatformConfig *config)
     return config && config->name != NULL;
 }
 
-static inline void add_platform_instruction(CrossPlatformContext *ctx, 
-                                          const char *opcode, 
-                                          const char *operand, 
-                                          int platform) {
-    if (!ctx || ctx->instruction_count >= 100) return;
-    
+static inline void add_platform_instruction(CrossPlatformContext *ctx, const char *opcode,
+                                            const char *operand, int platform) {
+    if (!ctx || ctx->instruction_count >= 100)
+        return;
+
     ctx->instructions[ctx->instruction_count].opcode = opcode;
     ctx->instructions[ctx->instruction_count].operand = operand;
     ctx->instructions[ctx->instruction_count].platform = platform;

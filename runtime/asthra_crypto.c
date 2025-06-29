@@ -12,10 +12,10 @@
  * - Memory locking and secure buffer management
  */
 
+#include "platform/asthra_platform.h"
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
-#include "platform/asthra_platform.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>

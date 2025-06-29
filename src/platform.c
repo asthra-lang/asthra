@@ -201,7 +201,6 @@ const char *asthra_get_error_string(asthra_error_t error) {
     return strerror(error);
 }
 
-
 // =============================================================================
 // PERFORMANCE UTILITIES
 // =============================================================================

@@ -407,7 +407,7 @@ int main(void) {
         test_sizeof_expr();
         // Skip test_never_match - marked @wip
         test_unit_struct_field();
-        // Skip test_never_instantiate - marked @wip
+        test_never_instantiate();  // Now enabled since @wip removed
         test_invalid_sizeof();
         // Skip test_unit_comparison - marked @wip
         test_platform_sizes();

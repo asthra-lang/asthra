@@ -167,9 +167,10 @@ jobs:
     
     - name: Run BDD unit tests
       run: |
-        set -e  # Exit on any error to make tests mandatory
+        set -e
         echo "=== Running BDD Unit Tests ==="
         cd build
+        mkdir -p bdd-logs
         
         # Find the asthra compiler binary
         echo "Searching for asthra compiler binary..."
@@ -228,87 +229,101 @@ jobs:
         if [ -f "bdd/bin/bdd_unit_compiler_basic" ]; then
           echo "Running compiler basic unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
-          ./bdd/bin/bdd_unit_compiler_basic --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+          ./bdd/bin/bdd_unit_compiler_basic --reporter spec 2>&1 | tee bdd-logs/bdd_unit_compiler_basic.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
         fi
         
         if [ -f "bdd/bin/bdd_unit_function_calls" ]; then
           echo "Running function calls unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
-          ./bdd/bin/bdd_unit_function_calls --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+          ./bdd/bin/bdd_unit_function_calls --reporter spec 2>&1 | tee bdd-logs/bdd_unit_function_calls.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
         fi
         
         if [ -f "bdd/bin/bdd_unit_bitwise_operators" ]; then
           echo "Running bitwise operators unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
-          ./bdd/bin/bdd_unit_bitwise_operators --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+          ./bdd/bin/bdd_unit_bitwise_operators --reporter spec 2>&1 | tee bdd-logs/bdd_unit_bitwise_operators.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
         fi
         
         if [ -f "bdd/bin/bdd_unit_boolean_operators" ]; then
           echo "Running boolean operators unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
-          ./bdd/bin/bdd_unit_boolean_operators --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+          ./bdd/bin/bdd_unit_boolean_operators --reporter spec 2>&1 | tee bdd-logs/bdd_unit_boolean_operators.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
         fi
         
         if [ -f "bdd/bin/bdd_unit_if_conditions" ]; then
           echo "Running if conditions unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
-          ./bdd/bin/bdd_unit_if_conditions --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+          ./bdd/bin/bdd_unit_if_conditions --reporter spec 2>&1 | tee bdd-logs/bdd_unit_if_conditions.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
         fi
         
         # Phase 1 BDD Tests - Core Language Structure
         if [ -f "bdd/bin/bdd_unit_package_declaration" ]; then
           echo "Running package declaration unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
-          ./bdd/bin/bdd_unit_package_declaration --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+          ./bdd/bin/bdd_unit_package_declaration --reporter spec 2>&1 | tee bdd-logs/bdd_unit_package_declaration.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
         fi
         
         if [ -f "bdd/bin/bdd_unit_import_system" ]; then
           echo "Running import system unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
-          ./bdd/bin/bdd_unit_import_system --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+          ./bdd/bin/bdd_unit_import_system --reporter spec 2>&1 | tee bdd-logs/bdd_unit_import_system.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
         fi
         
         if [ -f "bdd/bin/bdd_unit_visibility_modifiers" ]; then
           echo "Running visibility modifiers unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
-          ./bdd/bin/bdd_unit_visibility_modifiers --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+          ./bdd/bin/bdd_unit_visibility_modifiers --reporter spec 2>&1 | tee bdd-logs/bdd_unit_visibility_modifiers.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
         fi
         
         if [ -f "bdd/bin/bdd_unit_annotations" ]; then
           echo "Running annotations unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
-          ./bdd/bin/bdd_unit_annotations --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+          ./bdd/bin/bdd_unit_annotations --reporter spec 2>&1 | tee bdd-logs/bdd_unit_annotations.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
         fi
         
         # Phase 1 BDD Tests - Type System
         if [ -f "bdd/bin/bdd_unit_primitive_types" ]; then
           echo "Running primitive types unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
-          ./bdd/bin/bdd_unit_primitive_types --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+          ./bdd/bin/bdd_unit_primitive_types --reporter spec 2>&1 | tee bdd-logs/bdd_unit_primitive_types.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
         fi
         
         if [ -f "bdd/bin/bdd_unit_composite_types" ]; then
           echo "Running composite types unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
-          ./bdd/bin/bdd_unit_composite_types --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+          ./bdd/bin/bdd_unit_composite_types --reporter spec 2>&1 | tee bdd-logs/bdd_unit_composite_types.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
         fi
         
         if [ -f "bdd/bin/bdd_unit_user_defined_types" ]; then
           echo "Running user-defined types unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
-          ./bdd/bin/bdd_unit_user_defined_types --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+          ./bdd/bin/bdd_unit_user_defined_types --reporter spec 2>&1 | tee bdd-logs/bdd_unit_user_defined_types.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
         fi
         
         if [ -f "bdd/bin/bdd_unit_generic_types" ]; then
           echo "Running generic types unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
-          ./bdd/bin/bdd_unit_generic_types --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+          ./bdd/bin/bdd_unit_generic_types --reporter spec 2>&1 | tee bdd-logs/bdd_unit_generic_types.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
         fi
         
         if [ -f "bdd/bin/bdd_unit_special_types" ]; then
           echo "Running special types unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
-          ./bdd/bin/bdd_unit_special_types --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+          ./bdd/bin/bdd_unit_special_types --reporter spec 2>&1 | tee bdd-logs/bdd_unit_special_types.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
         fi
         
         # Report results and fail if any tests failed
@@ -325,9 +340,10 @@ jobs:
 
     - name: Run BDD integration tests
       run: |
-        set -e  # Exit on any error to make tests mandatory
+        set -e
         echo "=== Running BDD Integration Tests ==="
         cd build
+        mkdir -p bdd-logs
         
         # Export compiler path for BDD tests
         export ASTHRA_COMPILER_PATH="$(pwd)/asthra"
@@ -340,7 +356,8 @@ jobs:
         if [ -f "bdd/bin/bdd_integration_ffi_integration" ]; then
           echo "Running FFI integration tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
-          ./bdd/bin/bdd_integration_ffi_integration --reporter spec || TESTS_FAILED=$((TESTS_FAILED + 1))
+          ./bdd/bin/bdd_integration_ffi_integration --reporter spec 2>&1 | tee bdd-logs/bdd_integration_ffi_integration.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
         fi
         
         # Report results and fail if any tests failed
@@ -356,9 +373,9 @@ jobs:
         fi
 
     - name: Run Cucumber feature tests
-      if: matrix.platform == 'linux'  # Cucumber setup is more reliable on Linux
+      if: matrix.platform == 'linux'
       run: |
-        set -e  # Exit on any error to make tests mandatory
+        set -e
         echo "=== Running Cucumber Feature Tests ==="
         cd bdd
         
@@ -366,15 +383,17 @@ jobs:
         if command -v cucumber &> /dev/null; then
           echo "Running Cucumber tests..."
           # Run all feature tests including Phase 1 tests
-          cucumber features/*.feature --format html --out ../build/cucumber-report.html
-          cucumber features/*.feature --format json --out ../build/cucumber-report.json
+          cucumber features/*.feature --format html --out ../build/cucumber-report.html --format json --out ../build/cucumber-report.json 2>&1 | tee ../build/bdd-logs/cucumber_features.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then exit 1; fi
           
           # Also run Phase 1 tests explicitly to ensure they're executed
           echo "Running Phase 1 Core Language Structure tests..."
-          cucumber features/package_declaration.feature features/import_system.feature features/visibility_modifiers.feature features/annotations.feature --format progress
+          cucumber features/package_declaration.feature features/import_system.feature features/visibility_modifiers.feature features/annotations.feature --format progress 2>&1 | tee ../build/bdd-logs/cucumber_phase1_core.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then exit 1; fi
           
           echo "Running Phase 1 Type System tests..."
-          cucumber features/primitive_types.feature features/composite_types.feature features/user_defined_types.feature features/generic_types.feature features/special_types.feature --format progress
+          cucumber features/primitive_types.feature features/composite_types.feature features/user_defined_types.feature features/generic_types.feature features/special_types.feature --format progress 2>&1 | tee ../build/bdd-logs/cucumber_phase1_types.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then exit 1; fi
           
           echo "✅ Cucumber feature tests completed successfully"
         else
@@ -402,7 +421,7 @@ jobs:
         
         # Generate summary
         echo "BDD Test Summary" > test-reports/summary.txt
-        echo "================" >> test-reports/summary.txt
+        echo "=================" >> test-reports/summary.txt
         echo "Platform: ${{ matrix.platform }}" >> test-reports/summary.txt
         echo "Date: $(date)" >> test-reports/summary.txt
         echo "" >> test-reports/summary.txt
@@ -429,7 +448,7 @@ jobs:
       with:
         name: bdd-test-logs-${{ matrix.platform }}
         path: |
-          build/**/*.log
+          build/bdd-logs/
           build/Testing/Temporary/
         retention-days: 7
 

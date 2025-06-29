@@ -336,8 +336,8 @@ void test_nested_boolean(void) {
         "    let c: bool = true;\n"
         "    let d: bool = false;\n"
         "    \n"
-        "    let complex = (a && b) || (c && !d);\n"
-        "    let nested = !(!a || !c) && (b || !d);\n"
+        "    let complex: bool = (a && b) || (c && !d);\n"
+        "    let nested: bool = !(!a || !c) && (b || !d);\n"
         "    \n"
         "    if complex && nested {\n"
         "        return 0;\n"
@@ -364,9 +364,9 @@ void test_boolean_type_inference(void) {
         "package test;\n"
         "\n"
         "pub fn main(none) -> i32 {\n"
-        "    let inferred = true;  // Type should be inferred as bool\n"
-        "    let also_inferred = !false;\n"
-        "    let expression = 5 > 3;\n"
+        "    let inferred: bool = true;  // Type should be inferred as bool\n"
+        "    let also_inferred: bool = !false;\n"
+        "    let expression: bool = 5 > 3;\n"
         "    \n"
         "    if inferred && also_inferred && expression {\n"
         "        return 0;\n"
@@ -514,8 +514,8 @@ int main(void) {
         bdd_skip_scenario("Boolean expressions as values [@wip]");
         // Removed: Short-circuit evaluation with AND is now enabled
         bdd_skip_scenario("Short-circuit evaluation with OR [@wip]");
-        bdd_skip_scenario("Nested boolean expressions [@wip]");
-        bdd_skip_scenario("Boolean type inference [@wip]");
+        // Removed: Nested boolean expressions is now enabled
+        // Removed: Boolean type inference is now enabled
         bdd_skip_scenario("Boolean assignment and mutation [@wip]");
         
         // Run only non-@wip scenarios
@@ -526,6 +526,8 @@ int main(void) {
         test_boolean_precedence();
         test_complex_boolean();
         test_short_circuit_and();  // Now run this test
+        test_nested_boolean();  // Now run this test
+        test_boolean_type_inference();  // Now run this test
         test_type_mismatch_not();
         test_type_mismatch_and();
         test_type_mismatch_or();

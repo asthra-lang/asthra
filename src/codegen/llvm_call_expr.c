@@ -248,11 +248,11 @@ LLVMValueRef generate_result_function_call(LLVMBackendData *data, const ASTNode 
             LLVMTypeRef ok_type = LLVMTypeOf(ok_value);
             // For now, use i32 as default error type - this should come from type info
             LLVMTypeRef err_type = data->i32_type;
-            
+
             LLVMTypeRef fields[3] = {
                 LLVMInt8TypeInContext(data->context), // discriminant
-                ok_type,                               // ok value
-                err_type                               // err value
+                ok_type,                              // ok value
+                err_type                              // err value
             };
             LLVMTypeRef result_type = LLVMStructTypeInContext(data->context, fields, 3, 0);
 
@@ -262,7 +262,8 @@ LLVMValueRef generate_result_function_call(LLVMBackendData *data, const ASTNode 
             // Set discriminant = 0 (Ok)
             LLVMValueRef disc_ptr =
                 LLVMBuildStructGEP2(data->builder, result_type, result_alloca, 0, "disc_ptr");
-            LLVMBuildStore(data->builder, LLVMConstInt(LLVMInt8TypeInContext(data->context), 0, false), disc_ptr);
+            LLVMBuildStore(data->builder,
+                           LLVMConstInt(LLVMInt8TypeInContext(data->context), 0, false), disc_ptr);
 
             // Set ok value
             LLVMValueRef ok_ptr =
@@ -289,11 +290,11 @@ LLVMValueRef generate_result_function_call(LLVMBackendData *data, const ASTNode 
             // For now, use i32 as default ok type - this should come from type info
             LLVMTypeRef ok_type = data->i32_type;
             LLVMTypeRef err_type = LLVMTypeOf(err_value);
-            
+
             LLVMTypeRef fields[3] = {
                 LLVMInt8TypeInContext(data->context), // discriminant
-                ok_type,                               // ok value
-                err_type                               // err value
+                ok_type,                              // ok value
+                err_type                              // err value
             };
             LLVMTypeRef result_type = LLVMStructTypeInContext(data->context, fields, 3, 0);
 
@@ -303,7 +304,8 @@ LLVMValueRef generate_result_function_call(LLVMBackendData *data, const ASTNode 
             // Set discriminant = 1 (Err)
             LLVMValueRef disc_ptr =
                 LLVMBuildStructGEP2(data->builder, result_type, result_alloca, 0, "disc_ptr");
-            LLVMBuildStore(data->builder, LLVMConstInt(LLVMInt8TypeInContext(data->context), 1, false), disc_ptr);
+            LLVMBuildStore(data->builder,
+                           LLVMConstInt(LLVMInt8TypeInContext(data->context), 1, false), disc_ptr);
 
             // Initialize ok value (not used but should be initialized)
             LLVMValueRef ok_ptr =

@@ -18,8 +18,8 @@
 #include <time.h>
 
 // Use platform compatibility layer instead of direct pthread.h
-#include "../platform/asthra_platform.h"
 #include "../asthra_concurrency_bridge_modular.h"
+#include "../platform/asthra_platform.h"
 
 #ifdef __cplusplus
 extern "C" {

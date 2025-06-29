@@ -184,6 +184,18 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file,
         char temp_name[256];
         snprintf(temp_name, sizeof(temp_name), "%s.tmp.ll", output_file);
         backend_output_file = strdup(temp_name);
+    } else if (ctx->options.backend_type == ASTHRA_BACKEND_LLVM_IR) {
+        // For LLVM backend, always generate a .ll file first
+        if (output_file) {
+            // Generate temporary .ll file name based on output file
+            char temp_name[512];
+            snprintf(temp_name, sizeof(temp_name), "%s.tmp.ll", output_file);
+            backend_output_file = strdup(temp_name);
+        } else {
+            // No output file specified, use default
+            backend_output_file =
+                asthra_backend_get_output_filename(ctx->options.backend_type, input_file, NULL);
+        }
     } else {
         // For other backends, use the final output file directly
         backend_output_file =
@@ -262,13 +274,15 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file,
     bool needs_llvm_tools = false;
     if (ctx->options.backend_type == ASTHRA_BACKEND_LLVM_IR) {
         // LLVM backend produces .ll files by default
-        if (final_format == ASTHRA_FORMAT_LLVM_IR &&
-            strcmp(backend_output_file, output_file) == 0) {
-            // Already in the right format at the right location
-            needs_llvm_tools = false;
-        } else {
-            // Need to convert or move
+        // We need LLVM tools if:
+        // 1. The desired format is not LLVM IR, OR
+        // 2. The backend output file is different from the final output file
+        if (final_format != ASTHRA_FORMAT_LLVM_IR || 
+            strcmp(backend_output_file, output_file) != 0) {
             needs_llvm_tools = true;
+        } else {
+            // Only skip LLVM tools if we want LLVM IR and files match
+            needs_llvm_tools = false;
         }
     }
 

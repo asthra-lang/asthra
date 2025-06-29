@@ -2,8 +2,8 @@
  * Minimal standalone codegen test to isolate issues
  */
 
-#include "backend_interface.h"
 #include "../codegen_backend_wrapper.h"
+#include "backend_interface.h"
 #include "lexer.h"
 #include "parser.h"
 #include "semantic_analyzer.h"

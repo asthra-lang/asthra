@@ -218,16 +218,16 @@ LLVMTypeRef asthra_type_to_llvm(LLVMBackendData *data, const TypeInfo *type) {
                 };
                 return LLVMStructTypeInContext(data->context, fields, 3, 0);
             }
-            
+
             LLVMTypeRef ok_type = asthra_type_to_llvm(data, type->data.result.ok_type);
             LLVMTypeRef err_type = asthra_type_to_llvm(data, type->data.result.err_type);
-            
+
             // Create a union-like structure by using the larger of the two types
             // For now, we'll use a simple approach with both fields
             LLVMTypeRef fields[3] = {
                 LLVMInt8TypeInContext(data->context), // discriminant (0 = Ok, 1 = Err)
-                ok_type,                               // ok value
-                err_type                               // err value
+                ok_type,                              // ok value
+                err_type                              // err value
             };
             return LLVMStructTypeInContext(data->context, fields, 3, 0);
         }
