@@ -64,6 +64,14 @@ jobs:
         echo "Checking clang-18 version..."
         which clang-18 && clang-18 --version
         
+        # Verify LLVM libraries are available
+        echo "Checking LLVM libraries..."
+        ldconfig -p | grep -i llvm || echo "No LLVM libraries in ldconfig"
+        
+        # Check pkg-config for LLVM
+        echo "Checking pkg-config for LLVM..."
+        pkg-config --libs llvm-18 || echo "LLVM-18 not found in pkg-config"
+        
         # Install Cucumber for BDD
         sudo gem install cucumber --no-document
         
@@ -209,6 +217,15 @@ jobs:
         if [ -n "$ASTHRA_COMPILER_PATH" ] && [ -f "$ASTHRA_COMPILER_PATH" ]; then
           echo "✓ Asthra compiler found at: $ASTHRA_COMPILER_PATH"
           ls -la "$ASTHRA_COMPILER_PATH"
+          
+          # Test basic compiler functionality
+          echo "Testing asthra compiler..."
+          "$ASTHRA_COMPILER_PATH" --version || echo "WARNING: asthra --version failed"
+          
+          # Check runtime dependencies
+          echo "Checking asthra compiler dependencies..."
+          ldd "$ASTHRA_COMPILER_PATH" || echo "WARNING: ldd failed"
+          
           export ASTHRA_COMPILER_PATH
         else
           echo "❌ Asthra compiler not found in any expected location"
@@ -346,7 +363,19 @@ jobs:
         mkdir -p bdd-logs
         
         # Export compiler path for BDD tests
-        export ASTHRA_COMPILER_PATH="$(pwd)/asthra"
+        # First try to find the compiler
+        if [ -f "$(pwd)/bin/asthra" ]; then
+          export ASTHRA_COMPILER_PATH="$(pwd)/bin/asthra"
+        elif [ -f "$(pwd)/asthra" ]; then
+          export ASTHRA_COMPILER_PATH="$(pwd)/asthra"
+        else
+          echo "WARNING: Could not find asthra compiler in expected locations"
+          find . -name "asthra" -type f -executable | head -5
+        fi
+        
+        # Export debug environment variables
+        export BDD_DEBUG=1
+        export ASTHRA_DEBUG=1
         
         # Track test results
         TESTS_RUN=0

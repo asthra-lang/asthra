@@ -1,5 +1,6 @@
 # Dockerfile for testing BDD tests in CI-like environment
-FROM ubuntu:24.04
+# Using Ubuntu 22.04 to match CI environment exactly
+FROM ubuntu:22.04
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive

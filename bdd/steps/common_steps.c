@@ -133,6 +133,10 @@ void when_compile_file(void) {
     if (compiler_output && compilation_exit_code != 0) {
         if (error_output) free(error_output);
         error_output = strdup(compiler_output);
+        // Debug output for CI failures
+        fprintf(stderr, "DEBUG: Compilation failed with exit code %d\n", compilation_exit_code);
+        fprintf(stderr, "DEBUG: Compiler command was: %s\n", command);
+        fprintf(stderr, "DEBUG: Compiler output:\n%s\n", compiler_output);
     }
 }
 
