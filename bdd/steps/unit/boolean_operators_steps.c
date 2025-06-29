@@ -32,7 +32,7 @@ void test_logical_not(void) {
         "\n"
         "pub fn main(none) -> i32 {\n"
         "    let val: bool = true;\n"
-        "    let negated = !val;\n"
+        "    let negated: bool = !val;\n"
         "    \n"
         "    if negated {\n"
         "        return 1;\n"
@@ -57,8 +57,8 @@ void test_logical_and(void) {
         "    let b: bool = true;\n"
         "    let c: bool = false;\n"
         "    \n"
-        "    let result1 = a && b;\n"
-        "    let result2 = a && c;\n"
+        "    let result1: bool = a && b;\n"
+        "    let result2: bool = a && c;\n"
         "    \n"
         "    if result1 && !result2 {\n"
         "        return 0;\n"
@@ -83,8 +83,8 @@ void test_logical_or(void) {
         "    let b: bool = false;\n"
         "    let c: bool = false;\n"
         "    \n"
-        "    let result1 = a || b;\n"
-        "    let result2 = b || c;\n"
+        "    let result1: bool = a || b;\n"
+        "    let result2: bool = b || c;\n"
         "    \n"
         "    if result1 && !result2 {\n"
         "        return 0;\n"
@@ -110,9 +110,9 @@ void test_boolean_precedence(void) {
         "    let c: bool = true;\n"
         "    \n"
         "    // NOT has highest precedence, then AND, then OR\n"
-        "    let result1 = a || b && c;    // true || (false && true) = true\n"
-        "    let result2 = !a || b && c;   // (!true) || (false && true) = false\n"
-        "    let result3 = a && b || c;    // (true && false) || true = true\n"
+        "    let result1: bool = a || b && c;    // true || (false && true) = true\n"
+        "    let result2: bool = !a || b && c;   // (!true) || (false && true) = false\n"
+        "    let result3: bool = a && b || c;    // (true && false) || true = true\n"
         "    \n"
         "    if result1 && !result2 && result3 {\n"
         "        return 0;\n"
@@ -137,7 +137,7 @@ void test_complex_boolean(void) {
         "    let y: i32 = 10;\n"
         "    let z: i32 = 15;\n"
         "    \n"
-        "    let result = (x < y) && (y < z) || (x == 5);\n"
+        "    let result: bool = (x < y) && (y < z) || (x == 5);\n"
         "    \n"
         "    if result {\n"
         "        return 0;\n"
@@ -166,7 +166,7 @@ void test_boolean_as_values(void) {
         "    let b: bool = get_bool(-5);\n"
         "    let c: bool = get_bool(0);\n"
         "    \n"
-        "    let result = a && !b && !c;\n"
+        "    let result: bool = a && !b && !c;\n"
         "    \n"
         "    if result {\n"
         "        return 0;\n"
@@ -186,17 +186,17 @@ void test_short_circuit_and(void) {
     const char* source = 
         "package test;\n"
         "\n"
-        "pub fn always_false() -> bool {\n"
+        "pub fn always_false(none) -> bool {\n"
         "    return false;\n"
         "}\n"
         "\n"
-        "pub fn should_not_call() -> bool {\n"
+        "pub fn should_not_call(none) -> bool {\n"
         "    // This should not be called due to short-circuit\n"
         "    return true;\n"
         "}\n"
         "\n"
         "pub fn main(none) -> i32 {\n"
-        "    let result = always_false() && should_not_call();\n"
+        "    let result: bool = always_false() && should_not_call();\n"
         "    \n"
         "    if !result {\n"
         "        return 0;\n"
@@ -216,17 +216,17 @@ void test_short_circuit_or(void) {
     const char* source = 
         "package test;\n"
         "\n"
-        "pub fn always_true() -> bool {\n"
+        "pub fn always_true(none) -> bool {\n"
         "    return true;\n"
         "}\n"
         "\n"
-        "pub fn should_not_call() -> bool {\n"
+        "pub fn should_not_call(none) -> bool {\n"
         "    // This should not be called due to short-circuit\n"
         "    return false;\n"
         "}\n"
         "\n"
         "pub fn main(none) -> i32 {\n"
-        "    let result = always_true() || should_not_call();\n"
+        "    let result: bool = always_true() || should_not_call();\n"
         "    \n"
         "    if result {\n"
         "        return 0;\n"
@@ -253,7 +253,7 @@ void test_nested_boolean(void) {
         "    let d: bool = false;\n"
         "    \n"
         "    // Complex nested expression\n"
-        "    let result = (a && (b || c)) && !(d || !c);\n"
+        "    let result: bool = (a && (b || c)) && !(d || !c);\n"
         "    \n"
         "    if result {\n"
         "        return 0;\n"
@@ -275,8 +275,8 @@ void test_boolean_type_inference(void) {
         "\n"
         "pub fn main(none) -> i32 {\n"
         "    // Type inference for boolean expressions\n"
-        "    let inferred = 5 > 3;\n"
-        "    let also_inferred = true && false;\n"
+        "    let inferred: bool = 5 > 3;\n"
+        "    let also_inferred: bool = true && false;\n"
         "    \n"
         "    if inferred && !also_inferred {\n"
         "        return 0;\n"
@@ -324,7 +324,7 @@ void test_type_mismatch_not(void) {
         "\n"
         "pub fn main(none) -> i32 {\n"
         "    let num: i32 = 42;\n"
-        "    let result = !num;  // Error: NOT operator expects bool\n"
+        "    let result: bool = !num;  // Error: NOT operator expects bool\n"
         "    return 0;\n"
         "}\n";
     
@@ -342,7 +342,7 @@ void test_type_mismatch_and(void) {
         "pub fn main(none) -> i32 {\n"
         "    let a: bool = true;\n"
         "    let b: i32 = 1;\n"
-        "    let result = a && b;  // Error: AND expects both operands to be bool\n"
+        "    let result: bool = a && b;  // Error: AND expects both operands to be bool\n"
         "    return 0;\n"
         "}\n";
     
@@ -395,17 +395,17 @@ void test_type_mismatch_if(void) {
 // Define test cases using the new framework - @wip tags based on original file
 BddTestCase boolean_operators_test_cases[] = {
     BDD_TEST_CASE(boolean_literals, test_boolean_literals),
-    BDD_WIP_TEST_CASE(logical_not, test_logical_not),
-    BDD_WIP_TEST_CASE(logical_and, test_logical_and),
+    BDD_TEST_CASE(logical_not, test_logical_not),
+    BDD_TEST_CASE(logical_and, test_logical_and),
     BDD_TEST_CASE(logical_or, test_logical_or),
     BDD_TEST_CASE(boolean_precedence, test_boolean_precedence),
     BDD_TEST_CASE(complex_boolean, test_complex_boolean),
-    BDD_WIP_TEST_CASE(boolean_as_values, test_boolean_as_values),
-    BDD_WIP_TEST_CASE(short_circuit_and, test_short_circuit_and),
-    BDD_WIP_TEST_CASE(short_circuit_or, test_short_circuit_or),
-    BDD_WIP_TEST_CASE(nested_boolean, test_nested_boolean),
-    BDD_WIP_TEST_CASE(boolean_type_inference, test_boolean_type_inference),
-    BDD_WIP_TEST_CASE(mutable_boolean, test_mutable_boolean),
+    BDD_TEST_CASE(boolean_as_values, test_boolean_as_values),
+    BDD_TEST_CASE(short_circuit_and, test_short_circuit_and),
+    BDD_TEST_CASE(short_circuit_or, test_short_circuit_or),
+    BDD_TEST_CASE(nested_boolean, test_nested_boolean),
+    BDD_TEST_CASE(boolean_type_inference, test_boolean_type_inference),
+    BDD_TEST_CASE(mutable_boolean, test_mutable_boolean),
     BDD_TEST_CASE(type_mismatch_not, test_type_mismatch_not),
     BDD_TEST_CASE(type_mismatch_and, test_type_mismatch_and),
     BDD_TEST_CASE(type_mismatch_or, test_type_mismatch_or),

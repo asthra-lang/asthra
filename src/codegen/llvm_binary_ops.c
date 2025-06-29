@@ -26,14 +26,28 @@ LLVMValueRef generate_binary_op(LLVMBackendData *data, const ASTNode *node) {
         LLVM_REPORT_ERROR(data, node, "Binary operation missing right operand");
     }
 
-    LLVMValueRef left = generate_expression(data, node->data.binary_expr.left);
-    if (!left) {
-        LLVM_REPORT_ERROR(data, node, "Failed to generate left operand for binary operation");
+    // Special handling for short-circuit operators
+    if (node->data.binary_expr.operator == BINOP_AND || 
+        node->data.binary_expr.operator == BINOP_OR) {
+        // For AND/OR, we handle evaluation in the switch cases themselves
+        // to implement proper short-circuit behavior
     }
+    
+    LLVMValueRef left = NULL;
+    LLVMValueRef right = NULL;
+    
+    // For non-short-circuit operators, evaluate both operands immediately
+    if (node->data.binary_expr.operator != BINOP_AND && 
+        node->data.binary_expr.operator != BINOP_OR) {
+        left = generate_expression(data, node->data.binary_expr.left);
+        if (!left) {
+            LLVM_REPORT_ERROR(data, node, "Failed to generate left operand for binary operation");
+        }
 
-    LLVMValueRef right = generate_expression(data, node->data.binary_expr.right);
-    if (!right) {
-        LLVM_REPORT_ERROR(data, node, "Failed to generate right operand for binary operation");
+        right = generate_expression(data, node->data.binary_expr.right);
+        if (!right) {
+            LLVM_REPORT_ERROR(data, node, "Failed to generate right operand for binary operation");
+        }
     }
 
     switch (node->data.binary_expr.operator) {
@@ -126,11 +140,83 @@ LLVMValueRef generate_binary_op(LLVMBackendData *data, const ASTNode *node) {
             return LLVMBuildICmp(data->builder, LLVMIntSGE, left, right, "ge");
         }
 
-    case BINOP_AND:
-        return LLVMBuildAnd(data->builder, left, right, "and");
+    case BINOP_AND: {
+        // Implement short-circuit evaluation for logical AND
+        // First evaluate the left operand
+        left = generate_expression(data, node->data.binary_expr.left);
+        if (!left) {
+            LLVM_REPORT_ERROR(data, node, "Failed to generate left operand for logical AND");
+        }
+        
+        // Create blocks for short-circuit evaluation
+        LLVMBasicBlockRef current_bb = LLVMGetInsertBlock(data->builder);
+        LLVMValueRef function = LLVMGetBasicBlockParent(current_bb);
+        
+        LLVMBasicBlockRef eval_right_bb = LLVMAppendBasicBlockInContext(data->context, function, "and.rhs");
+        LLVMBasicBlockRef merge_bb = LLVMAppendBasicBlockInContext(data->context, function, "and.end");
+        
+        // Check if left is true; if false, short-circuit
+        LLVMBuildCondBr(data->builder, left, eval_right_bb, merge_bb);
+        
+        // Evaluate right side
+        LLVMPositionBuilderAtEnd(data->builder, eval_right_bb);
+        LLVMValueRef right_val = generate_expression(data, node->data.binary_expr.right);
+        if (!right_val) {
+            LLVM_REPORT_ERROR(data, node, "Failed to generate right operand for logical AND");
+        }
+        LLVMBasicBlockRef right_bb = LLVMGetInsertBlock(data->builder);
+        LLVMBuildBr(data->builder, merge_bb);
+        
+        // Merge results
+        LLVMPositionBuilderAtEnd(data->builder, merge_bb);
+        LLVMValueRef phi = LLVMBuildPhi(data->builder, data->bool_type, "and.result");
+        
+        LLVMValueRef false_val = LLVMConstInt(data->bool_type, 0, 0);
+        LLVMValueRef incoming_values[] = {false_val, right_val};
+        LLVMBasicBlockRef incoming_blocks[] = {current_bb, right_bb};
+        LLVMAddIncoming(phi, incoming_values, incoming_blocks, 2);
+        
+        return phi;
+    }
 
-    case BINOP_OR:
-        return LLVMBuildOr(data->builder, left, right, "or");
+    case BINOP_OR: {
+        // Implement short-circuit evaluation for logical OR
+        // First evaluate the left operand
+        left = generate_expression(data, node->data.binary_expr.left);
+        if (!left) {
+            LLVM_REPORT_ERROR(data, node, "Failed to generate left operand for logical OR");
+        }
+        
+        // Create blocks for short-circuit evaluation
+        LLVMBasicBlockRef current_bb = LLVMGetInsertBlock(data->builder);
+        LLVMValueRef function = LLVMGetBasicBlockParent(current_bb);
+        
+        LLVMBasicBlockRef eval_right_bb = LLVMAppendBasicBlockInContext(data->context, function, "or.rhs");
+        LLVMBasicBlockRef merge_bb = LLVMAppendBasicBlockInContext(data->context, function, "or.end");
+        
+        // Check if left is true; if true, short-circuit
+        LLVMBuildCondBr(data->builder, left, merge_bb, eval_right_bb);
+        
+        // Evaluate right side
+        LLVMPositionBuilderAtEnd(data->builder, eval_right_bb);
+        LLVMValueRef right_val = generate_expression(data, node->data.binary_expr.right);
+        if (!right_val) {
+            LLVM_REPORT_ERROR(data, node, "Failed to generate right operand for logical OR");
+        }
+        LLVMBasicBlockRef right_bb = LLVMGetInsertBlock(data->builder);
+        LLVMBuildBr(data->builder, merge_bb);
+        
+        // Merge results
+        LLVMPositionBuilderAtEnd(data->builder, merge_bb);
+        LLVMValueRef phi = LLVMBuildPhi(data->builder, data->bool_type, "or.result");
+        
+        LLVMValueRef true_val = LLVMConstInt(data->bool_type, 1, 0);
+        LLVMValueRef incoming_values[] = {true_val, right_val};
+        LLVMBasicBlockRef incoming_blocks[] = {current_bb, right_bb};
+        LLVMAddIncoming(phi, incoming_values, incoming_blocks, 2);
+        
+        return phi;
+    }
 
     case BINOP_BITWISE_AND:
         return LLVMBuildAnd(data->builder, left, right, "bitand");
