@@ -41,6 +41,7 @@ typedef struct {
     bool debug_info;
     bool verbose;
     bool coverage; // Enable coverage instrumentation
+    AsthraPIEMode pie_mode; // Position Independent Executable mode
 
     // Tool-specific options
     bool use_integrated_as;    // Use clang integrated assembler

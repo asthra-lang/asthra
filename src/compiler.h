@@ -79,6 +79,13 @@ typedef enum {
     ASTHRA_FORMAT_EXECUTABLE // executable (via clang)
 } AsthraOutputFormat;
 
+// Position Independent Executable (PIE) mode
+typedef enum {
+    ASTHRA_PIE_DEFAULT,      // Use platform-specific defaults
+    ASTHRA_PIE_FORCE_ENABLED,  // Explicitly enable PIE
+    ASTHRA_PIE_FORCE_DISABLED  // Explicitly disable PIE
+} AsthraPIEMode;
+
 // Assembly syntax styles (deprecated - kept for API compatibility)
 typedef enum {
     ASTHRA_ASM_SYNTAX_ATT,  // AT&T syntax (no longer used)
@@ -111,6 +118,7 @@ struct AsthraCompilerOptions {
     bool emit_asm;  // Deprecated - use output_format instead
     bool no_stdlib;
     bool coverage; // Enable coverage instrumentation
+    AsthraPIEMode pie_mode; // Position Independent Executable mode
 
     // Dynamic path and library management using flexible arrays
     struct AsthraArgumentList *include_paths;

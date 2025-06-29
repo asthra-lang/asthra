@@ -96,6 +96,16 @@ AsthraLLVMToolResult asthra_llvm_link(const char **object_files, size_t num_obje
         argv[argc++] = "-fcoverage-mapping";
     }
 
+    // Add PIE flags based on the mode
+    if (options->pie_mode == ASTHRA_PIE_FORCE_ENABLED) {
+        argv[argc++] = "-pie";
+        argv[argc++] = "-fPIE";
+    } else if (options->pie_mode == ASTHRA_PIE_FORCE_DISABLED) {
+        argv[argc++] = "-no-pie";
+        argv[argc++] = "-fno-PIE";
+    }
+    // For ASTHRA_PIE_DEFAULT, let the system use its default behavior
+
     argv[argc] = NULL;
 
     AsthraLLVMToolResult result = execute_command(argv, options->verbose);
