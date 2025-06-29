@@ -1,29 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/stat.h>
 #include "bdd_support.h"
+#include "bdd_utilities.h"
+#include "bdd_test_framework.h"
+#include <sys/stat.h>
 
-// External functions from common_steps.c
-extern void given_asthra_compiler_available(void);
-extern void given_file_with_content(const char* filename, const char* content);
-extern void when_compile_file(void);
-extern void when_run_executable(void);
-extern void then_compilation_should_succeed(void);
-extern void then_compilation_should_fail(void);
-extern void then_executable_created(void);
-extern void then_output_contains(const char* expected_output);
-extern void then_exit_code_is(int expected_code);
-extern void then_error_contains(const char* expected_error);
-extern void common_cleanup(void);
+// Test scenarios using the new reusable framework
 
-// Test scenario: Compile and run a simple Hello World program
 void test_hello_world(void) {
-    bdd_scenario("Compile and run a simple Hello World program");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -32,21 +14,14 @@ void test_hello_world(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("hello.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Hello, World!");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Compile and run a simple Hello World program",
+                               "hello.asthra",
+                               source,
+                               "Hello, World!",
+                               0);
 }
 
-// Test scenario: Compile and run a program with multiple log statements
 void test_multiple_logs(void) {
-    bdd_scenario("Compile and run a program with multiple log statements");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -57,23 +32,54 @@ void test_multiple_logs(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("multiple_logs.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Starting program");
-    then_output_contains("Processing data");
-    then_output_contains("Program completed");
-    then_exit_code_is(0);
+    // For multiple output checks, we'll use the existing detailed scenario
+    bdd_scenario("Compile and run a program with multiple log statements");
+    
+    bdd_given("the Asthra compiler is available");
+    BDD_ASSERT_TRUE(bdd_compiler_available());
+    
+    bdd_given("I have a file \"multiple_logs.asthra\" with content");
+    bdd_create_temp_source_file("multiple_logs.asthra", source);
+    
+    bdd_when("I compile the file");
+    char* executable = strdup(bdd_get_temp_source_file());
+    char* dot = strrchr(executable, '.');
+    if (dot) *dot = '\0';
+    
+    int exit_code = bdd_compile_source_file(bdd_get_temp_source_file(), executable, NULL);
+    
+    bdd_then("the compilation should succeed");
+    BDD_ASSERT_EQ(exit_code, 0);
+    
+    bdd_then("an executable should be created");
+    struct stat st;
+    int exists = (stat(executable, &st) == 0);
+    BDD_ASSERT_TRUE(exists);
+    
+    bdd_when("I run the executable");
+    char command[512];
+    snprintf(command, sizeof(command), "./%s 2>&1", executable);
+    
+    int execution_exit_code;
+    char* execution_output = bdd_execute_command(command, &execution_exit_code);
+    
+    bdd_then("the output should contain \"Starting program\"");
+    bdd_assert_output_contains(execution_output, "Starting program");
+    
+    bdd_then("the output should contain \"Processing data\"");
+    bdd_assert_output_contains(execution_output, "Processing data");
+    
+    bdd_then("the output should contain \"Program completed\"");
+    bdd_assert_output_contains(execution_output, "Program completed");
+    
+    bdd_then("the exit code should be 0");
+    BDD_ASSERT_EQ(execution_exit_code, 0);
+    
+    bdd_cleanup_string(&execution_output);
+    free(executable);
 }
 
-// Test scenario: Compile and run a program with basic arithmetic
 void test_arithmetic(void) {
-    bdd_scenario("Compile and run a program with basic arithmetic");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -88,23 +94,54 @@ void test_arithmetic(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("arithmetic.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("x = 10");
-    then_output_contains("y = 20");
-    then_output_contains("x + y = 30");
-    then_exit_code_is(0);
+    // For multiple output checks, we'll use the existing detailed scenario
+    bdd_scenario("Compile and run a program with basic arithmetic");
+    
+    bdd_given("the Asthra compiler is available");
+    BDD_ASSERT_TRUE(bdd_compiler_available());
+    
+    bdd_given("I have a file \"arithmetic.asthra\" with content");
+    bdd_create_temp_source_file("arithmetic.asthra", source);
+    
+    bdd_when("I compile the file");
+    char* executable = strdup(bdd_get_temp_source_file());
+    char* dot = strrchr(executable, '.');
+    if (dot) *dot = '\0';
+    
+    int exit_code = bdd_compile_source_file(bdd_get_temp_source_file(), executable, NULL);
+    
+    bdd_then("the compilation should succeed");
+    BDD_ASSERT_EQ(exit_code, 0);
+    
+    bdd_then("an executable should be created");
+    struct stat st;
+    int exists = (stat(executable, &st) == 0);
+    BDD_ASSERT_TRUE(exists);
+    
+    bdd_when("I run the executable");
+    char command[512];
+    snprintf(command, sizeof(command), "./%s 2>&1", executable);
+    
+    int execution_exit_code;
+    char* execution_output = bdd_execute_command(command, &execution_exit_code);
+    
+    bdd_then("the output should contain \"x = 10\"");
+    bdd_assert_output_contains(execution_output, "x = 10");
+    
+    bdd_then("the output should contain \"y = 20\"");
+    bdd_assert_output_contains(execution_output, "y = 20");
+    
+    bdd_then("the output should contain \"x + y = 30\"");
+    bdd_assert_output_contains(execution_output, "x + y = 30");
+    
+    bdd_then("the exit code should be 0");
+    BDD_ASSERT_EQ(execution_exit_code, 0);
+    
+    bdd_cleanup_string(&execution_output);
+    free(executable);
 }
 
-// Test scenario: Handle syntax errors gracefully
 void test_syntax_error(void) {
-    bdd_scenario("Handle syntax errors gracefully");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -113,18 +150,14 @@ void test_syntax_error(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("syntax_error.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    then_error_contains("expected ';'");
+    bdd_run_compilation_scenario("Handle syntax errors gracefully",
+                                 "syntax_error.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "expected ';'");
 }
 
-// Test scenario: Compile and run a program that returns 1
 void test_return_one(void) {
-    bdd_scenario("Compile and run a program that returns 1");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -133,22 +166,16 @@ void test_return_one(void) {
         "    return 1;\n"
         "}\n";
     
-    given_file_with_content("return_one.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Program will exit with code 1");
-    // NOTE: Asthra currently doesn't propagate main's return value to process exit code
-    then_exit_code_is(0);  // Should be 1, but compiler always exits with 0
+    // NOTE: Currently, Asthra doesn't properly propagate main's return value to process exit code
+    // The program compiles and runs, but always exits with 0 regardless of main's return value
+    bdd_run_execution_scenario("Compile and run a program that returns 1",
+                               "return_one.asthra",
+                               source,
+                               "Program will exit with code 1",
+                               0);  // Should be 1, but compiler currently always exits with 0
 }
 
-// Test scenario: Compile and run a program with function calls
 void test_function_calls(void) {
-    bdd_scenario("Compile and run a program with function calls");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -164,23 +191,54 @@ void test_function_calls(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("function_calls.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Main function starting");
-    then_output_contains("Hello from greet function!");
-    then_output_contains("Main function ending");
-    then_exit_code_is(0);
+    // For multiple output checks, we'll use the existing detailed scenario
+    bdd_scenario("Compile and run a program with function calls");
+    
+    bdd_given("the Asthra compiler is available");
+    BDD_ASSERT_TRUE(bdd_compiler_available());
+    
+    bdd_given("I have a file \"function_calls.asthra\" with content");
+    bdd_create_temp_source_file("function_calls.asthra", source);
+    
+    bdd_when("I compile the file");
+    char* executable = strdup(bdd_get_temp_source_file());
+    char* dot = strrchr(executable, '.');
+    if (dot) *dot = '\0';
+    
+    int exit_code = bdd_compile_source_file(bdd_get_temp_source_file(), executable, NULL);
+    
+    bdd_then("the compilation should succeed");
+    BDD_ASSERT_EQ(exit_code, 0);
+    
+    bdd_then("an executable should be created");
+    struct stat st;
+    int exists = (stat(executable, &st) == 0);
+    BDD_ASSERT_TRUE(exists);
+    
+    bdd_when("I run the executable");
+    char command[512];
+    snprintf(command, sizeof(command), "./%s 2>&1", executable);
+    
+    int execution_exit_code;
+    char* execution_output = bdd_execute_command(command, &execution_exit_code);
+    
+    bdd_then("the output should contain \"Main function starting\"");
+    bdd_assert_output_contains(execution_output, "Main function starting");
+    
+    bdd_then("the output should contain \"Hello from greet function!\"");
+    bdd_assert_output_contains(execution_output, "Hello from greet function!");
+    
+    bdd_then("the output should contain \"Main function ending\"");
+    bdd_assert_output_contains(execution_output, "Main function ending");
+    
+    bdd_then("the exit code should be 0");
+    BDD_ASSERT_EQ(execution_exit_code, 0);
+    
+    bdd_cleanup_string(&execution_output);
+    free(executable);
 }
 
-// Test scenario: Compile and run a program with boolean operations
 void test_boolean_operations(void) {
-    bdd_scenario("Compile and run a program with boolean operations");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -203,46 +261,68 @@ void test_boolean_operations(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("boolean_ops.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("is_true is true");
-    then_output_contains("not false is true");
-    then_output_contains("true AND (NOT false) is true");
-    then_exit_code_is(0);
+    // For multiple output checks, we'll use the existing detailed scenario
+    bdd_scenario("Compile and run a program with boolean operations");
+    
+    bdd_given("the Asthra compiler is available");
+    BDD_ASSERT_TRUE(bdd_compiler_available());
+    
+    bdd_given("I have a file \"boolean_ops.asthra\" with content");
+    bdd_create_temp_source_file("boolean_ops.asthra", source);
+    
+    bdd_when("I compile the file");
+    char* executable = strdup(bdd_get_temp_source_file());
+    char* dot = strrchr(executable, '.');
+    if (dot) *dot = '\0';
+    
+    int exit_code = bdd_compile_source_file(bdd_get_temp_source_file(), executable, NULL);
+    
+    bdd_then("the compilation should succeed");
+    BDD_ASSERT_EQ(exit_code, 0);
+    
+    bdd_then("an executable should be created");
+    struct stat st;
+    int exists = (stat(executable, &st) == 0);
+    BDD_ASSERT_TRUE(exists);
+    
+    bdd_when("I run the executable");
+    char command[512];
+    snprintf(command, sizeof(command), "./%s 2>&1", executable);
+    
+    int execution_exit_code;
+    char* execution_output = bdd_execute_command(command, &execution_exit_code);
+    
+    bdd_then("the output should contain \"is_true is true\"");
+    bdd_assert_output_contains(execution_output, "is_true is true");
+    
+    bdd_then("the output should contain \"not false is true\"");
+    bdd_assert_output_contains(execution_output, "not false is true");
+    
+    bdd_then("the output should contain \"true AND (NOT false) is true\"");
+    bdd_assert_output_contains(execution_output, "true AND (NOT false) is true");
+    
+    bdd_then("the exit code should be 0");
+    BDD_ASSERT_EQ(execution_exit_code, 0);
+    
+    bdd_cleanup_string(&execution_output);
+    free(executable);
 }
 
-// Main test runner
+// Define test cases using the new framework
+BddTestCase compiler_basic_test_cases[] = {
+    BDD_TEST_CASE(hello_world, test_hello_world),
+    BDD_TEST_CASE(multiple_logs, test_multiple_logs),
+    BDD_TEST_CASE(arithmetic, test_arithmetic),
+    BDD_TEST_CASE(syntax_error, test_syntax_error),
+    BDD_TEST_CASE(return_one, test_return_one),
+    BDD_WIP_TEST_CASE(function_calls, test_function_calls),  // marked @wip in feature file
+    BDD_WIP_TEST_CASE(boolean_operations, test_boolean_operations),  // marked @wip in feature file
+};
+
+// Main test runner using the new framework
 int main(void) {
-    bdd_init("Basic Compiler Functionality");
-    
-    // Check if @wip scenarios should be skipped
-    if (bdd_should_skip_wip()) {
-        // Skip @wip scenarios
-        bdd_skip_scenario("Compile and run a program with function calls [@wip]");
-        bdd_skip_scenario("Compile and run a program with boolean operations [@wip]");
-        
-        // Run only non-@wip scenarios
-        test_hello_world();
-        test_multiple_logs();
-        test_arithmetic();
-        test_syntax_error();
-        test_return_one();
-    } else {
-        // Run all scenarios from compiler_basic.feature
-        test_hello_world();
-        test_multiple_logs();
-        test_arithmetic();
-        test_syntax_error();
-        test_return_one();
-        test_function_calls();
-        test_boolean_operations();
-    }
-    
-    // Cleanup
-    common_cleanup();
-    
-    return bdd_report();
+    return bdd_run_test_suite("Basic Compiler Functionality",
+                              compiler_basic_test_cases,
+                              sizeof(compiler_basic_test_cases) / sizeof(compiler_basic_test_cases[0]),
+                              bdd_cleanup_temp_files);
 }

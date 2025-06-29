@@ -402,6 +402,12 @@ BddTestCase cli_test_cases[] = {
     BDD_WIP_TEST_CASE(cli_output_format, test_cli_output_format),
 };
 
+// Custom cleanup function that includes CLI-specific cleanup
+static void cli_cleanup_function(void) {
+    cleanup_cli_state();
+    bdd_cleanup_temp_files();
+}
+
 int main(void) {
     // Save current directory for cleanup
     if (getcwd(original_dir, sizeof(original_dir)) == NULL) {
@@ -410,37 +416,9 @@ int main(void) {
     }
     fprintf(stderr, "DEBUG: Starting CLI tests from directory: %s\n", original_dir);
     
-    // Initialize BDD support before running tests
-    bdd_init("CLI Functionality");
-    
-    // Run tests individually with proper cleanup between each
-    int skip_wip = bdd_should_skip_wip();
-    
-    for (int i = 0; i < sizeof(cli_test_cases) / sizeof(cli_test_cases[0]); i++) {
-        if (skip_wip && cli_test_cases[i].is_wip) {
-            continue;
-        }
-        
-        fprintf(stderr, "DEBUG: About to run test %d: %s\n", i, cli_test_cases[i].name);
-        bdd_run_test_case(&cli_test_cases[i]);
-        
-        // Clean up after each test
-        cleanup_cli_state();
-        
-        // Ensure we're in the correct directory
-        if (chdir(original_dir) != 0) {
-            fprintf(stderr, "ERROR: Failed to restore directory after test %s\n", cli_test_cases[i].name);
-            if (getcwd(original_dir, sizeof(original_dir)) != NULL) {
-                fprintf(stderr, "Current directory is: %s\n", original_dir);
-            }
-            return 1;
-        }
-    }
-    
-    int result = bdd_report();
-    
-    // Final cleanup
-    cleanup_cli_state();
-    
-    return result;
+    // Use the new framework's test runner
+    return bdd_run_test_suite("CLI Functionality",
+                              cli_test_cases,
+                              sizeof(cli_test_cases) / sizeof(cli_test_cases[0]),
+                              cli_cleanup_function);
 }

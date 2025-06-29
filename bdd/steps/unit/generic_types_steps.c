@@ -1,29 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/stat.h>
 #include "bdd_support.h"
+#include "bdd_utilities.h"
+#include "bdd_test_framework.h"
 
-// External functions from common_steps.c
-extern void given_asthra_compiler_available(void);
-extern void given_file_with_content(const char* filename, const char* content);
-extern void when_compile_file(void);
-extern void when_run_executable(void);
-extern void then_compilation_should_succeed(void);
-extern void then_compilation_should_fail(void);
-extern void then_executable_created(void);
-extern void then_output_contains(const char* expected_output);
-extern void then_exit_code_is(int expected_code);
-extern void then_error_contains(const char* expected_error);
-extern void common_cleanup(void);
+// Test scenarios using the new reusable framework
 
-// Test scenario: Generic struct with single type parameter
 void test_generic_struct_single(void) {
-    bdd_scenario("Generic struct with single type parameter");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -38,21 +19,14 @@ void test_generic_struct_single(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("generic_struct_single.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Generic struct works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Generic struct with single type parameter",
+                               "generic_struct_single.asthra",
+                               source,
+                               "Generic struct works",
+                               0);
 }
 
-// Test scenario: Generic struct with multiple type parameters
 void test_generic_struct_multiple(void) {
-    bdd_scenario("Generic struct with multiple type parameters");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -68,21 +42,14 @@ void test_generic_struct_multiple(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("generic_struct_multiple.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Multiple type parameters work");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Generic struct with multiple type parameters",
+                               "generic_struct_multiple.asthra",
+                               source,
+                               "Multiple type parameters work",
+                               0);
 }
 
-// Test scenario: Generic enum
 void test_generic_enum(void) {
-    bdd_scenario("Generic enum");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -99,21 +66,14 @@ void test_generic_enum(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("generic_enum.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Generic enum works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Generic enum",
+                               "generic_enum.asthra",
+                               source,
+                               "Generic enum works",
+                               0);
 }
 
-// Test scenario: Generic function
 void test_generic_function(void) {
-    bdd_scenario("Generic function");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -128,21 +88,14 @@ void test_generic_function(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("generic_function.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Generic function works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Generic function",
+                               "generic_function.asthra",
+                               source,
+                               "Generic function works",
+                               0);
 }
 
-// Test scenario: Generic methods
 void test_generic_methods(void) {
-    bdd_scenario("Generic methods");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -167,21 +120,14 @@ void test_generic_methods(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("generic_methods.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Generic methods work");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Generic methods",
+                               "generic_methods.asthra",
+                               source,
+                               "Generic methods work",
+                               0);
 }
 
-// Test scenario: Nested generic types
 void test_nested_generics(void) {
-    bdd_scenario("Nested generic types");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -202,21 +148,14 @@ void test_nested_generics(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("nested_generics.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Nested generics work");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Nested generic types",
+                               "nested_generics.asthra",
+                               source,
+                               "Nested generics work",
+                               0);
 }
 
-// Test scenario: Generic type with arrays
 void test_generic_arrays(void) {
-    bdd_scenario("Generic type with arrays");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -231,21 +170,14 @@ void test_generic_arrays(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("generic_arrays.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Generic arrays work");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Generic type with arrays",
+                               "generic_arrays.asthra",
+                               source,
+                               "Generic arrays work",
+                               0);
 }
 
-// Test scenario: Result type usage
 void test_result_type(void) {
-    bdd_scenario("Result type usage");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -263,21 +195,14 @@ void test_result_type(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("result_type.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Result type works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Result type usage",
+                               "result_type.asthra",
+                               source,
+                               "Result type works",
+                               0);
 }
 
-// Test scenario: Option type usage
 void test_option_type(void) {
-    bdd_scenario("Option type usage");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -295,21 +220,14 @@ void test_option_type(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("option_type.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Option type works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Option type usage",
+                               "option_type.asthra",
+                               source,
+                               "Option type works",
+                               0);
 }
 
-// Test scenario: Missing type parameter error
 void test_missing_type_param(void) {
-    bdd_scenario("Missing type parameter error");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -322,18 +240,14 @@ void test_missing_type_param(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("missing_type_param.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    then_error_contains("missing type parameter");
+    bdd_run_compilation_scenario("Missing type parameter error",
+                                 "missing_type_param.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "missing type parameter");
 }
 
-// Test scenario: Wrong number of type parameters
 void test_wrong_type_params(void) {
-    bdd_scenario("Wrong number of type parameters");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -347,18 +261,14 @@ void test_wrong_type_params(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("wrong_type_params.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    then_error_contains("wrong number of type parameters");
+    bdd_run_compilation_scenario("Wrong number of type parameters",
+                                 "wrong_type_params.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "wrong number of type parameters");
 }
 
-// Test scenario: Type parameter name conflict
 void test_type_param_conflict(void) {
-    bdd_scenario("Type parameter name conflict");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -371,77 +281,33 @@ void test_type_param_conflict(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("type_param_conflict.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    then_error_contains("duplicate type parameter");
+    bdd_run_compilation_scenario("Type parameter name conflict",
+                                 "type_param_conflict.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "duplicate type parameter");
 }
 
-// Main test runner
+// Define test cases using the new framework - no @wip tags based on original file
+BddTestCase generic_types_test_cases[] = {
+    BDD_TEST_CASE(generic_struct_single, test_generic_struct_single),
+    BDD_TEST_CASE(generic_struct_multiple, test_generic_struct_multiple),
+    BDD_TEST_CASE(generic_enum, test_generic_enum),
+    BDD_TEST_CASE(generic_function, test_generic_function),
+    BDD_TEST_CASE(generic_methods, test_generic_methods),
+    BDD_TEST_CASE(nested_generics, test_nested_generics),
+    BDD_TEST_CASE(generic_arrays, test_generic_arrays),
+    BDD_TEST_CASE(result_type, test_result_type),
+    BDD_TEST_CASE(option_type, test_option_type),
+    BDD_TEST_CASE(missing_type_param, test_missing_type_param),
+    BDD_TEST_CASE(wrong_type_params, test_wrong_type_params),
+    BDD_TEST_CASE(type_param_conflict, test_type_param_conflict),
+};
+
+// Main test runner using the new framework
 int main(void) {
-    bdd_init("Generic Types");
-    
-    // Skip all generic tests as generics are not yet implemented in the compiler
-    printf("\n");
-    printf("================================================================================\n");
-    printf("NOTE: Skipping all generic type tests - generics not yet implemented in compiler\n");
-    printf("================================================================================\n");
-    printf("\n");
-    
-    // Mark all tests as skipped
-    bdd_skip_scenario("Generic struct with single type parameter - Generics not yet implemented");
-    bdd_skip_scenario("Generic struct with multiple type parameters - Generics not yet implemented");
-    bdd_skip_scenario("Generic enum - Generics not yet implemented");
-    bdd_skip_scenario("Generic function - Generics not yet implemented");
-    bdd_skip_scenario("Generic methods - Generics not yet implemented");
-    bdd_skip_scenario("Nested generic types - Generics not yet implemented");
-    bdd_skip_scenario("Generic type with arrays - Generics not yet implemented");
-    bdd_skip_scenario("Result type usage - Generics not yet implemented");
-    bdd_skip_scenario("Option type usage - Generics not yet implemented");
-    bdd_skip_scenario("Missing type parameter error - Generics not yet implemented");
-    bdd_skip_scenario("Wrong number of type parameters - Generics not yet implemented");
-    bdd_skip_scenario("Type parameter name conflict - Generics not yet implemented");
-    
-    // Cleanup and return success (all tests skipped)
-    common_cleanup();
-    return bdd_report();
-    
-    // Original test code below (unreachable)
-    // Check if @wip scenarios should be skipped
-    if (bdd_should_skip_wip()) {
-        // Skip @wip scenarios - none currently in generic_types.feature
-        
-        // Run all scenarios as none are marked @wip
-        test_generic_struct_single();
-        test_generic_struct_multiple();
-        test_generic_enum();
-        test_generic_function();
-        test_generic_methods();
-        test_nested_generics();
-        test_generic_arrays();
-        test_result_type();
-        test_option_type();
-        test_missing_type_param();
-        test_wrong_type_params();
-        test_type_param_conflict();
-    } else {
-        // Run all scenarios from generic_types.feature
-        test_generic_struct_single();
-        test_generic_struct_multiple();
-        test_generic_enum();
-        test_generic_function();
-        test_generic_methods();
-        test_nested_generics();
-        test_generic_arrays();
-        test_result_type();
-        test_option_type();
-        test_missing_type_param();
-        test_wrong_type_params();
-        test_type_param_conflict();
-    }
-    
-    // Cleanup
-    common_cleanup();
-    
-    return bdd_report();
+    return bdd_run_test_suite("Generic Types",
+                              generic_types_test_cases,
+                              sizeof(generic_types_test_cases) / sizeof(generic_types_test_cases[0]),
+                              bdd_cleanup_temp_files);
 }

@@ -1,29 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/stat.h>
 #include "bdd_support.h"
+#include "bdd_utilities.h"
+#include "bdd_test_framework.h"
 
-// External functions from common_steps.c
-extern void given_asthra_compiler_available(void);
-extern void given_file_with_content(const char* filename, const char* content);
-extern void when_compile_file(void);
-extern void when_run_executable(void);
-extern void then_compilation_should_succeed(void);
-extern void then_compilation_should_fail(void);
-extern void then_executable_created(void);
-extern void then_output_contains(const char* expected_output);
-extern void then_exit_code_is(int expected_code);
-extern void then_error_contains(const char* expected_error);
-extern void common_cleanup(void);
+// Test scenarios using the new reusable framework
 
-// Test scenario: Import standard library module
 void test_import_stdlib_module(void) {
-    bdd_scenario("Import standard library module");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "import \"stdlib/io\";\n"
@@ -33,21 +14,14 @@ void test_import_stdlib_module(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("import_stdlib.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Import works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Import standard library module",
+                               "import_stdlib.asthra",
+                               source,
+                               "Import works",
+                               0);
 }
 
-// Test scenario: Import with alias
 void test_import_with_alias(void) {
-    bdd_scenario("Import with alias");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "import \"stdlib/collections\" as col;\n"
@@ -57,21 +31,14 @@ void test_import_with_alias(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("import_alias.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Import alias works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Import with alias",
+                               "import_alias.asthra",
+                               source,
+                               "Import alias works",
+                               0);
 }
 
-// Test scenario: Multiple imports
 void test_multiple_imports(void) {
-    bdd_scenario("Multiple imports");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "import \"stdlib/io\";\n"
@@ -83,21 +50,14 @@ void test_multiple_imports(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("multiple_imports.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Multiple imports work");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Multiple imports",
+                               "multiple_imports.asthra",
+                               source,
+                               "Multiple imports work",
+                               0);
 }
 
-// Test scenario: Import relative path
 void test_import_relative_path(void) {
-    bdd_scenario("Import relative path");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "import \"./utils\";\n"
@@ -107,21 +67,14 @@ void test_import_relative_path(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("import_relative.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Relative import works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Import relative path",
+                               "import_relative.asthra",
+                               source,
+                               "Relative import works",
+                               0);
 }
 
-// Test scenario: Import GitHub package
 void test_import_github_package(void) {
-    bdd_scenario("Import GitHub package");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "import \"github.com/user/package\";\n"
@@ -131,21 +84,14 @@ void test_import_github_package(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("import_github.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("GitHub import works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Import GitHub package",
+                               "import_github.asthra",
+                               source,
+                               "GitHub import works",
+                               0);
 }
 
-// Test scenario: Import without quotes
 void test_import_without_quotes(void) {
-    bdd_scenario("Import without quotes");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "import stdlib/io;\n"
@@ -155,18 +101,14 @@ void test_import_without_quotes(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("import_no_quotes.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    then_error_contains("expected string literal");
+    bdd_run_compilation_scenario("Import without quotes",
+                                 "import_no_quotes.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "expected string literal");
 }
 
-// Test scenario: Import without semicolon
 void test_import_without_semicolon(void) {
-    bdd_scenario("Import without semicolon");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "import \"stdlib/io\"\n"
@@ -176,18 +118,14 @@ void test_import_without_semicolon(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("import_no_semicolon.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    then_error_contains("expected ';'");
+    bdd_run_compilation_scenario("Import without semicolon",
+                                 "import_no_semicolon.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "expected ';'");
 }
 
-// Test scenario: Import before package declaration
 void test_import_before_package(void) {
-    bdd_scenario("Import before package declaration");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "import \"stdlib/io\";\n"
         "package main;\n"
@@ -197,18 +135,14 @@ void test_import_before_package(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("import_before_package.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    then_error_contains("expected 'package'");
+    bdd_run_compilation_scenario("Import before package declaration",
+                                 "import_before_package.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "expected 'package'");
 }
 
-// Test scenario: Import with invalid path
 void test_import_invalid_path(void) {
-    bdd_scenario("Import with invalid path");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "import \"invalid://path\";\n"
@@ -218,18 +152,14 @@ void test_import_invalid_path(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("import_invalid_path.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    then_error_contains("invalid import path");
+    bdd_run_compilation_scenario("Import with invalid path",
+                                 "import_invalid_path.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "invalid import path");
 }
 
-// Test scenario: Duplicate imports
 void test_duplicate_imports(void) {
-    bdd_scenario("Duplicate imports");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "import \"stdlib/io\";\n"
@@ -240,18 +170,14 @@ void test_duplicate_imports(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("duplicate_imports.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    then_error_contains("duplicate import");
+    bdd_run_compilation_scenario("Duplicate imports",
+                                 "duplicate_imports.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "duplicate import");
 }
 
-// Test scenario: Import with conflicting aliases
 void test_conflicting_aliases(void) {
-    bdd_scenario("Import with conflicting aliases");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "import \"stdlib/io\" as utils;\n"
@@ -262,42 +188,32 @@ void test_conflicting_aliases(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("conflicting_aliases.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    then_error_contains("alias 'utils' already defined");
+    bdd_run_compilation_scenario("Import with conflicting aliases",
+                                 "conflicting_aliases.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "alias 'utils' already defined");
 }
 
-// Main test runner
+// Define test cases using the new framework - @wip tags based on original file
+BddTestCase import_system_test_cases[] = {
+    BDD_TEST_CASE(import_stdlib_module, test_import_stdlib_module),
+    BDD_TEST_CASE(import_with_alias, test_import_with_alias),
+    BDD_TEST_CASE(multiple_imports, test_multiple_imports),
+    BDD_TEST_CASE(import_relative_path, test_import_relative_path),
+    BDD_TEST_CASE(import_github_package, test_import_github_package),
+    BDD_WIP_TEST_CASE(import_without_quotes, test_import_without_quotes),
+    BDD_TEST_CASE(import_without_semicolon, test_import_without_semicolon),
+    BDD_TEST_CASE(import_before_package, test_import_before_package),
+    BDD_WIP_TEST_CASE(import_invalid_path, test_import_invalid_path),
+    BDD_WIP_TEST_CASE(duplicate_imports, test_duplicate_imports),
+    BDD_WIP_TEST_CASE(conflicting_aliases, test_conflicting_aliases),
+};
+
+// Main test runner using the new framework
 int main(void) {
-    bdd_init("Import System");
-    
-    if (bdd_should_skip_wip()) {
-        // Skip @wip scenarios, run only passing scenarios
-        test_import_stdlib_module();
-        test_import_with_alias();
-        test_multiple_imports();
-        test_import_relative_path();
-        test_import_github_package();
-        test_import_without_semicolon();
-        test_import_before_package();
-    } else {
-        // Run all scenarios from import_system.feature
-        test_import_stdlib_module();
-        test_import_with_alias();
-        test_multiple_imports();
-        test_import_relative_path();
-        test_import_github_package();
-        test_import_without_quotes();
-        test_import_without_semicolon();
-        test_import_before_package();
-        test_import_invalid_path();
-        test_duplicate_imports();
-        test_conflicting_aliases();
-    }
-    
-    // Cleanup
-    common_cleanup();
-    
-    return bdd_report();
+    return bdd_run_test_suite("Import System",
+                              import_system_test_cases,
+                              sizeof(import_system_test_cases) / sizeof(import_system_test_cases[0]),
+                              bdd_cleanup_temp_files);
 }

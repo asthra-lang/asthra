@@ -1,29 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/stat.h>
 #include "bdd_support.h"
+#include "bdd_utilities.h"
+#include "bdd_test_framework.h"
+#include <sys/stat.h>
 
-// External functions from common_steps.c
-extern void given_asthra_compiler_available(void);
-extern void given_file_with_content(const char* filename, const char* content);
-extern void when_compile_file(void);
-extern void when_run_executable(void);
-extern void then_compilation_should_succeed(void);
-extern void then_compilation_should_fail(void);
-extern void then_executable_created(void);
-extern void then_output_contains(const char* expected_output);
-extern void then_exit_code_is(int expected_code);
-extern void then_error_contains(const char* expected_error);
-extern void common_cleanup(void);
+// Test scenarios using the new reusable framework
 
-// Test scenario: Integer types - i32
 void test_i32_type(void) {
-    bdd_scenario("Integer types - i32");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -35,21 +17,14 @@ void test_i32_type(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("int32_type.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("i32 type works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Integer types - i32",
+                               "int32_type.asthra",
+                               source,
+                               "i32 type works",
+                               0);
 }
 
-// Test scenario: All signed integer types
 void test_all_signed_integers(void) {
-    bdd_scenario("All signed integer types");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -64,21 +39,14 @@ void test_all_signed_integers(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("signed_integers.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("All signed integers work");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("All signed integer types",
+                               "signed_integers.asthra",
+                               source,
+                               "All signed integers work",
+                               0);
 }
 
-// Test scenario: All unsigned integer types
 void test_all_unsigned_integers(void) {
-    bdd_scenario("All unsigned integer types");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -93,21 +61,14 @@ void test_all_unsigned_integers(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("unsigned_integers.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("All unsigned integers work");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("All unsigned integer types",
+                               "unsigned_integers.asthra",
+                               source,
+                               "All unsigned integers work",
+                               0);
 }
 
-// Test scenario: Floating point types
 void test_float_types(void) {
-    bdd_scenario("Floating point types");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -119,21 +80,14 @@ void test_float_types(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("float_types.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Float types work");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Floating point types",
+                               "float_types.asthra",
+                               source,
+                               "Float types work",
+                               0);
 }
 
-// Test scenario: Boolean type
 void test_bool_type(void) {
-    bdd_scenario("Boolean type");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -145,21 +99,14 @@ void test_bool_type(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("bool_type.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Bool type works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Boolean type",
+                               "bool_type.asthra",
+                               source,
+                               "Bool type works",
+                               0);
 }
 
-// Test scenario: String type
 void test_string_type(void) {
-    bdd_scenario("String type");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -171,22 +118,51 @@ void test_string_type(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("string_type.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Hello, World!");
-    then_output_contains("Asthra");
-    then_exit_code_is(0);
+    // For multiple output checks, we'll use the detailed scenario pattern
+    bdd_scenario("String type");
+    
+    bdd_given("the Asthra compiler is available");
+    BDD_ASSERT_TRUE(bdd_compiler_available());
+    
+    bdd_given("I have a file \"string_type.asthra\" with content");
+    bdd_create_temp_source_file("string_type.asthra", source);
+    
+    bdd_when("I compile the file");
+    char* executable = strdup(bdd_get_temp_source_file());
+    char* dot = strrchr(executable, '.');
+    if (dot) *dot = '\0';
+    
+    int exit_code = bdd_compile_source_file(bdd_get_temp_source_file(), executable, NULL);
+    
+    bdd_then("the compilation should succeed");
+    BDD_ASSERT_EQ(exit_code, 0);
+    
+    bdd_then("an executable should be created");
+    struct stat st;
+    int exists = (stat(executable, &st) == 0);
+    BDD_ASSERT_TRUE(exists);
+    
+    bdd_when("I run the executable");
+    char command[512];
+    snprintf(command, sizeof(command), "./%s 2>&1", executable);
+    
+    int execution_exit_code;
+    char* execution_output = bdd_execute_command(command, &execution_exit_code);
+    
+    bdd_then("the output should contain \"Hello, World!\"");
+    bdd_assert_output_contains(execution_output, "Hello, World!");
+    
+    bdd_then("the output should contain \"Asthra\"");
+    bdd_assert_output_contains(execution_output, "Asthra");
+    
+    bdd_then("the exit code should be 0");
+    BDD_ASSERT_EQ(execution_exit_code, 0);
+    
+    bdd_cleanup_string(&execution_output);
+    free(executable);
 }
 
-// Test scenario: Void type in function return
 void test_void_type(void) {
-    bdd_scenario("Void type in function return");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -200,21 +176,14 @@ void test_void_type(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("void_type.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Void type works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Void type in function return",
+                               "void_type.asthra",
+                               source,
+                               "Void type works",
+                               0);
 }
 
-// Test scenario: Type mismatch error
 void test_type_mismatch(void) {
-    bdd_scenario("Type mismatch error");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -223,18 +192,14 @@ void test_type_mismatch(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("type_mismatch.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    then_error_contains("Type mismatch");
+    bdd_run_compilation_scenario("Type mismatch error",
+                                 "type_mismatch.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "type mismatch");
 }
 
-// Test scenario: Integer overflow error
 void test_integer_overflow(void) {
-    bdd_scenario("Integer overflow error");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -243,18 +208,14 @@ void test_integer_overflow(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("int_overflow.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    then_error_contains("exceeds range");
+    bdd_run_compilation_scenario("Integer overflow error",
+                                 "int_overflow.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "integer overflow");
 }
 
-// Test scenario: Binary literals
 void test_binary_literals(void) {
-    bdd_scenario("Binary literals");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -265,21 +226,14 @@ void test_binary_literals(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("binary_literals.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Binary literals work");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Binary literals",
+                               "binary_literals.asthra",
+                               source,
+                               "Binary literals work",
+                               0);
 }
 
-// Test scenario: Hexadecimal literals
 void test_hex_literals(void) {
-    bdd_scenario("Hexadecimal literals");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -290,43 +244,32 @@ void test_hex_literals(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("hex_literals.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Hex literals work");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Hexadecimal literals",
+                               "hex_literals.asthra",
+                               source,
+                               "Hex literals work",
+                               0);
 }
 
-// Main test runner
+// Define test cases using the new framework - @wip tags based on original file
+BddTestCase primitive_types_test_cases[] = {
+    BDD_TEST_CASE(i32_type, test_i32_type),
+    BDD_WIP_TEST_CASE(all_signed_integers, test_all_signed_integers),
+    BDD_WIP_TEST_CASE(all_unsigned_integers, test_all_unsigned_integers),
+    BDD_TEST_CASE(float_types, test_float_types),
+    BDD_TEST_CASE(bool_type, test_bool_type),
+    BDD_TEST_CASE(string_type, test_string_type),
+    BDD_TEST_CASE(void_type, test_void_type),
+    BDD_WIP_TEST_CASE(type_mismatch, test_type_mismatch),
+    BDD_WIP_TEST_CASE(integer_overflow, test_integer_overflow),
+    BDD_WIP_TEST_CASE(binary_literals, test_binary_literals),
+    BDD_WIP_TEST_CASE(hex_literals, test_hex_literals),
+};
+
+// Main test runner using the new framework
 int main(void) {
-    bdd_init("Primitive Types");
-    
-    if (bdd_should_skip_wip()) {
-        // Skip @wip scenarios, run only passing scenarios
-        test_i32_type();
-        test_float_types();
-        test_bool_type();
-        test_string_type();
-        test_void_type();
-    } else {
-        // Run all major scenarios from primitive_types.feature
-        test_i32_type();
-        test_all_signed_integers();
-        test_all_unsigned_integers();
-        test_float_types();
-        test_bool_type();
-        test_string_type();
-        test_void_type();
-        test_type_mismatch();
-        test_integer_overflow();
-        test_binary_literals();
-        test_hex_literals();
-    }
-    
-    // Cleanup
-    common_cleanup();
-    
-    return bdd_report();
+    return bdd_run_test_suite("Primitive Types",
+                              primitive_types_test_cases,
+                              sizeof(primitive_types_test_cases) / sizeof(primitive_types_test_cases[0]),
+                              bdd_cleanup_temp_files);
 }
