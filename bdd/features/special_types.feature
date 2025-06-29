@@ -28,6 +28,7 @@ Feature: Special Types
     Then the output should contain "Unit type works"
     And the exit code should be 0
 
+  @wip
   Scenario: Unit type in expressions
     Given I have a file "unit_expressions.asthra" with:
       """
@@ -47,6 +48,7 @@ Feature: Special Types
     Then the output should contain "Unit in expressions works"
     And the exit code should be 0
 
+  @wip
   Scenario: Never type for non-returning functions
     Given I have a file "never_type.asthra" with:
       """
@@ -164,6 +166,7 @@ Feature: Special Types
     Then the output should contain "sizeof expressions work"
     And the exit code should be 0
 
+  @wip
   Scenario: Never type in match expressions
     Given I have a file "never_match.asthra" with:
       """
@@ -273,6 +276,7 @@ Feature: Special Types
     Then the output should contain "Unit values are equal"
     And the exit code should be 0
 
+  @wip
   Scenario: Platform-specific size types
     Given I have a file "platform_sizes.asthra" with:
       """

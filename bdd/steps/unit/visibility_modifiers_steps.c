@@ -94,7 +94,7 @@ void test_public_enum(void) {
         "}\n"
         "\n"
         "pub fn main(none) -> void {\n"
-        "    let s: Status = Status::Ok;\n"
+        "    let s: Status = Status.Ok;\n"
         "    log(\"Public enum works\");\n"
         "    return ();\n"
         "}\n";
@@ -117,7 +117,7 @@ void test_private_enum(void) {
         "}\n"
         "\n"
         "pub fn main(none) -> void {\n"
-        "    let state: InternalState = InternalState::Ready;\n"
+        "    let state: InternalState = InternalState.Ready;\n"
         "    log(\"Private enum works\");\n"
         "    return ();\n"
         "}\n";

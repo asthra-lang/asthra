@@ -19,7 +19,8 @@ RUN apt-get update -y && \
         git \
         sudo \
         lsb-release \
-        gnupg
+        gnupg \
+        rsync
 
 # Install LLVM 18 (matching CI setup)
 RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
