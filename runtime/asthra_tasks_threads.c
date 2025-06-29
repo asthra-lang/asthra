@@ -9,8 +9,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "platform/asthra_platform.h"
 #include "asthra_tasks_threads.h"
+#include "platform/asthra_platform.h"
 
 // =============================================================================
 // GLOBAL VARIABLES

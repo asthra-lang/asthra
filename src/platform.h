@@ -197,8 +197,7 @@ typedef wchar_t asthra_wchar_t;
 // =============================================================================
 
 // Validate platform detection
-ASTHRA_STATIC_ASSERT(ASTHRA_PLATFORM_UNIX == 1,
-                     "Unix platform must be detected");
+ASTHRA_STATIC_ASSERT(ASTHRA_PLATFORM_UNIX == 1, "Unix platform must be detected");
 
 // Validate compiler detection
 ASTHRA_STATIC_ASSERT(ASTHRA_COMPILER_CLANG == 1, "Clang compiler must be detected");

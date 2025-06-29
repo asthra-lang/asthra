@@ -9,8 +9,8 @@
  * Tests that code generation correctly handles void/none semantic boundaries
  */
 
-#include "backend_interface.h"
 #include "../codegen_backend_wrapper.h"
+#include "backend_interface.h"
 #include "lexer.h"
 #include "parser.h"
 #include "semantic_analyzer.h"
@@ -143,8 +143,7 @@ static bool generate_and_validate_code(ParsedProgram *program, const char *expec
 
     // Get generated assembly output
     char output_buffer[4096];
-    bool emit_success =
-        asthra_backend_emit_assembly(backend, output_buffer, sizeof(output_buffer));
+    bool emit_success = asthra_backend_emit_assembly(backend, output_buffer, sizeof(output_buffer));
     const char *generated_code = emit_success ? output_buffer : NULL;
     bool contains_pattern =
         (expected_pattern == NULL) ||
@@ -295,7 +294,8 @@ static bool test_return_type_codegen(void) {
     CODEGEN_TEST_ASSERT(program != NULL, "Source should parse and analyze successfully");
 
     bool codegen_success = generate_and_validate_code(program, "void");
-    CODEGEN_TEST_ASSERT(codegen_success == true, "Void return type should generate 'void' in LLVM IR");
+    CODEGEN_TEST_ASSERT(codegen_success == true,
+                        "Void return type should generate 'void' in LLVM IR");
 
     free_parsed_program(program);
 

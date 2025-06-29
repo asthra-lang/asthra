@@ -47,9 +47,11 @@ AsthraLLVMToolResult asthra_llvm_link(const char **object_files, size_t num_obje
 
     // Link with Asthra runtime library
     // Try to find the runtime library in multiple locations
-    const char *lib_paths[] = {"./build/lib",  // From project root
-                               "../build/lib", // From bdd directory
-                               "./lib",        // From build directory
+    const char *lib_paths[] = {"./lib",           // From build directory (CI runs from here)
+                               "../lib",          // From subdirectory of build
+                               "./build/lib",     // From project root
+                               "../build/lib",    // From bdd directory
+                               "../../build/lib", // From deep subdirectory
                                NULL};
 
     // Find the first existing library path
@@ -67,6 +69,18 @@ AsthraLLVMToolResult asthra_llvm_link(const char **object_files, size_t num_obje
         argv[argc++] = "-L";
         argv[argc++] = lib_path;
         argv[argc++] = "-lasthra_runtime";
+        
+        if (options->verbose) {
+            fprintf(stderr, "Found Asthra runtime library at: %s\n", lib_path);
+        }
+    } else {
+        // Still try to link with the runtime library even if we can't find it
+        // The system might have it in a standard location
+        argv[argc++] = "-lasthra_runtime";
+        
+        if (options->verbose) {
+            fprintf(stderr, "Warning: Could not find Asthra runtime library in expected locations\n");
+        }
     }
 
     // Add target triple if specified

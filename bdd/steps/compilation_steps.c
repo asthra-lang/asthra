@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <errno.h>
 
 // Compilation BDD Tests
 // Tests compilation functionality using consolidated BDD utilities (no dependency on common_steps.c)
@@ -75,9 +76,9 @@ static void compile_source_file(const char* source_file, const char* flags) {
         return;
     }
     
-    // Generate output filename
+    // Generate output filename in bdd-temp directory
     if (current_executable) free(current_executable);
-    current_executable = strdup("test_program");
+    current_executable = strdup("bdd-temp/test_program");
     
     // Build compilation command
     char command[1024];
@@ -96,6 +97,16 @@ static void compile_source_file(const char* source_file, const char* flags) {
     }
     
     compiler_output = bdd_execute_command(command, &compilation_exit_code);
+    
+    // Ensure executable has proper permissions on Unix systems
+    if (compilation_exit_code == 0 && current_executable && access(current_executable, F_OK) == 0) {
+        if (chmod(current_executable, 0755) != 0) {
+            fprintf(stderr, "Warning: Failed to set execute permissions on %s: %s\n", 
+                    current_executable, strerror(errno));
+        }
+        // Force filesystem sync to ensure permissions are applied
+        sync();
+    }
 }
 
 // Consolidated execution function using BDD utilities
@@ -104,6 +115,26 @@ static void execute_program(void) {
         execution_exit_code = -1;
         execution_output = strdup("No executable available");
         return;
+    }
+    
+    // Verify executable exists and has execute permissions
+    if (access(current_executable, X_OK) != 0) {
+        // Try to set execute permissions again
+        if (access(current_executable, F_OK) == 0) {
+            chmod(current_executable, 0755);
+            sync(); // Force filesystem sync
+        }
+        
+        // Check again after chmod
+        if (access(current_executable, X_OK) != 0) {
+            execution_exit_code = -1;
+            char error_msg[512];
+            snprintf(error_msg, sizeof(error_msg), 
+                    "Executable %s exists but is not executable: %s", 
+                    current_executable, strerror(errno));
+            execution_output = strdup(error_msg);
+            return;
+        }
     }
     
     char command[1024];
@@ -306,7 +337,7 @@ void test_custom_output_file(void) {
     
     bdd_when("I compile with custom output filename");
     if (current_executable) free(current_executable);
-    current_executable = strdup("my_program");
+    current_executable = strdup("bdd-temp/my_program");
     
     char flags[64];
     snprintf(flags, sizeof(flags), "-o %s", current_executable);

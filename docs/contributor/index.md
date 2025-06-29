@@ -84,6 +84,9 @@ Detailed technical documentation of compiler architecture and design.
 #### [Development Guides](/docs/contributor/guides/)
 In-depth guides for specific development tasks and features.
 
+#### [Container Testing Guide](/docs/contributor/guides/container-testing-guide/)
+Run BDD tests in an isolated container environment matching CI setup.
+
 ---
 
 ## 🚀 Quick Start (5 Minutes)

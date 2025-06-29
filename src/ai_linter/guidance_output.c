@@ -295,7 +295,8 @@ char *ai_linter_generate_rule_catalog_json(AILinter *linter) {
 
         char *rule_id = escape_json_string_internal(rule->rule_id);
         char *category = escape_json_string_internal(ai_lint_category_to_string(rule->category));
-        char *severity = escape_json_string_internal(ai_lint_severity_to_string(rule->default_severity));
+        char *severity =
+            escape_json_string_internal(ai_lint_severity_to_string(rule->default_severity));
         char *title = escape_json_string_internal(rule->title);
         char *description = escape_json_string_internal(rule->description);
         char *ai_guidance = escape_json_string_internal(rule->ai_guidance);

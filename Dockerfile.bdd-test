@@ -1,0 +1,50 @@
+# Dockerfile for testing BDD tests in CI-like environment
+# Using Ubuntu 24.04 to match CI environment exactly
+FROM ubuntu:24.04
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install base dependencies matching CI
+RUN apt-get update -y && \
+    apt-get install -y \
+        build-essential \
+        cmake \
+        pkg-config \
+        gperf \
+        ruby \
+        ruby-dev \
+        wget \
+        software-properties-common \
+        git \
+        sudo \
+        lsb-release \
+        gnupg
+
+# Install LLVM 18 (matching CI setup)
+RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
+    add-apt-repository "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-18 main" && \
+    apt-get update -y && \
+    apt-get install -y llvm-18 llvm-18-dev clang-18 lld-18 llvm-18-tools
+
+# Install Cucumber for BDD
+RUN gem install cucumber --no-document
+
+# Create a non-root user (similar to CI runner)
+RUN useradd -m -s /bin/bash runner && \
+    usermod -aG sudo runner && \
+    echo "runner ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Set working directory
+WORKDIR /workspace
+
+# Switch to non-root user
+USER runner
+
+# Set environment variables for LLVM
+ENV CC=clang-18
+ENV CXX=clang++-18
+ENV PATH="/usr/lib/llvm-18/bin:${PATH}"
+
+# Default command
+CMD ["/bin/bash"]

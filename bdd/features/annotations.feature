@@ -29,7 +29,6 @@ Feature: Annotations
     Then the output should contain "Critical operation needs human review"
     And the exit code should be 0
 
-  @wip
   Scenario: Multiple human review levels
     Given I have a file "review_levels.asthra" with:
       """
@@ -92,7 +91,6 @@ Feature: Annotations
     Then the output should contain "Constant time comparison"
     And the exit code should be 0
 
-  @wip
   Scenario: Security annotation - volatile memory
     Given I have a file "volatile_memory.asthra" with:
       """
@@ -168,7 +166,6 @@ Feature: Annotations
     Then the output should contain "FFI transfer annotations work"
     And the exit code should be 0
 
-  @wip
   Scenario: Borrowed reference annotation
     Given I have a file "borrowed_ref.asthra" with:
       """

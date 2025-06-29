@@ -11,32 +11,32 @@
 
 // Platform detection
 #if defined(__APPLE__)
-    #define ASTHRA_PLATFORM_MACOS
-    #define ASTHRA_PLATFORM_POSIX
+#define ASTHRA_PLATFORM_MACOS
+#define ASTHRA_PLATFORM_POSIX
 #elif defined(__linux__)
-    #define ASTHRA_PLATFORM_LINUX
-    #define ASTHRA_PLATFORM_POSIX
+#define ASTHRA_PLATFORM_LINUX
+#define ASTHRA_PLATFORM_POSIX
 #else
-    #error "Unsupported platform. Asthra only supports macOS and Linux."
+#error "Unsupported platform. Asthra only supports macOS and Linux."
 #endif
 
 // Standard includes that work on all platforms
 #include <assert.h>
 #include <errno.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdarg.h>
 
 // POSIX systems includes and type definitions
 #include <pthread.h>
-#include <unistd.h>
-#include <sys/time.h>
 #include <sched.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 // Thread types
 typedef pthread_t asthra_thread_t;

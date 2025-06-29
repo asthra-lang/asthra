@@ -49,7 +49,6 @@ Feature: Primitive Types
     Then the output should contain "All signed integers work"
     And the exit code should be 0
 
-  @wip
   Scenario: All unsigned integer types
     Given I have a file "unsigned_integers.asthra" with:
       """
@@ -195,7 +194,6 @@ Feature: Primitive Types
     Then the output should contain "Float inference works"
     And the exit code should be 0
 
-  @wip
   Scenario: Type mismatch error
     Given I have a file "type_mismatch.asthra" with:
       """
@@ -210,7 +208,6 @@ Feature: Primitive Types
     Then the compilation should fail
     And the error message should contain "type mismatch"
 
-  @wip
   Scenario: Integer overflow error
     Given I have a file "int_overflow.asthra" with:
       """
@@ -239,7 +236,6 @@ Feature: Primitive Types
     Then the compilation should fail
     And the error message should contain "unknown type"
 
-  @wip
   Scenario: Binary literals
     Given I have a file "binary_literals.asthra" with:
       """

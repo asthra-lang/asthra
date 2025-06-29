@@ -209,7 +209,6 @@ Feature: Bitwise Operators
     And the output should contain "Division by power of 2: 64 >> 3 = 8"
     And the exit code should be 0
 
-  @wip
   Scenario: Combined bitwise operations
     Given I have a file "combined_bitwise.asthra" with:
       """
@@ -288,7 +287,6 @@ Feature: Bitwise Operators
     And the output should contain "Mixed arithmetic and bitwise: 67"
     And the exit code should be 0
 
-  @wip
   Scenario: Bitwise operator precedence
     Given I have a file "bitwise_precedence.asthra" with:
       """

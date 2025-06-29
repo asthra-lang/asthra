@@ -206,6 +206,16 @@ int bdd_compile_source_file(const char* source_file, const char* output_file, co
     bdd_cleanup_string(&temp_executable);
     temp_executable = strdup(output_file);
     
+    // Ensure executable has proper permissions on Unix systems
+    if (exit_code == 0 && access(output_file, F_OK) == 0) {
+        if (chmod(output_file, 0755) != 0) {
+            fprintf(stderr, "Warning: Failed to set execute permissions on %s: %s\n", 
+                    output_file, strerror(errno));
+        }
+        // Force filesystem sync to ensure permissions are applied
+        sync();
+    }
+    
     return exit_code;
 }
 

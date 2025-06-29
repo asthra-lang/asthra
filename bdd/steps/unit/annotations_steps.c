@@ -423,7 +423,7 @@ int main(void) {
         // bdd_skip_scenario("Human review annotation on function [@wip]"); // No longer @wip
         bdd_skip_scenario("Multiple human review levels [@wip]");
         bdd_skip_scenario("Security annotation - constant time [@wip]");
-        bdd_skip_scenario("Security annotation - volatile memory [@wip]");
+        // bdd_skip_scenario("Security annotation - volatile memory [@wip]"); // No longer @wip
         bdd_skip_scenario("FFI transfer annotations [@wip]");
         bdd_skip_scenario("Borrowed reference annotation [@wip]");
         bdd_skip_scenario("Generic semantic annotation [@wip]");
@@ -434,6 +434,7 @@ int main(void) {
         
         // Run only non-@wip scenarios
         test_human_review_annotation(); // No longer @wip
+        test_volatile_memory_annotation(); // No longer @wip
         test_ownership_annotation();
         test_non_deterministic_annotation();
     } else {

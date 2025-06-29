@@ -137,7 +137,6 @@ Feature: Boolean operators
     When I compile and run the program
     Then the exit code should be 0
 
-  @wip
   Scenario: Boolean expressions as values
     Given I have the following Asthra code:
       """
@@ -228,7 +227,6 @@ Feature: Boolean operators
     When I compile and run the program
     Then the exit code should be 0
 
-  @wip
   Scenario: Nested boolean expressions
     Given I have the following Asthra code:
       """
@@ -253,7 +251,6 @@ Feature: Boolean operators
     When I compile and run the program
     Then the exit code should be 0
 
-  @wip
   Scenario: Boolean type inference
     Given I have the following Asthra code:
       """

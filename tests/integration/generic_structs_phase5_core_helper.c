@@ -4,9 +4,9 @@
  */
 
 #include "ast_operations.h"
+#include "backend_test_wrapper.h"
 #include "parser_string_interface.h"
 #include "test_generic_structs_phase5_common.h"
-#include "backend_test_wrapper.h"
 
 // Global test counters
 size_t tests_run = 0;

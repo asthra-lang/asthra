@@ -177,7 +177,6 @@ Feature: Import System
     Then the compilation should fail
     And the error message should contain "duplicate import"
 
-  @wip
   Scenario: Import with conflicting aliases
     Given I have a file "conflicting_aliases.asthra" with:
       """

@@ -87,7 +87,6 @@ Feature: Composite Types
     Then the output should contain "Tuples work"
     And the exit code should be 0
 
-  @wip
   Scenario: Tuple type with multiple elements
     Given I have a file "tuple_multiple.asthra" with:
       """
@@ -125,7 +124,6 @@ Feature: Composite Types
     Then the output should contain "Nested arrays work"
     And the exit code should be 0
 
-  @wip
   Scenario: Array of tuples
     Given I have a file "array_of_tuples.asthra" with:
       """
@@ -144,7 +142,6 @@ Feature: Composite Types
     Then the output should contain "Array of tuples works"
     And the exit code should be 0
 
-  @wip
   Scenario: Tuple of arrays
     Given I have a file "tuple_of_arrays.asthra" with:
       """

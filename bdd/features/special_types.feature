@@ -222,7 +222,6 @@ Feature: Special Types
     Then the output should contain "Unit in struct works"
     And the exit code should be 0
 
-  @wip
   Scenario: Never type cannot be instantiated
     Given I have a file "never_instantiate.asthra" with:
       """

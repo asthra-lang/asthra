@@ -361,7 +361,6 @@ Feature: Function Call Functionality
     Then the compilation should fail
     And the error message should contain "incorrect number of arguments"
 
-  @wip
   Scenario: Error - type mismatch in function arguments
     Given I have a file "type_mismatch.asthra" with:
       """

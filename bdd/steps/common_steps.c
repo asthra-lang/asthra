@@ -119,10 +119,24 @@ void when_compile_file(void) {
     
     compiler_output = bdd_execute_command(command, &compilation_exit_code);
     
+    // Ensure executable has proper permissions on Unix systems
+    if (compilation_exit_code == 0 && current_executable && access(current_executable, F_OK) == 0) {
+        if (chmod(current_executable, 0755) != 0) {
+            fprintf(stderr, "Warning: Failed to set execute permissions on %s: %s\n", 
+                    current_executable, strerror(errno));
+        }
+        // Force filesystem sync to ensure permissions are applied
+        sync();
+    }
+    
     // For error checking, use compiler_output (which contains both stdout and stderr)
     if (compiler_output && compilation_exit_code != 0) {
         if (error_output) free(error_output);
         error_output = strdup(compiler_output);
+        // Debug output for CI failures
+        fprintf(stderr, "DEBUG: Compilation failed with exit code %d\n", compilation_exit_code);
+        fprintf(stderr, "DEBUG: Compiler command was: %s\n", command);
+        fprintf(stderr, "DEBUG: Compiler output:\n%s\n", compiler_output);
     }
 }
 
@@ -161,6 +175,16 @@ void when_compile_with_flags(const char* flags) {
     }
     
     compiler_output = bdd_execute_command(command, &compilation_exit_code);
+    
+    // Ensure executable has proper permissions on Unix systems
+    if (compilation_exit_code == 0 && current_executable && access(current_executable, F_OK) == 0) {
+        if (chmod(current_executable, 0755) != 0) {
+            fprintf(stderr, "Warning: Failed to set execute permissions on %s: %s\n", 
+                    current_executable, strerror(errno));
+        }
+        // Force filesystem sync to ensure permissions are applied
+        sync();
+    }
 }
 
 void when_run_executable(void) {
@@ -169,6 +193,27 @@ void when_run_executable(void) {
     if (!current_executable) {
         execution_exit_code = -1;
         return;
+    }
+    
+    // Verify executable exists and has execute permissions
+    if (access(current_executable, X_OK) != 0) {
+        // Try to set execute permissions again
+        if (access(current_executable, F_OK) == 0) {
+            chmod(current_executable, 0755);
+            sync(); // Force filesystem sync
+        }
+        
+        // Check again after chmod
+        if (access(current_executable, X_OK) != 0) {
+            execution_exit_code = -1;
+            if (execution_output) free(execution_output);
+            char error_msg[512];
+            snprintf(error_msg, sizeof(error_msg), 
+                    "Executable %s exists but is not executable: %s", 
+                    current_executable, strerror(errno));
+            execution_output = strdup(error_msg);
+            return;
+        }
     }
     
     // Use BDD utilities for command execution
