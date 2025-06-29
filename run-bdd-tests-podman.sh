@@ -94,15 +94,18 @@ fi
 # Summary of all BDD tests
 echo ""
 echo "=== Running all BDD tests ==="
-TESTS_RUN=0
-TESTS_FAILED=0
+SUITES_RUN=0
+SUITES_FAILED=0
+TOTAL_TESTS_PASSED=0
+TOTAL_TESTS_FAILED=0
+TOTAL_TESTS_SKIPPED=0
 
 for test in bdd/bin/bdd_unit_*; do
     if [ -x "$test" ]; then
         TEST_NAME=$(basename "$test")
         echo ""
         echo "=== Running $TEST_NAME ==="
-        TESTS_RUN=$((TESTS_RUN + 1))
+        SUITES_RUN=$((SUITES_RUN + 1))
         # Use tee to show output while also saving to log
         $test --reporter spec 2>&1 | tee "bdd-logs/${TEST_NAME}.log"
         # Check exit status of the test command (not tee)
@@ -110,18 +113,42 @@ for test in bdd/bin/bdd_unit_*; do
             echo "✓ $TEST_NAME PASSED"
         else
             echo "✗ $TEST_NAME FAILED"
-            TESTS_FAILED=$((TESTS_FAILED + 1))
+            SUITES_FAILED=$((SUITES_FAILED + 1))
+        fi
+        
+        # Extract test counts from the summary line
+        # Looking for pattern: "Passed: X", "Failed: Y", "Skipped: Z"
+        if [ -f "bdd-logs/${TEST_NAME}.log" ]; then
+            SUMMARY_LINE=$(grep -E "^\s*Passed:|Test Summary" "bdd-logs/${TEST_NAME}.log" | tail -1)
+            if [[ "$SUMMARY_LINE" =~ Passed:[[:space:]]*([0-9]+) ]]; then
+                TOTAL_TESTS_PASSED=$((TOTAL_TESTS_PASSED + ${BASH_REMATCH[1]}))
+            fi
+            if [[ "$SUMMARY_LINE" =~ Failed:[[:space:]]*([0-9]+) ]]; then
+                TOTAL_TESTS_FAILED=$((TOTAL_TESTS_FAILED + ${BASH_REMATCH[1]}))
+            fi
+            if [[ "$SUMMARY_LINE" =~ Skipped:[[:space:]]*([0-9]+) ]]; then
+                TOTAL_TESTS_SKIPPED=$((TOTAL_TESTS_SKIPPED + ${BASH_REMATCH[1]}))
+            fi
         fi
     fi
 done
 
 echo ""
-echo "BDD Test Summary: $TESTS_RUN tests run, $TESTS_FAILED failed"
+echo "========================================="
+echo "BDD Test Suite Summary:"
+echo "  Test Suites: $SUITES_RUN run, $SUITES_FAILED failed"
+echo ""
+echo "Aggregate Test Results:"
+echo "  Passed:  $TOTAL_TESTS_PASSED"
+echo "  Failed:  $TOTAL_TESTS_FAILED"
+echo "  Skipped: $TOTAL_TESTS_SKIPPED"
+echo "  Total:   $((TOTAL_TESTS_PASSED + TOTAL_TESTS_FAILED + TOTAL_TESTS_SKIPPED))"
+echo "========================================="
 
-if [ $TESTS_FAILED -gt 0 ]; then
-    echo "❌ Some BDD tests failed"
+if [ $SUITES_FAILED -gt 0 ]; then
+    echo "❌ Some BDD test suites failed"
     exit 1
 else
-    echo "✅ All BDD tests passed"
+    echo "✅ All BDD test suites passed"
 fi
 '
