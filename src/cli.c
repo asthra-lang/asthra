@@ -37,6 +37,8 @@ void cli_print_usage(const char *program_name) {
     printf("  --emit-llvm             Deprecated - Use --emit llvm-ir\n");
     printf("  --emit-asm              Deprecated - Use --emit asm\n");
     printf("  --no-stdlib             Don't link standard library\n");
+    printf("  --pie                   Force generation of position-independent executables\n");
+    printf("  --no-pie                Disable PIE generation\n");
     printf("  -I, --include <path>    Add include path\n");
     printf("  -L, --library-path <path> Add library search path\n");
     printf("  -l, --library <name>    Link library\n");
@@ -232,6 +234,8 @@ int cli_parse_arguments(int argc, char *argv[], CliOptions *options) {
         {.name = "test-mode", .has_arg = no_argument, .flag = 0, .val = 1003},
         {.name = "version", .has_arg = no_argument, .flag = 0, .val = 1004},
         {.name = "coverage", .has_arg = no_argument, .flag = 0, .val = 1006},
+        {.name = "pie", .has_arg = no_argument, .flag = 0, .val = 1007},
+        {.name = "no-pie", .has_arg = no_argument, .flag = 0, .val = 1008},
         {.name = "help", .has_arg = no_argument, .flag = 0, .val = 'h'},
         {0, 0, 0, 0}};
 #endif
@@ -326,6 +330,12 @@ int cli_parse_arguments(int argc, char *argv[], CliOptions *options) {
             goto cleanup_and_exit;
         case 1006: // --coverage
             options->compiler_options.coverage = true;
+            break;
+        case 1007: // --pie
+            options->compiler_options.pie_mode = ASTHRA_PIE_FORCE_ENABLED;
+            break;
+        case 1008: // --no-pie
+            options->compiler_options.pie_mode = ASTHRA_PIE_FORCE_DISABLED;
             break;
         case 'h':
             options->show_help = true;

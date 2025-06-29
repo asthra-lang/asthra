@@ -138,6 +138,15 @@ AsthraLLVMToolResult asthra_llvm_compile_pipeline(const char *ir_file, const cha
                 argv[argc++] = "-g";
             }
 
+            // Add PIE flags based on the mode
+            if (options->pie_mode == ASTHRA_PIE_FORCE_ENABLED) {
+                argv[argc++] = "-pie";
+                argv[argc++] = "-fPIE";
+            } else if (options->pie_mode == ASTHRA_PIE_FORCE_DISABLED) {
+                argv[argc++] = "-no-pie";
+                argv[argc++] = "-fno-PIE";
+            }
+
             argv[argc] = NULL;
 
             // Debug: print the command being executed
@@ -172,7 +181,8 @@ AsthraLLVMToolResult asthra_llvm_compile_pipeline(const char *ir_file, const cha
                                                       .target_triple =
                                                           compile_options.target_triple,
                                                       .verbose = options->verbose,
-                                                      .coverage = options->coverage};
+                                                      .coverage = options->coverage,
+                                                      .pie_mode = options->pie_mode};
 
                 asthra_llvm_tool_result_free(&result);
                 result = asthra_llvm_link(objects, 1, &link_options);

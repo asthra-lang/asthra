@@ -30,6 +30,8 @@ AsthraCompilerOptions asthra_compiler_default_options(void) {
                                    .emit_llvm = false,
                                    .emit_asm = false,
                                    .no_stdlib = false,
+                                   .coverage = false,
+                                   .pie_mode = ASTHRA_PIE_DEFAULT,
                                    .include_paths = NULL,
                                    .library_paths = NULL,
                                    .libraries = NULL};
@@ -50,6 +52,8 @@ AsthraCompilerOptions asthra_compiler_options_create(const char *input_file,
                                    .emit_llvm = false,
                                    .emit_asm = false,
                                    .no_stdlib = false,
+                                   .coverage = false,
+                                   .pie_mode = ASTHRA_PIE_DEFAULT,
                                    .include_paths = asthra_argument_list_create(8),
                                    .library_paths = asthra_argument_list_create(8),
                                    .libraries = asthra_argument_list_create(8)};
