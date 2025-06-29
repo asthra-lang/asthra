@@ -1,41 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/stat.h>
 #include "bdd_support.h"
+#include "bdd_utilities.h"
+#include "bdd_test_framework.h"
+#include <sys/stat.h>
 
-// External functions from common_steps.c
-extern void given_asthra_compiler_available(void);
-extern void given_file_with_content(const char* filename, const char* content);
-extern void when_compile_file(void);
-extern void when_run_executable(void);
-extern void then_compilation_should_succeed(void);
-extern void then_executable_created(void);
-extern void then_output_contains(const char* expected_output);
-extern void then_exit_code_is(int expected_code);
-extern void common_cleanup(void);
-extern const char* get_execution_output(void);
+// Test scenarios using the new reusable framework
 
-// New step definition for negative output check
-void then_output_should_not_contain(const char* unexpected_output) {
-    char desc[256];
-    snprintf(desc, sizeof(desc), "the output should not contain \"%s\"", unexpected_output);
-    bdd_then(desc);
-    
-    const char* execution_output = get_execution_output();
-    BDD_ASSERT_NOT_NULL(execution_output);
-    if (execution_output) {
-        BDD_ASSERT_TRUE(strstr(execution_output, unexpected_output) == NULL);
-    }
-}
-
-// Test implementations for if_conditions.feature scenarios
 void test_simple_if_true(void) {
-    bdd_scenario("Simple if condition with true branch");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -46,20 +16,14 @@ void test_simple_if_true(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("if_true.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Condition is true");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Simple if condition with true branch",
+                               "if_true.asthra",
+                               source,
+                               "Condition is true",
+                               0);
 }
 
 void test_simple_if_false(void) {
-    bdd_scenario("Simple if condition with false branch");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -71,21 +35,51 @@ void test_simple_if_false(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("if_false.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_should_not_contain("This should not print");
-    then_output_contains("Program completed");
-    then_exit_code_is(0);
+    // For negative output checks, we'll use the detailed scenario pattern
+    bdd_scenario("Simple if condition with false branch");
+    
+    bdd_given("the Asthra compiler is available");
+    BDD_ASSERT_TRUE(bdd_compiler_available());
+    
+    bdd_given("I have a file \"if_false.asthra\" with content");
+    bdd_create_temp_source_file("if_false.asthra", source);
+    
+    bdd_when("I compile the file");
+    char* executable = strdup(bdd_get_temp_source_file());
+    char* dot = strrchr(executable, '.');
+    if (dot) *dot = '\0';
+    
+    int exit_code = bdd_compile_source_file(bdd_get_temp_source_file(), executable, NULL);
+    
+    bdd_then("the compilation should succeed");
+    BDD_ASSERT_EQ(exit_code, 0);
+    
+    bdd_then("an executable should be created");
+    struct stat st;
+    int exists = (stat(executable, &st) == 0);
+    BDD_ASSERT_TRUE(exists);
+    
+    bdd_when("I run the executable");
+    char command[512];
+    snprintf(command, sizeof(command), "./%s 2>&1", executable);
+    
+    int execution_exit_code;
+    char* execution_output = bdd_execute_command(command, &execution_exit_code);
+    
+    bdd_then("the output should not contain \"This should not print\"");
+    BDD_ASSERT_TRUE(strstr(execution_output, "This should not print") == NULL);
+    
+    bdd_then("the output should contain \"Program completed\"");
+    bdd_assert_output_contains(execution_output, "Program completed");
+    
+    bdd_then("the exit code should be 0");
+    BDD_ASSERT_EQ(execution_exit_code, 0);
+    
+    bdd_cleanup_string(&execution_output);
+    free(executable);
 }
 
 void test_if_else_condition(void) {
-    bdd_scenario("If-else condition");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -99,21 +93,51 @@ void test_if_else_condition(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("if_else.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("x is greater than 5");
-    then_output_should_not_contain("x is not greater than 5");
-    then_exit_code_is(0);
+    // For multiple output checks with negatives, we'll use the detailed scenario pattern
+    bdd_scenario("If-else condition");
+    
+    bdd_given("the Asthra compiler is available");
+    BDD_ASSERT_TRUE(bdd_compiler_available());
+    
+    bdd_given("I have a file \"if_else.asthra\" with content");
+    bdd_create_temp_source_file("if_else.asthra", source);
+    
+    bdd_when("I compile the file");
+    char* executable = strdup(bdd_get_temp_source_file());
+    char* dot = strrchr(executable, '.');
+    if (dot) *dot = '\0';
+    
+    int exit_code = bdd_compile_source_file(bdd_get_temp_source_file(), executable, NULL);
+    
+    bdd_then("the compilation should succeed");
+    BDD_ASSERT_EQ(exit_code, 0);
+    
+    bdd_then("an executable should be created");
+    struct stat st;
+    int exists = (stat(executable, &st) == 0);
+    BDD_ASSERT_TRUE(exists);
+    
+    bdd_when("I run the executable");
+    char command[512];
+    snprintf(command, sizeof(command), "./%s 2>&1", executable);
+    
+    int execution_exit_code;
+    char* execution_output = bdd_execute_command(command, &execution_exit_code);
+    
+    bdd_then("the output should contain \"x is greater than 5\"");
+    bdd_assert_output_contains(execution_output, "x is greater than 5");
+    
+    bdd_then("the output should not contain \"x is not greater than 5\"");
+    BDD_ASSERT_TRUE(strstr(execution_output, "x is not greater than 5") == NULL);
+    
+    bdd_then("the exit code should be 0");
+    BDD_ASSERT_EQ(execution_exit_code, 0);
+    
+    bdd_cleanup_string(&execution_output);
+    free(executable);
 }
 
 void test_nested_if_conditions(void) {
-    bdd_scenario("Nested if conditions");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -130,21 +154,51 @@ void test_nested_if_conditions(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("nested_if.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("a is greater than 5");
-    then_output_contains("b is also greater than 15");
-    then_exit_code_is(0);
+    // For multiple output checks, we'll use the detailed scenario pattern
+    bdd_scenario("Nested if conditions");
+    
+    bdd_given("the Asthra compiler is available");
+    BDD_ASSERT_TRUE(bdd_compiler_available());
+    
+    bdd_given("I have a file \"nested_if.asthra\" with content");
+    bdd_create_temp_source_file("nested_if.asthra", source);
+    
+    bdd_when("I compile the file");
+    char* executable = strdup(bdd_get_temp_source_file());
+    char* dot = strrchr(executable, '.');
+    if (dot) *dot = '\0';
+    
+    int exit_code = bdd_compile_source_file(bdd_get_temp_source_file(), executable, NULL);
+    
+    bdd_then("the compilation should succeed");
+    BDD_ASSERT_EQ(exit_code, 0);
+    
+    bdd_then("an executable should be created");
+    struct stat st;
+    int exists = (stat(executable, &st) == 0);
+    BDD_ASSERT_TRUE(exists);
+    
+    bdd_when("I run the executable");
+    char command[512];
+    snprintf(command, sizeof(command), "./%s 2>&1", executable);
+    
+    int execution_exit_code;
+    char* execution_output = bdd_execute_command(command, &execution_exit_code);
+    
+    bdd_then("the output should contain \"a is greater than 5\"");
+    bdd_assert_output_contains(execution_output, "a is greater than 5");
+    
+    bdd_then("the output should contain \"b is also greater than 15\"");
+    bdd_assert_output_contains(execution_output, "b is also greater than 15");
+    
+    bdd_then("the exit code should be 0");
+    BDD_ASSERT_EQ(execution_exit_code, 0);
+    
+    bdd_cleanup_string(&execution_output);
+    free(executable);
 }
 
 void test_if_expression_result(void) {
-    bdd_scenario("If condition with expression result");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -156,20 +210,14 @@ void test_if_expression_result(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("if_expression.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Result is 42");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("If condition with expression result",
+                               "if_expression.asthra",
+                               source,
+                               "Result is 42",
+                               0);
 }
 
 void test_complex_boolean_expression(void) {
-    bdd_scenario("If condition with complex boolean expression");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -189,40 +237,64 @@ void test_complex_boolean_expression(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("complex_condition.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("x < y < z is true");
-    then_output_contains("At least one condition is true");
-    then_exit_code_is(0);
+    // For multiple output checks, we'll use the detailed scenario pattern
+    bdd_scenario("If condition with complex boolean expression");
+    
+    bdd_given("the Asthra compiler is available");
+    BDD_ASSERT_TRUE(bdd_compiler_available());
+    
+    bdd_given("I have a file \"complex_condition.asthra\" with content");
+    bdd_create_temp_source_file("complex_condition.asthra", source);
+    
+    bdd_when("I compile the file");
+    char* executable = strdup(bdd_get_temp_source_file());
+    char* dot = strrchr(executable, '.');
+    if (dot) *dot = '\0';
+    
+    int exit_code = bdd_compile_source_file(bdd_get_temp_source_file(), executable, NULL);
+    
+    bdd_then("the compilation should succeed");
+    BDD_ASSERT_EQ(exit_code, 0);
+    
+    bdd_then("an executable should be created");
+    struct stat st;
+    int exists = (stat(executable, &st) == 0);
+    BDD_ASSERT_TRUE(exists);
+    
+    bdd_when("I run the executable");
+    char command[512];
+    snprintf(command, sizeof(command), "./%s 2>&1", executable);
+    
+    int execution_exit_code;
+    char* execution_output = bdd_execute_command(command, &execution_exit_code);
+    
+    bdd_then("the output should contain \"x < y < z is true\"");
+    bdd_assert_output_contains(execution_output, "x < y < z is true");
+    
+    bdd_then("the output should contain \"At least one condition is true\"");
+    bdd_assert_output_contains(execution_output, "At least one condition is true");
+    
+    bdd_then("the exit code should be 0");
+    BDD_ASSERT_EQ(execution_exit_code, 0);
+    
+    bdd_cleanup_string(&execution_output);
+    free(executable);
 }
 
-// Main test runner
+// Define test cases using the new framework - all marked @wip based on original file
+BddTestCase if_conditions_test_cases[] = {
+    BDD_WIP_TEST_CASE(simple_if_true, test_simple_if_true),
+    BDD_WIP_TEST_CASE(simple_if_false, test_simple_if_false),
+    BDD_WIP_TEST_CASE(if_else_condition, test_if_else_condition),
+    BDD_WIP_TEST_CASE(nested_if_conditions, test_nested_if_conditions),
+    BDD_WIP_TEST_CASE(if_expression_result, test_if_expression_result),
+    BDD_WIP_TEST_CASE(complex_boolean_expression, test_complex_boolean_expression),
+};
+
+// Main test runner using the new framework
 int main(void) {
-    bdd_init("If Condition Functionality");
-    
-    // Check if @wip scenarios should be skipped
-    if (bdd_should_skip_wip()) {
-        bdd_skip_scenario("Simple if condition with true branch [@wip]");
-        bdd_skip_scenario("Simple if condition with false branch [@wip]");
-        bdd_skip_scenario("If-else condition [@wip]");
-        bdd_skip_scenario("Nested if conditions [@wip]");
-        bdd_skip_scenario("If condition with expression result [@wip]");
-        bdd_skip_scenario("If condition with complex boolean expression [@wip]");
-    } else {
-        // Run all scenarios
-        test_simple_if_true();
-        test_simple_if_false();
-        test_if_else_condition();
-        test_nested_if_conditions();
-        test_if_expression_result();
-        test_complex_boolean_expression();
-    }
-    
-    // Cleanup
-    common_cleanup();
-    
-    return bdd_report();
+    return bdd_run_test_suite("If Condition Functionality",
+                              if_conditions_test_cases,
+                              sizeof(if_conditions_test_cases) / sizeof(if_conditions_test_cases[0]),
+                              bdd_cleanup_temp_files);
 }

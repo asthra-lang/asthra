@@ -153,19 +153,31 @@ char *find_executable(const char *name) {
     if (!path_env)
         return NULL;
 
+    // Try versioned names first (e.g., llc-18, clang-18)
+    const char *version_suffixes[] = {"-18", "-17", "-16", "-15", "-14", ""};
+    
     char *path_copy = strdup(path_env);
-    char *path_dir = strtok(path_copy, ":");
+    
+    for (int i = 0; version_suffixes[i] != NULL; i++) {
+        char versioned_name[256];
+        snprintf(versioned_name, sizeof(versioned_name), "%s%s", name, version_suffixes[i]);
+        
+        char *path_dir = strtok(path_copy, ":");
+        while (path_dir) {
+            char full_path[4096];
+            snprintf(full_path, sizeof(full_path), "%s/%s", path_dir, versioned_name);
 
-    while (path_dir) {
-        char full_path[4096];
-        snprintf(full_path, sizeof(full_path), "%s/%s", path_dir, name);
+            if (access(full_path, X_OK) == 0) {
+                free(path_copy);
+                return strdup(full_path);
+            }
 
-        if (access(full_path, X_OK) == 0) {
-            free(path_copy);
-            return strdup(full_path);
+            path_dir = strtok(NULL, ":");
         }
-
-        path_dir = strtok(NULL, ":");
+        
+        // Reset for next version suffix
+        free(path_copy);
+        path_copy = strdup(path_env);
     }
 
     free(path_copy);

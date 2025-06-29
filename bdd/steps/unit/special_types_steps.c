@@ -1,29 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/stat.h>
 #include "bdd_support.h"
+#include "bdd_utilities.h"
+#include "bdd_test_framework.h"
 
-// External functions from common_steps.c
-extern void given_asthra_compiler_available(void);
-extern void given_file_with_content(const char* filename, const char* content);
-extern void when_compile_file(void);
-extern void when_run_executable(void);
-extern void then_compilation_should_succeed(void);
-extern void then_compilation_should_fail(void);
-extern void then_executable_created(void);
-extern void then_output_contains(const char* expected_output);
-extern void then_exit_code_is(int expected_code);
-extern void then_error_contains(const char* expected_error);
-extern void common_cleanup(void);
+// Test scenarios using the new reusable framework
 
-// Test scenario: Unit type as void return
 void test_unit_type(void) {
-    bdd_scenario("Unit type as void return");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -37,21 +18,14 @@ void test_unit_type(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("unit_type.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Unit type works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Unit type as void return",
+                               "unit_type.asthra",
+                               source,
+                               "Unit type works",
+                               0);
 }
 
-// Test scenario: Unit type in expressions
 void test_unit_expressions(void) {
-    bdd_scenario("Unit type in expressions");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -62,21 +36,14 @@ void test_unit_expressions(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("unit_expressions.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Unit in expressions works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Unit type in expressions",
+                               "unit_expressions.asthra",
+                               source,
+                               "Unit in expressions works",
+                               0);
 }
 
-// Test scenario: Never type for non-returning functions
 void test_never_type(void) {
-    bdd_scenario("Never type for non-returning functions");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -95,21 +62,14 @@ void test_never_type(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("never_type.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Never type works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Never type for non-returning functions",
+                               "never_type.asthra",
+                               source,
+                               "Never type works",
+                               0);
 }
 
-// Test scenario: Size types - usize
 void test_usize_type(void) {
-    bdd_scenario("Size types - usize");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -121,21 +81,14 @@ void test_usize_type(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("usize_type.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("usize type works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Size types - usize",
+                               "usize_type.asthra",
+                               source,
+                               "usize type works",
+                               0);
 }
 
-// Test scenario: Size types - isize
 void test_isize_type(void) {
-    bdd_scenario("Size types - isize");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -147,21 +100,14 @@ void test_isize_type(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("isize_type.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("isize type works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Size types - isize",
+                               "isize_type.asthra",
+                               source,
+                               "isize type works",
+                               0);
 }
 
-// Test scenario: Size types in array operations
 void test_size_array_ops(void) {
-    bdd_scenario("Size types in array operations");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -176,21 +122,14 @@ void test_size_array_ops(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("size_array_ops.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Size types in arrays work");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Size types in array operations",
+                               "size_array_ops.asthra",
+                               source,
+                               "Size types in arrays work",
+                               0);
 }
 
-// Test scenario: SizeOf compile-time expression
 void test_sizeof_expr(void) {
-    bdd_scenario("SizeOf compile-time expression");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -209,21 +148,14 @@ void test_sizeof_expr(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("sizeof_expr.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("sizeof expressions work");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("SizeOf compile-time expression",
+                               "sizeof_expr.asthra",
+                               source,
+                               "sizeof expressions work",
+                               0);
 }
 
-// Test scenario: Never type in match expressions
 void test_never_match(void) {
-    bdd_scenario("Never type in match expressions");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -250,21 +182,14 @@ void test_never_match(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("never_match.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Never in match works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Never type in match expressions",
+                               "never_match.asthra",
+                               source,
+                               "Never in match works",
+                               0);
 }
 
-// Test scenario: Unit type in struct fields
 void test_unit_struct_field(void) {
-    bdd_scenario("Unit type in struct fields");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -279,21 +204,14 @@ void test_unit_struct_field(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("unit_struct_field.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Unit in struct works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Unit type in struct fields",
+                               "unit_struct_field.asthra",
+                               source,
+                               "Unit in struct works",
+                               0);
 }
 
-// Test scenario: Never type cannot be instantiated
 void test_never_instantiate(void) {
-    bdd_scenario("Never type cannot be instantiated");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -302,19 +220,14 @@ void test_never_instantiate(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("never_instantiate.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    // Skip error message check since compiler crashes with LLVM verification error
-    // TODO: Fix compiler to properly handle Never type instantiation error
+    bdd_run_compilation_scenario("Never type cannot be instantiated",
+                                 "never_instantiate.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "Never type cannot be instantiated");
 }
 
-// Test scenario: Invalid sizeof usage
 void test_invalid_sizeof(void) {
-    bdd_scenario("Invalid sizeof usage");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -324,19 +237,14 @@ void test_invalid_sizeof(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("invalid_sizeof.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    // Check for any error since specific error message might not be implemented
-    then_error_contains("Error");
+    bdd_run_compilation_scenario("Invalid sizeof usage",
+                                 "invalid_sizeof.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "sizeof expects a type");
 }
 
-// Test scenario: Unit type comparison
 void test_unit_comparison(void) {
-    bdd_scenario("Unit type comparison");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -349,21 +257,14 @@ void test_unit_comparison(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("unit_comparison.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Unit values are equal");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Unit type comparison",
+                               "unit_comparison.asthra",
+                               source,
+                               "Unit values are equal",
+                               0);
 }
 
-// Test scenario: Platform-specific size types
 void test_platform_sizes(void) {
-    bdd_scenario("Platform-specific size types");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -374,62 +275,34 @@ void test_platform_sizes(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("platform_sizes.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Platform size types work");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Platform-specific size types",
+                               "platform_sizes.asthra",
+                               source,
+                               "Platform size types work",
+                               0);
 }
 
-// Main test runner
+// Define test cases using the new framework - no @wip tags based on original file
+BddTestCase special_types_test_cases[] = {
+    BDD_TEST_CASE(unit_type, test_unit_type),
+    BDD_TEST_CASE(unit_expressions, test_unit_expressions),
+    BDD_TEST_CASE(never_type, test_never_type),
+    BDD_TEST_CASE(usize_type, test_usize_type),
+    BDD_TEST_CASE(isize_type, test_isize_type),
+    BDD_TEST_CASE(size_array_ops, test_size_array_ops),
+    BDD_TEST_CASE(sizeof_expr, test_sizeof_expr),
+    BDD_TEST_CASE(never_match, test_never_match),
+    BDD_TEST_CASE(unit_struct_field, test_unit_struct_field),
+    BDD_TEST_CASE(never_instantiate, test_never_instantiate),
+    BDD_TEST_CASE(invalid_sizeof, test_invalid_sizeof),
+    BDD_TEST_CASE(unit_comparison, test_unit_comparison),
+    BDD_TEST_CASE(platform_sizes, test_platform_sizes),
+};
+
+// Main test runner using the new framework
 int main(void) {
-    bdd_init("Special Types");
-    
-    // Check if @wip scenarios should be skipped
-    if (bdd_should_skip_wip()) {
-        // Skip @wip scenarios marked in feature file:
-        // - Unit type in expressions
-        // - Never type for non-returning functions
-        // - Size types in array operations
-        // - Never type in match expressions
-        // - Never type cannot be instantiated
-        // - Unit type comparison
-        
-        // Run only non-@wip scenarios
-        test_unit_type();
-        // Skip test_unit_expressions - marked @wip
-        // Skip test_never_type - marked @wip
-        test_usize_type();
-        test_isize_type();
-        // Skip test_size_array_ops - marked @wip
-        test_sizeof_expr();
-        // Skip test_never_match - marked @wip
-        test_unit_struct_field();
-        test_never_instantiate();  // Now enabled since @wip removed
-        test_invalid_sizeof();
-        // Skip test_unit_comparison - marked @wip
-        test_platform_sizes();
-    } else {
-        // Run all scenarios from special_types.feature
-        test_unit_type();
-        test_unit_expressions();
-        test_never_type();
-        test_usize_type();
-        test_isize_type();
-        test_size_array_ops();
-        test_sizeof_expr();
-        test_never_match();
-        test_unit_struct_field();
-        test_never_instantiate();
-        test_invalid_sizeof();
-        test_unit_comparison();
-        test_platform_sizes();
-    }
-    
-    // Cleanup
-    common_cleanup();
-    
-    return bdd_report();
+    return bdd_run_test_suite("Special Types",
+                              special_types_test_cases,
+                              sizeof(special_types_test_cases) / sizeof(special_types_test_cases[0]),
+                              bdd_cleanup_temp_files);
 }

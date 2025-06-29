@@ -60,9 +60,18 @@ jobs:
         sudo apt-get update -y
         sudo apt-get install -y llvm-18 llvm-18-dev clang-18 lld-18 llvm-18-tools
         
+        # Add LLVM 18 to PATH
+        echo "/usr/lib/llvm-18/bin" >> $GITHUB_PATH
+        export PATH="/usr/lib/llvm-18/bin:$PATH"
+        
         # Verify LLVM 18 installation
         echo "Checking clang-18 version..."
         which clang-18 && clang-18 --version
+        
+        # Verify LLVM tools
+        echo "Checking LLVM tools..."
+        which llc-18 && llc-18 --version | head -2
+        which opt-18 && opt-18 --version | head -2
         
         # Verify LLVM libraries are available
         echo "Checking LLVM libraries..."
@@ -180,6 +189,19 @@ jobs:
         cd build
         mkdir -p bdd-logs
         
+        # Ensure LLVM tools are in PATH for Linux
+        if [[ "${{ matrix.platform }}" == "linux" ]]; then
+          echo "Setting up LLVM tools in PATH for Linux..."
+          export PATH="/usr/lib/llvm-18/bin:$PATH"
+          echo "Updated PATH: $PATH"
+          
+          # Verify LLVM tools are accessible
+          echo "Verifying LLVM tools..."
+          which llc || echo "WARNING: llc not found"
+          which opt || echo "WARNING: opt not found"
+          which clang || echo "WARNING: clang not found"
+        fi
+        
         # Find the asthra compiler binary
         echo "Searching for asthra compiler binary..."
         
@@ -238,44 +260,94 @@ jobs:
           exit 1
         fi
         
+        # Function to extract test counts from log file
+        extract_test_counts() {
+          local log_file="$1"
+          if [ -f "$log_file" ]; then
+            # Extract each count separately since they're on different lines
+            # Using sed for portability across macOS (BSD) and Linux (GNU)
+            local passed=$(grep -E "^\s*Passed:\s*[0-9]+" "$log_file" | tail -1 | sed 's/[^0-9]//g')
+            local failed=$(grep -E "^\s*Failed:\s*[0-9]+" "$log_file" | tail -1 | sed 's/[^0-9]//g')
+            local skipped=$(grep -E "^\s*Skipped:\s*[0-9]+" "$log_file" | tail -1 | sed 's/[^0-9]//g')
+            
+            # Default to 0 if empty
+            passed=${passed:-0}
+            failed=${failed:-0}
+            skipped=${skipped:-0}
+            
+            
+            TOTAL_TESTS_PASSED=$((TOTAL_TESTS_PASSED + passed))
+            TOTAL_TESTS_FAILED=$((TOTAL_TESTS_FAILED + failed))
+            TOTAL_TESTS_SKIPPED=$((TOTAL_TESTS_SKIPPED + skipped))
+          fi
+        }
+        
         # Track test results
         TESTS_RUN=0
         TESTS_FAILED=0
+        TOTAL_TESTS_PASSED=0
+        TOTAL_TESTS_FAILED=0
+        TOTAL_TESTS_SKIPPED=0
         
         # Run unit-level BDD tests
         if [ -f "bdd/bin/bdd_unit_compiler_basic" ]; then
           echo "Running compiler basic unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
           ./bdd/bin/bdd_unit_compiler_basic --reporter spec 2>&1 | tee bdd-logs/bdd_unit_compiler_basic.log
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then 
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+          fi
+          
+          # Extract test counts from the summary
+          extract_test_counts "bdd-logs/bdd_unit_compiler_basic.log"
         fi
         
         if [ -f "bdd/bin/bdd_unit_function_calls" ]; then
           echo "Running function calls unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
           ./bdd/bin/bdd_unit_function_calls --reporter spec 2>&1 | tee bdd-logs/bdd_unit_function_calls.log
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then 
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+          fi
+          
+          # Extract test counts
+          extract_test_counts "bdd-logs/bdd_unit_function_calls.log"
         fi
         
         if [ -f "bdd/bin/bdd_unit_bitwise_operators" ]; then
           echo "Running bitwise operators unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
           ./bdd/bin/bdd_unit_bitwise_operators --reporter spec 2>&1 | tee bdd-logs/bdd_unit_bitwise_operators.log
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then 
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+          fi
+          
+          # Extract test counts
+          extract_test_counts "bdd-logs/bdd_unit_bitwise_operators.log"
         fi
         
         if [ -f "bdd/bin/bdd_unit_boolean_operators" ]; then
           echo "Running boolean operators unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
           ./bdd/bin/bdd_unit_boolean_operators --reporter spec 2>&1 | tee bdd-logs/bdd_unit_boolean_operators.log
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then 
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+          fi
+          
+          # Extract test counts
+          extract_test_counts "bdd-logs/bdd_unit_boolean_operators.log"
         fi
         
         if [ -f "bdd/bin/bdd_unit_if_conditions" ]; then
           echo "Running if conditions unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
           ./bdd/bin/bdd_unit_if_conditions --reporter spec 2>&1 | tee bdd-logs/bdd_unit_if_conditions.log
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then 
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+          fi
+          
+          # Extract test counts
+          extract_test_counts "bdd-logs/bdd_unit_if_conditions.log"
         fi
         
         # Phase 1 BDD Tests - Core Language Structure
@@ -283,28 +355,48 @@ jobs:
           echo "Running package declaration unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
           ./bdd/bin/bdd_unit_package_declaration --reporter spec 2>&1 | tee bdd-logs/bdd_unit_package_declaration.log
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then 
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+          fi
+          
+          # Extract test counts
+          extract_test_counts "bdd-logs/bdd_unit_package_declaration.log"
         fi
         
         if [ -f "bdd/bin/bdd_unit_import_system" ]; then
           echo "Running import system unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
           ./bdd/bin/bdd_unit_import_system --reporter spec 2>&1 | tee bdd-logs/bdd_unit_import_system.log
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then 
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+          fi
+          
+          # Extract test counts
+          extract_test_counts "bdd-logs/bdd_unit_import_system.log"
         fi
         
         if [ -f "bdd/bin/bdd_unit_visibility_modifiers" ]; then
           echo "Running visibility modifiers unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
           ./bdd/bin/bdd_unit_visibility_modifiers --reporter spec 2>&1 | tee bdd-logs/bdd_unit_visibility_modifiers.log
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then 
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+          fi
+          
+          # Extract test counts
+          extract_test_counts "bdd-logs/bdd_unit_visibility_modifiers.log"
         fi
         
         if [ -f "bdd/bin/bdd_unit_annotations" ]; then
           echo "Running annotations unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
           ./bdd/bin/bdd_unit_annotations --reporter spec 2>&1 | tee bdd-logs/bdd_unit_annotations.log
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then 
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+          fi
+          
+          # Extract test counts
+          extract_test_counts "bdd-logs/bdd_unit_annotations.log"
         fi
         
         # Phase 1 BDD Tests - Type System
@@ -312,39 +404,75 @@ jobs:
           echo "Running primitive types unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
           ./bdd/bin/bdd_unit_primitive_types --reporter spec 2>&1 | tee bdd-logs/bdd_unit_primitive_types.log
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then 
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+          fi
+          
+          # Extract test counts
+          extract_test_counts "bdd-logs/bdd_unit_primitive_types.log"
         fi
         
         if [ -f "bdd/bin/bdd_unit_composite_types" ]; then
           echo "Running composite types unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
           ./bdd/bin/bdd_unit_composite_types --reporter spec 2>&1 | tee bdd-logs/bdd_unit_composite_types.log
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then 
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+          fi
+          
+          # Extract test counts
+          extract_test_counts "bdd-logs/bdd_unit_composite_types.log"
         fi
         
         if [ -f "bdd/bin/bdd_unit_user_defined_types" ]; then
           echo "Running user-defined types unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
           ./bdd/bin/bdd_unit_user_defined_types --reporter spec 2>&1 | tee bdd-logs/bdd_unit_user_defined_types.log
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then 
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+          fi
+          
+          # Extract test counts
+          extract_test_counts "bdd-logs/bdd_unit_user_defined_types.log"
         fi
         
         if [ -f "bdd/bin/bdd_unit_generic_types" ]; then
           echo "Running generic types unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
           ./bdd/bin/bdd_unit_generic_types --reporter spec 2>&1 | tee bdd-logs/bdd_unit_generic_types.log
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then 
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+          fi
+          
+          # Extract test counts
+          extract_test_counts "bdd-logs/bdd_unit_generic_types.log"
         fi
         
         if [ -f "bdd/bin/bdd_unit_special_types" ]; then
           echo "Running special types unit tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
           ./bdd/bin/bdd_unit_special_types --reporter spec 2>&1 | tee bdd-logs/bdd_unit_special_types.log
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then 
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+          fi
+          
+          # Extract test counts
+          extract_test_counts "bdd-logs/bdd_unit_special_types.log"
         fi
         
         # Report results and fail if any tests failed
-        echo "BDD Unit Tests Summary: $TESTS_RUN tests run, $TESTS_FAILED failed"
+        echo ""
+        echo "========================================="
+        echo "BDD Unit Tests Summary:"
+        echo "  Test Suites: $TESTS_RUN run, $TESTS_FAILED failed"
+        echo ""
+        echo "Aggregate Test Results:"
+        echo "  Passed:  $TOTAL_TESTS_PASSED"
+        echo "  Failed:  $TOTAL_TESTS_FAILED"
+        echo "  Skipped: $TOTAL_TESTS_SKIPPED"
+        echo "  Total:   $((TOTAL_TESTS_PASSED + TOTAL_TESTS_FAILED + TOTAL_TESTS_SKIPPED))"
+        echo "========================================="
+        
         if [ $TESTS_FAILED -gt 0 ]; then
           echo "❌ BDD unit tests failed - this will block the CI pipeline"
           exit 1
@@ -377,20 +505,61 @@ jobs:
         export BDD_DEBUG=1
         export ASTHRA_DEBUG=1
         
+        # Function to extract test counts from log file
+        extract_test_counts() {
+          local log_file="$1"
+          if [ -f "$log_file" ]; then
+            # Extract each count separately since they're on different lines
+            # Using sed for portability across macOS (BSD) and Linux (GNU)
+            local passed=$(grep -E "^\s*Passed:\s*[0-9]+" "$log_file" | tail -1 | sed 's/[^0-9]//g')
+            local failed=$(grep -E "^\s*Failed:\s*[0-9]+" "$log_file" | tail -1 | sed 's/[^0-9]//g')
+            local skipped=$(grep -E "^\s*Skipped:\s*[0-9]+" "$log_file" | tail -1 | sed 's/[^0-9]//g')
+            
+            # Default to 0 if empty
+            passed=${passed:-0}
+            failed=${failed:-0}
+            skipped=${skipped:-0}
+            
+            
+            TOTAL_TESTS_PASSED=$((TOTAL_TESTS_PASSED + passed))
+            TOTAL_TESTS_FAILED=$((TOTAL_TESTS_FAILED + failed))
+            TOTAL_TESTS_SKIPPED=$((TOTAL_TESTS_SKIPPED + skipped))
+          fi
+        }
+        
         # Track test results
         TESTS_RUN=0
         TESTS_FAILED=0
+        TOTAL_TESTS_PASSED=0
+        TOTAL_TESTS_FAILED=0
+        TOTAL_TESTS_SKIPPED=0
         
         # Run integration-level BDD tests
         if [ -f "bdd/bin/bdd_integration_ffi_integration" ]; then
           echo "Running FFI integration tests..."
           TESTS_RUN=$((TESTS_RUN + 1))
           ./bdd/bin/bdd_integration_ffi_integration --reporter spec 2>&1 | tee bdd-logs/bdd_integration_ffi_integration.log
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then TESTS_FAILED=$((TESTS_FAILED + 1)); fi
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then 
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+          fi
+          
+          # Extract test counts
+          extract_test_counts "bdd-logs/bdd_integration_ffi_integration.log"
         fi
         
         # Report results and fail if any tests failed
-        echo "BDD Integration Tests Summary: $TESTS_RUN tests run, $TESTS_FAILED failed"
+        echo ""
+        echo "========================================="
+        echo "BDD Integration Tests Summary:"
+        echo "  Test Suites: $TESTS_RUN run, $TESTS_FAILED failed"
+        echo ""
+        echo "Aggregate Test Results:"
+        echo "  Passed:  $TOTAL_TESTS_PASSED"
+        echo "  Failed:  $TOTAL_TESTS_FAILED"
+        echo "  Skipped: $TOTAL_TESTS_SKIPPED"
+        echo "  Total:   $((TOTAL_TESTS_PASSED + TOTAL_TESTS_FAILED + TOTAL_TESTS_SKIPPED))"
+        echo "========================================="
+        
         if [ $TESTS_FAILED -gt 0 ]; then
           echo "❌ BDD integration tests failed - this will block the CI pipeline"
           exit 1

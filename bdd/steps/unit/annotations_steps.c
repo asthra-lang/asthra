@@ -1,29 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/stat.h>
 #include "bdd_support.h"
+#include "bdd_utilities.h"
+#include "bdd_test_framework.h"
+#include <sys/stat.h>
 
-// External functions from common_steps.c
-extern void given_asthra_compiler_available(void);
-extern void given_file_with_content(const char* filename, const char* content);
-extern void when_compile_file(void);
-extern void when_run_executable(void);
-extern void then_compilation_should_succeed(void);
-extern void then_compilation_should_fail(void);
-extern void then_executable_created(void);
-extern void then_output_contains(const char* expected_output);
-extern void then_exit_code_is(int expected_code);
-extern void then_error_contains(const char* expected_error);
-extern void common_cleanup(void);
+// Test scenarios using the new reusable framework
 
-// Test scenario: Human review annotation on function
 void test_human_review_annotation(void) {
-    bdd_scenario("Human review annotation on function");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -38,21 +20,14 @@ void test_human_review_annotation(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("human_review_function.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Critical operation needs human review");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Human review annotation on function",
+                               "human_review_function.asthra",
+                               source,
+                               "Critical operation needs human review",
+                               0);
 }
 
-// Test scenario: Multiple human review levels
 void test_multiple_review_levels(void) {
-    bdd_scenario("Multiple human review levels");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -81,23 +56,54 @@ void test_multiple_review_levels(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("review_levels.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Low priority review");
-    then_output_contains("Medium priority review");
-    then_output_contains("High priority review");
-    then_exit_code_is(0);
+    // For multiple output checks, we'll use the detailed scenario pattern
+    bdd_scenario("Multiple human review levels");
+    
+    bdd_given("the Asthra compiler is available");
+    BDD_ASSERT_TRUE(bdd_compiler_available());
+    
+    bdd_given("I have a file \"review_levels.asthra\" with content");
+    bdd_create_temp_source_file("review_levels.asthra", source);
+    
+    bdd_when("I compile the file");
+    char* executable = strdup(bdd_get_temp_source_file());
+    char* dot = strrchr(executable, '.');
+    if (dot) *dot = '\0';
+    
+    int exit_code = bdd_compile_source_file(bdd_get_temp_source_file(), executable, NULL);
+    
+    bdd_then("the compilation should succeed");
+    BDD_ASSERT_EQ(exit_code, 0);
+    
+    bdd_then("an executable should be created");
+    struct stat st;
+    int exists = (stat(executable, &st) == 0);
+    BDD_ASSERT_TRUE(exists);
+    
+    bdd_when("I run the executable");
+    char command[512];
+    snprintf(command, sizeof(command), "./%s 2>&1", executable);
+    
+    int execution_exit_code;
+    char* execution_output = bdd_execute_command(command, &execution_exit_code);
+    
+    bdd_then("the output should contain \"Low priority review\"");
+    bdd_assert_output_contains(execution_output, "Low priority review");
+    
+    bdd_then("the output should contain \"Medium priority review\"");
+    bdd_assert_output_contains(execution_output, "Medium priority review");
+    
+    bdd_then("the output should contain \"High priority review\"");
+    bdd_assert_output_contains(execution_output, "High priority review");
+    
+    bdd_then("the exit code should be 0");
+    BDD_ASSERT_EQ(execution_exit_code, 0);
+    
+    bdd_cleanup_string(&execution_output);
+    free(executable);
 }
 
-// Test scenario: Security annotation - constant time
 void test_constant_time_annotation(void) {
-    bdd_scenario("Security annotation - constant time");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -112,21 +118,14 @@ void test_constant_time_annotation(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("constant_time.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Constant time comparison");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Security annotation - constant time",
+                               "constant_time.asthra",
+                               source,
+                               "Constant time comparison",
+                               0);
 }
 
-// Test scenario: Security annotation - volatile memory
 void test_volatile_memory_annotation(void) {
-    bdd_scenario("Security annotation - volatile memory");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -141,21 +140,14 @@ void test_volatile_memory_annotation(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("volatile_memory.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Clearing sensitive memory");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Security annotation - volatile memory",
+                               "volatile_memory.asthra",
+                               source,
+                               "Clearing sensitive memory",
+                               0);
 }
 
-// Test scenario: Ownership annotation on struct
 void test_ownership_annotation(void) {
-    bdd_scenario("Ownership annotation on struct");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -179,21 +171,14 @@ void test_ownership_annotation(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("ownership_struct.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Ownership annotations work");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Ownership annotation on struct",
+                               "ownership_struct.asthra",
+                               source,
+                               "Ownership annotations work",
+                               0);
 }
 
-// Test scenario: FFI transfer annotations
 void test_ffi_transfer_annotations(void) {
-    bdd_scenario("FFI transfer annotations");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -205,21 +190,14 @@ void test_ffi_transfer_annotations(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("ffi_transfer.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("FFI transfer annotations work");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("FFI transfer annotations",
+                               "ffi_transfer.asthra",
+                               source,
+                               "FFI transfer annotations work",
+                               0);
 }
 
-// Test scenario: Borrowed reference annotation
 void test_borrowed_annotation(void) {
-    bdd_scenario("Borrowed reference annotation");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -230,21 +208,14 @@ void test_borrowed_annotation(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("borrowed_ref.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Borrowed reference annotation works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Borrowed reference annotation",
+                               "borrowed_ref.asthra",
+                               source,
+                               "Borrowed reference annotation works",
+                               0);
 }
 
-// Test scenario: Non-deterministic annotation
 void test_non_deterministic_annotation(void) {
-    bdd_scenario("Non-deterministic annotation");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -259,21 +230,14 @@ void test_non_deterministic_annotation(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("non_deterministic.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Non-deterministic annotation works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Non-deterministic annotation",
+                               "non_deterministic.asthra",
+                               source,
+                               "Non-deterministic annotation works",
+                               0);
 }
 
-// Test scenario: Generic semantic annotation
 void test_generic_annotation(void) {
-    bdd_scenario("Generic semantic annotation");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -295,22 +259,51 @@ void test_generic_annotation(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("generic_annotation.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Deprecated function");
-    then_output_contains("Performance critical");
-    then_exit_code_is(0);
+    // For multiple output checks, we'll use the detailed scenario pattern
+    bdd_scenario("Generic semantic annotation");
+    
+    bdd_given("the Asthra compiler is available");
+    BDD_ASSERT_TRUE(bdd_compiler_available());
+    
+    bdd_given("I have a file \"generic_annotation.asthra\" with content");
+    bdd_create_temp_source_file("generic_annotation.asthra", source);
+    
+    bdd_when("I compile the file");
+    char* executable = strdup(bdd_get_temp_source_file());
+    char* dot = strrchr(executable, '.');
+    if (dot) *dot = '\0';
+    
+    int exit_code = bdd_compile_source_file(bdd_get_temp_source_file(), executable, NULL);
+    
+    bdd_then("the compilation should succeed");
+    BDD_ASSERT_EQ(exit_code, 0);
+    
+    bdd_then("an executable should be created");
+    struct stat st;
+    int exists = (stat(executable, &st) == 0);
+    BDD_ASSERT_TRUE(exists);
+    
+    bdd_when("I run the executable");
+    char command[512];
+    snprintf(command, sizeof(command), "./%s 2>&1", executable);
+    
+    int execution_exit_code;
+    char* execution_output = bdd_execute_command(command, &execution_exit_code);
+    
+    bdd_then("the output should contain \"Deprecated function\"");
+    bdd_assert_output_contains(execution_output, "Deprecated function");
+    
+    bdd_then("the output should contain \"Performance critical\"");
+    bdd_assert_output_contains(execution_output, "Performance critical");
+    
+    bdd_then("the exit code should be 0");
+    BDD_ASSERT_EQ(execution_exit_code, 0);
+    
+    bdd_cleanup_string(&execution_output);
+    free(executable);
 }
 
-// Test scenario: Multiple annotations on same element
 void test_multiple_annotations(void) {
-    bdd_scenario("Multiple annotations on same element");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -327,21 +320,14 @@ void test_multiple_annotations(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("multiple_annotations.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Multiple annotations");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Multiple annotations on same element",
+                               "multiple_annotations.asthra",
+                               source,
+                               "Multiple annotations",
+                               0);
 }
 
-// Test scenario: Invalid human review level
 void test_invalid_review_level(void) {
-    bdd_scenario("Invalid human review level");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -354,18 +340,14 @@ void test_invalid_review_level(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("invalid_review_level.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    then_error_contains("invalid review level");
+    bdd_run_compilation_scenario("Invalid human review level",
+                                 "invalid_review_level.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "invalid review level");
 }
 
-// Test scenario: Invalid ownership type
 void test_invalid_ownership(void) {
-    bdd_scenario("Invalid ownership type");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -378,18 +360,14 @@ void test_invalid_ownership(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("invalid_ownership.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    then_error_contains("invalid ownership type");
+    bdd_run_compilation_scenario("Invalid ownership type",
+                                 "invalid_ownership.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "invalid ownership type");
 }
 
-// Test scenario: Annotation with none parameters
 void test_annotation_none_params(void) {
-    bdd_scenario("Annotation with none parameters");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -404,58 +382,34 @@ void test_annotation_none_params(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("annotation_none_params.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Annotation with none params");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Annotation with none parameters",
+                               "annotation_none_params.asthra",
+                               source,
+                               "Annotation with none params",
+                               0);
 }
 
-// Main test runner
+// Define test cases using the new framework - @wip tags based on original file
+BddTestCase annotations_test_cases[] = {
+    BDD_WIP_TEST_CASE(human_review_annotation, test_human_review_annotation),
+    BDD_WIP_TEST_CASE(multiple_review_levels, test_multiple_review_levels),
+    BDD_WIP_TEST_CASE(constant_time_annotation, test_constant_time_annotation),
+    BDD_WIP_TEST_CASE(volatile_memory_annotation, test_volatile_memory_annotation),
+    BDD_TEST_CASE(ownership_annotation, test_ownership_annotation),
+    BDD_WIP_TEST_CASE(ffi_transfer_annotations, test_ffi_transfer_annotations),
+    BDD_WIP_TEST_CASE(borrowed_annotation, test_borrowed_annotation),
+    BDD_TEST_CASE(non_deterministic_annotation, test_non_deterministic_annotation),
+    BDD_WIP_TEST_CASE(generic_annotation, test_generic_annotation),
+    BDD_WIP_TEST_CASE(multiple_annotations, test_multiple_annotations),
+    BDD_WIP_TEST_CASE(invalid_review_level, test_invalid_review_level),
+    BDD_WIP_TEST_CASE(invalid_ownership, test_invalid_ownership),
+    BDD_WIP_TEST_CASE(annotation_none_params, test_annotation_none_params),
+};
+
+// Main test runner using the new framework
 int main(void) {
-    bdd_init("Annotations");
-    
-    // Check if @wip scenarios should be skipped
-    if (bdd_should_skip_wip()) {
-        // Skip @wip scenarios
-        // bdd_skip_scenario("Human review annotation on function [@wip]"); // No longer @wip
-        bdd_skip_scenario("Multiple human review levels [@wip]");
-        bdd_skip_scenario("Security annotation - constant time [@wip]");
-        // bdd_skip_scenario("Security annotation - volatile memory [@wip]"); // No longer @wip
-        bdd_skip_scenario("FFI transfer annotations [@wip]");
-        bdd_skip_scenario("Borrowed reference annotation [@wip]");
-        bdd_skip_scenario("Generic semantic annotation [@wip]");
-        bdd_skip_scenario("Multiple annotations on same element [@wip]");
-        bdd_skip_scenario("Invalid human review level [@wip]");
-        bdd_skip_scenario("Invalid ownership type [@wip]");
-        bdd_skip_scenario("Annotation with none parameters [@wip]");
-        
-        // Run only non-@wip scenarios
-        test_human_review_annotation(); // No longer @wip
-        test_volatile_memory_annotation(); // No longer @wip
-        test_ownership_annotation();
-        test_non_deterministic_annotation();
-    } else {
-        // Run all scenarios from annotations.feature
-        test_human_review_annotation();
-        test_multiple_review_levels();
-        test_constant_time_annotation();
-        test_volatile_memory_annotation();
-        test_ownership_annotation();
-        test_ffi_transfer_annotations();
-        test_borrowed_annotation();
-        test_non_deterministic_annotation();
-        test_generic_annotation();
-        test_multiple_annotations();
-        test_invalid_review_level();
-        test_invalid_ownership();
-        test_annotation_none_params();
-    }
-    
-    // Cleanup
-    common_cleanup();
-    
-    return bdd_report();
+    return bdd_run_test_suite("Annotations",
+                              annotations_test_cases,
+                              sizeof(annotations_test_cases) / sizeof(annotations_test_cases[0]),
+                              bdd_cleanup_temp_files);
 }

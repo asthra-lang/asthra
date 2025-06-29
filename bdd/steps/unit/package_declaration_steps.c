@@ -1,29 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/stat.h>
 #include "bdd_support.h"
+#include "bdd_utilities.h"
+#include "bdd_test_framework.h"
 
-// External functions from common_steps.c
-extern void given_asthra_compiler_available(void);
-extern void given_file_with_content(const char* filename, const char* content);
-extern void when_compile_file(void);
-extern void when_run_executable(void);
-extern void then_compilation_should_succeed(void);
-extern void then_compilation_should_fail(void);
-extern void then_executable_created(void);
-extern void then_output_contains(const char* expected_output);
-extern void then_exit_code_is(int expected_code);
-extern void then_error_contains(const char* expected_error);
-extern void common_cleanup(void);
+// Test scenarios using the new reusable framework
 
-// Test scenario: Simple package declaration
 void test_simple_package_declaration(void) {
-    bdd_scenario("Simple package declaration");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main;\n"
         "\n"
@@ -32,21 +13,14 @@ void test_simple_package_declaration(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("simple_package.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Package declaration works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Simple package declaration",
+                               "simple_package.asthra",
+                               source,
+                               "Package declaration works",
+                               0);
 }
 
-// Test scenario: Package declaration with identifier
 void test_package_with_identifier(void) {
-    bdd_scenario("Package declaration with identifier");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package myapp;\n"
         "\n"
@@ -55,21 +29,14 @@ void test_package_with_identifier(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("named_package.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Named package works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Package declaration with identifier",
+                               "named_package.asthra",
+                               source,
+                               "Named package works",
+                               0);
 }
 
-// Test scenario: Package declaration with underscored identifier
 void test_package_with_underscore(void) {
-    bdd_scenario("Package declaration with underscored identifier");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package my_app;\n"
         "\n"
@@ -78,39 +45,28 @@ void test_package_with_underscore(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("underscore_package.asthra", source);
-    when_compile_file();
-    then_compilation_should_succeed();
-    then_executable_created();
-    when_run_executable();
-    then_output_contains("Underscore package works");
-    then_exit_code_is(0);
+    bdd_run_execution_scenario("Package declaration with underscored identifier",
+                               "underscore_package.asthra",
+                               source,
+                               "Underscore package works",
+                               0);
 }
 
-// Test scenario: Missing package declaration
 void test_missing_package_declaration(void) {
-    bdd_scenario("Missing package declaration");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "pub fn main(none) -> void {\n"
         "    log(\"No package\");\n"
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("no_package.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    then_error_contains("expected 'package'");
+    bdd_run_compilation_scenario("Missing package declaration",
+                                 "no_package.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "expected 'package'");
 }
 
-// Test scenario: Package declaration without semicolon
 void test_package_without_semicolon(void) {
-    bdd_scenario("Package declaration without semicolon");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package main\n"
         "\n"
@@ -119,18 +75,14 @@ void test_package_without_semicolon(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("no_semicolon.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    then_error_contains("expected ';'");
+    bdd_run_compilation_scenario("Package declaration without semicolon",
+                                 "no_semicolon.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "expected ';'");
 }
 
-// Test scenario: Package declaration with invalid characters
 void test_package_invalid_characters(void) {
-    bdd_scenario("Package declaration with invalid characters");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package my-app;\n"
         "\n"
@@ -139,18 +91,14 @@ void test_package_invalid_characters(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("invalid_package.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    then_error_contains("invalid package name");
+    bdd_run_compilation_scenario("Package declaration with invalid characters",
+                                 "invalid_package.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "invalid package name");
 }
 
-// Test scenario: Multiple package declarations
 void test_multiple_package_declarations(void) {
-    bdd_scenario("Multiple package declarations");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "package first;\n"
         "package second;\n"
@@ -160,18 +108,14 @@ void test_multiple_package_declarations(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("multiple_packages.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    then_error_contains("multiple package declarations");
+    bdd_run_compilation_scenario("Multiple package declarations",
+                                 "multiple_packages.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "multiple package declarations");
 }
 
-// Test scenario: Package declaration not at beginning
 void test_package_not_at_beginning(void) {
-    bdd_scenario("Package declaration not at beginning");
-    
-    given_asthra_compiler_available();
-    
     const char* source = 
         "pub fn helper(none) -> void {\n"
         "    return ();\n"
@@ -184,43 +128,29 @@ void test_package_not_at_beginning(void) {
         "    return ();\n"
         "}\n";
     
-    given_file_with_content("package_after_code.asthra", source);
-    when_compile_file();
-    then_compilation_should_fail();
-    then_error_contains("expected 'package'");
+    bdd_run_compilation_scenario("Package declaration not at beginning",
+                                 "package_after_code.asthra",
+                                 source,
+                                 0,  // should fail
+                                 "expected 'package'");
 }
 
-// Main test runner
+// Define test cases using the new framework - @wip tags based on original file
+BddTestCase package_declaration_test_cases[] = {
+    BDD_TEST_CASE(simple_package_declaration, test_simple_package_declaration),
+    BDD_TEST_CASE(package_with_identifier, test_package_with_identifier),
+    BDD_TEST_CASE(package_with_underscore, test_package_with_underscore),
+    BDD_TEST_CASE(missing_package_declaration, test_missing_package_declaration),
+    BDD_TEST_CASE(package_without_semicolon, test_package_without_semicolon),
+    BDD_WIP_TEST_CASE(package_invalid_characters, test_package_invalid_characters),
+    BDD_WIP_TEST_CASE(multiple_package_declarations, test_multiple_package_declarations),
+    BDD_TEST_CASE(package_not_at_beginning, test_package_not_at_beginning),
+};
+
+// Main test runner using the new framework
 int main(void) {
-    bdd_init("Package Declaration Syntax");
-    
-    // Check if @wip scenarios should be skipped
-    if (bdd_should_skip_wip()) {
-        // Skip @wip scenarios
-        bdd_skip_scenario("Package declaration with invalid characters [@wip]");
-        bdd_skip_scenario("Multiple package declarations [@wip]");
-        
-        // Run non-@wip scenarios
-        test_simple_package_declaration();
-        test_package_with_identifier();
-        test_package_with_underscore();
-        test_missing_package_declaration();
-        test_package_without_semicolon();
-        test_package_not_at_beginning();
-    } else {
-        // Run all scenarios from package_declaration.feature
-        test_simple_package_declaration();
-        test_package_with_identifier();
-        test_package_with_underscore();
-        test_missing_package_declaration();
-        test_package_without_semicolon();
-        test_package_invalid_characters();
-        test_multiple_package_declarations();
-        test_package_not_at_beginning();
-    }
-    
-    // Cleanup
-    common_cleanup();
-    
-    return bdd_report();
+    return bdd_run_test_suite("Package Declaration Syntax",
+                              package_declaration_test_cases,
+                              sizeof(package_declaration_test_cases) / sizeof(package_declaration_test_cases[0]),
+                              bdd_cleanup_temp_files);
 }

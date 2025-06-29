@@ -81,10 +81,24 @@ const char* bdd_find_asthra_compiler(void) {
         NULL
     };
     
+    static int first_call = 1;
+    
     for (int i = 0; compiler_paths[i] != NULL; i++) {
         if (access(compiler_paths[i], X_OK) == 0) {
+            if (first_call) {
+                fprintf(stderr, "BDD: Using Asthra compiler at: %s\n", compiler_paths[i]);
+                first_call = 0;
+            }
             return compiler_paths[i];
         }
+    }
+    
+    if (first_call) {
+        fprintf(stderr, "BDD: ERROR - Asthra compiler not found in any of these paths:\n");
+        for (int i = 0; compiler_paths[i] != NULL; i++) {
+            fprintf(stderr, "  - %s\n", compiler_paths[i]);
+        }
+        first_call = 0;
     }
     
     return NULL;
@@ -200,6 +214,13 @@ int bdd_compile_source_file(const char* source_file, const char* output_file, co
     
     int exit_code;
     char* output = bdd_execute_command(command, &exit_code);
+    
+    // If compilation failed, show the compiler output for debugging
+    if (exit_code != 0 && output && strlen(output) > 0) {
+        fprintf(stderr, "Compilation failed with exit code %d\n", exit_code);
+        fprintf(stderr, "Compiler output:\n%s\n", output);
+    }
+    
     bdd_cleanup_string(&output);
     
     // Store executable path for cleanup
