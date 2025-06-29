@@ -1,0 +1,307 @@
+name: Asthra BDD Tests Implementation
+
+on:
+  workflow_call:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'bdd/**'
+      - 'tests/**'
+      - 'CMakeLists.txt'
+      - 'cmake/**'
+      - '.github/workflows/bdd-implementation.yml'
+      - '.github/workflows/bdd.yml'
+      - 'run-bdd-tests-local.sh'
+      - 'run-bdd-tests-podman.sh'
+  push:
+    branches:
+      - main
+      - 'release/**'
+
+env:
+  ASTHRA_VERSION: "0.1.0"
+
+jobs:
+  bdd-tests:
+    name: BDD Tests (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux - Clang only
+          - platform: linux
+            os: ubuntu-24.04
+            cc: clang-18
+            cxx: clang++-18
+            
+          # macOS - Clang only
+          - platform: macos
+            os: macos-14
+            cc: /opt/homebrew/opt/llvm@18/bin/clang
+            cxx: /opt/homebrew/opt/llvm@18/bin/clang++
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    # =============================================================================
+    # PLATFORM-SPECIFIC SETUP
+    # =============================================================================
+    
+    - name: Setup Linux dependencies
+      if: matrix.platform == 'linux'
+      run: |
+        set -e
+        echo "=== Installing Linux BDD Dependencies ==="
+        sudo apt-get update -y
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          pkg-config \
+          gperf \
+          ruby \
+          ruby-dev \
+          wget \
+          software-properties-common
+        
+        # Install LLVM 18 (required - matching main build workflow)
+        echo "Installing LLVM 18..."
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+        sudo add-apt-repository "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-18 main"
+        sudo apt-get update -y
+        sudo apt-get install -y llvm-18 llvm-18-dev clang-18 lld-18 llvm-18-tools
+        
+        # Verify LLVM 18 installation
+        echo "Checking clang-18 version..."
+        which clang-18 && clang-18 --version
+        
+        # Install Cucumber for BDD
+        sudo gem install cucumber --no-document
+        
+        echo "✓ Linux BDD dependencies installed successfully"
+        
+    - name: Setup macOS dependencies
+      if: matrix.platform == 'macos'
+      run: |
+        set -e
+        echo "=== Installing macOS BDD Dependencies ==="
+        
+        # Install basic dependencies
+        brew install \
+          cmake \
+          pkg-config \
+          gperf \
+          llvm@18 || echo "Some packages may already be installed"
+        
+        # Add LLVM to PATH and set environment variables
+        echo "/opt/homebrew/opt/llvm@18/bin" >> $GITHUB_PATH
+        echo "LDFLAGS=-L/opt/homebrew/opt/llvm@18/lib" >> $GITHUB_ENV
+        echo "CPPFLAGS=-I/opt/homebrew/opt/llvm@18/include" >> $GITHUB_ENV
+        echo "LLVM_DIR=/opt/homebrew/opt/llvm@18" >> $GITHUB_ENV
+        
+        # Install Ruby and Cucumber
+        brew install ruby || echo "Ruby already installed"
+        echo 'export PATH="/opt/homebrew/opt/ruby/bin:$PATH"' >> $GITHUB_ENV
+        export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
+        gem install cucumber --no-document
+        
+        echo "✓ macOS BDD dependencies installed successfully"
+
+    # =============================================================================
+    # COMPILER SETUP
+    # =============================================================================
+    
+    - name: Set compiler environment
+      run: |
+        set -e
+        echo "=== Setting Compiler Environment ==="
+        echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
+        echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
+        
+        # Verify compilers
+        ${{ matrix.cc }} --version
+        ${{ matrix.cxx }} --version
+        
+        echo "✓ Compiler environment set successfully"
+
+    # =============================================================================
+    # BUILD WITH BDD TESTS
+    # =============================================================================
+    
+    - name: Configure CMake with BDD tests
+      run: |
+        set -e
+        echo "=== CMake Configuration with BDD Tests ==="
+        mkdir -p build
+        cd build
+        
+        # Configure with BDD tests and ensure json-c is available
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+          -DBUILD_BDD_TESTS=ON \
+          -DUSE_SYSTEM_JSON_C=OFF
+        
+        echo "✓ CMake configuration completed successfully"
+
+    - name: Build Asthra with BDD tests
+      run: |
+        set -e
+        echo "=== Building Asthra with BDD Tests ==="
+        cd build
+        
+        # Build main compiler and dependencies first
+        echo "Building main compiler and libraries..."
+        cmake --build . --parallel $(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
+        
+        # Build BDD test executables
+        echo "Building BDD test executables..."
+        cmake --build . --target build-tests
+        
+        echo "✓ Build completed successfully"
+
+    # =============================================================================
+    # RUN BDD TESTS USING THE SCRIPT
+    # =============================================================================
+    
+    - name: Run BDD tests with script
+      run: |
+        set -e
+        echo "=== Running BDD Tests Using run-bdd-tests-local.sh ==="
+        
+        # Enable debug output for CI
+        export BDD_DEBUG=1
+        export ASTHRA_DEBUG=1
+        
+        # Run the script with verbose output
+        # The script handles:
+        # - Finding the Asthra compiler
+        # - Setting up LLVM paths for Linux
+        # - Running all test suites
+        # - Skipping @wip scenarios by default
+        # - Aggregating results
+        # - Proper exit codes
+        ./run-bdd-tests-local.sh --verbose
+        
+        echo "✓ BDD tests completed successfully"
+
+    - name: Run BDD tests with @wip scenarios
+      if: matrix.platform == 'linux'  # Only run on one platform to save CI time
+      continue-on-error: true  # Don't fail the workflow if @wip tests fail
+      run: |
+        set -e
+        echo "=== Running BDD Tests Including @wip Scenarios ==="
+        
+        # Run with --all flag to include @wip scenarios
+        ./run-bdd-tests-local.sh --verbose --all || {
+          exit_code=$?
+          echo "⚠️ Some @wip scenarios failed (exit code: $exit_code)"
+          echo "This is expected for work-in-progress scenarios"
+        }
+
+    # =============================================================================
+    # TEST REPORTING
+    # =============================================================================
+    
+    - name: Generate test report
+      if: always()
+      run: |
+        echo "=== Generating Test Report ==="
+        mkdir -p test-reports
+        
+        # Copy test logs
+        if [ -d "build/bdd-logs" ]; then
+          cp -r build/bdd-logs test-reports/
+        fi
+        
+        # Generate summary
+        echo "BDD Test Summary" > test-reports/summary.txt
+        echo "=================" >> test-reports/summary.txt
+        echo "Platform: ${{ matrix.platform }}" >> test-reports/summary.txt
+        echo "Date: $(date)" >> test-reports/summary.txt
+        echo "" >> test-reports/summary.txt
+        
+        # List executed tests
+        echo "Executed BDD tests:" >> test-reports/summary.txt
+        find build/bdd/bin -name "bdd_*" -type f -executable 2>/dev/null | while read test; do
+          echo "- $(basename $test)" >> test-reports/summary.txt
+        done || echo "No BDD test executables found" >> test-reports/summary.txt
+        
+        # Show test counts from logs
+        echo "" >> test-reports/summary.txt
+        echo "Test Results:" >> test-reports/summary.txt
+        if [ -d "build/bdd-logs" ]; then
+          for log in build/bdd-logs/*.log; do
+            if [ -f "$log" ]; then
+              echo "" >> test-reports/summary.txt
+              echo "$(basename $log):" >> test-reports/summary.txt
+              grep -E "(Passed:|Failed:|Skipped:|Total:)" "$log" | tail -4 >> test-reports/summary.txt || true
+            fi
+          done
+        fi
+        
+        cat test-reports/summary.txt
+
+    - name: Upload test reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: bdd-test-reports-${{ matrix.platform }}
+        path: test-reports/
+        retention-days: 7
+
+    - name: Upload test logs
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: bdd-test-logs-${{ matrix.platform }}
+        path: |
+          build/bdd-logs/
+          build/Testing/Temporary/
+        retention-days: 7
+
+  # =============================================================================
+  # TEST SUMMARY
+  # =============================================================================
+  
+  bdd-summary:
+    name: BDD Test Summary
+    needs: bdd-tests
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Download all test reports
+      uses: actions/download-artifact@v4
+      with:
+        pattern: bdd-test-reports-*
+        merge-multiple: true
+        path: all-reports/
+        
+    - name: Generate combined report
+      run: |
+        echo "=== BDD Test Summary ==="
+        echo "Test Status: ${{ needs.bdd-tests.result }}"
+        
+        if [ -d "all-reports" ]; then
+          echo ""
+          echo "Test Reports Available:"
+          find all-reports -name "*.txt" -o -name "*.log" | sort
+          
+          echo ""
+          echo "=== Aggregated Results ==="
+          # Show all test summaries
+          find all-reports -name "*.log" -exec echo "From {}:" \; -exec grep -E "(Passed:|Failed:|Skipped:|Total:)" {} \; -exec echo "" \; || true
+        fi
+        
+        # Set status for downstream workflows
+        if [ "${{ needs.bdd-tests.result }}" == "success" ]; then
+          echo "✅ All BDD tests passed"
+        else
+          echo "❌ Some BDD tests failed"
+        fi

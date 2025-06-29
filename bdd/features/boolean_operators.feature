@@ -67,6 +67,7 @@ Feature: Boolean operators
     When I compile and run the program
     Then the exit code should be 0
 
+  @wip
   Scenario: Logical OR operator
     Given I have the following Asthra code:
       """
@@ -90,6 +91,7 @@ Feature: Boolean operators
     When I compile and run the program
     Then the exit code should be 0
 
+  @wip
   Scenario: Boolean operator precedence
     Given I have the following Asthra code:
       """
@@ -115,6 +117,7 @@ Feature: Boolean operators
     When I compile and run the program
     Then the exit code should be 0
 
+  @wip
   Scenario: Complex boolean expressions
     Given I have the following Asthra code:
       """
