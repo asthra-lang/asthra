@@ -66,15 +66,11 @@ else
     exit 1
 fi
 
-# Run specific BDD test to see detailed output
-if [ -f "bdd/bin/bdd_unit_compiler_basic" ]; then
-    echo ""
-    echo "=== Running compiler basic unit tests with detailed output ==="
-    
-    # First, let'\''s see what the compiler outputs when we try to compile a simple test
-    echo "Creating test file..."
-    mkdir -p bdd-temp
-    cat > bdd-temp/test_simple.asthra << '\''EOF'\''
+# Test compiler functionality before running BDD tests
+echo ""
+echo "=== Testing Asthra compiler functionality ==="
+mkdir -p bdd-temp
+cat > bdd-temp/test_simple.asthra << '\''EOF'\''
 package main;
 
 pub fn main(none) -> void {
@@ -82,13 +78,17 @@ pub fn main(none) -> void {
     return ();
 }
 EOF
-    
-    echo "Attempting to compile test file with verbose output..."
-    ./bin/asthra -v -o bdd-temp/test_simple bdd-temp/test_simple.asthra 2>&1 || true
-    
-    echo ""
-    echo "Now running BDD test..."
-    ./bdd/bin/bdd_unit_compiler_basic --reporter spec 2>&1 | tee bdd-logs/compiler_basic_detailed.log || true
+
+echo "Attempting to compile test file..."
+if "$ASTHRA_COMPILER_PATH" -v -o bdd-temp/test_simple bdd-temp/test_simple.asthra 2>&1; then
+    echo "✓ Compiler test successful"
+    if [ -f "bdd-temp/test_simple" ]; then
+        echo "✓ Executable created"
+    fi
+else
+    echo "❌ Compiler test failed - checking dependencies..."
+    echo "Checking compiler dependencies..."
+    ldd "$ASTHRA_COMPILER_PATH" 2>&1 || echo "ldd not available"
 fi
 
 # Summary of all BDD tests
@@ -100,17 +100,17 @@ TESTS_FAILED=0
 for test in bdd/bin/bdd_unit_*; do
     if [ -x "$test" ]; then
         TEST_NAME=$(basename "$test")
-        echo -n "Running $TEST_NAME... "
+        echo ""
+        echo "=== Running $TEST_NAME ==="
         TESTS_RUN=$((TESTS_RUN + 1))
-        if $test --reporter spec > "bdd-logs/${TEST_NAME}.log" 2>&1; then
-            echo "✓ PASSED"
+        # Use tee to show output while also saving to log
+        $test --reporter spec 2>&1 | tee "bdd-logs/${TEST_NAME}.log"
+        # Check exit status of the test command (not tee)
+        if [ ${PIPESTATUS[0]} -eq 0 ]; then
+            echo "✓ $TEST_NAME PASSED"
         else
-            echo "✗ FAILED"
+            echo "✗ $TEST_NAME FAILED"
             TESTS_FAILED=$((TESTS_FAILED + 1))
-            echo "  See bdd-logs/${TEST_NAME}.log for details"
-            # Show first few lines of failure
-            echo "  First 10 lines of failure:"
-            head -10 "bdd-logs/${TEST_NAME}.log" | sed '\''s/^/    /'\''
         fi
     fi
 done
