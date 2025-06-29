@@ -18,14 +18,14 @@ jobs:
           # Linux - Clang only
           - platform: linux
             os: ubuntu-22.04
-            cc: clang
-            cxx: clang++
+            cc: clang-18
+            cxx: clang++-18
             
           # macOS - Clang only
           - platform: macos
             os: macos-14
-            cc: clang
-            cxx: clang++
+            cc: /opt/homebrew/opt/llvm@18/bin/clang
+            cxx: /opt/homebrew/opt/llvm@18/bin/clang++
 
     steps:
     - name: Checkout code
@@ -49,7 +49,20 @@ jobs:
           pkg-config \
           gperf \
           ruby \
-          ruby-dev
+          ruby-dev \
+          wget \
+          software-properties-common
+        
+        # Install LLVM 18 (required - matching main build workflow)
+        echo "Installing LLVM 18..."
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+        sudo add-apt-repository "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-18 main"
+        sudo apt-get update -y
+        sudo apt-get install -y llvm-18 llvm-18-dev clang-18 lld-18 llvm-18-tools
+        
+        # Verify LLVM 18 installation
+        echo "Checking clang-18 version..."
+        which clang-18 && clang-18 --version
         
         # Install Cucumber for BDD
         sudo gem install cucumber --no-document
@@ -68,7 +81,13 @@ jobs:
         brew install \
           cmake \
           pkg-config \
-          gperf || echo "Some packages may already be installed"
+          gperf \
+          llvm@18 || echo "Some packages may already be installed"
+        
+        # Add LLVM 18 to PATH
+        echo "/opt/homebrew/opt/llvm@18/bin" >> $GITHUB_PATH
+        echo "LDFLAGS=-L/opt/homebrew/opt/llvm@18/lib" >> $GITHUB_ENV
+        echo "CPPFLAGS=-I/opt/homebrew/opt/llvm@18/include" >> $GITHUB_ENV
         
         # Install Ruby and Cucumber
         brew install ruby || echo "Ruby already installed"
