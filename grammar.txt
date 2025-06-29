@@ -283,6 +283,7 @@ CHAR           <- "'" (EscapeSequence / (!"'" .)) "'"      # Character literals 
 # Utility Functions:
 # - log(message: string) -> void              # Debug/diagnostic output to stderr
 # - panic(message: string) -> Never           # Program termination with error message
+# - exit(status: i32) -> Never                # Program termination with exit code
 # - args() -> []string                        # Access command-line arguments
 #
 # Range Functions (overloaded):
@@ -312,4 +313,4 @@ CHAR           <- "'" (EscapeSequence / (!"'" .)) "'"      # Character literals 
 # - Overload resolution happens during semantic analysis, not parsing
 #
 # This production is never used in parsing, only for documentation and tooling:
-PredeclaredIdent <- 'log' / 'range' / 'infinite' / 'panic' / 'args'
+PredeclaredIdent <- 'log' / 'range' / 'infinite' / 'panic' / 'exit' / 'args'

@@ -76,6 +76,20 @@ LLVMValueRef generate_identifier(LLVMBackendData *data, const ASTNode *node) {
             LLVMSetLinkage(args_fn, LLVMExternalLinkage);
         }
         return args_fn;
+    } else if (strcmp(name, "exit") == 0) {
+        // exit() maps directly to C library exit function
+        LLVMValueRef exit_fn = LLVMGetNamedFunction(data->module, "exit");
+        if (!exit_fn) {
+            // Declare exit function: void exit(int status)
+            LLVMTypeRef param_types[] = {data->i32_type};
+            LLVMTypeRef fn_type = LLVMFunctionType(data->void_type, param_types, 1, false);
+            exit_fn = LLVMAddFunction(data->module, "exit", fn_type);
+            LLVMSetLinkage(exit_fn, LLVMExternalLinkage);
+            // Mark as noreturn for LLVM optimization
+            LLVMSetFunctionCallConv(exit_fn, LLVMCCallConv);
+            // TODO: Add noreturn attribute when LLVM 15+ is required
+        }
+        return exit_fn;
     }
 
     // Check global functions
