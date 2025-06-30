@@ -59,7 +59,6 @@ Feature: User-Defined Types
     Then the output should contain "Mixed type struct works"
     And the exit code should be 0
 
-  @wip
   Scenario: Empty struct
     Given I have a file "empty_struct.asthra" with:
       """
@@ -137,7 +136,6 @@ Feature: User-Defined Types
     Then the output should contain "Simple enum works"
     And the exit code should be 0
 
-  @wip
   Scenario: Enum with single type data
     Given I have a file "enum_single_data.asthra" with:
       """
@@ -149,8 +147,8 @@ Feature: User-Defined Types
       }
       
       pub fn main(none) -> void {
-          let val: Option = Option::Some(42);
-          let empty: Option = Option::None;
+          let val: Option = Option.Some(42);
+          let empty: Option = Option.None;
           log("Enum with data works");
           return ();
       }
@@ -162,7 +160,6 @@ Feature: User-Defined Types
     Then the output should contain "Enum with data works"
     And the exit code should be 0
 
-  @wip
   Scenario: Enum with tuple data
     Given I have a file "enum_tuple_data.asthra" with:
       """
@@ -176,10 +173,10 @@ Feature: User-Defined Types
       }
       
       pub fn main(none) -> void {
-          let msg1: Message = Message::Move(10, 20);
-          let msg2: Message = Message::Write("Hello");
-          let msg3: Message = Message::Color(255, 0, 0);
-          let msg4: Message = Message::Quit;
+          let msg1: Message = Message.Move(10, 20);
+          let msg2: Message = Message.Write("Hello");
+          let msg3: Message = Message.Color(255, 0, 0);
+          let msg4: Message = Message.Quit;
           log("Enum with tuple data works");
           return ();
       }
