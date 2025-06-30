@@ -79,8 +79,8 @@ static inline bool is_pointer_type(TypeDescriptor *type) {
 static inline bool is_string_type(TypeDescriptor *type) {
     if (!type)
         return false;
-    // In Asthra, string is a builtin type
-    return type->category == TYPE_BUILTIN && strcmp(type->name, "string") == 0;
+    // In Asthra, string is a primitive type
+    return type->category == TYPE_PRIMITIVE && strcmp(type->name, "string") == 0;
 }
 
 /**

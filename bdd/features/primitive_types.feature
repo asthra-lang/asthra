@@ -133,6 +133,26 @@ Feature: Primitive Types
     And the output should contain "Asthra"
     And the exit code should be 0
 
+  Scenario: String concatenation
+    Given I have a file "string_concat.asthra" with:
+      """
+      package main;
+      
+      pub fn main(none) -> void {
+          let part1: string = "Welcome to ";
+          let part2: string = "Asthra";
+          let message: string = part1 + part2;
+          log(message);
+          return ();
+      }
+      """
+    When I compile the file
+    Then the compilation should succeed
+    And an executable should be created
+    When I run the executable
+    Then the output should contain "Welcome to Asthra"
+    And the exit code should be 0
+
   Scenario: Void type in function return
     Given I have a file "void_type.asthra" with:
       """

@@ -9,6 +9,7 @@
 #include "llvm_binary_ops.h"
 #include "llvm_debug.h"
 #include "llvm_expr_gen.h"
+#include "../analysis/type_info_types.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -52,8 +53,21 @@ LLVMValueRef generate_binary_op(LLVMBackendData *data, const ASTNode *node) {
 
     switch (node->data.binary_expr.operator) {
     case BINOP_ADD:
-        if (LLVMGetTypeKind(LLVMTypeOf(left)) == LLVMFloatTypeKind ||
-            LLVMGetTypeKind(LLVMTypeOf(left)) == LLVMDoubleTypeKind) {
+        // Check if this is string concatenation
+        if (node->type_info && node->type_info->category == TYPE_INFO_PRIMITIVE &&
+            node->type_info->data.primitive.kind == PRIMITIVE_INFO_STRING) {
+            // Call string concatenation runtime function
+            if (!data->runtime_string_concat_fn) {
+                LLVM_REPORT_ERROR(data, node, "String concatenation function not declared");
+            }
+            LLVMValueRef args[] = {left, right};
+            // Get the function type properly
+            LLVMTypeRef param_types[] = {data->ptr_type, data->ptr_type};
+            LLVMTypeRef fn_type = LLVMFunctionType(data->ptr_type, param_types, 2, false);
+            return LLVMBuildCall2(data->builder, fn_type, data->runtime_string_concat_fn, 
+                                  args, 2, "string_concat");
+        } else if (LLVMGetTypeKind(LLVMTypeOf(left)) == LLVMFloatTypeKind ||
+                   LLVMGetTypeKind(LLVMTypeOf(left)) == LLVMDoubleTypeKind) {
             return LLVMBuildFAdd(data->builder, left, right, "add");
         } else {
             return LLVMBuildAdd(data->builder, left, right, "add");

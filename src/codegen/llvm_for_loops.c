@@ -139,6 +139,8 @@ static bool generate_range_loop(LLVMBackendData *data, const ASTNode *node,
         LLVMAppendBasicBlockInContext(data->context, function, "range_loop");
     LLVMBasicBlockRef loop_body_bb =
         LLVMAppendBasicBlockInContext(data->context, function, "range_body");
+    LLVMBasicBlockRef loop_inc_bb =
+        LLVMAppendBasicBlockInContext(data->context, function, "range_inc");
     LLVMBasicBlockRef loop_end_bb =
         LLVMAppendBasicBlockInContext(data->context, function, "range_end");
 
@@ -152,7 +154,8 @@ static bool generate_range_loop(LLVMBackendData *data, const ASTNode *node,
     register_local_var(data, node->data.for_stmt.variable, loop_var, loop_var_type);
 
     // Push loop context for break/continue statements
-    llvm_backend_push_loop_context(data, loop_bb, loop_end_bb);
+    // Continue jumps to increment block, break jumps to end
+    llvm_backend_push_loop_context(data, loop_inc_bb, loop_end_bb);
 
     // Jump to loop header
     LLVMBuildBr(data->builder, loop_bb);
@@ -170,12 +173,18 @@ static bool generate_range_loop(LLVMBackendData *data, const ASTNode *node,
 
     // Check if the body ended with a terminator (break/continue/return)
     if (!LLVMGetBasicBlockTerminator(LLVMGetInsertBlock(data->builder))) {
-        // Increment loop variable and continue to next iteration
-        LLVMValueRef inc_val = LLVMBuildAdd(data->builder, current_val,
-                                            LLVMConstInt(loop_var_type, 1, false), "range_inc");
-        LLVMBuildStore(data->builder, inc_val, loop_var);
-        LLVMBuildBr(data->builder, loop_bb);
+        // Jump to increment block
+        LLVMBuildBr(data->builder, loop_inc_bb);
     }
+
+    // Increment block
+    LLVMPositionBuilderAtEnd(data->builder, loop_inc_bb);
+    // Reload current value in increment block
+    current_val = LLVMBuildLoad2(data->builder, loop_var_type, loop_var, "range_var_inc");
+    LLVMValueRef inc_val = LLVMBuildAdd(data->builder, current_val,
+                                        LLVMConstInt(loop_var_type, 1, false), "range_inc");
+    LLVMBuildStore(data->builder, inc_val, loop_var);
+    LLVMBuildBr(data->builder, loop_bb);
 
     // Pop loop context
     llvm_backend_pop_loop_context(data);
@@ -220,6 +229,8 @@ static bool generate_array_loop(LLVMBackendData *data, const ASTNode *node, LLVM
         LLVMAppendBasicBlockInContext(data->context, function, "array_loop");
     LLVMBasicBlockRef loop_body_bb =
         LLVMAppendBasicBlockInContext(data->context, function, "array_body");
+    LLVMBasicBlockRef loop_inc_bb =
+        LLVMAppendBasicBlockInContext(data->context, function, "array_inc");
     LLVMBasicBlockRef loop_end_bb =
         LLVMAppendBasicBlockInContext(data->context, function, "array_end");
 
@@ -236,7 +247,8 @@ static bool generate_array_loop(LLVMBackendData *data, const ASTNode *node, LLVM
     register_local_var(data, node->data.for_stmt.variable, element_var, element_type);
 
     // Push loop context for break/continue statements
-    llvm_backend_push_loop_context(data, loop_bb, loop_end_bb);
+    // Continue jumps to increment block, break jumps to end
+    llvm_backend_push_loop_context(data, loop_inc_bb, loop_end_bb);
 
     // Jump to loop header
     LLVMBuildBr(data->builder, loop_bb);
@@ -270,12 +282,18 @@ static bool generate_array_loop(LLVMBackendData *data, const ASTNode *node, LLVM
 
     // Check if the body ended with a terminator (break/continue/return)
     if (!LLVMGetBasicBlockTerminator(LLVMGetInsertBlock(data->builder))) {
-        // Increment index and continue to next iteration
-        LLVMValueRef inc_index = LLVMBuildAdd(data->builder, current_index,
-                                              LLVMConstInt(index_type, 1, false), "array_inc");
-        LLVMBuildStore(data->builder, inc_index, index_var);
-        LLVMBuildBr(data->builder, loop_bb);
+        // Jump to increment block
+        LLVMBuildBr(data->builder, loop_inc_bb);
     }
+
+    // Increment block
+    LLVMPositionBuilderAtEnd(data->builder, loop_inc_bb);
+    // Reload current index in increment block
+    current_index = LLVMBuildLoad2(data->builder, index_type, index_var, "array_index_inc");
+    LLVMValueRef inc_index = LLVMBuildAdd(data->builder, current_index,
+                                          LLVMConstInt(index_type, 1, false), "array_inc");
+    LLVMBuildStore(data->builder, inc_index, index_var);
+    LLVMBuildBr(data->builder, loop_bb);
 
     // Pop loop context
     llvm_backend_pop_loop_context(data);
@@ -323,6 +341,8 @@ static bool generate_slice_loop(LLVMBackendData *data, const ASTNode *node, LLVM
         LLVMAppendBasicBlockInContext(data->context, function, "slice_loop");
     LLVMBasicBlockRef loop_body_bb =
         LLVMAppendBasicBlockInContext(data->context, function, "slice_body");
+    LLVMBasicBlockRef loop_inc_bb =
+        LLVMAppendBasicBlockInContext(data->context, function, "slice_inc");
     LLVMBasicBlockRef loop_end_bb =
         LLVMAppendBasicBlockInContext(data->context, function, "slice_end");
 
@@ -339,7 +359,8 @@ static bool generate_slice_loop(LLVMBackendData *data, const ASTNode *node, LLVM
     register_local_var(data, node->data.for_stmt.variable, element_var, data->ptr_type);
 
     // Push loop context for break/continue statements
-    llvm_backend_push_loop_context(data, loop_bb, loop_end_bb);
+    // Continue jumps to increment block, break jumps to end
+    llvm_backend_push_loop_context(data, loop_inc_bb, loop_end_bb);
 
     // Jump to loop header
     LLVMBuildBr(data->builder, loop_bb);
@@ -369,12 +390,18 @@ static bool generate_slice_loop(LLVMBackendData *data, const ASTNode *node, LLVM
 
     // Check if the body ended with a terminator (break/continue/return)
     if (!LLVMGetBasicBlockTerminator(LLVMGetInsertBlock(data->builder))) {
-        // Increment index and continue to next iteration
-        LLVMValueRef inc_index = LLVMBuildAdd(data->builder, current_index,
-                                              LLVMConstInt(index_type, 1, false), "slice_inc");
-        LLVMBuildStore(data->builder, inc_index, index_var);
-        LLVMBuildBr(data->builder, loop_bb);
+        // Jump to increment block
+        LLVMBuildBr(data->builder, loop_inc_bb);
     }
+
+    // Increment block
+    LLVMPositionBuilderAtEnd(data->builder, loop_inc_bb);
+    // Reload current index in increment block
+    current_index = LLVMBuildLoad2(data->builder, index_type, index_var, "slice_index_inc");
+    LLVMValueRef inc_index = LLVMBuildAdd(data->builder, current_index,
+                                          LLVMConstInt(index_type, 1, false), "slice_inc");
+    LLVMBuildStore(data->builder, inc_index, index_var);
+    LLVMBuildBr(data->builder, loop_bb);
 
     // Pop loop context
     llvm_backend_pop_loop_context(data);

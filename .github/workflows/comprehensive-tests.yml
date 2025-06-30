@@ -24,9 +24,26 @@ jobs:
           pkg-config \
           valgrind \
           gperf \
-          clang-tools \
-          llvm \
-          libjson-c-dev
+          wget \
+          software-properties-common
+        
+        # Install LLVM 18 (required)
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+        sudo add-apt-repository "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-18 main"
+        sudo apt-get update -y
+        sudo apt-get install -y llvm-18 llvm-18-dev clang-18 lld-18 llvm-18-tools
+        
+        # Verify installation
+        echo "Checking clang-18 version..."
+        which clang-18 && clang-18 --version
+        
+        # Install optional dependencies
+        sudo apt-get install -y libjson-c-dev || echo "json-c package not available"
+        
+    - name: Set compiler environment
+      run: |
+        echo "CC=clang-18" >> $GITHUB_ENV
+        echo "CXX=clang++-18" >> $GITHUB_ENV
 
     - name: Configure CMake
       run: |

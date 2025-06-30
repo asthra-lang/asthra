@@ -73,6 +73,7 @@ typedef struct LLVMBackendData {
     LLVMValueRef runtime_free_fn;
     LLVMValueRef runtime_panic_fn;
     LLVMValueRef runtime_log_fn;
+    LLVMValueRef runtime_string_concat_fn;
 
     // Debug info support
     LLVMDIBuilderRef di_builder;

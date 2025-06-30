@@ -257,6 +257,16 @@ add_bdd_test(user_defined_types unit)
 add_bdd_test(generic_types unit)
 add_bdd_test(special_types unit)
 
+# Phase 2 BDD Tests - Declarations
+add_bdd_test(const_declarations unit)
+add_bdd_test(extern_declarations unit)
+
+# Phase 2 BDD Tests - Mutability System
+add_bdd_test(mutability_system unit)
+
+# Phase 2 BDD Tests - Control Flow
+add_bdd_test(control_flow_loops unit)
+
 # Configuration summary
 message(STATUS "BDD testing infrastructure configured")
 message(STATUS "  BDD output directory: ${BDD_OUTPUT_DIR}")

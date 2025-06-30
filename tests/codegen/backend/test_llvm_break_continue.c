@@ -304,6 +304,62 @@ static bool test_loop_context_management() {
     return true;
 }
 
+// Test 7: Continue in for loop should jump to increment block, not condition
+static bool test_continue_in_for_loop() {
+    LLVMBackendData *data = create_test_backend();
+    if (!data)
+        return false;
+
+    // Create a for loop structure with separate increment block
+    LLVMBasicBlockRef loop_cond =
+        LLVMAppendBasicBlockInContext(data->context, data->current_function, "for_cond");
+    LLVMBasicBlockRef loop_body =
+        LLVMAppendBasicBlockInContext(data->context, data->current_function, "for_body");
+    LLVMBasicBlockRef loop_inc =
+        LLVMAppendBasicBlockInContext(data->context, data->current_function, "for_inc");
+    LLVMBasicBlockRef loop_end =
+        LLVMAppendBasicBlockInContext(data->context, data->current_function, "for_end");
+
+    // For a for loop, continue should jump to the increment block
+    llvm_backend_push_loop_context(data, loop_inc, loop_end);
+
+    // Position builder in loop body
+    LLVMPositionBuilderAtEnd(data->builder, loop_body);
+
+    // Create a continue statement
+    ASTNode *continue_stmt = calloc(1, sizeof(ASTNode));
+    continue_stmt->type = AST_CONTINUE_STMT;
+
+    // Store current error state
+    bool had_errors_before = llvm_backend_has_errors(data);
+
+    // Generate continue statement
+    generate_statement(data, continue_stmt);
+
+    // Check no new errors
+    bool has_error = llvm_backend_has_errors(data) && !had_errors_before;
+
+    // Check that the terminator jumps to increment block, not condition
+    LLVMValueRef terminator = LLVMGetBasicBlockTerminator(LLVMGetInsertBlock(data->builder));
+    bool correct_jump = false;
+    
+    if (terminator && LLVMIsABranchInst(terminator)) {
+        // For unconditional branch (continue), check it goes to increment block
+        if (LLVMGetNumOperands(terminator) == 1) {
+            LLVMBasicBlockRef target = LLVMValueAsBasicBlock(LLVMGetOperand(terminator, 0));
+            correct_jump = (target == loop_inc);
+        }
+    }
+
+    // Pop loop context
+    llvm_backend_pop_loop_context(data);
+
+    free(continue_stmt);
+    cleanup_test_backend(data);
+
+    return !has_error && correct_jump;
+}
+
 int main() {
     printf("Running LLVM Break/Continue Statement Tests...\n\n");
 
@@ -313,6 +369,7 @@ int main() {
     TEST_CASE(test_continue_inside_loop);
     TEST_CASE(test_nested_loops);
     TEST_CASE(test_loop_context_management);
+    TEST_CASE(test_continue_in_for_loop);
 
     printf("\nTest Results: %d/%d tests passed\n", tests_passed, test_count);
 
