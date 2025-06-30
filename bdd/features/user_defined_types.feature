@@ -226,9 +226,8 @@ Feature: User-Defined Types
               return Counter { value: 0 };
           }
           
-          pub fn increment(self) -> void {
-              self.value = self.value + 1;
-              return ();
+          pub fn increment(self) -> Counter {
+              return Counter { value: self.value + 1 };
           }
           
           pub fn get_value(self) -> i32 {
@@ -238,7 +237,7 @@ Feature: User-Defined Types
       
       pub fn main(none) -> void {
           let mut c: Counter = Counter::new();
-          c.increment();
+          c = c.increment();
           log("Struct methods work");
           return ();
       }
