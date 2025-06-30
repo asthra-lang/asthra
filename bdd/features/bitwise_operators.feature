@@ -252,7 +252,6 @@ Feature: Bitwise Operators
     And the output should contain "Bit 3 toggled successfully: 0"
     And the exit code should be 0
 
-  @wip
   Scenario: Bitwise operations with different integer types
     Given I have a file "bitwise_types.asthra" with:
       """
@@ -337,7 +336,6 @@ Feature: Bitwise Operators
     Then the compilation should fail
     And the error message should contain "bitwise"
 
-  @wip
   Scenario: Error - shift by negative amount
     Given I have a file "negative_shift.asthra" with:
       """

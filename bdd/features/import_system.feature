@@ -98,7 +98,6 @@ Feature: Import System
     Then the output should contain "GitHub import works"
     And the exit code should be 0
 
-  @wip
   Scenario: Import without quotes
     Given I have a file "import_no_quotes.asthra" with:
       """
@@ -144,7 +143,6 @@ Feature: Import System
     Then the compilation should fail
     And the error message should contain "expected 'package'"
 
-  @wip
   Scenario: Import with invalid path
     Given I have a file "import_invalid_path.asthra" with:
       """

@@ -83,7 +83,6 @@ Feature: Package Declaration Syntax
     Then the compilation should fail
     And the error message should contain "expected ';'"
 
-  @wip
   Scenario: Package declaration with invalid characters
     Given I have a file "invalid_package.asthra" with:
       """
@@ -98,7 +97,6 @@ Feature: Package Declaration Syntax
     Then the compilation should fail
     And the error message should contain "invalid package name"
 
-  @wip
   Scenario: Multiple package declarations
     Given I have a file "multiple_packages.asthra" with:
       """
