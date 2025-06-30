@@ -47,9 +47,36 @@ Feature: Special Types
     Then the output should contain "Unit in expressions works"
     And the exit code should be 0
 
-  @wip
-  Scenario: Never type for non-returning functions
-    Given I have a file "never_type.asthra" with:
+  Scenario: Never type syntax acceptance
+    Given I have a file "never_type_syntax.asthra" with:
+      """
+      package main;
+      
+      pub fn panic(msg: string) -> Never {
+          log(msg);
+          exit(1);
+      }
+      
+      pub fn unreachable(none) -> Never {
+          while true {
+              // Infinite loop
+          }
+      }
+      
+      pub fn main(none) -> void {
+          log("Never type syntax accepted");
+          return ();
+      }
+      """
+    When I compile the file
+    Then the compilation should succeed
+    And an executable should be created
+    When I run the executable
+    Then the output should contain "Never type syntax accepted"
+    And the exit code should be 0
+
+  Scenario: Never type actually terminates execution
+    Given I have a file "never_terminates.asthra" with:
       """
       package main;
       
@@ -59,12 +86,9 @@ Feature: Special Types
       }
       
       pub fn main(none) -> void {
-          let x: i32 = if false {
-              panic("This won't happen");
-          } else {
-              42
-          };
-          log("Never type works");
+          log("Before panic");
+          panic("Fatal error occurred");
+          log("This should never print");
           return ();
       }
       """
@@ -72,8 +96,60 @@ Feature: Special Types
     Then the compilation should succeed
     And an executable should be created
     When I run the executable
-    Then the output should contain "Never type works"
+    Then the output should contain "Before panic"
+    And the output should contain "Fatal error occurred"
+    And the output should not contain "This should never print"
+    And the exit code should be 1
+
+  Scenario: Never type satisfies any return type context
+    Given I have a file "never_type_context.asthra" with:
+      """
+      package main;
+      
+      pub fn panic(msg: string) -> Never {
+          log(msg);
+          exit(1);
+      }
+      
+      pub fn get_value(fail: bool) -> i32 {
+          if fail {
+              return panic("Failed to get value");
+          } else {
+              return 42;
+          }
+      }
+      
+      pub fn main(none) -> void {
+          let result: i32 = get_value(false);
+          log("Never type in return context works");
+          return ();
+      }
+      """
+    When I compile the file
+    Then the compilation should succeed
+    And an executable should be created
+    When I run the executable
+    Then the output should contain "Never type in return context works"
     And the exit code should be 0
+
+  Scenario: Unreachable code after Never type
+    Given I have a file "never_unreachable.asthra" with:
+      """
+      package main;
+      
+      pub fn terminate(none) -> Never {
+          exit(0);
+      }
+      
+      pub fn main(none) -> void {
+          terminate();
+          let x: i32 = 42; // This is unreachable
+          log("This is unreachable");
+      }
+      """
+    When I compile the file
+    Then the compilation should succeed with warnings
+    And the warning message should contain "unreachable code"
 
   Scenario: Size types - usize
     Given I have a file "usize_type.asthra" with:
@@ -165,8 +241,7 @@ Feature: Special Types
     Then the output should contain "sizeof expressions work"
     And the exit code should be 0
 
-  @wip
-  Scenario: Never type in match expressions
+  Scenario: Never type in match statements
     Given I have a file "never_match.asthra" with:
       """
       package main;
@@ -182,14 +257,18 @@ Feature: Special Types
       }
       
       pub fn process(s: Status) -> i32 {
-          return match s {
-              Status::Ok => 42,
-              Status::Error => handle_error()
-          };
+          match s {
+              Status.Ok => {
+                  return 42;
+              }
+              Status.Error => {
+                  return handle_error();
+              }
+          }
       }
       
       pub fn main(none) -> void {
-          let result: i32 = process(Status::Ok);
+          let result: i32 = process(Status.Ok);
           log("Never in match works");
           return ();
       }
@@ -274,7 +353,6 @@ Feature: Special Types
     Then the output should contain "Unit values are equal"
     And the exit code should be 0
 
-  @wip
   Scenario: Platform-specific size types
     Given I have a file "platform_sizes.asthra" with:
       """
