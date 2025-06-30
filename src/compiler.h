@@ -64,7 +64,6 @@ typedef enum {
     ASTHRA_TARGET_NATIVE // Use host architecture
 } AsthraTargetArch;
 
-
 // Output formats supported by the compiler
 typedef enum {
     ASTHRA_FORMAT_DEFAULT,   // Default based on file extension
@@ -77,9 +76,9 @@ typedef enum {
 
 // Position Independent Executable (PIE) mode
 typedef enum {
-    ASTHRA_PIE_DEFAULT,      // Use platform-specific defaults
-    ASTHRA_PIE_FORCE_ENABLED,  // Explicitly enable PIE
-    ASTHRA_PIE_FORCE_DISABLED  // Explicitly disable PIE
+    ASTHRA_PIE_DEFAULT,       // Use platform-specific defaults
+    ASTHRA_PIE_FORCE_ENABLED, // Explicitly enable PIE
+    ASTHRA_PIE_FORCE_DISABLED // Explicitly disable PIE
 } AsthraPIEMode;
 
 // Assembly syntax styles (deprecated - kept for API compatibility)
@@ -112,7 +111,7 @@ struct AsthraCompilerOptions {
     bool emit_llvm; // Deprecated - LLVM is now always used
     bool emit_asm;  // Deprecated - use output_format instead
     bool no_stdlib;
-    bool coverage; // Enable coverage instrumentation
+    bool coverage;          // Enable coverage instrumentation
     AsthraPIEMode pie_mode; // Position Independent Executable mode
 
     // Dynamic path and library management using flexible arrays

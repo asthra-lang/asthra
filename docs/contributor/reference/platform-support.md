@@ -22,7 +22,7 @@ Asthra is designed as a cross-platform programming language with first-class sup
 ### Supported Platforms
 
 #### Primary Targets (Tier 1)
-- **x86_64**: Linux, macOS
+- **x86_64**: Linux
 - **ARM64**: Linux, macOS
 - **WASM32**: Browser and WASI environments
 
@@ -41,7 +41,6 @@ Asthra is designed as a cross-platform programming language with first-class sup
 | Platform | Compilation | Runtime | FFI | Concurrency | Status |
 |----------|-------------|---------|-----|-------------|--------|
 | x86_64/Linux | ✅ | ✅ | ✅ | ✅ | Production |
-| x86_64/macOS | ✅ | ✅ | ✅ | ✅ | Production |
 | ARM64/Linux | ✅ | ✅ | ✅ | ✅ | Production |
 | ARM64/macOS | ✅ | ✅ | ✅ | ✅ | Production |
 | WASM32/Browser | ✅ | ✅ | ⚠️ | ⚠️ | Beta |

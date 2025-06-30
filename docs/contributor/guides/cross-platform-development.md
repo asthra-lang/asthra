@@ -142,7 +142,7 @@ if (result != 0) {
 
 The GitHub Actions CI tests on:
 - Linux with Clang (Ubuntu, strict warnings)
-- macOS with Clang (Apple Silicon and Intel)
+- macOS with Clang (Apple Silicon)
 
 ## Checklist for New Code
 

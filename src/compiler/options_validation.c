@@ -78,6 +78,14 @@ bool asthra_compiler_validate_options(const AsthraCompilerOptions *options) {
         return false;
     }
 
+    // Check for unsupported platform combinations
+#ifdef __APPLE__
+    if (options->target_arch == ASTHRA_TARGET_X86_64) {
+        fprintf(stderr, "Error: x86_64 is no longer supported on macOS. Use arm64 or native.\n");
+        return false;
+    }
+#endif
+
     // Validate mutually exclusive options
     if (options->emit_llvm && options->emit_asm) {
         return false; // Can't emit both LLVM IR and assembly
@@ -125,33 +133,33 @@ const char *asthra_get_optimization_level_string(AsthraOptimizationLevel level) 
 }
 
 // Generate output filename for LLVM backend
-char *asthra_backend_get_output_filename(int type, const char *input_file, const char *output_file) {
+char *asthra_backend_get_output_filename(int type, const char *input_file,
+                                         const char *output_file) {
     if (output_file && *output_file) {
         return strdup(output_file);
     }
-    
+
     // Generate default output filename based on input
     if (!input_file || !*input_file) {
         return strdup("output.ll");
     }
-    
+
     // Extract base name and add .ll extension
     const char *base = strrchr(input_file, '/');
     base = base ? base + 1 : input_file;
-    
+
     // Remove existing extension
     char *name = strdup(base);
     char *dot = strrchr(name, '.');
     if (dot) {
         *dot = '\0';
     }
-    
+
     // Add .ll extension
     size_t len = strlen(name) + 4;
     char *result = malloc(len);
     snprintf(result, len, "%s.ll", name);
     free(name);
-    
+
     return result;
 }
-

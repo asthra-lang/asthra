@@ -46,7 +46,6 @@ jobs:
             
             ### Downloads
             - **Linux x86_64**: `asthra-${{ steps.get_version.outputs.VERSION }}-linux-x86_64.tar.gz`
-            - **macOS x86_64**: `asthra-${{ steps.get_version.outputs.VERSION }}-macos-x86_64.tar.gz`
             - **macOS ARM64**: `asthra-${{ steps.get_version.outputs.VERSION }}-macos-arm64.tar.gz`
             
             ### Installation
@@ -79,9 +78,6 @@ jobs:
         include:
           - os: ubuntu-latest
             target: linux-x86_64
-            cc: clang
-          - os: macos-latest
-            target: macos-x86_64
             cc: clang
           - os: macos-latest
             target: macos-arm64

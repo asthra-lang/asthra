@@ -74,7 +74,8 @@ const char *asthra_llvm_target_triple(AsthraTargetArch arch) {
     switch (arch) {
     case ASTHRA_TARGET_X86_64:
 #ifdef __APPLE__
-        return "x86_64-apple-darwin";
+        fprintf(stderr, "Error: x86_64 is no longer supported on macOS. Use arm64 or native.\n");
+        return NULL;
 #elif defined(__linux__)
         return "x86_64-pc-linux-gnu";
 #else

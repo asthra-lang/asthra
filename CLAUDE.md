@@ -75,7 +75,7 @@ ctest --test-dir build -R "parser.*expr"       # Test parser expressions
 ### Build System
 - **CMake-based build system** with modular configuration
 - **Platform support**: 
-  - macOS: x86_64 (Intel), ARM64 (Apple Silicon)
+  - macOS: ARM64 (Apple Silicon)
   - Linux: x86_64, ARM64
 - **Sanitizer support**: AddressSanitizer, ThreadSanitizer, UndefinedBehaviorSanitizer
 - **LLVM requirement**: Version 18.0 or later (enforced by CMake)
