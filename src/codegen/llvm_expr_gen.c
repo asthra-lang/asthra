@@ -169,8 +169,10 @@ LLVMValueRef generate_expression(LLVMBackendData *data, const ASTNode *node) {
     case AST_TUPLE_LITERAL:
         return generate_tuple_literal(data, node);
 
-    // TODO: Implement remaining expression types
     case AST_STRUCT_LITERAL:
+        return generate_struct_literal(data, node);
+    
+    // TODO: Implement remaining expression types
     case AST_SLICE_EXPR:
     case AST_ASSOCIATED_FUNC_CALL:
         // Not yet implemented

@@ -385,8 +385,24 @@ ASTNode *parse_postfix_expr(Parser *parser) {
             Token peek1 = peek_token(parser); // This should be the token after '{'
 
             if (peek1.type == TOKEN_RIGHT_BRACE) {
-                // Empty braces {} - not a struct literal in this context
-                is_struct_literal = false;
+                // Empty braces {} - could be an empty struct literal
+                // Use the same heuristics as for non-empty cases
+                if (expr->type == AST_STRUCT_TYPE || expr->type == AST_ENUM_TYPE) {
+                    // Generic types are more likely to be struct literals
+                    is_struct_literal = true;
+                } else if (expr->type == AST_IDENTIFIER) {
+                    // For plain identifiers, check if it starts with uppercase (type convention)
+                    const char *name = expr->data.identifier.name;
+                    if (name && name[0] >= 'A' && name[0] <= 'Z') {
+                        // Uppercase identifiers are likely type names
+                        is_struct_literal = true;
+                    } else {
+                        // Lowercase identifiers are likely not struct literals
+                        is_struct_literal = false;
+                    }
+                } else {
+                    is_struct_literal = false;
+                }
             } else if (peek1.type == TOKEN_IDENTIFIER) {
                 // We have { identifier ..., need to check if followed by colon
                 // We need to peek further ahead, but we only have single token lookahead

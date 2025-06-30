@@ -357,14 +357,16 @@ bool analyze_struct_literal_expression(SemanticAnalyzer *analyzer, ASTNode *stru
         }
     }
 
-    // Check for missing fields
+    // Check for missing fields (only if struct has fields)
     bool has_missing_fields = false;
-    for (size_t i = 0; i < field_count; i++) {
-        if (!fields_initialized[i] && field_names[i]) {
-            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION,
-                                  struct_literal->location,
-                                  "missing field '%s' in struct literal", field_names[i]);
-            has_missing_fields = true;
+    if (field_count > 0) {
+        for (size_t i = 0; i < field_count; i++) {
+            if (!fields_initialized[i] && field_names[i]) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION,
+                                      struct_literal->location,
+                                      "missing field '%s' in struct literal", field_names[i]);
+                has_missing_fields = true;
+            }
         }
     }
 
