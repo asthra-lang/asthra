@@ -34,6 +34,11 @@ _Static_assert(__STDC_VERSION__ >= 201710L,
 // SEMANTIC ANALYZER STRUCTURE
 // =============================================================================
 
+typedef struct ImportedModule {
+    char *path;
+    SourceLocation location;  // Location of the import declaration
+} ImportedModule;
+
 typedef struct SemanticAnalyzer {
     SymbolTable *global_scope;
     SymbolTable *current_scope;
@@ -43,6 +48,11 @@ typedef struct SemanticAnalyzer {
     // Predeclared identifiers (log, range, etc.)
     PredeclaredIdentifier *predeclared_identifiers;
     size_t predeclared_count;
+
+    // Import tracking
+    ImportedModule *imported_modules;
+    size_t imported_count;
+    size_t imported_capacity;
 
     // Error handling
     SemanticError *errors;

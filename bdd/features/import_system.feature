@@ -160,7 +160,6 @@ Feature: Import System
     Then the compilation should fail
     And the error message should contain "invalid import path"
 
-  @wip
   Scenario: Duplicate imports
     Given I have a file "duplicate_imports.asthra" with:
       """
