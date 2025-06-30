@@ -14,7 +14,6 @@
 #define ASTHRA_PIPELINE_ORCHESTRATOR_H
 
 #include "../analysis/semantic_analyzer.h"
-#include "../codegen/backend_interface.h"
 #include "../compiler.h"
 #include "../parser/ast.h"
 #include "../parser/lexer.h"
@@ -86,7 +85,6 @@ struct SemanticPhaseData {
  * Results from code generation phase
  */
 struct CodegenPhaseData {
-    AsthraBackend *backend;
     bool success;
     size_t lines_generated;
     size_t functions_generated;
@@ -167,7 +165,6 @@ struct PipelineOrchestrator {
     Lexer **lexers;
     Parser **parsers;
     SemanticAnalyzer *global_analyzer;
-    AsthraBackend *backend;
 
     // Output management
     char *output_executable_path;

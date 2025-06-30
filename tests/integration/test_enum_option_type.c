@@ -4,6 +4,7 @@
  */
 
 #include "test_enum_integration_common.h"
+#include "../framework/backend_stubs.h"
 
 // Test Option type usage patterns
 static void test_option_type_integration(void) {
@@ -68,7 +69,7 @@ static void test_option_type_integration(void) {
     assert(semantic_success);
 
     // Perform code generation to ensure Option constructions work
-    AsthraBackend *backend = asthra_backend_create_by_type(ASTHRA_BACKEND_LLVM_IR);
+    void *backend = asthra_backend_create(NULL);
     assert(backend != NULL);
 
     // Connect semantic analysis results to backend

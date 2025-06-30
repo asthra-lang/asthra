@@ -9,7 +9,6 @@
  */
 
 #include "../../src/analysis/semantic_analyzer.h"
-#include "../../src/codegen/backend_interface.h"
 #include "../../src/compiler/pipeline_orchestrator.h"
 #include "../../src/parser/parser.h"
 #include "../framework/compiler_test_utils.h"

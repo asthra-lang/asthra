@@ -12,7 +12,6 @@
 #include "../framework/compiler_test_utils.h"
 #include "../framework/test_framework.h"
 #include "ast.h"
-#include "backend_interface.h"
 #include "lexer.h"
 #include "parser.h"
 #include "semantic_analyzer.h"

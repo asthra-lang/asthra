@@ -8,7 +8,8 @@
 #ifndef CODEGEN_BACKEND_WRAPPER_H
 #define CODEGEN_BACKEND_WRAPPER_H
 
-#include "backend_interface.h"
+// Temporary placeholder for removed backend type
+typedef void AsthraBackend;
 #include "semantic_analyzer.h"
 #include <stdbool.h>
 
@@ -17,6 +18,7 @@ extern "C" {
 #endif
 
 // Legacy constants for compatibility
+// Backend stubs are provided by backend_stubs.h
 
 /**
  * Set semantic analyzer for the backend

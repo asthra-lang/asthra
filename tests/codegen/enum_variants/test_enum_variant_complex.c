@@ -24,7 +24,7 @@ static void test_enum_variant_complex_expression_codegen(void) {
     // Set up code generator context
     TestCodeGenContext *ctx = create_test_code_gen_context();
     assert(ctx != NULL);
-    AsthraBackend *backend = ctx->backend;
+    void *backend = ctx->backend;
 
     // Run semantic analysis on the expression first
     analyze_expression_for_test(ctx, expr);
@@ -102,7 +102,7 @@ static void test_enum_variant_switch_case_exists(void) {
     // Set up code generator context
     TestCodeGenContext *ctx = create_test_code_gen_context();
     assert(ctx != NULL);
-    AsthraBackend *backend = ctx->backend;
+    void *backend = ctx->backend;
 
     // Try to generate code - this should NOT produce "Unsupported expression type" error
     // Use the test helper that wraps the backend's expression generation
@@ -141,7 +141,7 @@ static void test_enum_variant_with_integer(void) {
     // Set up code generator context
     TestCodeGenContext *ctx = create_test_code_gen_context();
     assert(ctx != NULL);
-    AsthraBackend *backend = ctx->backend;
+    void *backend = ctx->backend;
 
     // Run semantic analysis on the expression first
     analyze_expression_for_test(ctx, expr);

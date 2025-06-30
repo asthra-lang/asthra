@@ -1,42 +1,42 @@
 # Backend Infrastructure Tests
 
-# Simple backend test with minimal dependencies
-add_executable(test_backend_simple
-    test_backend_simple.c
-    backend_test_stubs.c
-)
-
-# Include directories for simple test
-target_include_directories(test_backend_simple PRIVATE
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/src/parser
-    ${CMAKE_SOURCE_DIR}/src/analysis
-    ${CMAKE_SOURCE_DIR}/src/codegen
-)
-
-# Define minimal stubs to avoid linking issues
-target_compile_definitions(test_backend_simple PRIVATE
-    MINIMAL_TEST_BUILD=1
-)
-
-# Link libraries for simple test
-target_link_libraries(test_backend_simple PRIVATE
-    asthra_compiler
-    ${COMMON_LIBRARIES}
-)
-
-# Set output directory for simple test
-set_target_properties(test_backend_simple PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-)
-
-# Register simple test
-add_test(NAME test_backend_simple 
-         COMMAND test_backend_simple)
-set_tests_properties(test_backend_simple PROPERTIES
-    LABELS "codegen;backend"
-    TIMEOUT 30
-)
+# Simple backend test commented out - backend abstraction removed
+# add_executable(test_backend_simple
+#     test_backend_simple.c
+#     backend_test_stubs.c
+# )
+# 
+# # Include directories for simple test
+# target_include_directories(test_backend_simple PRIVATE
+#     ${CMAKE_SOURCE_DIR}/src
+#     ${CMAKE_SOURCE_DIR}/src/parser
+#     ${CMAKE_SOURCE_DIR}/src/analysis
+#     ${CMAKE_SOURCE_DIR}/src/codegen
+# )
+# 
+# # Define minimal stubs to avoid linking issues
+# target_compile_definitions(test_backend_simple PRIVATE
+#     MINIMAL_TEST_BUILD=1
+# )
+# 
+# # Link libraries for simple test
+# target_link_libraries(test_backend_simple PRIVATE
+#     asthra_compiler
+#     ${COMMON_LIBRARIES}
+# )
+# 
+# # Set output directory for simple test
+# set_target_properties(test_backend_simple PROPERTIES
+#     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+# )
+# 
+# # Register simple test
+# add_test(NAME test_backend_simple 
+#          COMMAND test_backend_simple)
+# set_tests_properties(test_backend_simple PROPERTIES
+#     LABELS "codegen;backend"
+#     TIMEOUT 30
+# )
 
 # Full test executables (commented out for now due to dependency issues)
 # Keeping the full infrastructure test for future reference when all dependencies are resolved
@@ -87,48 +87,48 @@ set_tests_properties(test_backend_simple PROPERTIES
 #     TIMEOUT 30
 # )
 
-# LLVM backend test
-add_executable(test_llvm_backend
-    test_llvm_backend.c
-    backend_test_stubs.c
-)
-
-# Include directories for LLVM test
-target_include_directories(test_llvm_backend PRIVATE
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/src/parser
-    ${CMAKE_SOURCE_DIR}/src/analysis
-    ${CMAKE_SOURCE_DIR}/src/codegen
-)
-
-# Define minimal stubs to avoid linking issues
-target_compile_definitions(test_llvm_backend PRIVATE
-    MINIMAL_TEST_BUILD=1
-)
-
-# Link libraries for LLVM test
-target_link_libraries(test_llvm_backend PRIVATE
-    asthra_compiler
-    ${COMMON_LIBRARIES}
-)
-
-# Conditionally link LLVM if enabled
-if(ENABLE_LLVM_BACKEND)
-    target_link_libraries(test_llvm_backend PRIVATE llvm::llvm)
-endif()
-
-# Set output directory for LLVM test
-set_target_properties(test_llvm_backend PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-)
-
-# Register LLVM test
-add_test(NAME test_llvm_backend 
-         COMMAND test_llvm_backend)
-set_tests_properties(test_llvm_backend PROPERTIES
-    LABELS "codegen;backend;llvm"
-    TIMEOUT 30
-)
+# LLVM backend test commented out - backend abstraction removed
+# add_executable(test_llvm_backend
+#     test_llvm_backend.c
+#     backend_test_stubs.c
+# )
+# 
+# # Include directories for LLVM test
+# target_include_directories(test_llvm_backend PRIVATE
+#     ${CMAKE_SOURCE_DIR}/src
+#     ${CMAKE_SOURCE_DIR}/src/parser
+#     ${CMAKE_SOURCE_DIR}/src/analysis
+#     ${CMAKE_SOURCE_DIR}/src/codegen
+# )
+# 
+# # Define minimal stubs to avoid linking issues
+# target_compile_definitions(test_llvm_backend PRIVATE
+#     MINIMAL_TEST_BUILD=1
+# )
+# 
+# # Link libraries for LLVM test
+# target_link_libraries(test_llvm_backend PRIVATE
+#     asthra_compiler
+#     ${COMMON_LIBRARIES}
+# )
+# 
+# # Conditionally link LLVM if enabled
+# if(ENABLE_LLVM_BACKEND)
+#     target_link_libraries(test_llvm_backend PRIVATE llvm::llvm)
+# endif()
+# 
+# # Set output directory for LLVM test
+# set_target_properties(test_llvm_backend PROPERTIES
+#     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+# )
+# 
+# # Register LLVM test
+# add_test(NAME test_llvm_backend 
+#          COMMAND test_llvm_backend)
+# set_tests_properties(test_llvm_backend PROPERTIES
+#     LABELS "codegen;backend;llvm"
+#     TIMEOUT 30
+# )
 
 # LLVM types module test (simplified)
 add_executable(test_llvm_types

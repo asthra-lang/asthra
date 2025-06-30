@@ -122,3 +122,30 @@ void asthra_linking_result_cleanup(Asthra_LinkingResult *result) {
 
     memset(result, 0, sizeof(Asthra_LinkingResult));
 }
+
+// Temporary stub implementations for removed linker_executable.c functions
+// These should be replaced with proper LLVM-based linking
+bool asthra_linker_generate_executable(Asthra_Linker *linker, const char **object_files,
+                                       size_t file_count, const char *output_path,
+                                       Asthra_ExecutableMetadata *metadata) {
+    if (linker) {
+        linker_set_error(linker, "Executable generation not implemented - use LLVM tools directly");
+    }
+    return false;
+}
+
+bool asthra_linker_set_executable_permissions(Asthra_Linker *linker, const char *executable_path,
+                                              uint32_t permissions) {
+    if (linker) {
+        linker_set_error(linker, "Executable permissions not implemented - use LLVM tools directly");
+    }
+    return false;
+}
+
+bool asthra_linker_validate_executable(Asthra_Linker *linker, const char *executable_path,
+                                       Asthra_ExecutableMetadata *metadata) {
+    if (linker) {
+        linker_set_error(linker, "Executable validation not implemented - use LLVM tools directly");
+    }
+    return false;
+}

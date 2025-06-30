@@ -11,12 +11,12 @@
 #include <string.h>
 
 // Include necessary headers for backend and compiler interfaces
-#include "../../../src/codegen/backend_interface.h"
 #include "../../../src/compiler.h"
 #include "ast.h"
 #include "lexer.h"
 #include "parser.h"
 #include "semantic_analyzer.h"
+#include "../../framework/backend_stubs.h"
 
 // Direct declarations for types we don't need full definitions for
 typedef struct Lexer Lexer;
@@ -82,9 +82,9 @@ TestResult test_source_compiles(const char *test_name, const char *source) {
     // Generate code using backend interface
     AsthraCompilerOptions options = asthra_compiler_default_options();
     options.target_arch = ASTHRA_TARGET_X86_64;
-    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    // Backend type removed - LLVM is the only backend
 
-    AsthraBackend *backend = asthra_backend_create(&options);
+    void *backend = asthra_backend_create(&options);
     if (!backend) {
         printf("  FAIL: Could not create backend\n");
         semantic_analyzer_destroy(analyzer);

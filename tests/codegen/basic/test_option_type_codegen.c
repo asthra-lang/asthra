@@ -9,11 +9,11 @@
  */
 
 #include "../../../src/analysis/semantic_analyzer.h"
-#include "../../../src/codegen/backend_interface.h"
 #include "../../../src/compiler.h"
 #include "../../../src/parser/parser.h"
 #include "../framework/compiler_test_utils.h"
 #include "../framework/test_framework.h"
+#include "../codegen_backend_wrapper.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,9 +51,9 @@ static bool compile_and_verify_option_code(const char *source, bool expect_succe
     // Create backend for code generation
     AsthraCompilerOptions options = asthra_compiler_default_options();
     options.target_arch = ASTHRA_TARGET_ARM64;
-    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
 
-    AsthraBackend *backend = asthra_backend_create(&options);
+    // Backend creation removed - LLVM is accessed directly
+    void *backend = asthra_backend_create(&options);
     if (!backend) {
         semantic_analyzer_destroy(analyzer);
         ast_free_node(ast);

@@ -27,9 +27,9 @@
 #include "../framework/test_context.h"
 #include "../framework/test_statistics.h"
 #include "../framework/test_suite.h"
+#include "../framework/backend_stubs.h"
 
 // Asthra components
-#include "../../../src/codegen/backend_interface.h"
 #include "../../../src/compiler.h"
 #include "ast.h"
 #include "lexer.h"
@@ -86,9 +86,9 @@ static AsthraTestResult test_basic_method_mangling(AsthraTestContext *context) {
     // Create backend for code generation
     AsthraCompilerOptions options = asthra_compiler_default_options();
     options.target_arch = ASTHRA_TARGET_X86_64;
-    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    // Backend type removed - LLVM is the only backend
 
-    AsthraBackend *backend = asthra_backend_create(&options);
+    void *backend = asthra_backend_create(&options);
     if (!ASTHRA_TEST_ASSERT(context, backend != NULL, "Backend should be created")) {
         semantic_analyzer_destroy(analyzer);
         ast_free_node(program);
@@ -175,9 +175,9 @@ static AsthraTestResult test_complex_method_mangling(AsthraTestContext *context)
     // Create backend for code generation
     AsthraCompilerOptions options = asthra_compiler_default_options();
     options.target_arch = ASTHRA_TARGET_X86_64;
-    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    // Backend type removed - LLVM is the only backend
 
-    AsthraBackend *backend = asthra_backend_create(&options);
+    void *backend = asthra_backend_create(&options);
     if (!ASTHRA_TEST_ASSERT(context, backend != NULL, "Backend should be created")) {
         semantic_analyzer_destroy(analyzer);
         ast_free_node(program);
@@ -265,9 +265,9 @@ static AsthraTestResult test_multiple_struct_mangling(AsthraTestContext *context
     // Create backend for code generation
     AsthraCompilerOptions options = asthra_compiler_default_options();
     options.target_arch = ASTHRA_TARGET_X86_64;
-    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    // Backend type removed - LLVM is the only backend
 
-    AsthraBackend *backend = asthra_backend_create(&options);
+    void *backend = asthra_backend_create(&options);
     if (!ASTHRA_TEST_ASSERT(context, backend != NULL, "Backend should be created")) {
         semantic_analyzer_destroy(analyzer);
         ast_free_node(program);

@@ -24,7 +24,6 @@
 
 // Asthra components
 #include "ast.h"
-#include "backend_interface.h"
 #include "lexer.h"
 #include "parser.h"
 #include "semantic_analyzer.h"

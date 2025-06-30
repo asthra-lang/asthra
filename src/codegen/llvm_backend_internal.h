@@ -13,7 +13,6 @@
 #include "../analysis/type_info.h"
 #include "../compiler.h"
 #include "../parser/ast_types.h"
-#include "backend_interface.h"
 
 #include <llvm-c/Analysis.h>
 #include <llvm-c/BitWriter.h>

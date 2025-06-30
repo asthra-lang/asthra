@@ -10,7 +10,6 @@
 
 #include "real_program_test_integration.h"
 #include "ast.h"
-#include "backend_interface.h"
 #include "backend_test_wrapper.h"
 #include "parser_string_interface.h"
 #include "real_program_test_suite.h"

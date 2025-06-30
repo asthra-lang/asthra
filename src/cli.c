@@ -146,38 +146,6 @@ AsthraOptimizationLevel cli_parse_optimization_level(const char *opt_str) {
     return ASTHRA_OPT_STANDARD;
 }
 
-AsthraBackendType cli_parse_backend_type(const char *backend_str) {
-    // C17 compound literal for backend type mapping
-    static const struct {
-        const char *name;
-        AsthraBackendType type;
-    } backend_map[] = {{"llvm", ASTHRA_BACKEND_LLVM_IR},
-                       {"LLVM", ASTHRA_BACKEND_LLVM_IR},
-                       {"llvm-ir", ASTHRA_BACKEND_LLVM_IR},
-                       {"ir", ASTHRA_BACKEND_LLVM_IR}};
-
-    // Check if it's a deprecated backend
-    if (strcmp(backend_str, "c") == 0 || strcmp(backend_str, "C") == 0) {
-        fprintf(stderr, "Warning: C backend has been removed. Using LLVM backend instead.\n");
-        return ASTHRA_BACKEND_LLVM_IR;
-    }
-    if (strcmp(backend_str, "asm") == 0 || strcmp(backend_str, "ASM") == 0 ||
-        strcmp(backend_str, "assembly") == 0 || strcmp(backend_str, "s") == 0) {
-        fprintf(stderr,
-                "Warning: Assembly backend has been removed. Using LLVM backend instead.\n");
-        return ASTHRA_BACKEND_LLVM_IR;
-    }
-
-    for (size_t i = 0; i < sizeof(backend_map) / sizeof(backend_map[0]); i++) {
-        if (strcmp(backend_str, backend_map[i].name) == 0) {
-            return backend_map[i].type;
-        }
-    }
-
-    fprintf(stderr, "Error: Unknown backend type '%s'\n", backend_str);
-    fprintf(stderr, "Valid backend: llvm\n");
-    return ASTHRA_BACKEND_LLVM_IR;
-}
 
 CliOptions cli_options_init(void) {
     CliOptions options = {0};
@@ -267,7 +235,8 @@ int cli_parse_arguments(int argc, char *argv[], CliOptions *options) {
             options->compiler_options.target_arch = cli_parse_target_arch(optarg);
             break;
         case 'b':
-            options->compiler_options.backend_type = cli_parse_backend_type(optarg);
+            // Backend option is deprecated - LLVM is the only backend
+            fprintf(stderr, "Warning: -b/--backend option is deprecated. LLVM is now the only backend.\n");
             break;
         case 'I':
             // Add include path using C17 flexible array
@@ -379,10 +348,6 @@ int cli_parse_arguments(int argc, char *argv[], CliOptions *options) {
                 "Warning: --emit-asm flag is deprecated. Assembly backend has been removed.\n");
     }
 
-    // Always use LLVM backend
-    if (options->compiler_options.backend_type == 0) {
-        options->compiler_options.backend_type = ASTHRA_BACKEND_LLVM_IR;
-    }
 
     return 0;
 

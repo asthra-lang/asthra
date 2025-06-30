@@ -4,7 +4,6 @@
  */
 
 #include "../../../src/analysis/semantic_analyzer.h"
-#include "../../../src/codegen/backend_interface.h"
 #include "../../../src/parser/parser.h"
 #include "../../framework/compiler_test_utils.h"
 #include "../../framework/test_framework.h"

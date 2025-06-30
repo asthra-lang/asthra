@@ -20,7 +20,7 @@
 #include "../framework/compiler_test_utils.h"
 #include "../framework/test_framework.h"
 #endif
-#include "backend_interface.h"
+// Backend interface removed - using LLVM directly
 #include "compiler.h"
 // code_generator_types.h is already included by code_generator_core.h
 // code_generator_instructions.h also includes code_generator_types.h, so we avoid double inclusion
@@ -38,7 +38,7 @@
  * Test fixture for code generator testing
  */
 typedef struct {
-    AsthraBackend *backend;
+    void *backend; // Backend abstraction removed
     struct SemanticAnalyzer *analyzer;
     ASTNode *test_ast;
     char *output_buffer;

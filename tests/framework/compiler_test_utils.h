@@ -19,6 +19,7 @@
 #include "semantic_test_utils.h"
 #include "test_assertions.h"
 #include "test_data_utils.h"
+#include "backend_stubs.h"
 
 #ifdef __cplusplus
 extern "C" {

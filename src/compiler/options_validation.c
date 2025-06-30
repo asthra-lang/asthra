@@ -22,7 +22,6 @@ AsthraCompilerOptions asthra_compiler_default_options(void) {
                                    .output_file = NULL,
                                    .opt_level = ASTHRA_OPT_STANDARD,
                                    .target_arch = ASTHRA_TARGET_NATIVE,
-                                   .backend_type = ASTHRA_BACKEND_LLVM_IR,
                                    .output_format = ASTHRA_FORMAT_DEFAULT,
                                    .asm_syntax = ASTHRA_ASM_SYNTAX_ATT,
                                    .debug_info = false,
@@ -44,7 +43,6 @@ AsthraCompilerOptions asthra_compiler_options_create(const char *input_file,
                                    .output_file = output_file,
                                    .opt_level = ASTHRA_OPT_STANDARD,
                                    .target_arch = ASTHRA_TARGET_NATIVE,
-                                   .backend_type = ASTHRA_BACKEND_LLVM_IR,
                                    .output_format = ASTHRA_FORMAT_DEFAULT,
                                    .asm_syntax = ASTHRA_ASM_SYNTAX_ATT,
                                    .debug_info = false,
@@ -126,10 +124,34 @@ const char *asthra_get_optimization_level_string(AsthraOptimizationLevel level) 
     return "O2"; // Default fallback
 }
 
-const char *asthra_get_backend_type_string(AsthraBackendType backend) {
-    // Only LLVM backend is supported now
-    if (backend == ASTHRA_BACKEND_LLVM_IR) {
-        return "LLVM IR";
+// Generate output filename for LLVM backend
+char *asthra_backend_get_output_filename(int type, const char *input_file, const char *output_file) {
+    if (output_file && *output_file) {
+        return strdup(output_file);
     }
-    return "Unknown"; // Default fallback
+    
+    // Generate default output filename based on input
+    if (!input_file || !*input_file) {
+        return strdup("output.ll");
+    }
+    
+    // Extract base name and add .ll extension
+    const char *base = strrchr(input_file, '/');
+    base = base ? base + 1 : input_file;
+    
+    // Remove existing extension
+    char *name = strdup(base);
+    char *dot = strrchr(name, '.');
+    if (dot) {
+        *dot = '\0';
+    }
+    
+    // Add .ll extension
+    size_t len = strlen(name) + 4;
+    char *result = malloc(len);
+    snprintf(result, len, "%s.ll", name);
+    free(name);
+    
+    return result;
 }
+

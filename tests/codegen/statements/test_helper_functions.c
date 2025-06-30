@@ -26,7 +26,7 @@ bool generate_and_verify_statement(AsthraTestContext *context, CodeGenTestFixtur
 
     // Create a minimal compiler context for the backend
     AsthraCompilerOptions opts = asthra_compiler_default_options();
-    opts.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    // Backend type removed - LLVM is the only backend
     AsthraCompilerContext ctx = {
         .options = opts, .error_count = 0, .errors = NULL, .error_capacity = 0};
 
@@ -100,7 +100,7 @@ AsthraTestResult test_statement_generation_pattern(AsthraTestContext *context,
 
     // Create a compiler context with semantic analyzer
     AsthraCompilerOptions opts = asthra_compiler_default_options();
-    opts.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    // Backend type removed - LLVM is the only backend
     AsthraCompilerContext ctx = {
         .options = opts, .error_count = 0, .errors = NULL, .error_capacity = 0
         // Note: Add semantic analyzer to context if needed by backend

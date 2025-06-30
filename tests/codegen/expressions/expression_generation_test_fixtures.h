@@ -19,9 +19,10 @@
 #include "../framework/test_framework.h"
 #endif
 #include "ast.h"
-#include "backend_interface.h"
+// Backend interface removed - using LLVM directly
 #include "compiler.h"
 #include "semantic_analyzer.h"
+#include "../../framework/backend_stubs.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,7 +36,7 @@
  * Test fixture for code generator testing
  */
 typedef struct {
-    AsthraBackend *backend;
+    void *backend; // Backend abstraction removed
     SemanticAnalyzer *analyzer;
     ASTNode *test_ast;
     char *output_buffer;
@@ -56,8 +57,7 @@ static CodeGenTestFixture *setup_codegen_fixture(void) {
         return NULL;
 
     // Create compiler options for backend initialization
-    AsthraCompilerOptions options = {.backend_type = ASTHRA_BACKEND_LLVM_IR,
-                                     .target_arch = ASTHRA_TARGET_X86_64,
+    AsthraCompilerOptions options = {.target_arch = ASTHRA_TARGET_X86_64,
                                      .opt_level = ASTHRA_OPT_NONE,
                                      .debug_info = true,
                                      .verbose = false};

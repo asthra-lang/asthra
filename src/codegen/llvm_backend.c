@@ -6,7 +6,22 @@
  * Licensed under the terms specified in LICENSE
  */
 
-#include "backend_interface.h"
+#include <stddef.h> // for size_t
+#include "../compiler.h" // for AsthraCompilerOptions
+
+// Minimal backend structure definition for LLVM-only backend
+typedef struct AsthraBackend {
+    const char *name;
+    void *private_data;
+    const char *last_error;
+    AsthraCompilerOptions options;
+    struct {
+        size_t lines_generated;
+        size_t functions_processed;
+        double generation_time;
+    } stats;
+} AsthraBackend;
+
 #include "llvm_backend_internal.h"
 #include "llvm_debug.h"
 #include "llvm_expr_gen.h"
@@ -95,7 +110,7 @@ static int llvm_backend_initialize(AsthraBackend *backend, const AsthraCompilerO
     declare_runtime_functions(data);
 
     // Store options
-    backend->options.optimization_level = options->opt_level;
+    backend->options.opt_level = options->opt_level;
     backend->options.debug_info = options->debug_info;
     backend->options.verbose = options->verbose;
     backend->options.target_arch = options->target_arch;
@@ -283,26 +298,24 @@ static const char *llvm_backend_get_name(AsthraBackend *backend) {
     return "LLVM Backend";
 }
 
-// LLVM backend operations
-const AsthraBackendOps llvm_backend_ops = {.initialize = llvm_backend_initialize,
-                                           .generate = llvm_backend_generate,
-                                           .optimize = llvm_backend_optimize,
-                                           .cleanup = llvm_backend_cleanup,
-                                           .supports_feature = llvm_backend_supports_feature,
-                                           .get_version = llvm_backend_get_version,
-                                           .get_name = llvm_backend_get_name};
-
-// Create LLVM backend instance
-AsthraBackend *asthra_create_llvm_backend(void) {
-    AsthraBackend *backend = calloc(1, sizeof(AsthraBackend));
-    if (!backend)
-        return NULL;
-
-    backend->type = ASTHRA_BACKEND_LLVM_IR;
-    backend->name = "llvm";
-    backend->ops = &llvm_backend_ops;
-
-    return backend;
+// Direct LLVM code generation function
+int asthra_generate_llvm_code(AsthraCompilerContext *ctx, const ASTNode *ast, const char *output_file) {
+    // Create a temporary backend structure for compatibility
+    AsthraBackend backend = {0};
+    backend.name = "llvm";
+    
+    // Initialize LLVM backend
+    if (llvm_backend_initialize(&backend, &ctx->options) != 0) {
+        return -1;
+    }
+    
+    // Generate code
+    int result = llvm_backend_generate(&backend, ctx, ast, output_file);
+    
+    // Cleanup
+    llvm_backend_cleanup(&backend);
+    
+    return result;
 }
 
 // ===== Error Handling Implementation =====

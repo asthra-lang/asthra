@@ -79,13 +79,3 @@ AsthraLLVMToolResult asthra_llvm_compile(const char *input_file,
     return execute_command(argv, options->verbose);
 }
 
-AsthraLLVMToolResult asthra_llvm_to_assembly(const char *input_file, const char *output_file,
-                                             const char *target_triple) {
-    AsthraLLVMToolOptions options = {.output_format = ASTHRA_FORMAT_ASSEMBLY,
-                                     .output_file = output_file,
-                                     .target_triple = target_triple,
-                                     .opt_level = ASTHRA_OPT_NONE,
-                                     .verbose = false};
-
-    return asthra_llvm_compile(input_file, &options);
-}

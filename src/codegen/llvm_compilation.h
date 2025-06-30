@@ -28,15 +28,6 @@ extern "C" {
 AsthraLLVMToolResult asthra_llvm_compile(const char *input_file,
                                          const AsthraLLVMToolOptions *options);
 
-/**
- * Compile LLVM IR to assembly
- * @param input_file Path to input LLVM IR file
- * @param output_file Path to output assembly file
- * @param target_triple Target triple or NULL for native
- * @return Tool execution result
- */
-AsthraLLVMToolResult asthra_llvm_to_assembly(const char *input_file, const char *output_file,
-                                             const char *target_triple);
 
 #ifdef __cplusplus
 }

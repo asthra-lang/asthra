@@ -38,7 +38,6 @@
 #endif
 
 // Asthra components
-#include "../../../src/codegen/backend_interface.h"
 #include "../../../src/compiler.h"
 #include "ast.h"
 #include "lexer.h"
@@ -71,7 +70,7 @@ typedef struct {
     Parser *parser;
     ASTNode *program;
     SemanticAnalyzer *analyzer;
-    AsthraBackend *backend;
+    void *backend; // Backend abstraction removed
     AsthraCompilerContext *compiler_ctx;
     const char *output;
     bool success;

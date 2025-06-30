@@ -60,7 +60,7 @@ AsthraTestResult test_generate_minimal_program(AsthraTestContext *context) {
 
     // Create compiler context for backend
     AsthraCompilerOptions opts = asthra_compiler_default_options();
-    opts.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    // Backend type removed - LLVM is the only backend
     opts.output_file = "test_output.ll";
     AsthraCompilerContext ctx = {
         .options = opts, .error_count = 0, .errors = NULL, .error_capacity = 0};
@@ -121,7 +121,7 @@ AsthraTestResult test_generate_program_with_variables(AsthraTestContext *context
 
     // Create compiler context for backend
     AsthraCompilerOptions opts = asthra_compiler_default_options();
-    opts.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    // Backend type removed - LLVM is the only backend
     opts.output_file = "test_output.ll";
     AsthraCompilerContext ctx = {
         .options = opts,
@@ -185,7 +185,7 @@ AsthraTestResult test_generate_program_with_control_flow(AsthraTestContext *cont
 
     // Create compiler context for backend
     AsthraCompilerOptions opts = asthra_compiler_default_options();
-    opts.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    // Backend type removed - LLVM is the only backend
     opts.output_file = "test_output.ll";
     AsthraCompilerContext ctx = {
         .options = opts,

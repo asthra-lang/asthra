@@ -12,9 +12,10 @@
 
 // Include backend interface and necessary headers
 #include "../../../src/analysis/semantic_analyzer.h"
-#include "../../../src/codegen/backend_interface.h"
 #include "../../../src/compiler.h"
 #include "../../../src/parser/ast.h"
+#include "../codegen_backend_wrapper.h"
+#include "../../framework/backend_stubs.h"
 
 // Direct declarations for parser types
 typedef struct Lexer Lexer;
@@ -74,9 +75,9 @@ bool test_codegen(const char *name, const char *source) {
     // Generate code using backend interface
     AsthraCompilerOptions options = asthra_compiler_default_options();
     options.target_arch = ASTHRA_TARGET_X86_64;
-    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
 
-    AsthraBackend *backend = asthra_backend_create(&options);
+    // Backend creation removed - LLVM is accessed directly
+    void *backend = asthra_backend_create(&options);
     if (!backend) {
         printf("  FAIL: Could not create backend\n");
         semantic_analyzer_destroy(analyzer);

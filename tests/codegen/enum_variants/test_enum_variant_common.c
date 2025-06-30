@@ -51,8 +51,7 @@ TestCodeGenContext *create_test_code_gen_context(void) {
         return NULL;
     }
 
-    AsthraCompilerOptions options = {.backend_type = ASTHRA_BACKEND_LLVM_IR,
-                                     .target_arch = ASTHRA_TARGET_X86_64,
+    AsthraCompilerOptions options = {.target_arch = ASTHRA_TARGET_X86_64,
                                      .opt_level = ASTHRA_OPT_NONE,
                                      .output_file = "test_output.ll",
                                      .debug_info = true,
