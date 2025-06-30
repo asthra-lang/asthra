@@ -342,7 +342,6 @@ Feature: Function Call Functionality
     Then the compilation should fail
     And the error message should contain "Undefined function"
 
-  @wip
   Scenario: Error - incorrect number of arguments
     Given I have a file "wrong_arg_count.asthra" with:
       """

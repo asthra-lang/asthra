@@ -180,7 +180,6 @@ Feature: Composite Types
     Then the compilation should fail
     And the error message should contain "Type mismatch"
 
-  @wip
   Scenario: Array size mismatch error
     Given I have a file "array_size_mismatch.asthra" with:
       """
@@ -195,7 +194,6 @@ Feature: Composite Types
     Then the compilation should fail
     And the error message should contain "array size mismatch"
 
-  @wip
   Scenario: Invalid tuple with one element
     Given I have a file "single_tuple.asthra" with:
       """
@@ -210,7 +208,6 @@ Feature: Composite Types
     Then the compilation should fail
     And the error message should contain "tuple must have at least 2 elements"
 
-  @wip
   Scenario: Zero-sized array error
     Given I have a file "zero_array.asthra" with:
       """

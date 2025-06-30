@@ -264,7 +264,6 @@ Feature: Annotations
     Then the output should contain "Multiple annotations"
     And the exit code should be 0
 
-  @wip
   Scenario: Invalid human review level
     Given I have a file "invalid_review_level.asthra" with:
       """
@@ -283,7 +282,6 @@ Feature: Annotations
     Then the compilation should fail
     And the error message should contain "invalid review level"
 
-  @wip
   Scenario: Invalid ownership type
     Given I have a file "invalid_ownership.asthra" with:
       """
@@ -302,7 +300,6 @@ Feature: Annotations
     Then the compilation should fail
     And the error message should contain "invalid ownership type"
 
-  @wip
   Scenario: Annotation with none parameters
     Given I have a file "annotation_none_params.asthra" with:
       """
