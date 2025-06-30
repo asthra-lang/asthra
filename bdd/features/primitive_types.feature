@@ -255,7 +255,6 @@ Feature: Primitive Types
     Then the output should contain "Binary literals work"
     And the exit code should be 0
 
-  @wip
   Scenario: Hexadecimal literals
     Given I have a file "hex_literals.asthra" with:
       """

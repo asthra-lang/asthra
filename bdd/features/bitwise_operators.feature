@@ -355,7 +355,6 @@ Feature: Bitwise Operators
     Then the compilation should fail
     And the error message should contain "shift"
 
-  @wip
   Scenario: Binary literals with bitwise operations
     Given I have a file "binary_literals.asthra" with:
       """
