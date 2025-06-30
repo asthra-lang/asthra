@@ -342,8 +342,6 @@ bool test_interface_validation(void) {
                                      .target_arch = ASTHRA_TARGET_X86_64,
                                      .debug_info = false,
                                      .verbose = false,
-                                     .emit_llvm = false,
-                                     .emit_asm = false,
                                      .no_stdlib = false,
                                      .include_paths = NULL,
                                      .library_paths = NULL,

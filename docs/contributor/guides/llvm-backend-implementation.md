@@ -79,11 +79,11 @@ The build system will automatically find LLVM using:
 
 ### 5. Using the LLVM Backend
 
-Once built with LLVM support, use the `--emit-llvm` flag:
+Once built with LLVM support, use the `--emit` flag with the desired format:
 
 ```bash
-asthra --emit-llvm input.as    # Generates input.ll (text IR)
-asthra --emit-llvm input.as -o output.bc  # Generates bitcode
+asthra --emit llvm-ir input.as    # Generates input.ll (text IR)
+asthra --emit llvm-bc input.as -o output.bc  # Generates bitcode
 ```
 
 ## Architecture Decisions
