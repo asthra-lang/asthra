@@ -12,7 +12,7 @@
 #include "../framework/compiler_test_utils.h"
 #include "../framework/test_data.h"
 #include "../framework/test_framework.h"
-#include "backend_interface.h"
+#include "codegen_backend_wrapper.h"
 #include "compiler.h"
 #include "semantic_analyzer.h"
 #include <stdio.h>
@@ -91,9 +91,9 @@ static AsthraTestResult test_never_function_codegen(AsthraTestContext *context) 
     // Run code generation using backend interface
     AsthraCompilerOptions options = asthra_compiler_default_options();
     options.target_arch = ASTHRA_TARGET_X86_64;
-    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
 
-    AsthraBackend *backend = asthra_backend_create(&options);
+    // Backend creation removed - LLVM is accessed directly
+    void *backend = asthra_backend_create(&options);
     if (!asthra_test_assert_not_null(context, backend, "Failed to create backend")) {
         semantic_analyzer_destroy(analyzer);
         ast_free_node(ast);
@@ -187,9 +187,9 @@ static AsthraTestResult test_never_unreachable_code_detection(AsthraTestContext 
     // Run code generation using backend interface
     AsthraCompilerOptions options = asthra_compiler_default_options();
     options.target_arch = ASTHRA_TARGET_X86_64;
-    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
 
-    AsthraBackend *backend = asthra_backend_create(&options);
+    // Backend creation removed - LLVM is accessed directly
+    void *backend = asthra_backend_create(&options);
     if (!asthra_test_assert_not_null(context, backend, "Failed to create backend")) {
         semantic_analyzer_destroy(analyzer);
         ast_free_node(ast);
@@ -284,9 +284,9 @@ static AsthraTestResult test_never_complex_control_flow(AsthraTestContext *conte
     // Run code generation using backend interface
     AsthraCompilerOptions options = asthra_compiler_default_options();
     options.target_arch = ASTHRA_TARGET_X86_64;
-    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
 
-    AsthraBackend *backend = asthra_backend_create(&options);
+    // Backend creation removed - LLVM is accessed directly
+    void *backend = asthra_backend_create(&options);
     if (!asthra_test_assert_not_null(context, backend, "Failed to create backend")) {
         semantic_analyzer_destroy(analyzer);
         ast_free_node(ast);

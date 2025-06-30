@@ -24,8 +24,7 @@ CodeGenTestFixture *setup_codegen_fixture(void) {
         return NULL;
 
     // Create compiler options for backend initialization
-    AsthraCompilerOptions options = {.backend_type = ASTHRA_BACKEND_LLVM_IR,
-                                     .target_arch = ASTHRA_TARGET_X86_64,
+    AsthraCompilerOptions options = {.target_arch = ASTHRA_TARGET_X86_64,
                                      .opt_level = ASTHRA_OPT_NONE,
                                      .debug_info = true,
                                      .verbose = false};

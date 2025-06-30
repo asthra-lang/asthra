@@ -207,45 +207,15 @@ bool asthra_linker_link_files(Asthra_Linker *linker, const char **object_files, 
 bool asthra_linker_link_single_file(Asthra_Linker *linker, const char *object_file,
                                     const char *output_executable);
 
-// =============================================================================
-// EXECUTABLE GENERATION API
-// =============================================================================
-
-/**
- * Generate platform-specific executable from object files
- *
- * @param linker Linker instance
- * @param object_files Object file paths
- * @param file_count Number of files
- * @param output_path Output executable path
- * @param metadata Executable metadata output
- * @return true on success, false on failure
- */
+// Temporary stub declarations - actual linking should use LLVM tools
 bool asthra_linker_generate_executable(Asthra_Linker *linker, const char **object_files,
                                        size_t file_count, const char *output_path,
                                        Asthra_ExecutableMetadata *metadata);
-
-/**
- * Set executable permissions and metadata
- *
- * @param linker Linker instance
- * @param executable_path Path to executable
- * @param permissions Platform-specific permissions
- * @return true on success, false on failure
- */
 bool asthra_linker_set_executable_permissions(Asthra_Linker *linker, const char *executable_path,
                                               uint32_t permissions);
-
-/**
- * Validate generated executable format and structure
- *
- * @param linker Linker instance
- * @param executable_path Path to executable
- * @param metadata Validation metadata output
- * @return true if valid, false on validation failure
- */
 bool asthra_linker_validate_executable(Asthra_Linker *linker, const char *executable_path,
                                        Asthra_ExecutableMetadata *metadata);
+
 
 // =============================================================================
 // RUNTIME LIBRARY INTEGRATION

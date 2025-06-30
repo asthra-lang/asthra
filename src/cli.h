@@ -56,7 +56,6 @@ AsthraOptimizationLevel cli_parse_optimization_level(const char *opt_str);
 /**
  * Parse backend type string
  */
-AsthraBackendType cli_parse_backend_type(const char *backend_str);
 
 /**
  * Parse command line arguments

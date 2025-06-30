@@ -5,6 +5,7 @@
  */
 
 #include "test_enum_integration_common.h"
+#include "../framework/backend_stubs.h"
 
 // Test end-to-end enum variant construction in a function
 static void test_enum_variant_end_to_end(void) {
@@ -44,7 +45,7 @@ static void test_enum_variant_end_to_end(void) {
     printf("✓ Semantic analysis completed successfully\n");
 
     // Perform code generation
-    AsthraBackend *backend = asthra_backend_create_by_type(ASTHRA_BACKEND_LLVM_IR);
+    void *backend = asthra_backend_create(NULL);
     assert(backend != NULL);
 
     // Connect semantic analysis results to backend

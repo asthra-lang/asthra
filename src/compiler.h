@@ -64,10 +64,6 @@ typedef enum {
     ASTHRA_TARGET_NATIVE // Use host architecture
 } AsthraTargetArch;
 
-// Backend types for code generation
-typedef enum {
-    ASTHRA_BACKEND_LLVM_IR = 1 // LLVM IR is now the only backend
-} AsthraBackendType;
 
 // Output formats supported by the compiler
 typedef enum {
@@ -109,7 +105,6 @@ struct AsthraCompilerOptions {
     const char *output_file;
     AsthraOptimizationLevel opt_level;
     AsthraTargetArch target_arch;
-    AsthraBackendType backend_type;   // Backend selection
     AsthraOutputFormat output_format; // Output format (IR, assembly, object, etc.)
     AsthraAssemblySyntax asm_syntax;  // Deprecated - kept for API compatibility
     bool debug_info;
@@ -156,8 +151,6 @@ ASTHRA_STATIC_ASSERT(sizeof(AsthraTargetArch) == sizeof(int),
                      "AsthraTargetArch must be int-sized for ABI compatibility");
 ASTHRA_STATIC_ASSERT(sizeof(AsthraCompilerPhase) == sizeof(int),
                      "AsthraCompilerPhase must be int-sized for ABI compatibility");
-ASTHRA_STATIC_ASSERT(sizeof(AsthraBackendType) == sizeof(int),
-                     "AsthraBackendType must be int-sized for ABI compatibility");
 
 // =============================================================================
 // COMPILER INTERFACE
@@ -222,9 +215,9 @@ const char *asthra_get_target_triple(AsthraTargetArch arch);
 
 // Get optimization level string
 const char *asthra_get_optimization_level_string(AsthraOptimizationLevel level);
+char *asthra_backend_get_output_filename(int type, const char *input_file, const char *output_file);
 
 // Get backend type string
-const char *asthra_get_backend_type_string(AsthraBackendType backend);
 
 // Get compiler version string
 const char *asthra_compiler_get_version(void);

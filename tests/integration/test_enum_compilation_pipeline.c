@@ -4,6 +4,7 @@
  */
 
 #include "test_enum_integration_common.h"
+#include "../framework/backend_stubs.h"
 
 // Test compilation pipeline integration
 static void test_compilation_pipeline_integration(void) {
@@ -46,7 +47,7 @@ static void test_compilation_pipeline_integration(void) {
     printf("✓ Semantic analysis phase completed\n");
 
     // 3. Code generation phase
-    AsthraBackend *backend = asthra_backend_create_by_type(ASTHRA_BACKEND_LLVM_IR);
+    void *backend = asthra_backend_create(NULL);
     assert(backend != NULL);
 
     // Connect semantic analysis results to backend

@@ -1,4 +1,6 @@
 #include "test_function_calls_common.h"
+#include "../codegen_backend_wrapper.h"
+#include "../../framework/backend_stubs.h"
 #include <stdlib.h>
 
 // =============================================================================
@@ -143,7 +145,7 @@ bool run_test_pipeline(FunctionCallTestPipeline *pipeline, const char *source,
     // Create backend using backend interface
     AsthraCompilerOptions options = asthra_compiler_default_options();
     options.target_arch = ASTHRA_TARGET_X86_64;
-    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
+    // Backend type removed - LLVM is the only backend
     options.output_file = "test_output.ll";
 
     pipeline->backend = asthra_backend_create(&options);

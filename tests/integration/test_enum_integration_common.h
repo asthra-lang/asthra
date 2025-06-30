@@ -13,7 +13,7 @@
 
 // Include the necessary headers for full integration testing
 #include "ast.h"
-#include "backend_interface.h"
+// Backend interface removed - using LLVM directly
 #include "backend_test_wrapper.h"
 #include "lexer.h"
 #include "parser.h"

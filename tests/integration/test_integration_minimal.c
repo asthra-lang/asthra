@@ -27,7 +27,6 @@
 #include "../framework/test_suite.h"
 
 // Core includes with correct paths
-#include "backend_interface.h"
 #include "lexer.h"
 #include "parser_core.h"
 #include "semantic_core.h"

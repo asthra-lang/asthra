@@ -24,7 +24,7 @@ static void test_option_some_codegen(void) {
     // Set up code generator context
     TestCodeGenContext *ctx = create_test_code_gen_context();
     assert(ctx != NULL);
-    AsthraBackend *backend = ctx->backend;
+    void *backend = ctx->backend;
 
     // Run semantic analysis on the expression first
     analyze_expression_for_test(ctx, expr);
@@ -96,7 +96,7 @@ static void test_option_none_codegen(void) {
     // Set up code generator context
     TestCodeGenContext *ctx = create_test_code_gen_context();
     assert(ctx != NULL);
-    AsthraBackend *backend = ctx->backend;
+    void *backend = ctx->backend;
 
     // Run semantic analysis on the expression first
     analyze_expression_for_test(ctx, expr);

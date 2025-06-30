@@ -14,15 +14,16 @@
 
 // Include the necessary headers for code generation testing
 #include "ast.h"
-#include "backend_interface.h"
+// Backend interface removed - using LLVM directly
 #include "compiler.h"
 #include "lexer.h"
 #include "parser.h"
 #include "semantic_core.h"
+#include "../../framework/backend_stubs.h"
 
 // Test helper structure to track both backend and analyzer
 typedef struct {
-    AsthraBackend *backend;
+    void *backend; // Backend abstraction removed
     SemanticAnalyzer *analyzer;
 } TestCodeGenContext;
 
@@ -34,8 +35,8 @@ void destroy_test_code_gen_context(TestCodeGenContext *ctx);
 void analyze_expression_for_test(TestCodeGenContext *ctx, ASTNode *expr);
 
 // Functions from codegen_test_stubs.c
-char *test_code_generate_expression(AsthraBackend *backend, ASTNode *expr);
-char *test_code_generate_enum_variant_construction(AsthraBackend *backend, const char *enum_name,
+char *test_code_generate_expression(void *backend, ASTNode *expr);
+char *test_code_generate_enum_variant_construction(void *backend, const char *enum_name,
                                                    const char *variant_name, ASTNode *payload);
 
 #endif // TEST_ENUM_VARIANT_COMMON_H

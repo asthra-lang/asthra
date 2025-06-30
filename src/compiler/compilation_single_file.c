@@ -12,7 +12,7 @@
 #include <unistd.h>
 
 #include "../analysis/semantic_analyzer.h"
-#include "../codegen/backend_interface.h"
+#include "../codegen/llvm_backend.h"
 #include "../codegen/llvm_tools.h"
 #include "../compiler.h"
 #include "../parser/ast.h"
@@ -131,101 +131,38 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file,
     // Phase 5: Code generation
     printf("  Phase 5: Code generation\n");
 
-    // Validate backend type and provide helpful error messages
-    const char *backend_name = asthra_get_backend_type_string(ctx->options.backend_type);
-    printf("    Using %s backend\n", backend_name);
-
-    // Create backend based on compiler options
-    AsthraBackend *backend = asthra_backend_create(&ctx->options);
-    if (!backend) {
-        printf("Error: Failed to create %s backend\n", backend_name);
-        printf("Suggestion: Try using a different backend with --emit-asm or --emit-llvm\n");
-        semantic_analyzer_destroy(analyzer);
-        ast_free_node(program);
-        parser_destroy(parser);
-        lexer_destroy(lexer);
-        free(source_code);
-        return -1;
-    }
-
-    // Initialize backend with detailed error reporting
-    int init_result = asthra_backend_initialize(backend, &ctx->options);
-    if (init_result != 0) {
-        const char *error_msg = asthra_backend_get_last_error(backend);
-        printf("Error: Failed to initialize %s backend: %s\n", backend_name, error_msg);
-
-        // Provide specific suggestions based on backend type
-        switch (ctx->options.backend_type) {
-        case ASTHRA_BACKEND_LLVM_IR:
-            printf("Suggestion: LLVM backend requires LLVM to be installed and linked.\n");
-            break;
-        default:
-            printf("Suggestion: Check system resources and permissions.\n");
-            break;
-        }
-
-        asthra_backend_destroy(backend);
-        semantic_analyzer_destroy(analyzer);
-        ast_free_node(program);
-        parser_destroy(parser);
-        lexer_destroy(lexer);
-        free(source_code);
-        return -1;
-    }
+    // Using LLVM backend (only backend now)
+    printf("    Using LLVM IR backend\n");
 
     // Determine output filename based on backend
     char *backend_output_file = NULL;
-    if (false) {
-        // For C backend, generate temporary file for compilation
-        backend_output_file = strdup("temp_asthra_output.c");
-    } else if (ctx->options.backend_type == ASTHRA_BACKEND_LLVM_IR && ctx->options.coverage &&
-               ctx->options.output_format == ASTHRA_FORMAT_DEFAULT) {
+    if (ctx->options.coverage && ctx->options.output_format == ASTHRA_FORMAT_DEFAULT) {
         // For LLVM backend with coverage, always generate a temporary .ll file first
         char temp_name[256];
         snprintf(temp_name, sizeof(temp_name), "%s.tmp.ll", output_file);
         backend_output_file = strdup(temp_name);
-    } else if (ctx->options.backend_type == ASTHRA_BACKEND_LLVM_IR) {
-        // For LLVM backend, always generate a .ll file first
-        if (output_file) {
-            // Generate temporary .ll file name based on output file
-            char temp_name[512];
-            snprintf(temp_name, sizeof(temp_name), "%s.tmp.ll", output_file);
-            backend_output_file = strdup(temp_name);
-        } else {
-            // No output file specified, use default
-            backend_output_file =
-                asthra_backend_get_output_filename(ctx->options.backend_type, input_file, NULL);
-        }
+    } else if (output_file) {
+        // Generate temporary .ll file name based on output file
+        char temp_name[512];
+        snprintf(temp_name, sizeof(temp_name), "%s.tmp.ll", output_file);
+        backend_output_file = strdup(temp_name);
     } else {
-        // For other backends, use the final output file directly
+        // No output file specified, use default
         backend_output_file =
-            asthra_backend_get_output_filename(ctx->options.backend_type, input_file, output_file);
+            asthra_backend_get_output_filename(0, input_file, NULL);
     }
 
     printf("Debug: backend_output_file = '%s', output_file = '%s'\n", backend_output_file,
            output_file);
 
-    // Generate code using backend with progress reporting
-    printf("    Generating code with %s backend...\n", backend_name);
-    int gen_result = asthra_backend_generate(backend, ctx, program, backend_output_file);
+    // Generate code using LLVM backend
+    printf("    Generating LLVM IR code...\n");
+    int gen_result = asthra_generate_llvm_code(ctx, program, backend_output_file);
     if (gen_result != 0) {
-        const char *error_msg = asthra_backend_get_last_error(backend);
-        printf("Error: Code generation failed: %s\n", error_msg);
-
-        // Provide backend-specific troubleshooting
-        switch (ctx->options.backend_type) {
-        case ASTHRA_BACKEND_LLVM_IR:
-            printf("Troubleshooting: LLVM IR generation failed. Check that LLVM is properly "
-                   "installed.\n");
-            break;
-        default:
-            printf("Troubleshooting: Code generation failed. This may indicate an AST issue.\n");
-            printf("  Check: Input file syntax and semantic correctness\n");
-            break;
-        }
+        printf("Error: LLVM code generation failed\n");
+        printf("Troubleshooting: Check that LLVM is properly installed.\n");
 
         free(backend_output_file);
-        asthra_backend_destroy(backend);
         semantic_analyzer_destroy(analyzer);
         ast_free_node(program);
         parser_destroy(parser);
@@ -234,15 +171,10 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file,
         return -1;
     }
 
-    // Report backend statistics and success
-    size_t lines, functions;
-    double time;
-    asthra_backend_get_stats(backend, &lines, &functions, &time);
-    printf("  ✓ Code generation completed successfully\n");
+    // Code generation successful
+    printf("  ✓ LLVM IR generation completed successfully\n");
     if (ctx->options.verbose) {
-        printf("    Statistics: %zu lines, %zu functions, %.3f seconds\n", lines, functions, time);
-        printf("    Backend: %s version %s\n", asthra_backend_get_name(backend),
-               asthra_backend_get_version(backend));
+        printf("    Backend: LLVM\n");
     }
 
     // Phase 6: Post-processing with LLVM tools (if needed)
@@ -270,20 +202,14 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file,
         }
     }
 
-    // If the backend already produced the desired format, we're done
+    // LLVM backend produces .ll files by default
+    // We need LLVM tools if:
+    // 1. The desired format is not LLVM IR, OR
+    // 2. The backend output file is different from the final output file
     bool needs_llvm_tools = false;
-    if (ctx->options.backend_type == ASTHRA_BACKEND_LLVM_IR) {
-        // LLVM backend produces .ll files by default
-        // We need LLVM tools if:
-        // 1. The desired format is not LLVM IR, OR
-        // 2. The backend output file is different from the final output file
-        if (final_format != ASTHRA_FORMAT_LLVM_IR ||
-            strcmp(backend_output_file, output_file) != 0) {
-            needs_llvm_tools = true;
-        } else {
-            // Only skip LLVM tools if we want LLVM IR and files match
-            needs_llvm_tools = false;
-        }
+    if (final_format != ASTHRA_FORMAT_LLVM_IR ||
+        strcmp(backend_output_file, output_file) != 0) {
+        needs_llvm_tools = true;
     }
 
     if (needs_llvm_tools) {
@@ -326,7 +252,6 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file,
 
     // Clean up
     free(backend_output_file);
-    asthra_backend_destroy(backend);
     semantic_analyzer_destroy(analyzer);
     ast_free_node(program);
     parser_destroy(parser);

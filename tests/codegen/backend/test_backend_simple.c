@@ -3,7 +3,6 @@
  * Minimal test to validate backend selection and basic operations
  */
 
-#include "../../../src/codegen/backend_interface.h"
 #include "../../../src/compiler.h"
 #include <stdbool.h>
 #include <stdint.h>

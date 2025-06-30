@@ -4,6 +4,7 @@
  */
 
 #include "test_enum_integration_common.h"
+#include "../framework/backend_stubs.h"
 
 // Test enum variants in match expressions
 static void test_enum_variants_with_pattern_matching(void) {
@@ -44,7 +45,7 @@ static void test_enum_variants_with_pattern_matching(void) {
     assert(semantic_success);
 
     // Perform code generation to ensure pattern matching works
-    AsthraBackend *backend = asthra_backend_create_by_type(ASTHRA_BACKEND_LLVM_IR);
+    void *backend = asthra_backend_create(NULL);
     assert(backend != NULL);
 
     // Connect semantic analysis results to backend

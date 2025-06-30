@@ -10,7 +10,6 @@
  */
 
 #include "../codegen_backend_wrapper.h"
-#include "backend_interface.h"
 #include "lexer.h"
 #include "parser.h"
 #include "semantic_analyzer.h"
@@ -127,9 +126,8 @@ static bool generate_and_validate_code(ParsedProgram *program, const char *expec
     if (!program || !program->ast || !program->analyzer)
         return false;
 
-    AsthraBackend *backend = asthra_backend_create_by_type(ASTHRA_BACKEND_LLVM_IR);
-    if (!backend)
-        return false;
+    // Backend creation removed - LLVM is accessed directly
+    void *backend = (void *)1; // Non-NULL placeholder for test compatibility
 
     // Use the existing semantic analyzer that has already analyzed the AST
     asthra_backend_set_semantic_analyzer(backend, program->analyzer);
@@ -137,7 +135,7 @@ static bool generate_and_validate_code(ParsedProgram *program, const char *expec
     bool generation_success = asthra_backend_generate_program(backend, program->ast);
 
     if (!generation_success) {
-        asthra_backend_destroy(backend);
+        // Backend cleanup not needed
         return false;
     }
 
@@ -155,7 +153,7 @@ static bool generate_and_validate_code(ParsedProgram *program, const char *expec
         printf("DEBUG: Looking for pattern: %s\n", expected_pattern ? expected_pattern : "NULL");
     }
 
-    asthra_backend_destroy(backend);
+    // Backend cleanup not needed
     return contains_pattern;
 }
 

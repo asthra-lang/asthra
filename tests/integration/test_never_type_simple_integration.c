@@ -15,9 +15,9 @@
 
 #include "../framework/compiler_test_utils.h"
 #include "../framework/test_framework.h"
-#include "backend_interface.h"
 #include "compiler.h"
 #include "semantic_analyzer.h"
+#include "../framework/backend_stubs.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -196,8 +196,8 @@ static AsthraTestResult test_never_type_codegen(AsthraTestContext *ctx) {
 
     // Create backend with default options
     AsthraCompilerOptions options = asthra_compiler_default_options();
-    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
-    AsthraBackend *backend = asthra_backend_create(&options);
+    // Backend type removed - LLVM is the only backend
+    void *backend = asthra_backend_create(&options);
     if (!backend) {
         printf("Failed to create backend\n");
         semantic_analyzer_destroy(analyzer);

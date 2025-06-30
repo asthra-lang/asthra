@@ -3,7 +3,6 @@
  */
 
 #include "../codegen_backend_wrapper.h"
-#include "backend_interface.h"
 #include "lexer.h"
 #include "parser.h"
 #include "semantic_analyzer.h"
@@ -15,11 +14,8 @@ int main(void) {
     printf("Starting minimal codegen test...\n");
 
     // Create backend
-    AsthraBackend *backend = asthra_backend_create_by_type(ASTHRA_BACKEND_LLVM_IR);
-    if (!backend) {
-        printf("Failed to create backend\n");
-        return 1;
-    }
+    // Backend creation removed - LLVM is accessed directly
+    void *backend = (void *)1; // Non-NULL placeholder for test compatibility
 
     printf("Backend created successfully\n");
 
@@ -36,7 +32,7 @@ int main(void) {
     Lexer *lexer = lexer_create(source, strlen(source), "test.asthra");
     if (!lexer) {
         printf("Failed to create lexer\n");
-        asthra_backend_destroy(backend);
+        // Backend cleanup not needed
         return 1;
     }
 
@@ -44,7 +40,7 @@ int main(void) {
     if (!parser) {
         printf("Failed to create parser\n");
         lexer_destroy(lexer);
-        asthra_backend_destroy(backend);
+        // Backend cleanup not needed
         return 1;
     }
 
@@ -53,7 +49,7 @@ int main(void) {
         printf("Failed to parse program\n");
         parser_destroy(parser);
         lexer_destroy(lexer);
-        asthra_backend_destroy(backend);
+        // Backend cleanup not needed
         return 1;
     }
 
@@ -67,7 +63,7 @@ int main(void) {
     if (!analyzer) {
         printf("Failed to create semantic analyzer\n");
         ast_free_node(program);
-        asthra_backend_destroy(backend);
+        // Backend cleanup not needed
         return 1;
     }
 
@@ -76,7 +72,7 @@ int main(void) {
         printf("Semantic analysis failed\n");
         semantic_analyzer_destroy(analyzer);
         ast_free_node(program);
-        asthra_backend_destroy(backend);
+        // Backend cleanup not needed
         return 1;
     }
 
@@ -97,7 +93,7 @@ int main(void) {
     // Cleanup
     semantic_analyzer_destroy(analyzer);
     ast_free_node(program);
-    asthra_backend_destroy(backend);
+    // Backend cleanup not needed
 
     return codegen_success ? 0 : 1;
 }

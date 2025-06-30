@@ -4,7 +4,6 @@
  */
 
 #include "../../../src/analysis/type_info.h"
-#include "../../../src/codegen/backend_interface.h"
 #include "../../../src/compiler.h"
 #include "../../../src/parser/ast_node.h"
 #include "../../../src/parser/ast_types.h"

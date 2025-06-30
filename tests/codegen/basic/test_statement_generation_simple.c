@@ -17,11 +17,12 @@
 #define ASTHRA_PARSER_REAL_IMPLEMENTATION
 
 #include "../../../src/analysis/semantic_analyzer.h"
-#include "../../../src/codegen/backend_interface.h"
 #include "../../../src/compiler.h"
 #include "../../../src/parser/ast.h"
 #include "../../../src/parser/lexer.h"
 #include "../../../src/parser/parser.h"
+#include "../codegen_backend_wrapper.h"
+#include "../../framework/backend_stubs.h"
 
 bool test_variable_declaration(void) {
     printf("Testing variable declaration generation...\n");
@@ -90,7 +91,6 @@ bool test_variable_declaration(void) {
     // Create backend for code generation
     AsthraCompilerOptions options = asthra_compiler_default_options();
     options.target_arch = ASTHRA_TARGET_X86_64;
-    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
     options.output_file = "test_output.ll";
 
     AsthraBackend *backend = asthra_backend_create(&options);
@@ -213,7 +213,6 @@ bool test_control_flow_statements(void) {
     // Create backend for code generation
     AsthraCompilerOptions options = asthra_compiler_default_options();
     options.target_arch = ASTHRA_TARGET_X86_64;
-    options.backend_type = ASTHRA_BACKEND_LLVM_IR;
     options.output_file = "test_output.ll";
 
     AsthraBackend *backend = asthra_backend_create(&options);

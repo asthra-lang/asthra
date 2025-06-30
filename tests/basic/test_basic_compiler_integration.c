@@ -8,7 +8,6 @@
  */
 
 #include "asthra_runtime.h"
-#include "backend_interface.h"
 #include "compiler.h"
 #include "lexer.h"
 #include "parser_string_interface.h"
@@ -41,7 +40,6 @@ typedef struct {
     PipelineOrchestrator *orchestrator;
     Parser *parser;
     SemanticAnalyzer *semantic_analyzer;
-    AsthraBackend *backend;
 
     // Error management
     AsthraCompilerError *errors;
@@ -323,17 +321,8 @@ bool test_component_isolation(void) {
     semantic_analyzer_destroy(semantic_only);
     free(dummy_ast);
 
-    // Test Backend Isolation
-    printf("  Testing Backend Isolation...\n");
-    AsthraBackend *backend_only = asthra_backend_create_by_type(ASTHRA_BACKEND_LLVM_IR);
-    if (!backend_only) {
-        printf("❌ Backend creation failed\n");
-        return false;
-    }
-
-    // For now, just test creation/destruction
-    printf("  ✓ Backend isolation test passed\n");
-    asthra_backend_destroy(backend_only);
+    // Backend isolation test removed - backend abstraction layer removed
+    // The LLVM backend is now the only backend and is accessed directly
 
     printf("✅ All component isolation tests passed.\n");
     return true;
