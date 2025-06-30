@@ -206,7 +206,7 @@ asthra build --time
 # Build for different architectures
 asthra build --target x86_64-windows
 asthra build --target aarch64-linux
-asthra build --target x86_64-macos
+asthra build --target aarch64-macos
 
 # List available targets
 asthra build --list-targets

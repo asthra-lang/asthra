@@ -34,6 +34,11 @@ else()
     message(WARNING "Unknown architecture: ${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
+# Check for unsupported platform combinations
+if(APPLE AND ASTHRA_ARCH_X64)
+    message(FATAL_ERROR "Error: x86_64 architecture is no longer supported on macOS. Please use arm64 or native architecture.")
+endif()
+
 # Platform detection with version info
 if(APPLE)
     set(ASTHRA_PLATFORM "macOS")

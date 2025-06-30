@@ -31,7 +31,8 @@ void cli_print_usage(const char *program_name) {
     printf("  -O, --optimize <level>  Optimization level (0-3, default: 2)\n");
     printf("  -g, --debug             Include debug information\n");
     printf("  -v, --verbose           Verbose output\n");
-    printf("  -t, --target <arch>     Target architecture (x86_64, arm64, wasm32, native)\n");
+    printf("  -t, --target <arch>     Target architecture (x86_64 [Linux only], arm64, wasm32, "
+           "native)\n");
     printf("  -b, --backend <type>    Backend type (llvm only, default: llvm)\n");
     printf("  --emit <format>         Output format: llvm-ir, llvm-bc, asm, obj, exe\n");
     printf("  --emit-llvm             Deprecated - Use --emit llvm-ir\n");
@@ -118,7 +119,18 @@ AsthraTargetArch cli_parse_target_arch(const char *arch_str) {
 
     for (size_t i = 0; i < sizeof(arch_map) / sizeof(arch_map[0]); i++) {
         if (strcmp(arch_str, arch_map[i].name) == 0) {
-            return arch_map[i].arch;
+            AsthraTargetArch arch = arch_map[i].arch;
+
+            // Check for unsupported platform combinations
+#ifdef __APPLE__
+            if (arch == ASTHRA_TARGET_X86_64) {
+                fprintf(stderr,
+                        "Error: x86_64 is no longer supported on macOS. Use arm64 or native.\n");
+                return ASTHRA_TARGET_NATIVE;
+            }
+#endif
+
+            return arch;
         }
     }
 
@@ -145,7 +157,6 @@ AsthraOptimizationLevel cli_parse_optimization_level(const char *opt_str) {
     fprintf(stderr, "Error: Invalid optimization level '%s'\n", opt_str);
     return ASTHRA_OPT_STANDARD;
 }
-
 
 CliOptions cli_options_init(void) {
     CliOptions options = {0};
@@ -236,7 +247,8 @@ int cli_parse_arguments(int argc, char *argv[], CliOptions *options) {
             break;
         case 'b':
             // Backend option is deprecated - LLVM is the only backend
-            fprintf(stderr, "Warning: -b/--backend option is deprecated. LLVM is now the only backend.\n");
+            fprintf(stderr,
+                    "Warning: -b/--backend option is deprecated. LLVM is now the only backend.\n");
             break;
         case 'I':
             // Add include path using C17 flexible array
@@ -347,7 +359,6 @@ int cli_parse_arguments(int argc, char *argv[], CliOptions *options) {
         fprintf(stderr,
                 "Warning: --emit-asm flag is deprecated. Assembly backend has been removed.\n");
     }
-
 
     return 0;
 

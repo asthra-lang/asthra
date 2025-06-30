@@ -49,7 +49,7 @@ asthra -g -O0 debug-me.asthra
 
 **`-t, --target <arch>`**  
 Specify target architecture. Supported values:
-- `x86_64`: 64-bit x86 processors
+- `x86_64`: 64-bit x86 processors (Linux only)
 - `arm64` or `aarch64`: 64-bit ARM processors
 - `wasm32`: WebAssembly 32-bit
 - `native`: Use host architecture (default)
