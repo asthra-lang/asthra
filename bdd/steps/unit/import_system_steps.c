@@ -206,7 +206,7 @@ BddTestCase import_system_test_cases[] = {
     BDD_TEST_CASE(import_without_semicolon, test_import_without_semicolon),
     BDD_TEST_CASE(import_before_package, test_import_before_package),
     BDD_WIP_TEST_CASE(import_invalid_path, test_import_invalid_path),
-    BDD_WIP_TEST_CASE(duplicate_imports, test_duplicate_imports),
+    BDD_TEST_CASE(duplicate_imports, test_duplicate_imports),
     BDD_WIP_TEST_CASE(conflicting_aliases, test_conflicting_aliases),
 };
 

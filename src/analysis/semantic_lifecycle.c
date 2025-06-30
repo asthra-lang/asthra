@@ -35,6 +35,9 @@ SemanticAnalyzer *semantic_analyzer_create(void) {
                                    .current_scope = NULL,
                                    .builtin_types = NULL,
                                    .builtin_type_count = 0,
+                                   .imported_modules = NULL,
+                                   .imported_count = 0,
+                                   .imported_capacity = 0,
                                    .errors = NULL,
                                    .last_error = NULL,
                                    .error_count = 0,
@@ -92,6 +95,12 @@ void semantic_analyzer_destroy(SemanticAnalyzer *analyzer) {
     // Free predeclared identifiers
     free(analyzer->predeclared_identifiers);
 
+    // Free imported modules
+    for (size_t i = 0; i < analyzer->imported_count; i++) {
+        free(analyzer->imported_modules[i].path);
+    }
+    free(analyzer->imported_modules);
+
     free(analyzer);
 }
 
@@ -113,6 +122,15 @@ void semantic_analyzer_reset(SemanticAnalyzer *analyzer) {
 
     // Reset loop depth
     analyzer->loop_depth = 0;
+
+    // Clear imported modules
+    for (size_t i = 0; i < analyzer->imported_count; i++) {
+        free(analyzer->imported_modules[i].path);
+    }
+    free(analyzer->imported_modules);
+    analyzer->imported_modules = NULL;
+    analyzer->imported_count = 0;
+    analyzer->imported_capacity = 0;
 }
 
 void semantic_analyzer_set_test_mode(SemanticAnalyzer *analyzer, bool enable) {
