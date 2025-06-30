@@ -26,8 +26,6 @@ AsthraCompilerOptions asthra_compiler_default_options(void) {
                                    .asm_syntax = ASTHRA_ASM_SYNTAX_ATT,
                                    .debug_info = false,
                                    .verbose = false,
-                                   .emit_llvm = false,
-                                   .emit_asm = false,
                                    .no_stdlib = false,
                                    .coverage = false,
                                    .pie_mode = ASTHRA_PIE_DEFAULT,
@@ -47,8 +45,6 @@ AsthraCompilerOptions asthra_compiler_options_create(const char *input_file,
                                    .asm_syntax = ASTHRA_ASM_SYNTAX_ATT,
                                    .debug_info = false,
                                    .verbose = false,
-                                   .emit_llvm = false,
-                                   .emit_asm = false,
                                    .no_stdlib = false,
                                    .coverage = false,
                                    .pie_mode = ASTHRA_PIE_DEFAULT,
@@ -85,11 +81,6 @@ bool asthra_compiler_validate_options(const AsthraCompilerOptions *options) {
         return false;
     }
 #endif
-
-    // Validate mutually exclusive options
-    if (options->emit_llvm && options->emit_asm) {
-        return false; // Can't emit both LLVM IR and assembly
-    }
 
     return true;
 }

@@ -35,8 +35,6 @@ void cli_print_usage(const char *program_name) {
            "native)\n");
     printf("  -b, --backend <type>    Backend type (llvm only, default: llvm)\n");
     printf("  --emit <format>         Output format: llvm-ir, llvm-bc, asm, obj, exe\n");
-    printf("  --emit-llvm             Deprecated - Use --emit llvm-ir\n");
-    printf("  --emit-asm              Deprecated - Use --emit asm\n");
     printf("  --no-stdlib             Don't link standard library\n");
     printf("  --pie                   Force generation of position-independent executables\n");
     printf("  --no-pie                Disable PIE generation\n");
@@ -203,8 +201,6 @@ int cli_parse_arguments(int argc, char *argv[], CliOptions *options) {
         {.name = "verbose", .has_arg = no_argument, .flag = 0, .val = 'v'},
         {.name = "target", .has_arg = required_argument, .flag = 0, .val = 't'},
         {.name = "backend", .has_arg = required_argument, .flag = 0, .val = 'b'},
-        {.name = "emit-llvm", .has_arg = no_argument, .flag = 0, .val = 1000},
-        {.name = "emit-asm", .has_arg = no_argument, .flag = 0, .val = 1001},
         {.name = "emit", .has_arg = required_argument, .flag = 0, .val = 1005},
         {.name = "no-stdlib", .has_arg = no_argument, .flag = 0, .val = 1002},
         {.name = "include", .has_arg = required_argument, .flag = 0, .val = 'I'},
@@ -270,16 +266,6 @@ int cli_parse_arguments(int argc, char *argv[], CliOptions *options) {
                 fprintf(stderr, "Error: Failed to add library\n");
                 goto cleanup_and_exit;
             }
-            break;
-        case 1000: // --emit-llvm
-            options->compiler_options.emit_llvm = true;
-            fprintf(stderr,
-                    "Warning: --emit-llvm is deprecated. LLVM IR is now the default backend.\n");
-            break;
-        case 1001: // --emit-asm
-            options->compiler_options.emit_asm = true;
-            fprintf(stderr,
-                    "Warning: --emit-asm is deprecated. Assembly backend has been removed.\n");
             break;
         case 1002: // --no-stdlib
             options->compiler_options.no_stdlib = true;
@@ -350,15 +336,6 @@ int cli_parse_arguments(int argc, char *argv[], CliOptions *options) {
     options->compiler_options.libraries = libraries;
 
     // Backend type is always LLVM now
-    // Warn if legacy flags are used
-    if (options->compiler_options.emit_llvm) {
-        fprintf(stderr,
-                "Warning: --emit-llvm flag is deprecated. LLVM IR is now the default backend.\n");
-    }
-    if (options->compiler_options.emit_asm) {
-        fprintf(stderr,
-                "Warning: --emit-asm flag is deprecated. Assembly backend has been removed.\n");
-    }
 
     return 0;
 

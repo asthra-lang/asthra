@@ -108,8 +108,6 @@ struct AsthraCompilerOptions {
     AsthraAssemblySyntax asm_syntax;  // Deprecated - kept for API compatibility
     bool debug_info;
     bool verbose;
-    bool emit_llvm; // Deprecated - LLVM is now always used
-    bool emit_asm;  // Deprecated - use output_format instead
     bool no_stdlib;
     bool coverage;          // Enable coverage instrumentation
     AsthraPIEMode pie_mode; // Position Independent Executable mode

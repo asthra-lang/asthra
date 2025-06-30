@@ -150,15 +150,6 @@ Display compiler version information and exit.
 **`-h, --help`**  
 Show help message with all available options.
 
-### Deprecated Options
-
-These options are maintained for backward compatibility but should not be used in new code:
-
-**`--emit-llvm`**  
-Deprecated. Use `--emit llvm-ir` instead.
-
-**`--emit-asm`**  
-Deprecated. Use `--emit asm` instead.
 
 ## Examples
 
