@@ -117,9 +117,102 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                     return NULL;
                 }
             } else if (match_token(parser, TOKEN_IDENTIFIER)) {
-                // Regular field access
                 field_name = strdup(parser->current_token.data.identifier.name);
                 advance_token(parser);
+                
+                // Check if this could be an enum constructor (uppercase identifier followed by parenthesis)
+                if (expr->type == AST_IDENTIFIER) {
+                    const char *enum_name = expr->data.identifier.name;
+                    // Check if enum name starts with uppercase (type convention)
+                    if (enum_name && enum_name[0] >= 'A' && enum_name[0] <= 'Z' && 
+                        match_token(parser, TOKEN_LEFT_PAREN)) {
+                        // This looks like an enum constructor call
+                        advance_token(parser); // consume '('
+                        
+                        // Parse constructor arguments
+                        ASTNode *value = NULL;
+                        if (!match_token(parser, TOKEN_RIGHT_PAREN)) {
+                            // Parse first argument
+                            ASTNode *first_arg = parse_expr(parser);
+                            if (!first_arg) {
+                                free(field_name);
+                                ast_free_node(expr);
+                                return NULL;
+                            }
+
+                            // Check for additional arguments
+                            if (match_token(parser, TOKEN_COMMA)) {
+                                // Multiple arguments - create a tuple literal
+                                ASTNodeList *arg_list = ast_node_list_create(4);
+                                if (!arg_list) {
+                                    ast_free_node(first_arg);
+                                    free(field_name);
+                                    ast_free_node(expr);
+                                    return NULL;
+                                }
+                                
+                                // Add first argument to list
+                                ast_node_list_add(&arg_list, first_arg);
+                                
+                                // Parse remaining arguments
+                                while (match_token(parser, TOKEN_COMMA)) {
+                                    advance_token(parser);
+                                    
+                                    ASTNode *arg = parse_expr(parser);
+                                    if (!arg) {
+                                        ast_node_list_destroy(arg_list);
+                                        free(field_name);
+                                        ast_free_node(expr);
+                                        return NULL;
+                                    }
+                                    
+                                    ast_node_list_add(&arg_list, arg);
+                                }
+                                
+                                // Create tuple literal for multiple values
+                                value = ast_create_node(AST_TUPLE_LITERAL, op_loc);
+                                if (!value) {
+                                    ast_node_list_destroy(arg_list);
+                                    free(field_name);
+                                    ast_free_node(expr);
+                                    return NULL;
+                                }
+                                value->data.tuple_literal.elements = arg_list;
+                            } else {
+                                // Single argument
+                                value = first_arg;
+                            }
+                        }
+                        
+                        if (!expect_token(parser, TOKEN_RIGHT_PAREN)) {
+                            if (value)
+                                ast_free_node(value);
+                            free(field_name);
+                            ast_free_node(expr);
+                            return NULL;
+                        }
+                        
+                        // Create enum variant node
+                        ASTNode *enum_variant = ast_create_node(AST_ENUM_VARIANT, op_loc);
+                        if (!enum_variant) {
+                            if (value)
+                                ast_free_node(value);
+                            free(field_name);
+                            ast_free_node(expr);
+                            return NULL;
+                        }
+                        
+                        enum_variant->data.enum_variant.enum_name = strdup(enum_name);
+                        enum_variant->data.enum_variant.variant_name = field_name;
+                        enum_variant->data.enum_variant.value = value;
+                        
+                        ast_free_node(expr); // Free the identifier node
+                        expr = enum_variant;
+                        continue; // Continue with postfix processing
+                    }
+                }
+                
+                // Regular field access
             } else {
                 report_error(parser, "Expected field name or tuple index after '.'");
                 ast_free_node(expr);

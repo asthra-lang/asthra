@@ -211,6 +211,8 @@ void semantic_init_primitive_types(SemanticAnalyzer *analyzer) {
                 );
 
             if (type_symbol) {
+                // Mark primitive types as predeclared to allow user-defined types to shadow them
+                type_symbol->flags.is_predeclared = true;
                 symbol_table_insert_safe(analyzer->global_scope, type->name, type_symbol);
             }
         }
@@ -221,6 +223,7 @@ void semantic_init_primitive_types(SemanticAnalyzer *analyzer) {
     TypeDescriptor *i32_type = &g_builtin_types[PRIMITIVE_I32];
     SymbolEntry *int_alias = symbol_entry_create("int", SYMBOL_TYPE, i32_type, NULL);
     if (int_alias) {
+        int_alias->flags.is_predeclared = true;
         symbol_table_insert_safe(analyzer->global_scope, "int", int_alias);
     }
 
@@ -228,6 +231,7 @@ void semantic_init_primitive_types(SemanticAnalyzer *analyzer) {
     TypeDescriptor *f32_type = &g_builtin_types[PRIMITIVE_F32];
     SymbolEntry *float_alias = symbol_entry_create("float", SYMBOL_TYPE, f32_type, NULL);
     if (float_alias) {
+        float_alias->flags.is_predeclared = true;
         symbol_table_insert_safe(analyzer->global_scope, "float", float_alias);
     }
 
@@ -235,6 +239,7 @@ void semantic_init_primitive_types(SemanticAnalyzer *analyzer) {
     TypeDescriptor *u64_type = &g_builtin_types[PRIMITIVE_U64];
     SymbolEntry *usize_alias = symbol_entry_create("usize", SYMBOL_TYPE, u64_type, NULL);
     if (usize_alias) {
+        usize_alias->flags.is_predeclared = true;
         symbol_table_insert_safe(analyzer->global_scope, "usize", usize_alias);
     }
 
@@ -242,6 +247,7 @@ void semantic_init_primitive_types(SemanticAnalyzer *analyzer) {
     TypeDescriptor *i64_type = &g_builtin_types[PRIMITIVE_I64];
     SymbolEntry *isize_alias = symbol_entry_create("isize", SYMBOL_TYPE, i64_type, NULL);
     if (isize_alias) {
+        isize_alias->flags.is_predeclared = true;
         symbol_table_insert_safe(analyzer->global_scope, "isize", isize_alias);
     }
 }

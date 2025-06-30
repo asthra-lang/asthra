@@ -170,8 +170,9 @@ ASTNode *parse_enum_decl(Parser *parser) {
             if (match_token(parser, TOKEN_LEFT_PAREN)) {
                 advance_token(parser);
 
-                associated_type = parse_type(parser);
-                if (!associated_type) {
+                // Parse first type
+                ASTNode *first_type = parse_type(parser);
+                if (!first_type) {
                     free(variant_name);
                     for (size_t i = 0; i < variant_count; i++) {
                         ast_free_node(variants[i]);
@@ -181,6 +182,67 @@ ASTNode *parse_enum_decl(Parser *parser) {
                         ast_node_list_destroy(type_params);
                     free(enum_name);
                     return NULL;
+                }
+
+                // Check if we have multiple types (TypeList)
+                if (match_token(parser, TOKEN_COMMA)) {
+                    // Parse as tuple type for multiple values
+                    ASTNodeList *type_list = ast_node_list_create(4);
+                    if (!type_list) {
+                        ast_free_node(first_type);
+                        free(variant_name);
+                        for (size_t i = 0; i < variant_count; i++) {
+                            ast_free_node(variants[i]);
+                        }
+                        free(variants);
+                        if (type_params)
+                            ast_node_list_destroy(type_params);
+                        free(enum_name);
+                        return NULL;
+                    }
+                    
+                    // Add first type to list
+                    ast_node_list_add(&type_list, first_type);
+                    
+                    // Parse remaining types
+                    while (match_token(parser, TOKEN_COMMA)) {
+                        advance_token(parser);
+                        
+                        ASTNode *type = parse_type(parser);
+                        if (!type) {
+                            ast_node_list_destroy(type_list);
+                            free(variant_name);
+                            for (size_t i = 0; i < variant_count; i++) {
+                                ast_free_node(variants[i]);
+                            }
+                            free(variants);
+                            if (type_params)
+                                ast_node_list_destroy(type_params);
+                            free(enum_name);
+                            return NULL;
+                        }
+                        
+                        ast_node_list_add(&type_list, type);
+                    }
+                    
+                    // Create tuple type from the type list
+                    associated_type = ast_create_node(AST_TUPLE_TYPE, variant_loc);
+                    if (!associated_type) {
+                        ast_node_list_destroy(type_list);
+                        free(variant_name);
+                        for (size_t i = 0; i < variant_count; i++) {
+                            ast_free_node(variants[i]);
+                        }
+                        free(variants);
+                        if (type_params)
+                            ast_node_list_destroy(type_params);
+                        free(enum_name);
+                        return NULL;
+                    }
+                    associated_type->data.tuple_type.element_types = type_list;
+                } else {
+                    // Single type
+                    associated_type = first_type;
                 }
 
                 if (!expect_token(parser, TOKEN_RIGHT_PAREN)) {
