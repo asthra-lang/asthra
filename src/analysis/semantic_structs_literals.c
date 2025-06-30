@@ -14,6 +14,30 @@
 // ============================================================================
 
 /**
+ * Helper structure for collecting field names
+ */
+typedef struct {
+    char **names;
+    size_t index;
+    size_t capacity;
+} FieldCollector;
+
+/**
+ * Callback function for collecting field names from symbol table
+ */
+static bool collect_field_names(const char *name, SymbolEntry *entry, void *user_data) {
+    if (!entry || entry->kind != SYMBOL_FIELD) {
+        return true; // Continue iteration
+    }
+    
+    FieldCollector *collector = (FieldCollector *)user_data;
+    if (collector->index < collector->capacity) {
+        collector->names[collector->index++] = (char *)name;
+    }
+    return true; // Continue iteration
+}
+
+/**
  * Get the actual field type for a generic instance
  * For generic instances, this substitutes type parameters with concrete types
  */
@@ -194,6 +218,49 @@ bool analyze_struct_literal_expression(SemanticAnalyzer *analyzer, ASTNode *stru
         return false;
     }
 
+    // Get the fields table for validation
+    TypeDescriptor *field_lookup_type = actual_struct_type;
+    if (actual_struct_type->category == TYPE_GENERIC_INSTANCE) {
+        field_lookup_type = actual_struct_type->data.generic_instance.base_type;
+    }
+
+    SymbolTable *fields_table = field_lookup_type->data.struct_type.fields;
+    if (!fields_table && field_lookup_type->data.struct_type.field_count > 0) {
+        semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, struct_literal->location,
+                              "Struct '%s' has invalid field table", struct_name);
+        if (actual_struct_type != struct_type) {
+            type_descriptor_release(actual_struct_type);
+        }
+        return false;
+    }
+
+    // Create a tracking structure for initialized fields
+    size_t field_count = field_lookup_type->data.struct_type.field_count;
+    bool *fields_initialized = NULL;
+    char **field_names = NULL;
+    
+    if (field_count > 0) {
+        fields_initialized = calloc(field_count, sizeof(bool));
+        field_names = calloc(field_count, sizeof(char*));
+        if (!fields_initialized || !field_names) {
+            free(fields_initialized);
+            free(field_names);
+            if (actual_struct_type != struct_type) {
+                type_descriptor_release(actual_struct_type);
+            }
+            return false;
+        }
+
+        // Collect all field names from the struct definition
+        FieldCollector collector = {
+            .names = field_names,
+            .index = 0,
+            .capacity = field_count
+        };
+
+        symbol_table_iterate(fields_table, collect_field_names, &collector);
+    }
+
     // Validate field initializations
     if (field_inits) {
         size_t field_init_count = ast_node_list_size(field_inits);
@@ -223,21 +290,8 @@ bool analyze_struct_literal_expression(SemanticAnalyzer *analyzer, ASTNode *stru
                 continue;
             }
 
-            // Check that the field exists in the struct
-            // For generic instances, we need to look in the base type's fields
-            TypeDescriptor *field_lookup_type = actual_struct_type;
-            if (actual_struct_type->category == TYPE_GENERIC_INSTANCE) {
-                field_lookup_type = actual_struct_type->data.generic_instance.base_type;
-            }
-
-            if (!field_lookup_type->data.struct_type.fields) {
-                semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, field_init->location,
-                                      "Struct '%s' has no fields", struct_name);
-                continue;
-            }
-
             SymbolEntry *field_symbol =
-                symbol_table_lookup_local(field_lookup_type->data.struct_type.fields, field_name);
+                symbol_table_lookup_local(fields_table, field_name);
             if (!field_symbol) {
                 semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL,
                                       field_init->location, "Struct '%s' has no field '%s'",
@@ -245,10 +299,20 @@ bool analyze_struct_literal_expression(SemanticAnalyzer *analyzer, ASTNode *stru
                 continue;
             }
 
+            // Mark this field as initialized
+            for (size_t j = 0; j < field_count; j++) {
+                if (field_names[j] && strcmp(field_names[j], field_name) == 0) {
+                    fields_initialized[j] = true;
+                    break;
+                }
+            }
+
             // Analyze the field value expression
             if (field_value) {
                 if (!semantic_analyze_expression(analyzer, field_value)) {
-                    // Clean up instance type if we created one
+                    // Clean up
+                    free(fields_initialized);
+                    free(field_names);
                     if (actual_struct_type != struct_type) {
                         type_descriptor_release(actual_struct_type);
                     }
@@ -277,7 +341,9 @@ bool analyze_struct_literal_expression(SemanticAnalyzer *analyzer, ASTNode *stru
                             value_type->name ? value_type->name : "unknown");
                         type_descriptor_release(value_type);
                         type_descriptor_release(actual_field_type);
-                        // Clean up instance type if we created one
+                        // Clean up
+                        free(fields_initialized);
+                        free(field_names);
                         if (actual_struct_type != struct_type) {
                             type_descriptor_release(actual_struct_type);
                         }
@@ -289,6 +355,28 @@ bool analyze_struct_literal_expression(SemanticAnalyzer *analyzer, ASTNode *stru
 
             type_descriptor_release(actual_field_type);
         }
+    }
+
+    // Check for missing fields
+    bool has_missing_fields = false;
+    for (size_t i = 0; i < field_count; i++) {
+        if (!fields_initialized[i] && field_names[i]) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION,
+                                  struct_literal->location,
+                                  "missing field '%s' in struct literal", field_names[i]);
+            has_missing_fields = true;
+        }
+    }
+
+    // Clean up tracking data
+    free(fields_initialized);
+    free(field_names);
+
+    if (has_missing_fields) {
+        if (actual_struct_type != struct_type) {
+            type_descriptor_release(actual_struct_type);
+        }
+        return false;
     }
 
     // Store the type information in the AST node for later retrieval
