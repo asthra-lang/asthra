@@ -79,6 +79,14 @@ void declare_runtime_functions(LLVMBackendData *data) {
         LLVMSetLinkage(fn, LLVMExternalLinkage);
     }
 
+    {
+        // char* asthra_string_concat_wrapper(const char* left, const char* right)
+        LLVMTypeRef param_types[] = {data->ptr_type, data->ptr_type};
+        LLVMTypeRef fn_type = LLVMFunctionType(data->ptr_type, param_types, 2, false);
+        data->runtime_string_concat_fn = LLVMAddFunction(data->module, "asthra_string_concat_wrapper", fn_type);
+        LLVMSetLinkage(data->runtime_string_concat_fn, LLVMExternalLinkage);
+    }
+
     // Print function for basic output (temporary until proper I/O)
     {
         // int printf(const char* format, ...)

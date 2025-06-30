@@ -299,6 +299,67 @@ static AsthraTestResult test_loop_control_in_unsafe_block(AsthraTestContext *con
     return ASTHRA_TEST_PASS;
 }
 
+// Test continue statement in for loops (should not cause infinite loop)
+static AsthraTestResult test_for_loop_continue_increment(AsthraTestContext *context) {
+    const char *source = "package test;\n"
+                         "\n"
+                         "// Test continue in for loop properly increments\n"
+                         "pub fn test_continue_increment(none) -> i32 {\n"
+                         "    let mut count: i32 = 0;\n"
+                         "    \n"
+                         "    // Test 1: Continue in range-based for loop\n"
+                         "    for i in range(5) {\n"
+                         "        if i == 2 {\n"
+                         "            continue;  // Should skip to i=3, not stay at i=2\n"
+                         "        }\n"
+                         "        count = count + 1;\n"
+                         "    }\n"
+                         "    \n"
+                         "    // count should be 4 (0,1,3,4 - skipped 2)\n"
+                         "    if count != 4 {\n"
+                         "        return 1;\n"
+                         "    }\n"
+                         "    \n"
+                         "    // Test 2: Multiple continues\n"
+                         "    count = 0;\n"
+                         "    for j in range(10) {\n"
+                         "        if j % 2 == 0 {\n"
+                         "            continue;  // Skip even numbers\n"
+                         "        }\n"
+                         "        count = count + 1;\n"
+                         "    }\n"
+                         "    \n"
+                         "    // count should be 5 (1,3,5,7,9)\n"
+                         "    if count != 5 {\n"
+                         "        return 2;\n"
+                         "    }\n"
+                         "    \n"
+                         "    // Test 3: Continue in nested loops\n"
+                         "    count = 0;\n"
+                         "    for x in range(3) {\n"
+                         "        for y in range(3) {\n"
+                         "            if x == y {\n"
+                         "                continue;  // Skip diagonal\n"
+                         "            }\n"
+                         "            count = count + 1;\n"
+                         "        }\n"
+                         "    }\n"
+                         "    \n"
+                         "    // count should be 6 (skipped (0,0), (1,1), (2,2))\n"
+                         "    if count != 6 {\n"
+                         "        return 3;\n"
+                         "    }\n"
+                         "    \n"
+                         "    return 0;  // Success\n"
+                         "}\n";
+
+    bool success = compile_and_analyze(source, "test_for_loop_continue_increment");
+    ASTHRA_TEST_ASSERT_TRUE(context, success, 
+                            "For loop with continue statements should compile successfully");
+
+    return ASTHRA_TEST_PASS;
+}
+
 // =============================================================================
 // TEST SUITE REGISTRATION
 // =============================================================================
@@ -332,6 +393,10 @@ AsthraTestSuite *create_loop_control_flow_integration_test_suite(void) {
     asthra_test_suite_add_test(suite, "test_loop_control_in_unsafe_block",
                                "Loop control with unsafe blocks",
                                test_loop_control_in_unsafe_block);
+
+    asthra_test_suite_add_test(suite, "test_for_loop_continue_increment",
+                               "Continue in for loops increments properly",
+                               test_for_loop_continue_increment);
 
     return suite;
 }
