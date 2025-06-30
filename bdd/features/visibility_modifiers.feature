@@ -68,7 +68,6 @@ Feature: Visibility Modifiers
     Then the output should contain "Public struct works"
     And the exit code should be 0
 
-  @wip
   Scenario: Private struct declaration
     Given I have a file "private_struct.asthra" with:
       """
@@ -91,7 +90,6 @@ Feature: Visibility Modifiers
     Then the output should contain "Private struct works"
     And the exit code should be 0
 
-  @wip
   Scenario: Public enum declaration
     Given I have a file "public_enum.asthra" with:
       """
@@ -103,7 +101,7 @@ Feature: Visibility Modifiers
       }
       
       pub fn main(none) -> void {
-          let s: Status = Status::Ok;
+          let s: Status = Status.Ok;
           log("Public enum works");
           return ();
       }
@@ -115,7 +113,6 @@ Feature: Visibility Modifiers
     Then the output should contain "Public enum works"
     And the exit code should be 0
 
-  @wip
   Scenario: Private enum declaration
     Given I have a file "private_enum.asthra" with:
       """
@@ -128,7 +125,7 @@ Feature: Visibility Modifiers
       }
       
       pub fn main(none) -> void {
-          let state: InternalState = InternalState::Ready;
+          let state: InternalState = InternalState.Ready;
           log("Private enum works");
           return ();
       }
@@ -181,7 +178,6 @@ Feature: Visibility Modifiers
     Then the compilation should fail
     And the error message should contain "expected visibility modifier"
 
-  @wip
   Scenario: Missing visibility modifier on struct
     Given I have a file "no_visibility_struct.asthra" with:
       """
@@ -201,7 +197,6 @@ Feature: Visibility Modifiers
     Then the compilation should fail
     And the error message should contain "expected visibility modifier"
 
-  @wip
   Scenario: Missing visibility modifier on enum
     Given I have a file "no_visibility_enum.asthra" with:
       """
