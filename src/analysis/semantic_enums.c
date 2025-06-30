@@ -13,11 +13,13 @@
 #include "semantic_errors.h"
 #include "semantic_scopes.h"
 #include "semantic_symbols.h"
+#include "semantic_symbols_core.h"
 #include "semantic_symbols_entries.h"
 #include "semantic_types.h"
 #include "semantic_types_resolution.h"
 #include "semantic_utilities.h"
 #include <assert.h>
+#include <pthread.h>
 #include <stdalign.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,9 +44,13 @@ bool analyze_enum_declaration(SemanticAnalyzer *analyzer, ASTNode *enum_decl) {
     // Check if enum name already exists in current scope
     SymbolEntry *existing = symbol_table_lookup_safe(analyzer->current_scope, enum_name);
     if (existing) {
-        semantic_report_error(analyzer, SEMANTIC_ERROR_DUPLICATE_SYMBOL, enum_decl->location,
-                              "Enum '%s' already declared", enum_name);
-        return false;
+        // Allow shadowing of predeclared (builtin) types
+        if (!existing->flags.is_predeclared) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_DUPLICATE_SYMBOL, enum_decl->location,
+                                  "Enum '%s' already declared", enum_name);
+            return false;
+        }
+        // If it's a predeclared type, we'll allow shadowing it
     }
 
     // Validate type parameters if present
@@ -135,7 +141,23 @@ bool analyze_enum_declaration(SemanticAnalyzer *analyzer, ASTNode *enum_decl) {
     }
 
     // Add enum to symbol table (use the outer scope, not the type parameter scope)
-    if (!symbol_table_insert_safe(enum_scope, enum_name, enum_symbol)) {
+    // Special handling for predeclared types that we're shadowing
+    if (existing && existing->flags.is_predeclared) {
+        // We're shadowing a predeclared type, which is allowed
+        // Remove the predeclared entry first
+        symbol_table_remove(enum_scope, enum_name);
+        
+        // Now insert the new enum
+        if (!symbol_table_insert_safe(enum_scope, enum_name, enum_symbol)) {
+            symbol_entry_destroy(enum_symbol);
+            free((char *)enum_type->name);
+            free(enum_type);
+            semantic_report_error(analyzer, SEMANTIC_ERROR_SYMBOL_TABLE, enum_decl->location,
+                                  "Failed to insert enum '%s' into symbol table after removing predeclared type", enum_name);
+            return false;
+        }
+    } else if (!symbol_table_insert_safe(enum_scope, enum_name, enum_symbol)) {
+        // Regular insert failed (duplicate non-predeclared symbol)
         symbol_entry_destroy(enum_symbol);
         free((char *)enum_type->name);
         free(enum_type);

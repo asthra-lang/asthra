@@ -50,14 +50,44 @@ ASTNode *parse_result_keyword(Parser *parser, SourceLocation start_loc) {
                     return NULL;
                 }
 
-                // Check for additional arguments (not supported by current AST)
+                // Check for additional arguments
                 if (match_token(parser, TOKEN_COMMA)) {
-                    report_error(parser, "Enum constructors currently support only single values. "
-                                         "Use a tuple for multiple values.");
-                    ast_free_node(value);
-                    free(name);
-                    free(variant_name);
-                    return NULL;
+                    // Multiple arguments - create a tuple literal
+                    ASTNodeList *arg_list = ast_node_list_create(4);
+                    if (!arg_list) {
+                        ast_free_node(value);
+                        free(name);
+                        free(variant_name);
+                        return NULL;
+                    }
+                    
+                    // Add first argument to list
+                    ast_node_list_add(&arg_list, value);
+                    
+                    // Parse remaining arguments
+                    while (match_token(parser, TOKEN_COMMA)) {
+                        advance_token(parser);
+                        
+                        ASTNode *arg = parse_expr(parser);
+                        if (!arg) {
+                            ast_node_list_destroy(arg_list);
+                            free(name);
+                            free(variant_name);
+                            return NULL;
+                        }
+                        
+                        ast_node_list_add(&arg_list, arg);
+                    }
+                    
+                    // Create tuple literal for multiple values
+                    value = ast_create_node(AST_TUPLE_LITERAL, start_loc);
+                    if (!value) {
+                        ast_node_list_destroy(arg_list);
+                        free(name);
+                        free(variant_name);
+                        return NULL;
+                    }
+                    value->data.tuple_literal.elements = arg_list;
                 }
             }
 
@@ -135,14 +165,44 @@ ASTNode *parse_option_keyword(Parser *parser, SourceLocation start_loc) {
                     return NULL;
                 }
 
-                // Check for additional arguments (not supported by current AST)
+                // Check for additional arguments
                 if (match_token(parser, TOKEN_COMMA)) {
-                    report_error(parser, "Enum constructors currently support only single values. "
-                                         "Use a tuple for multiple values.");
-                    ast_free_node(value);
-                    free(name);
-                    free(variant_name);
-                    return NULL;
+                    // Multiple arguments - create a tuple literal
+                    ASTNodeList *arg_list = ast_node_list_create(4);
+                    if (!arg_list) {
+                        ast_free_node(value);
+                        free(name);
+                        free(variant_name);
+                        return NULL;
+                    }
+                    
+                    // Add first argument to list
+                    ast_node_list_add(&arg_list, value);
+                    
+                    // Parse remaining arguments
+                    while (match_token(parser, TOKEN_COMMA)) {
+                        advance_token(parser);
+                        
+                        ASTNode *arg = parse_expr(parser);
+                        if (!arg) {
+                            ast_node_list_destroy(arg_list);
+                            free(name);
+                            free(variant_name);
+                            return NULL;
+                        }
+                        
+                        ast_node_list_add(&arg_list, arg);
+                    }
+                    
+                    // Create tuple literal for multiple values
+                    value = ast_create_node(AST_TUPLE_LITERAL, start_loc);
+                    if (!value) {
+                        ast_node_list_destroy(arg_list);
+                        free(name);
+                        free(variant_name);
+                        return NULL;
+                    }
+                    value->data.tuple_literal.elements = arg_list;
                 }
             }
 
@@ -205,21 +265,52 @@ static ASTNode *parse_enum_constructor(Parser *parser, char *enum_name, SourceLo
     if (match_token(parser, TOKEN_LEFT_PAREN)) {
         advance_token(parser); // consume '('
 
-        // Parse single argument if present (enum constructors take single values)
         if (!match_token(parser, TOKEN_RIGHT_PAREN)) {
-            value = parse_expr(parser);
-            if (!value) {
+            // Parse first argument
+            ASTNode *first_arg = parse_expr(parser);
+            if (!first_arg) {
                 free(variant_name);
                 return NULL;
             }
 
-            // Check for additional arguments (not supported by current AST)
+            // Check for additional arguments
             if (match_token(parser, TOKEN_COMMA)) {
-                report_error(parser, "Enum constructors currently support only single values. Use "
-                                     "a tuple for multiple values.");
-                ast_free_node(value);
-                free(variant_name);
-                return NULL;
+                // Multiple arguments - create a tuple literal
+                ASTNodeList *arg_list = ast_node_list_create(4);
+                if (!arg_list) {
+                    ast_free_node(first_arg);
+                    free(variant_name);
+                    return NULL;
+                }
+                
+                // Add first argument to list
+                ast_node_list_add(&arg_list, first_arg);
+                
+                // Parse remaining arguments
+                while (match_token(parser, TOKEN_COMMA)) {
+                    advance_token(parser);
+                    
+                    ASTNode *arg = parse_expr(parser);
+                    if (!arg) {
+                        ast_node_list_destroy(arg_list);
+                        free(variant_name);
+                        return NULL;
+                    }
+                    
+                    ast_node_list_add(&arg_list, arg);
+                }
+                
+                // Create tuple literal for multiple values
+                value = ast_create_node(AST_TUPLE_LITERAL, start_loc);
+                if (!value) {
+                    ast_node_list_destroy(arg_list);
+                    free(variant_name);
+                    return NULL;
+                }
+                value->data.tuple_literal.elements = arg_list;
+            } else {
+                // Single argument
+                value = first_arg;
             }
         }
 

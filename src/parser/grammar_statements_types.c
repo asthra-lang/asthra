@@ -110,6 +110,23 @@ ASTNode *parse_type(Parser *parser) {
 
     // Handle Result type: Result<Type, Type>
     if (match_token(parser, TOKEN_RESULT)) {
+        // Look ahead to see if this is the built-in Result type or user-defined
+        Token next = peek_token(parser);
+        if (next.type != TOKEN_LESS_THAN) {
+            // User-defined Result type, parse as regular identifier
+            char *name = strdup("Result");
+            advance_token(parser);
+            
+            ASTNode *node = ast_create_node(AST_BASE_TYPE, start_loc);
+            if (!node) {
+                free(name);
+                return NULL;
+            }
+            node->data.base_type.name = name;
+            return node;
+        }
+        
+        // Built-in Result type with type parameters
         advance_token(parser);
 
         if (!expect_token(parser, TOKEN_LESS_THAN)) {
@@ -152,6 +169,23 @@ ASTNode *parse_type(Parser *parser) {
 
     // Handle Option type: Option<Type>
     if (match_token(parser, TOKEN_OPTION)) {
+        // Look ahead to see if this is the built-in Option type or user-defined
+        Token next = peek_token(parser);
+        if (next.type != TOKEN_LESS_THAN) {
+            // User-defined Option type, parse as regular identifier
+            char *name = strdup("Option");
+            advance_token(parser);
+            
+            ASTNode *node = ast_create_node(AST_BASE_TYPE, start_loc);
+            if (!node) {
+                free(name);
+                return NULL;
+            }
+            node->data.base_type.name = name;
+            return node;
+        }
+        
+        // Built-in Option type with type parameter
         advance_token(parser);
 
         if (!expect_token(parser, TOKEN_LESS_THAN)) {
