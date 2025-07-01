@@ -12,18 +12,10 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64|amd64|AMD64)")
     set(ASTHRA_ARCH "x86_64")
     set(ASTHRA_ARCH_X64 TRUE)
     set(ASTHRA_POINTER_SIZE 8)
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "(i[3-6]86|x86)")
-    set(ASTHRA_ARCH "x86")
-    set(ASTHRA_ARCH_X86 TRUE)
-    set(ASTHRA_POINTER_SIZE 4)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "(arm64|aarch64)")
     set(ASTHRA_ARCH "arm64")
     set(ASTHRA_ARCH_ARM64 TRUE)
     set(ASTHRA_POINTER_SIZE 8)
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
-    set(ASTHRA_ARCH "arm")
-    set(ASTHRA_ARCH_ARM TRUE)
-    set(ASTHRA_POINTER_SIZE 4)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "riscv64")
     set(ASTHRA_ARCH "riscv64")
     set(ASTHRA_ARCH_RISCV64 TRUE)
@@ -205,7 +197,7 @@ set(ASTHRA_HAS_TLS TRUE)
 set(ASTHRA_HAS_SIMD FALSE)
 
 # Check for SIMD support
-if(ASTHRA_ARCH_X64 OR ASTHRA_ARCH_X86)
+if(ASTHRA_ARCH_X64)
     include(CheckCSourceRuns)
     check_c_source_runs("
         #include <immintrin.h>
@@ -220,7 +212,7 @@ if(ASTHRA_ARCH_X64 OR ASTHRA_ARCH_X86)
         set(ASTHRA_HAS_SIMD TRUE)
         add_compile_definitions(ASTHRA_HAS_SSE=1)
     endif()
-elseif(ASTHRA_ARCH_ARM64 OR ASTHRA_ARCH_ARM)
+elseif(ASTHRA_ARCH_ARM64)
     check_c_source_compiles("
         #include <arm_neon.h>
         int main() {

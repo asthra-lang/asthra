@@ -107,7 +107,7 @@ void mock_csprng_fill(uint8_t *buffer, size_t size) {
 
 // RDTSC timing function (x86-64 specific)
 uint64_t rdtsc(void) {
-#if defined(__x86_64__) || defined(__i386__)
+#if defined(__x86_64__)
     uint32_t lo, hi;
     __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
     return ((uint64_t)hi << 32) | lo;
