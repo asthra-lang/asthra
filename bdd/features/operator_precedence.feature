@@ -98,7 +98,6 @@ Feature: Operator Precedence
     Then the exit code should be 1
     And the expression should evaluate as "(a > b) == (c < a)"
 
-  @wip
   Scenario: Relational operators precedence over bitwise
     Given the following Asthra code:
       """
@@ -311,7 +310,6 @@ Feature: Operator Precedence
     Then the return value should be 10
     And the expression should evaluate as "(square(a)) + 1"
 
-  @wip
   Scenario: Field access precedence
     Given the following Asthra code:
       """
@@ -330,7 +328,6 @@ Feature: Operator Precedence
     Then the return value should be 11
     And the expression should evaluate as "(p.x) + ((p.y) * 2)"
 
-  @wip
   Scenario: Array indexing precedence
     Given the following Asthra code:
       """
@@ -347,7 +344,7 @@ Feature: Operator Precedence
     And the expression should evaluate as "(arr[i]) + (arr[i + 1])"
 
   # Mixed logical and bitwise
-  @wip
+
   Scenario: Logical operators have lower precedence than bitwise
     Given the following Asthra code:
       """
@@ -386,7 +383,7 @@ Feature: Operator Precedence
     And the expression should evaluate as "(await async_value()) + 8"
 
   # Type cast and sizeof
-  @wip
+
   Scenario: Sizeof operator precedence
     Given the following Asthra code:
       """
@@ -426,7 +423,7 @@ Feature: Operator Precedence
     And the expression should evaluate with proper precedence
 
   # Edge case: Multiple unary operators
-  @wip
+
   Scenario: Chained unary operators are left-to-right
     Given the following Asthra code:
       """

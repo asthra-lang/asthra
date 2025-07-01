@@ -35,7 +35,6 @@ Feature: Arithmetic Operators
     When I compile and run the code
     Then the exit code should be -3
 
-  @wip
   Scenario: Floating point addition
     Given the following Asthra code:
       """
@@ -111,7 +110,6 @@ Feature: Arithmetic Operators
     When I compile and run the code
     Then the exit code should be 75
 
-  @wip
   Scenario: Floating point subtraction
     Given the following Asthra code:
       """
@@ -173,7 +171,6 @@ Feature: Arithmetic Operators
     When I compile and run the code
     Then the exit code should be 20
 
-  @wip
   Scenario: Floating point multiplication
     Given the following Asthra code:
       """
@@ -235,7 +232,6 @@ Feature: Arithmetic Operators
     When I compile and run the code
     Then the exit code should be -5
 
-  @wip
   Scenario: Floating point division
     Given the following Asthra code:
       """

@@ -7,7 +7,7 @@ Feature: Array Literals
     Given a new compilation context
 
   # Empty arrays
-  @wip
+
   Scenario: Empty array with none marker
     Given the following Asthra code:
       """
@@ -20,7 +20,6 @@ Feature: Array Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Empty array for fixed size
     Given the following Asthra code:
       """
@@ -34,7 +33,7 @@ Feature: Array Literals
     Then the exit code should be 42
 
   # Simple array literals
-  @wip
+
   Scenario: Single element array
     Given the following Asthra code:
       """
@@ -47,7 +46,6 @@ Feature: Array Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Multiple element array
     Given the following Asthra code:
       """
@@ -60,7 +58,6 @@ Feature: Array Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Array of different numeric types
     Given the following Asthra code:
       """
@@ -75,7 +72,7 @@ Feature: Array Literals
     Then the exit code should be 42
 
   # Repeated element arrays
-  @wip
+
   Scenario: Repeated element array syntax
     Given the following Asthra code:
       """
@@ -88,7 +85,6 @@ Feature: Array Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Repeated zero initialization
     Given the following Asthra code:
       """
@@ -101,7 +97,6 @@ Feature: Array Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Repeated element with expression
     Given the following Asthra code:
       """
@@ -116,7 +111,7 @@ Feature: Array Literals
     Then the exit code should be 42
 
   # Fixed-size arrays
-  @wip
+
   Scenario: Fixed-size array declaration
     Given the following Asthra code:
       """
@@ -129,7 +124,6 @@ Feature: Array Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Fixed-size array with const size
     Given the following Asthra code:
       """
@@ -144,7 +138,7 @@ Feature: Array Literals
     Then the exit code should be 42
 
   # Array indexing
-  @wip
+
   Scenario: Basic array indexing
     Given the following Asthra code:
       """
@@ -158,7 +152,6 @@ Feature: Array Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Array indexing with expression
     Given the following Asthra code:
       """
@@ -172,7 +165,7 @@ Feature: Array Literals
     Then the exit code should be 42
 
   # Mutable arrays
-  @wip
+
   Scenario: Mutable array element modification
     Given the following Asthra code:
       """
@@ -186,7 +179,6 @@ Feature: Array Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Mutable array reassignment
     Given the following Asthra code:
       """
@@ -213,7 +205,6 @@ Feature: Array Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Nested array indexing
     Given the following Asthra code:
       """
@@ -227,7 +218,7 @@ Feature: Array Literals
     Then the exit code should be 42
 
   # Array slicing
-  @wip
+
   Scenario: Full array slice
     Given the following Asthra code:
       """
@@ -241,7 +232,6 @@ Feature: Array Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Array slice from start
     Given the following Asthra code:
       """
@@ -255,7 +245,6 @@ Feature: Array Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Array slice to end
     Given the following Asthra code:
       """
@@ -283,7 +272,7 @@ Feature: Array Literals
     Then the exit code should be 42
 
   # Array length
-  @wip
+
   Scenario: Get array length
     Given the following Asthra code:
       """
@@ -296,7 +285,6 @@ Feature: Array Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Empty array length
     Given the following Asthra code:
       """
@@ -310,7 +298,7 @@ Feature: Array Literals
     Then the exit code should be 42
 
   # Arrays with other types
-  @wip
+
   Scenario: Boolean array
     Given the following Asthra code:
       """
@@ -327,7 +315,6 @@ Feature: Array Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: String array
     Given the following Asthra code:
       """
@@ -360,7 +347,6 @@ Feature: Array Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Return array from function
     Given the following Asthra code:
       """
@@ -377,7 +363,7 @@ Feature: Array Literals
     Then the exit code should be 42
 
   # Array operations in loops
-  @wip
+
   Scenario: Iterate over array
     Given the following Asthra code:
       """
@@ -394,7 +380,6 @@ Feature: Array Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Iterate with range
     Given the following Asthra code:
       """
@@ -412,7 +397,7 @@ Feature: Array Literals
     Then the exit code should be 42
 
   # Edge cases
-  @wip
+
   Scenario: Large repeated array
     Given the following Asthra code:
       """
@@ -425,7 +410,6 @@ Feature: Array Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Array of tuples
     Given the following Asthra code:
       """

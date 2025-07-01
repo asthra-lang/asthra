@@ -7,7 +7,7 @@ Feature: Pattern Bindings
     Given a new compilation context
 
   # Simple identifier patterns
-  @wip
+
   Scenario: Bind variable in match arm
     Given the following Asthra code:
       """
@@ -22,7 +22,6 @@ Feature: Pattern Bindings
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Bind multiple variables in match
     Given the following Asthra code:
       """
@@ -38,7 +37,7 @@ Feature: Pattern Bindings
     Then the exit code should be 42
 
   # Wildcard patterns
-  @wip
+
   Scenario: Use wildcard to ignore values
     Given the following Asthra code:
       """
@@ -54,7 +53,7 @@ Feature: Pattern Bindings
     Then the exit code should be 42
 
   # Nested pattern bindings
-  @wip
+
   Scenario: Bind variables in nested patterns
     Given the following Asthra code:
       """
@@ -70,7 +69,7 @@ Feature: Pattern Bindings
     Then the exit code should be 42
 
   # Struct pattern bindings
-  @wip
+
   Scenario: Bind struct fields to variables
     Given the following Asthra code:
       """
@@ -89,7 +88,6 @@ Feature: Pattern Bindings
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Mix bindings and wildcards in struct pattern
     Given the following Asthra code:
       """
@@ -110,7 +108,7 @@ Feature: Pattern Bindings
     Then the exit code should be 42
 
   # Enum pattern bindings
-  @wip
+
   Scenario: Bind enum variant data
     Given the following Asthra code:
       """
@@ -130,7 +128,6 @@ Feature: Pattern Bindings
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Bind multiple values from enum variant
     Given the following Asthra code:
       """
@@ -151,7 +148,7 @@ Feature: Pattern Bindings
     Then the exit code should be 42
 
   # If-let pattern bindings
-  @wip
+
   Scenario: Bind variable in if-let
     Given the following Asthra code:
       """
@@ -168,7 +165,6 @@ Feature: Pattern Bindings
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Bind tuple elements in if-let
     Given the following Asthra code:
       """
@@ -186,7 +182,7 @@ Feature: Pattern Bindings
     Then the exit code should be 42
 
   # Shadowing in patterns
-  @wip
+
   Scenario: Shadow existing variables in pattern
     Given the following Asthra code:
       """
@@ -203,7 +199,7 @@ Feature: Pattern Bindings
     Then the exit code should be 42
 
   # Complex nested bindings
-  @wip
+
   Scenario: Bind in deeply nested structure
     Given the following Asthra code:
       """
@@ -227,7 +223,7 @@ Feature: Pattern Bindings
     Then the exit code should be 42
 
   # Pattern bindings with literals
-  @wip
+
   Scenario: Mix literal matching and bindings
     Given the following Asthra code:
       """
@@ -244,7 +240,7 @@ Feature: Pattern Bindings
     Then the exit code should be 42
 
   # Multiple bindings in single pattern
-  @wip
+
   Scenario: Bind all elements of a tuple
     Given the following Asthra code:
       """
@@ -260,7 +256,7 @@ Feature: Pattern Bindings
     Then the exit code should be 42
 
   # Pattern bindings in variable declarations
-  @wip
+
   Scenario: Destructure in let binding
     Given the following Asthra code:
       """
@@ -275,7 +271,7 @@ Feature: Pattern Bindings
     Then the exit code should be 42
 
   # Mutable bindings in patterns
-  @wip
+
   Scenario: Bind mutable variables in pattern
     Given the following Asthra code:
       """
@@ -296,7 +292,7 @@ Feature: Pattern Bindings
     Then the exit code should be 42
 
   # Pattern bindings with Option type
-  @wip
+
   Scenario: Bind Option value
     Given the following Asthra code:
       """
@@ -317,7 +313,7 @@ Feature: Pattern Bindings
     Then the exit code should be 42
 
   # Pattern bindings with Result type
-  @wip
+
   Scenario: Bind Result values
     Given the following Asthra code:
       """
@@ -338,7 +334,7 @@ Feature: Pattern Bindings
     Then the exit code should be 42
 
   # Binding with type annotations
-  @wip
+
   Scenario: Pattern binding preserves types
     Given the following Asthra code:
       """
@@ -357,7 +353,7 @@ Feature: Pattern Bindings
     Then the exit code should be 42
 
   # Complex enum with struct patterns
-  @wip
+
   Scenario: Bind from enum containing structs
     Given the following Asthra code:
       """

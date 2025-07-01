@@ -221,7 +221,7 @@ Feature: Extern Declarations
     And the output should contain "Public extern works"
 
   # Error scenarios
-  @wip
+
   Scenario: Extern function without return type
     Given the following Asthra code:
       """

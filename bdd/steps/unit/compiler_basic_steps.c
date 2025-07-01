@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios using the new reusable framework
 
 void test_hello_world(void) {
@@ -308,7 +304,7 @@ void test_boolean_operations(void) {
 }
 
 // Define test cases using the new framework
-BddTestCase compiler_basic_test_cases[] = {
+BDD_DECLARE_TEST_CASES(compiler_basic)
     BDD_TEST_CASE(hello_world, test_hello_world),
     BDD_TEST_CASE(multiple_logs, test_multiple_logs),
     BDD_TEST_CASE(arithmetic, test_arithmetic),
@@ -319,9 +315,4 @@ BddTestCase compiler_basic_test_cases[] = {
 };
 
 // Main test runner using the new framework
-int main(void) {
-    return bdd_run_test_suite("Basic Compiler Functionality",
-                              compiler_basic_test_cases,
-                              sizeof(compiler_basic_test_cases) / sizeof(compiler_basic_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Basic Compiler Functionality", compiler_basic_test_cases)

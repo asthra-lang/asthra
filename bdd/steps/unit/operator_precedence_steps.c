@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios for operator precedence
 
 void test_logical_or_lowest_precedence(void) {
@@ -473,7 +469,7 @@ void test_left_associative_chain(void) {
 }
 
 // Define test cases - mark failing tests as WIP
-BddTestCase operator_precedence_test_cases[] = {
+BDD_DECLARE_TEST_CASES(operator_precedence)
     BDD_TEST_CASE(logical_or_lowest_precedence, test_logical_or_lowest_precedence),
     BDD_TEST_CASE(logical_and_higher_than_or, test_logical_and_higher_than_or),
     BDD_TEST_CASE(bitwise_or_precedence, test_bitwise_or_precedence),
@@ -498,12 +494,7 @@ BddTestCase operator_precedence_test_cases[] = {
     BDD_TEST_CASE(full_precedence_hierarchy, test_full_precedence_hierarchy),
     BDD_WIP_TEST_CASE(chained_unary_operators, test_chained_unary_operators),  // Unary chain issue
     BDD_TEST_CASE(left_associative_chain, test_left_associative_chain),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner
-int main(void) {
-    return bdd_run_test_suite("Operator Precedence",
-                              operator_precedence_test_cases,
-                              sizeof(operator_precedence_test_cases) / sizeof(operator_precedence_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Operator Precedence", operator_precedence_test_cases)

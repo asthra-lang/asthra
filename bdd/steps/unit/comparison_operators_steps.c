@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios for comparison operators
 
 // Equality operator (==) tests
@@ -836,7 +832,7 @@ void test_floating_point_infinity_comparison(void) {
 }
 
 // Define test cases
-BddTestCase comparison_operators_test_cases[] = {
+BDD_DECLARE_TEST_CASES(comparison_operators)
     // Equality operator tests
     BDD_WIP_TEST_CASE(basic_equality_comparison_with_integers, test_basic_equality_comparison_with_integers),
     BDD_TEST_CASE(equality_comparison_with_different_integer_values, test_equality_comparison_with_different_integer_values),
@@ -906,12 +902,7 @@ BddTestCase comparison_operators_test_cases[] = {
     // Floating point special cases (marked as WIP)
     BDD_WIP_TEST_CASE(floating_point_nan_comparison, test_floating_point_nan_comparison),
     BDD_WIP_TEST_CASE(floating_point_infinity_comparison, test_floating_point_infinity_comparison),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner
-int main(void) {
-    return bdd_run_test_suite("Comparison Operators",
-                              comparison_operators_test_cases,
-                              sizeof(comparison_operators_test_cases) / sizeof(comparison_operators_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Comparison Operators", comparison_operators_test_cases)

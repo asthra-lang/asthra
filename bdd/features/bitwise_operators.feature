@@ -432,7 +432,6 @@ Feature: Bitwise Operators
     When I compile and run the code
     Then the exit code should be 85
 
-  @wip
   Scenario: Bitwise operations with i64
     Given the following Asthra code:
       """

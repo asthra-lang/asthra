@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios for tuple literals
 
 // Basic tuple creation (minimum 2 elements)
@@ -498,7 +494,7 @@ void test_if_let_with_tuple_pattern(void) {
 }
 
 // Define test cases
-BddTestCase tuple_literals_test_cases[] = {
+BDD_DECLARE_TEST_CASES(tuple_literals)
     // Basic tuple creation (minimum 2 elements)
     BDD_WIP_TEST_CASE(two_element_integer_tuple, test_two_element_integer_tuple),
     BDD_WIP_TEST_CASE(two_element_mixed_type_tuple, test_two_element_mixed_type_tuple),
@@ -555,12 +551,7 @@ BddTestCase tuple_literals_test_cases[] = {
     
     // Tuple with if-let
     BDD_WIP_TEST_CASE(if_let_with_tuple_pattern, test_if_let_with_tuple_pattern),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner
-int main(void) {
-    return bdd_run_test_suite("Tuple Literals",
-                              tuple_literals_test_cases,
-                              sizeof(tuple_literals_test_cases) / sizeof(tuple_literals_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Tuple Literals", tuple_literals_test_cases)

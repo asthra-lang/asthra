@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios using the new reusable framework
 
 void test_simple_function(void) {
@@ -281,7 +277,7 @@ void test_type_mismatch_error(void) {
 }
 
 // Define test cases using the new framework - all marked @wip based on original file
-BddTestCase function_calls_test_cases[] = {
+BDD_DECLARE_TEST_CASES(function_calls)
     BDD_WIP_TEST_CASE(simple_function, test_simple_function),
     BDD_WIP_TEST_CASE(multiple_functions, test_multiple_functions),
     BDD_WIP_TEST_CASE(function_with_params, test_function_with_params),
@@ -290,12 +286,7 @@ BddTestCase function_calls_test_cases[] = {
     BDD_WIP_TEST_CASE(undefined_function_error, test_undefined_function_error),
     BDD_WIP_TEST_CASE(wrong_arg_count_error, test_wrong_arg_count_error),
     BDD_WIP_TEST_CASE(type_mismatch_error, test_type_mismatch_error),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner using the new framework
-int main(void) {
-    return bdd_run_test_suite("Function Call Functionality",
-                              function_calls_test_cases,
-                              sizeof(function_calls_test_cases) / sizeof(function_calls_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Function Call Functionality", function_calls_test_cases)

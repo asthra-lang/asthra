@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios for tuple patterns
 
 // Basic tuple destructuring
@@ -384,7 +380,7 @@ void test_match_tuple_containing_strings(void) {
 }
 
 // Define test cases
-BddTestCase tuple_patterns_test_cases[] = {
+BDD_DECLARE_TEST_CASES(tuple_patterns)
     // Basic tuple destructuring
     BDD_WIP_TEST_CASE(match_tuple_with_two_elements, test_match_tuple_with_two_elements),
     BDD_WIP_TEST_CASE(match_tuple_with_three_elements, test_match_tuple_with_three_elements),
@@ -432,12 +428,7 @@ BddTestCase tuple_patterns_test_cases[] = {
     
     // Tuple patterns with string types
     BDD_WIP_TEST_CASE(match_tuple_containing_strings, test_match_tuple_containing_strings),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner
-int main(void) {
-    return bdd_run_test_suite("Tuple Patterns",
-                              tuple_patterns_test_cases,
-                              sizeof(tuple_patterns_test_cases) / sizeof(tuple_patterns_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Tuple Patterns", tuple_patterns_test_cases)

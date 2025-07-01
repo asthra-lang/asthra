@@ -7,7 +7,7 @@ Feature: String Literals
     Given a new compilation context
 
   # Regular string literals
-  @wip
+
   Scenario: Simple string literal
     Given the following Asthra code:
       """
@@ -24,7 +24,6 @@ Feature: String Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Empty string literal
     Given the following Asthra code:
       """
@@ -41,7 +40,6 @@ Feature: String Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: String with spaces
     Given the following Asthra code:
       """
@@ -59,7 +57,7 @@ Feature: String Literals
     Then the exit code should be 42
 
   # Escape sequences in regular strings
-  @wip
+
   Scenario: String with newline escape
     Given the following Asthra code:
       """
@@ -72,7 +70,6 @@ Feature: String Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: String with tab escape
     Given the following Asthra code:
       """
@@ -85,7 +82,6 @@ Feature: String Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: String with carriage return escape
     Given the following Asthra code:
       """
@@ -98,7 +94,6 @@ Feature: String Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: String with backslash escape
     Given the following Asthra code:
       """
@@ -111,7 +106,6 @@ Feature: String Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: String with quote escape
     Given the following Asthra code:
       """
@@ -124,7 +118,6 @@ Feature: String Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: String with single quote escape
     Given the following Asthra code:
       """
@@ -137,7 +130,6 @@ Feature: String Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: String with null character escape
     Given the following Asthra code:
       """
@@ -151,7 +143,7 @@ Feature: String Literals
     Then the exit code should be 42
 
   # Multi-line processed strings
-  @wip
+
   Scenario: Simple multi-line processed string
     Given the following Asthra code:
       """
@@ -165,7 +157,6 @@ World""";
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Multi-line processed string with escape sequences
     Given the following Asthra code:
       """
@@ -179,7 +170,6 @@ Line3\tTabbed""";
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Empty multi-line processed string
     Given the following Asthra code:
       """
@@ -197,7 +187,7 @@ Line3\tTabbed""";
     Then the exit code should be 42
 
   # Raw multi-line strings
-  @wip
+
   Scenario: Simple raw multi-line string
     Given the following Asthra code:
       """
@@ -210,7 +200,6 @@ Line3\tTabbed""";
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Raw string with backslashes
     Given the following Asthra code:
       """
@@ -223,7 +212,6 @@ Line3\tTabbed""";
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Raw string with quotes
     Given the following Asthra code:
       """
@@ -237,7 +225,7 @@ Line3\tTabbed""";
     Then the exit code should be 42
 
   # String comparisons
-  @wip
+
   Scenario: Compare regular strings
     Given the following Asthra code:
       """
@@ -255,7 +243,6 @@ Line3\tTabbed""";
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Compare different string types
     Given the following Asthra code:
       """
@@ -274,7 +261,7 @@ Line3\tTabbed""";
     Then the exit code should be 42
 
   # String concatenation
-  @wip
+
   Scenario: Concatenate two strings
     Given the following Asthra code:
       """
@@ -294,7 +281,7 @@ Line3\tTabbed""";
     Then the exit code should be 42
 
   # String in expressions
-  @wip
+
   Scenario: String in conditional expression
     Given the following Asthra code:
       """
@@ -312,7 +299,7 @@ Line3\tTabbed""";
     Then the exit code should be 42
 
   # String as function parameter
-  @wip
+
   Scenario: Pass string to function
     Given the following Asthra code:
       """
@@ -332,7 +319,7 @@ Line3\tTabbed""";
     Then the exit code should be 42
 
   # Const strings
-  @wip
+
   Scenario: Const string declaration
     Given the following Asthra code:
       """
@@ -350,7 +337,7 @@ Line3\tTabbed""";
     Then the exit code should be 42
 
   # String length
-  @wip
+
   Scenario: Get string length
     Given the following Asthra code:
       """
@@ -369,7 +356,7 @@ Line3\tTabbed""";
     Then the exit code should be 42
 
   # Edge cases
-  @wip
+
   Scenario: String with only escape sequences
     Given the following Asthra code:
       """
@@ -382,7 +369,6 @@ Line3\tTabbed""";
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Multi-line string with indentation
     Given the following Asthra code:
       """
@@ -400,7 +386,7 @@ Line3\tTabbed""";
     Then the exit code should be 42
 
   # String in match expressions
-  @wip
+
   Scenario: Match on string value
     Given the following Asthra code:
       """
@@ -418,7 +404,7 @@ Line3\tTabbed""";
     Then the exit code should be 42
 
   # Mutable strings
-  @wip
+
   Scenario: Modify mutable string variable
     Given the following Asthra code:
       """

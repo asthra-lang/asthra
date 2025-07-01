@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios for array literals
 
 // Empty arrays
@@ -507,7 +503,7 @@ void test_array_of_tuples(void) {
 }
 
 // Define test cases
-BddTestCase array_literals_test_cases[] = {
+BDD_DECLARE_TEST_CASES(array_literals)
     // Empty arrays
     BDD_WIP_TEST_CASE(empty_array_with_none_marker, test_empty_array_with_none_marker),
     BDD_WIP_TEST_CASE(empty_array_for_fixed_size, test_empty_array_for_fixed_size),
@@ -563,12 +559,7 @@ BddTestCase array_literals_test_cases[] = {
     // Edge cases
     BDD_WIP_TEST_CASE(large_repeated_array, test_large_repeated_array),
     BDD_WIP_TEST_CASE(array_of_tuples, test_array_of_tuples),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner
-int main(void) {
-    return bdd_run_test_suite("Array Literals",
-                              array_literals_test_cases,
-                              sizeof(array_literals_test_cases) / sizeof(array_literals_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Array Literals", array_literals_test_cases)

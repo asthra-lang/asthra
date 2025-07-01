@@ -1,7 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-
+#include "bdd_unit_common.h"
 // Test scenarios using the new reusable framework
 
 void test_public_function(void) {
@@ -250,7 +247,7 @@ void test_private_const(void) {
 }
 
 // Define test cases using the new framework - based on original @wip configuration
-BddTestCase visibility_test_cases[] = {
+BDD_DECLARE_TEST_CASES(visibility)
     BDD_TEST_CASE(public_function, test_public_function),
     BDD_TEST_CASE(private_function, test_private_function),
     BDD_WIP_TEST_CASE(public_struct, test_public_struct),
@@ -263,12 +260,7 @@ BddTestCase visibility_test_cases[] = {
     BDD_WIP_TEST_CASE(no_visibility_enum, test_no_visibility_enum),
     BDD_TEST_CASE(public_const, test_public_const),
     BDD_TEST_CASE(private_const, test_private_const),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner using the new framework
-int main(void) {
-    return bdd_run_test_suite("Visibility Modifiers",
-                              visibility_test_cases,
-                              sizeof(visibility_test_cases) / sizeof(visibility_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Visibility Modifiers", visibility_test_cases)

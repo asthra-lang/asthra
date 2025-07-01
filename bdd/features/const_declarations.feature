@@ -42,7 +42,6 @@ Feature: Const Declarations
     Then the compilation should succeed
     And the output should contain "Const float works"
 
-  @wip
   Scenario: Const declaration with string
     Given the following Asthra code:
       """
@@ -59,7 +58,6 @@ Feature: Const Declarations
     Then the compilation should succeed
     And the output should contain "Version: 1.0.0"
 
-  @wip
   Scenario: Const declaration with boolean
     Given the following Asthra code:
       """
@@ -317,7 +315,6 @@ Feature: Const Declarations
     Then the compilation should succeed
     And the output should contain "Complex const arithmetic works"
 
-  @wip
   Scenario: Const with character literal
     Given the following Asthra code:
       """

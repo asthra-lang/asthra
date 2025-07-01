@@ -41,7 +41,6 @@ Feature: Comparison Operators
     When I compile and run the code
     Then the exit code should be 0
 
-  @wip
   Scenario: Equality comparison with boolean values
     Given the following Asthra code:
       """
@@ -59,7 +58,6 @@ Feature: Comparison Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Equality comparison with strings
     Given the following Asthra code:
       """
@@ -77,7 +75,6 @@ Feature: Comparison Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Equality comparison with floats
     Given the following Asthra code:
       """
@@ -96,7 +93,7 @@ Feature: Comparison Operators
     Then the exit code should be 1
 
   # Inequality operator (!=) tests
-  @wip
+
   Scenario: Basic inequality comparison
     Given the following Asthra code:
       """
@@ -131,7 +128,6 @@ Feature: Comparison Operators
     When I compile and run the code
     Then the exit code should be 0
 
-  @wip
   Scenario: Inequality comparison with booleans
     Given the following Asthra code:
       """
@@ -150,7 +146,7 @@ Feature: Comparison Operators
     Then the exit code should be 1
 
   # Less than operator (<) tests
-  @wip
+
   Scenario: Basic less than comparison
     Given the following Asthra code:
       """
@@ -202,7 +198,6 @@ Feature: Comparison Operators
     When I compile and run the code
     Then the exit code should be 0
 
-  @wip
   Scenario: Less than comparison with negative numbers
     Given the following Asthra code:
       """
@@ -221,7 +216,7 @@ Feature: Comparison Operators
     Then the exit code should be 1
 
   # Less than or equal operator (<=) tests
-  @wip
+
   Scenario: Less than or equal with less value
     Given the following Asthra code:
       """
@@ -239,7 +234,6 @@ Feature: Comparison Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Less than or equal with equal values
     Given the following Asthra code:
       """
@@ -275,7 +269,7 @@ Feature: Comparison Operators
     Then the exit code should be 0
 
   # Greater than operator (>) tests
-  @wip
+
   Scenario: Basic greater than comparison
     Given the following Asthra code:
       """
@@ -328,7 +322,7 @@ Feature: Comparison Operators
     Then the exit code should be 0
 
   # Greater than or equal operator (>=) tests
-  @wip
+
   Scenario: Greater than or equal with greater value
     Given the following Asthra code:
       """
@@ -346,7 +340,6 @@ Feature: Comparison Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Greater than or equal with equal values
     Given the following Asthra code:
       """
@@ -382,7 +375,7 @@ Feature: Comparison Operators
     Then the exit code should be 0
 
   # Chained comparisons
-  @wip
+
   Scenario: Multiple comparisons in one expression
     Given the following Asthra code:
       """
@@ -401,7 +394,6 @@ Feature: Comparison Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Complex comparison expression
     Given the following Asthra code:
       """
@@ -421,7 +413,7 @@ Feature: Comparison Operators
     Then the exit code should be 1
 
   # Different numeric types
-  @wip
+
   Scenario: Comparison with u8 types
     Given the following Asthra code:
       """
@@ -439,7 +431,6 @@ Feature: Comparison Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Comparison with i64 types
     Given the following Asthra code:
       """
@@ -457,7 +448,6 @@ Feature: Comparison Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Comparison with f64 types
     Given the following Asthra code:
       """
@@ -476,7 +466,7 @@ Feature: Comparison Operators
     Then the exit code should be 1
 
   # Edge cases
-  @wip
+
   Scenario: Comparison with zero
     Given the following Asthra code:
       """
@@ -494,7 +484,6 @@ Feature: Comparison Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Comparison with maximum i32 value
     Given the following Asthra code:
       """
@@ -512,7 +501,6 @@ Feature: Comparison Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Comparison with minimum i32 value
     Given the following Asthra code:
       """
@@ -531,7 +519,7 @@ Feature: Comparison Operators
     Then the exit code should be 1
 
   # Mixed operators
-  @wip
+
   Scenario: Equality and inequality in same expression
     Given the following Asthra code:
       """
@@ -570,7 +558,7 @@ Feature: Comparison Operators
     Then the exit code should be 1
 
   # Use in control flow
-  @wip
+
   Scenario: Comparison in nested if statements
     Given the following Asthra code:
       """
@@ -588,7 +576,6 @@ Feature: Comparison Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Comparison in for loop
     Given the following Asthra code:
       """
@@ -607,7 +594,7 @@ Feature: Comparison Operators
     Then the exit code should be 5
 
   # Assignment and comparison
-  @wip
+
   Scenario: Comparison result assignment
     Given the following Asthra code:
       """
@@ -626,7 +613,6 @@ Feature: Comparison Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Multiple comparison results
     Given the following Asthra code:
       """
@@ -647,7 +633,7 @@ Feature: Comparison Operators
     Then the exit code should be 1
 
   # Operator precedence
-  @wip
+
   Scenario: Comparison precedence with arithmetic
     Given the following Asthra code:
       """
@@ -665,7 +651,6 @@ Feature: Comparison Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Comparison precedence with parentheses
     Given the following Asthra code:
       """
@@ -685,7 +670,7 @@ Feature: Comparison Operators
     Then the exit code should be 1
 
   # Function calls in comparisons
-  @wip
+
   Scenario: Comparison with function results
     Given the following Asthra code:
       """
@@ -706,7 +691,7 @@ Feature: Comparison Operators
     Then the exit code should be 1
 
   # Floating point special cases
-  @wip
+
   Scenario: Floating point NaN comparison
     Given the following Asthra code:
       """
@@ -723,7 +708,6 @@ Feature: Comparison Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Floating point infinity comparison
     Given the following Asthra code:
       """

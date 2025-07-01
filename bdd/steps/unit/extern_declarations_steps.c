@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios for extern declarations
 
 void test_simple_extern(void) {
@@ -337,7 +333,7 @@ void test_mixed_annotations(void) {
 }
 
 // Define test cases
-BddTestCase extern_declarations_test_cases[] = {
+BDD_DECLARE_TEST_CASES(extern_declarations)
     BDD_TEST_CASE(simple_extern, test_simple_extern),
     BDD_TEST_CASE(multiple_params_extern, test_multiple_params_extern),
     BDD_TEST_CASE(no_params_extern, test_no_params_extern),
@@ -356,12 +352,7 @@ BddTestCase extern_declarations_test_cases[] = {
     BDD_TEST_CASE(multiple_ffi_annotations, test_multiple_ffi_annotations),
     BDD_TEST_CASE(multiple_externs, test_multiple_externs),
     BDD_TEST_CASE(mixed_annotations, test_mixed_annotations),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner
-int main(void) {
-    return bdd_run_test_suite("Extern Declarations",
-                              extern_declarations_test_cases,
-                              sizeof(extern_declarations_test_cases) / sizeof(extern_declarations_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Extern Declarations", extern_declarations_test_cases)

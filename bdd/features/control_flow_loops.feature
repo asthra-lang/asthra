@@ -25,7 +25,6 @@ Feature: Control Flow Loops
     Then the compilation should succeed
     And the output should contain "For loop with range works"
 
-  @wip
   Scenario: For loop with range start and end
     Given the following Asthra code:
       """
@@ -43,7 +42,6 @@ Feature: Control Flow Loops
     Then the compilation should succeed
     And the output should contain "Range with start/end works"
 
-  @wip
   Scenario: For loop over array slice
     Given the following Asthra code:
       """
@@ -277,7 +275,7 @@ Feature: Control Flow Loops
     And the output should contain "Mutable accumulator works"
 
   # Iterating over string slices
-  @wip
+
   Scenario: For loop over string characters
     Given the following Asthra code:
       """

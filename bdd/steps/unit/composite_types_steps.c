@@ -1,7 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-
+#include "bdd_unit_common.h"
 // Test scenarios using the new reusable framework
 
 void test_fixed_size_array(void) {
@@ -155,7 +152,7 @@ void test_slice_of_slices(void) {
 }
 
 // Define test cases using the new framework with @wip tags matching the feature file
-BddTestCase composite_types_test_cases[] = {
+BDD_DECLARE_TEST_CASES(composite_types)
     BDD_TEST_CASE(fixed_size_array, test_fixed_size_array),
     BDD_TEST_CASE(array_const_size, test_array_const_size),
     BDD_TEST_CASE(tuple_two_elements, test_tuple_two_elements),
@@ -164,12 +161,7 @@ BddTestCase composite_types_test_cases[] = {
     BDD_WIP_TEST_CASE(array_size_mismatch, test_array_size_mismatch),
     BDD_WIP_TEST_CASE(invalid_single_tuple, test_invalid_single_tuple),
     BDD_TEST_CASE(mutable_pointer_type, test_mutable_pointer_type),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner using the new framework
-int main(void) {
-    return bdd_run_test_suite("Composite Types",
-                              composite_types_test_cases,
-                              sizeof(composite_types_test_cases) / sizeof(composite_types_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Composite Types", composite_types_test_cases)

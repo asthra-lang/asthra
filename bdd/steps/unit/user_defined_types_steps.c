@@ -1,7 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-
+#include "bdd_unit_common.h"
 // Test scenarios using the new reusable framework
 
 void test_simple_struct(void) {
@@ -352,7 +349,7 @@ void test_missing_fields(void) {
 }
 
 // Define test cases using the new framework - no @wip tags based on original file
-BddTestCase user_defined_types_test_cases[] = {
+BDD_DECLARE_TEST_CASES(user_defined_types)
     BDD_TEST_CASE(simple_struct, test_simple_struct),
     BDD_TEST_CASE(mixed_struct, test_mixed_struct),
     BDD_TEST_CASE(empty_struct, test_empty_struct),
@@ -367,12 +364,7 @@ BddTestCase user_defined_types_test_cases[] = {
     BDD_TEST_CASE(duplicate_field, test_duplicate_field),
     BDD_TEST_CASE(duplicate_variant, test_duplicate_variant),
     BDD_TEST_CASE(missing_fields, test_missing_fields),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner using the new framework
-int main(void) {
-    return bdd_run_test_suite("User-Defined Types",
-                              user_defined_types_test_cases,
-                              sizeof(user_defined_types_test_cases) / sizeof(user_defined_types_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("User-Defined Types", user_defined_types_test_cases)

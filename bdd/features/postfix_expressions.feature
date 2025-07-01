@@ -35,7 +35,6 @@ Feature: Postfix Expressions
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Function call with multiple arguments
     Given the following Asthra code:
       """
@@ -50,7 +49,6 @@ Feature: Postfix Expressions
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Nested function calls
     Given the following Asthra code:
       """
@@ -68,7 +66,6 @@ Feature: Postfix Expressions
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Function call with expression arguments
     Given the following Asthra code:
       """
@@ -86,7 +83,7 @@ Feature: Postfix Expressions
     Then the exit code should be 42
 
   # Struct field access tests
-  @wip
+
   Scenario: Basic struct field access
     Given the following Asthra code:
       """
@@ -122,7 +119,6 @@ Feature: Postfix Expressions
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Struct field access with mutable fields
     Given the following Asthra code:
       """
@@ -140,7 +136,7 @@ Feature: Postfix Expressions
     Then the exit code should be 42
 
   # Tuple access tests
-  @wip
+
   Scenario: Basic tuple element access
     Given the following Asthra code:
       """
@@ -153,7 +149,6 @@ Feature: Postfix Expressions
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Tuple access with larger index
     Given the following Asthra code:
       """
@@ -166,7 +161,6 @@ Feature: Postfix Expressions
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Nested tuple access
     Given the following Asthra code:
       """
@@ -180,7 +174,7 @@ Feature: Postfix Expressions
     Then the exit code should be 42
 
   # Array indexing tests
-  @wip
+
   Scenario: Basic array indexing
     Given the following Asthra code:
       """
@@ -193,7 +187,6 @@ Feature: Postfix Expressions
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Array indexing with expression
     Given the following Asthra code:
       """
@@ -207,7 +200,6 @@ Feature: Postfix Expressions
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Multi-dimensional array indexing
     Given the following Asthra code:
       """
@@ -221,7 +213,7 @@ Feature: Postfix Expressions
     Then the exit code should be 42
 
   # Slice operations tests
-  @wip
+
   Scenario: Basic slice indexing
     Given the following Asthra code:
       """
@@ -234,7 +226,6 @@ Feature: Postfix Expressions
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Slice range from start
     Given the following Asthra code:
       """
@@ -248,7 +239,6 @@ Feature: Postfix Expressions
     When I compile and run the code
     Then the exit code should be 30
 
-  @wip
   Scenario: Slice range to end
     Given the following Asthra code:
       """
@@ -262,7 +252,6 @@ Feature: Postfix Expressions
     When I compile and run the code
     Then the exit code should be 30
 
-  @wip
   Scenario: Slice with start and end
     Given the following Asthra code:
       """
@@ -276,7 +265,6 @@ Feature: Postfix Expressions
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Full slice copy
     Given the following Asthra code:
       """
@@ -291,7 +279,7 @@ Feature: Postfix Expressions
     Then the exit code should be 42
 
   # Length operation tests
-  @wip
+
   Scenario: Array length operation
     Given the following Asthra code:
       """
@@ -304,7 +292,6 @@ Feature: Postfix Expressions
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Slice length operation
     Given the following Asthra code:
       """
@@ -318,7 +305,6 @@ Feature: Postfix Expressions
     When I compile and run the code
     Then the exit code should be 3
 
-  @wip
   Scenario: String length operation
     Given the following Asthra code:
       """
@@ -332,7 +318,7 @@ Feature: Postfix Expressions
     Then the exit code should be 13
 
   # Method calls tests
-  @wip
+
   Scenario: Basic method call
     Given the following Asthra code:
       """
@@ -374,7 +360,7 @@ Feature: Postfix Expressions
     Then the exit code should be 42
 
   # Associated function calls tests
-  @wip
+
   Scenario: Associated function call
     Given the following Asthra code:
       """
@@ -440,7 +426,6 @@ Feature: Postfix Expressions
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Function call on indexed element
     Given the following Asthra code:
       """
@@ -456,7 +441,6 @@ Feature: Postfix Expressions
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Array of structs with field access
     Given the following Asthra code:
       """
@@ -478,7 +462,7 @@ Feature: Postfix Expressions
     Then the exit code should be 42
 
   # Edge cases
-  @wip
+
   Scenario: Empty array literal with none
     Given the following Asthra code:
       """
@@ -491,7 +475,6 @@ Feature: Postfix Expressions
     When I compile and run the code
     Then the exit code should be 0
 
-  @wip
   Scenario: Complex expression in array index
     Given the following Asthra code:
       """

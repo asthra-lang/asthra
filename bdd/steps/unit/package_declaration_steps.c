@@ -1,7 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-
+#include "bdd_unit_common.h"
 // Test scenarios using the new reusable framework
 
 void test_simple_package_declaration(void) {
@@ -136,7 +133,7 @@ void test_package_not_at_beginning(void) {
 }
 
 // Define test cases using the new framework - @wip tags based on original file
-BddTestCase package_declaration_test_cases[] = {
+BDD_DECLARE_TEST_CASES(package_declaration)
     BDD_TEST_CASE(simple_package_declaration, test_simple_package_declaration),
     BDD_TEST_CASE(package_with_identifier, test_package_with_identifier),
     BDD_TEST_CASE(package_with_underscore, test_package_with_underscore),
@@ -145,12 +142,7 @@ BddTestCase package_declaration_test_cases[] = {
     BDD_WIP_TEST_CASE(package_invalid_characters, test_package_invalid_characters),
     BDD_WIP_TEST_CASE(multiple_package_declarations, test_multiple_package_declarations),
     BDD_TEST_CASE(package_not_at_beginning, test_package_not_at_beginning),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner using the new framework
-int main(void) {
-    return bdd_run_test_suite("Package Declaration Syntax",
-                              package_declaration_test_cases,
-                              sizeof(package_declaration_test_cases) / sizeof(package_declaration_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Package Declaration Syntax", package_declaration_test_cases)

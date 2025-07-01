@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios for string literals
 
 // Regular string literals
@@ -490,7 +486,7 @@ void test_modify_mutable_string_variable(void) {
 }
 
 // Define test cases
-BddTestCase string_literals_test_cases[] = {
+BDD_DECLARE_TEST_CASES(string_literals)
     // Regular string literals
     BDD_WIP_TEST_CASE(simple_string_literal, test_simple_string_literal),
     BDD_WIP_TEST_CASE(empty_string_literal, test_empty_string_literal),
@@ -543,12 +539,7 @@ BddTestCase string_literals_test_cases[] = {
     
     // Mutable strings
     BDD_WIP_TEST_CASE(modify_mutable_string_variable, test_modify_mutable_string_variable),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner
-int main(void) {
-    return bdd_run_test_suite("String Literals",
-                              string_literals_test_cases,
-                              sizeof(string_literals_test_cases) / sizeof(string_literals_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("String Literals", string_literals_test_cases)

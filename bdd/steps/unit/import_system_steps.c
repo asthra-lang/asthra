@@ -1,7 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-
+#include "bdd_unit_common.h"
 // Test scenarios using the new reusable framework
 
 void test_import_stdlib_module(void) {
@@ -196,7 +193,7 @@ void test_conflicting_aliases(void) {
 }
 
 // Define test cases using the new framework - @wip tags based on original file
-BddTestCase import_system_test_cases[] = {
+BDD_DECLARE_TEST_CASES(import_system)
     BDD_TEST_CASE(import_stdlib_module, test_import_stdlib_module),
     BDD_TEST_CASE(import_with_alias, test_import_with_alias),
     BDD_TEST_CASE(multiple_imports, test_multiple_imports),
@@ -208,12 +205,7 @@ BddTestCase import_system_test_cases[] = {
     BDD_WIP_TEST_CASE(import_invalid_path, test_import_invalid_path),
     BDD_TEST_CASE(duplicate_imports, test_duplicate_imports),
     BDD_WIP_TEST_CASE(conflicting_aliases, test_conflicting_aliases),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner using the new framework
-int main(void) {
-    return bdd_run_test_suite("Import System",
-                              import_system_test_cases,
-                              sizeof(import_system_test_cases) / sizeof(import_system_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Import System", import_system_test_cases)

@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios for postfix expressions
 
 // Function call tests
@@ -575,7 +571,7 @@ void test_complex_expression_in_array_index(void) {
 }
 
 // Define test cases
-BddTestCase postfix_expressions_test_cases[] = {
+BDD_DECLARE_TEST_CASES(postfix_expressions)
     // Function call tests
     BDD_TEST_CASE(basic_function_call_with_no_arguments, test_basic_function_call_with_no_arguments),
     BDD_WIP_TEST_CASE(function_call_with_single_argument, test_function_call_with_single_argument),
@@ -626,12 +622,7 @@ BddTestCase postfix_expressions_test_cases[] = {
     // Edge cases
     BDD_WIP_TEST_CASE(empty_array_literal_with_none, test_empty_array_literal_with_none),
     BDD_WIP_TEST_CASE(complex_expression_in_array_index, test_complex_expression_in_array_index),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner
-int main(void) {
-    return bdd_run_test_suite("Postfix Expressions",
-                              postfix_expressions_test_cases,
-                              sizeof(postfix_expressions_test_cases) / sizeof(postfix_expressions_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Postfix Expressions", postfix_expressions_test_cases)

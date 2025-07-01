@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios for logical operators
 
 // Logical AND tests
@@ -654,7 +650,7 @@ void test_assigning_logical_results(void) {
 }
 
 // Define test cases
-BddTestCase logical_operators_test_cases[] = {
+BDD_DECLARE_TEST_CASES(logical_operators)
     // Basic AND tests
     BDD_TEST_CASE(basic_logical_and_true, test_basic_logical_and_true),
     BDD_TEST_CASE(logical_and_with_false, test_logical_and_with_false),
@@ -709,12 +705,7 @@ BddTestCase logical_operators_test_cases[] = {
     
     // Assignment patterns
     BDD_TEST_CASE(assigning_logical_results, test_assigning_logical_results),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner
-int main(void) {
-    return bdd_run_test_suite("Logical Operators",
-                              logical_operators_test_cases,
-                              sizeof(logical_operators_test_cases) / sizeof(logical_operators_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Logical Operators", logical_operators_test_cases)

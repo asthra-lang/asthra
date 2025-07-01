@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios for numeric literals
 
 // Decimal integer literals
@@ -457,7 +453,7 @@ void test_zero_in_all_bases(void) {
 }
 
 // Define test cases
-BddTestCase numeric_literals_test_cases[] = {
+BDD_DECLARE_TEST_CASES(numeric_literals)
     // Decimal integer literals
     BDD_WIP_TEST_CASE(simple_decimal_integer, test_simple_decimal_integer),
     BDD_TEST_CASE(zero_decimal_integer, test_zero_decimal_integer),
@@ -510,12 +506,7 @@ BddTestCase numeric_literals_test_cases[] = {
     
     // Zero literals in different bases
     BDD_WIP_TEST_CASE(zero_in_all_bases, test_zero_in_all_bases),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner
-int main(void) {
-    return bdd_run_test_suite("Numeric Literals",
-                              numeric_literals_test_cases,
-                              sizeof(numeric_literals_test_cases) / sizeof(numeric_literals_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Numeric Literals", numeric_literals_test_cases)

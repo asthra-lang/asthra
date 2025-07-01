@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios for bitwise operators
 
 // Bitwise AND operator tests
@@ -709,7 +705,7 @@ void test_bitwise_operations_with_i64(void) {
 }
 
 // Define test cases
-BddTestCase bitwise_operators_test_cases[] = {
+BDD_DECLARE_TEST_CASES(bitwise_operators)
     // Bitwise AND tests
     BDD_TEST_CASE(basic_bitwise_and_operation, test_basic_bitwise_and_operation),
     BDD_TEST_CASE(bitwise_and_with_zero, test_bitwise_and_with_zero),
@@ -779,12 +775,7 @@ BddTestCase bitwise_operators_test_cases[] = {
     
     // i64 operations (marked as WIP)
     BDD_WIP_TEST_CASE(bitwise_operations_with_i64, test_bitwise_operations_with_i64),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner
-int main(void) {
-    return bdd_run_test_suite("Bitwise Operators",
-                              bitwise_operators_test_cases,
-                              sizeof(bitwise_operators_test_cases) / sizeof(bitwise_operators_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Bitwise Operators", bitwise_operators_test_cases)
