@@ -1,6 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
+#include "bdd_unit_common.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -335,7 +333,7 @@ void test_unit_comparison(void) {
 }
 
 // Define test cases using the new framework
-BddTestCase special_types_test_cases[] = {
+BDD_DECLARE_TEST_CASES(special_types)
     BDD_TEST_CASE(unit_type_literal, test_unit_type_literal),
     BDD_TEST_CASE(unit_type_return, test_unit_type_return),
     BDD_TEST_CASE(unit_type_in_expressions, test_unit_type_in_expressions),
@@ -350,12 +348,7 @@ BddTestCase special_types_test_cases[] = {
     BDD_TEST_CASE(unit_struct_field, test_unit_struct_field),
     BDD_TEST_CASE(platform_size, test_platform_size),
     BDD_TEST_CASE(unit_comparison, test_unit_comparison),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner using the new framework
-int main(void) {
-    return bdd_run_test_suite("Special Types",
-                              special_types_test_cases,
-                              sizeof(special_types_test_cases) / sizeof(special_types_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Special Types", special_types_test_cases)

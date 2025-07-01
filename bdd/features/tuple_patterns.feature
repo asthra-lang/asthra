@@ -7,7 +7,7 @@ Feature: Tuple Patterns
     Given a new compilation context
 
   # Basic tuple destructuring
-  @wip
+
   Scenario: Match tuple with two elements
     Given the following Asthra code:
       """
@@ -22,7 +22,6 @@ Feature: Tuple Patterns
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Match tuple with three elements
     Given the following Asthra code:
       """
@@ -37,7 +36,6 @@ Feature: Tuple Patterns
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Match tuple with wildcard patterns
     Given the following Asthra code:
       """
@@ -53,7 +51,7 @@ Feature: Tuple Patterns
     Then the exit code should be 42
 
   # If-let tuple patterns
-  @wip
+
   Scenario: If-let with tuple pattern
     Given the following Asthra code:
       """
@@ -71,7 +69,7 @@ Feature: Tuple Patterns
     Then the exit code should be 42
 
   # Nested tuple patterns
-  @wip
+
   Scenario: Match nested tuples
     Given the following Asthra code:
       """
@@ -86,7 +84,6 @@ Feature: Tuple Patterns
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Match deeply nested tuples
     Given the following Asthra code:
       """
@@ -102,7 +99,7 @@ Feature: Tuple Patterns
     Then the exit code should be 42
 
   # Mixed type tuples
-  @wip
+
   Scenario: Match tuple with different types
     Given the following Asthra code:
       """
@@ -119,7 +116,7 @@ Feature: Tuple Patterns
     Then the exit code should be 42
 
   # Tuple patterns in functions
-  @wip
+
   Scenario: Tuple pattern in function parameter
     Given the following Asthra code:
       """
@@ -138,7 +135,7 @@ Feature: Tuple Patterns
     Then the exit code should be 42
 
   # Tuple element access
-  @wip
+
   Scenario: Access tuple elements with index syntax
     Given the following Asthra code:
       """
@@ -151,7 +148,6 @@ Feature: Tuple Patterns
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Access nested tuple elements
     Given the following Asthra code:
       """
@@ -165,7 +161,7 @@ Feature: Tuple Patterns
     Then the exit code should be 42
 
   # Complex patterns
-  @wip
+
   Scenario: Match tuple in struct
     Given the following Asthra code:
       """
@@ -183,7 +179,6 @@ Feature: Tuple Patterns
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Match tuple in enum variant
     Given the following Asthra code:
       """
@@ -204,7 +199,7 @@ Feature: Tuple Patterns
     Then the exit code should be 42
 
   # Multiple patterns
-  @wip
+
   Scenario: Match multiple tuple patterns
     Given the following Asthra code:
       """
@@ -222,7 +217,7 @@ Feature: Tuple Patterns
     Then the exit code should be 42
 
   # Pattern matching expressions
-  @wip
+
   Scenario: Tuple pattern in match expression
     Given the following Asthra code:
       """
@@ -240,7 +235,7 @@ Feature: Tuple Patterns
     Then the exit code should be 42
 
   # Variable binding in tuple patterns
-  @wip
+
   Scenario: Bind variables in nested tuple pattern
     Given the following Asthra code:
       """
@@ -259,7 +254,7 @@ Feature: Tuple Patterns
     Then the exit code should be 42
 
   # Edge cases
-  @wip
+
   Scenario: Match tuple with all wildcards except one
     Given the following Asthra code:
       """
@@ -274,7 +269,6 @@ Feature: Tuple Patterns
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Tuple pattern with literal matching
     Given the following Asthra code:
       """
@@ -292,7 +286,7 @@ Feature: Tuple Patterns
     Then the exit code should be 42
 
   # Tuple assignment through pattern matching
-  @wip
+
   Scenario: Destructure tuple in let binding
     Given the following Asthra code:
       """
@@ -307,7 +301,7 @@ Feature: Tuple Patterns
     Then the exit code should be 42
 
   # Mutable tuple elements
-  @wip
+
   Scenario: Match and modify tuple elements
     Given the following Asthra code:
       """
@@ -328,7 +322,7 @@ Feature: Tuple Patterns
     Then the exit code should be 42
 
   # Tuple patterns with string types
-  @wip
+
   Scenario: Match tuple containing strings
     Given the following Asthra code:
       """

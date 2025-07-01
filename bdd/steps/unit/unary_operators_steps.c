@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios for unary operators
 
 // Logical NOT operator (!) tests
@@ -598,7 +594,7 @@ void test_pointer_operations_require_unsafe_blocks(void) {
 }
 
 // Define test cases
-BddTestCase unary_operators_test_cases[] = {
+BDD_DECLARE_TEST_CASES(unary_operators)
     // Logical NOT operator tests
     BDD_WIP_TEST_CASE(basic_logical_not_with_true_value, test_basic_logical_not_with_true_value),
     BDD_WIP_TEST_CASE(basic_logical_not_with_false_value, test_basic_logical_not_with_false_value),
@@ -648,12 +644,7 @@ BddTestCase unary_operators_test_cases[] = {
     // Error prevention tests
     BDD_WIP_TEST_CASE(single_unary_operator_per_expression, test_single_unary_operator_per_expression),
     BDD_WIP_TEST_CASE(pointer_operations_require_unsafe_blocks, test_pointer_operations_require_unsafe_blocks),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner
-int main(void) {
-    return bdd_run_test_suite("Unary Operators",
-                              unary_operators_test_cases,
-                              sizeof(unary_operators_test_cases) / sizeof(unary_operators_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Unary Operators", unary_operators_test_cases)

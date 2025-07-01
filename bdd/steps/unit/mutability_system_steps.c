@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios for mutability system
 
 void test_immutable_by_default(void) {
@@ -360,7 +356,7 @@ void test_immutable_self(void) {
 }
 
 // Define test cases
-BddTestCase mutability_system_test_cases[] = {
+BDD_DECLARE_TEST_CASES(mutability_system)
     BDD_TEST_CASE(immutable_by_default, test_immutable_by_default),
     BDD_TEST_CASE(cannot_reassign_immutable, test_cannot_reassign_immutable),
     BDD_TEST_CASE(mutable_variable, test_mutable_variable),
@@ -378,12 +374,7 @@ BddTestCase mutability_system_test_cases[] = {
     BDD_WIP_TEST_CASE(shadowing_mutability_change, test_shadowing_mutability_change),
     BDD_TEST_CASE(compound_assignments, test_compound_assignments),
     BDD_TEST_CASE(immutable_self, test_immutable_self),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner
-int main(void) {
-    return bdd_run_test_suite("Mutability System",
-                              mutability_system_test_cases,
-                              sizeof(mutability_system_test_cases) / sizeof(mutability_system_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Mutability System", mutability_system_test_cases)

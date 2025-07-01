@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios for struct patterns
 
 // Basic struct destructuring
@@ -359,7 +355,7 @@ void test_nested_if_let_struct_patterns(void) {
 }
 
 // Define test cases
-BddTestCase struct_patterns_test_cases[] = {
+BDD_DECLARE_TEST_CASES(struct_patterns)
     // Basic struct destructuring
     BDD_WIP_TEST_CASE(match_struct_with_all_fields, test_match_struct_with_all_fields),
     BDD_WIP_TEST_CASE(match_struct_with_field_reordering, test_match_struct_with_field_reordering),
@@ -396,12 +392,7 @@ BddTestCase struct_patterns_test_cases[] = {
     // Edge cases
     BDD_WIP_TEST_CASE(match_struct_with_single_field, test_match_struct_with_single_field),
     BDD_WIP_TEST_CASE(nested_if_let_struct_patterns, test_nested_if_let_struct_patterns),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner
-int main(void) {
-    return bdd_run_test_suite("Struct Patterns",
-                              struct_patterns_test_cases,
-                              sizeof(struct_patterns_test_cases) / sizeof(struct_patterns_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Struct Patterns", struct_patterns_test_cases)

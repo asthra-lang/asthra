@@ -115,7 +115,7 @@ Feature: Mutability System
     And the error should contain "parameter"
 
   # Struct field mutability follows container
-  @wip
+
   Scenario: Mutable struct allows field modification
     Given the following Asthra code:
       """
@@ -160,7 +160,7 @@ Feature: Mutability System
     And the error should contain "immutable"
 
   # Array element mutability
-  @wip
+
   Scenario: Mutable array allows element modification
     Given the following Asthra code:
       """
@@ -260,7 +260,7 @@ Feature: Mutability System
     And the error should contain "const"
 
   # Variable shadowing
-  @wip
+
   Scenario: Immutable variable can be shadowed
     Given the following Asthra code:
       """
@@ -277,7 +277,6 @@ Feature: Mutability System
     Then the compilation should succeed
     And the output should contain "Variable shadowing works"
 
-  @wip
   Scenario: Shadowing can change mutability
     Given the following Asthra code:
       """

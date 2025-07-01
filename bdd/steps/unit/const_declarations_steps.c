@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios for const declarations
 
 void test_const_basic_integer(void) {
@@ -361,7 +357,7 @@ void test_const_char_literal(void) {
 }
 
 // Define test cases - all active since this is a new feature
-BddTestCase const_declarations_test_cases[] = {
+BDD_DECLARE_TEST_CASES(const_declarations)
     BDD_TEST_CASE(const_basic_integer, test_const_basic_integer),
     BDD_TEST_CASE(const_float, test_const_float),
     BDD_WIP_TEST_CASE(const_string, test_const_string),
@@ -380,12 +376,7 @@ BddTestCase const_declarations_test_cases[] = {
     BDD_TEST_CASE(const_reassignment, test_const_reassignment),
     BDD_TEST_CASE(const_complex_arithmetic, test_const_complex_arithmetic),
     BDD_WIP_TEST_CASE(const_char_literal, test_const_char_literal),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner
-int main(void) {
-    return bdd_run_test_suite("Const Declarations",
-                              const_declarations_test_cases,
-                              sizeof(const_declarations_test_cases) / sizeof(const_declarations_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Const Declarations", const_declarations_test_cases)

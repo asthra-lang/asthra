@@ -7,7 +7,7 @@ Feature: Struct Patterns
     Given a new compilation context
 
   # Basic struct destructuring
-  @wip
+
   Scenario: Match struct with all fields
     Given the following Asthra code:
       """
@@ -26,7 +26,6 @@ Feature: Struct Patterns
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Match struct with field reordering
     Given the following Asthra code:
       """
@@ -45,7 +44,6 @@ Feature: Struct Patterns
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Match struct with wildcard fields
     Given the following Asthra code:
       """
@@ -66,7 +64,7 @@ Feature: Struct Patterns
     Then the exit code should be 42
 
   # If-let struct patterns
-  @wip
+
   Scenario: If-let with struct pattern
     Given the following Asthra code:
       """
@@ -111,7 +109,7 @@ Feature: Struct Patterns
     Then the exit code should be 42
 
   # Generic struct patterns
-  @wip
+
   Scenario: Match generic struct pattern
     Given the following Asthra code:
       """
@@ -130,7 +128,7 @@ Feature: Struct Patterns
     Then the exit code should be 42
 
   # Complex field bindings
-  @wip
+
   Scenario: Match struct with same field and binding names
     Given the following Asthra code:
       """
@@ -155,7 +153,6 @@ Feature: Struct Patterns
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Match struct with renamed bindings
     Given the following Asthra code:
       """
@@ -175,7 +172,7 @@ Feature: Struct Patterns
     Then the exit code should be 42
 
   # Multiple patterns
-  @wip
+
   Scenario: Match multiple struct patterns
     Given the following Asthra code:
       """
@@ -197,7 +194,7 @@ Feature: Struct Patterns
     Then the exit code should be 42
 
   # Struct patterns in functions
-  @wip
+
   Scenario: Struct pattern in function parameter
     Given the following Asthra code:
       """
@@ -220,7 +217,7 @@ Feature: Struct Patterns
     Then the exit code should be 42
 
   # Empty struct patterns
-  @wip
+
   Scenario: Match empty struct
     Given the following Asthra code:
       """
@@ -239,7 +236,7 @@ Feature: Struct Patterns
     Then the exit code should be 42
 
   # Combined patterns
-  @wip
+
   Scenario: Match struct with tuple fields
     Given the following Asthra code:
       """
@@ -259,7 +256,7 @@ Feature: Struct Patterns
     Then the exit code should be 42
 
   # Pattern matching expressions
-  @wip
+
   Scenario: Struct pattern in match expression
     Given the following Asthra code:
       """
@@ -282,7 +279,7 @@ Feature: Struct Patterns
     Then the exit code should be 42
 
   # Edge cases
-  @wip
+
   Scenario: Match struct with single field
     Given the following Asthra code:
       """

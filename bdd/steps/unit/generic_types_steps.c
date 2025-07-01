@@ -1,7 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-
+#include "bdd_unit_common.h"
 // Test scenarios using the new reusable framework
 
 void test_generic_struct_single(void) {
@@ -98,13 +95,13 @@ void test_generics_not_implemented(void) {
 // Define test cases using the new framework - no @wip tags based on original file
 // NOTE: Generic types are not fully implemented - type parameter substitution is missing
 // Temporarily disable all generic type tests to prevent crashes
-BddTestCase generic_types_test_cases[] = {
+BDD_DECLARE_TEST_CASES(generic_types)
     BDD_TEST_CASE(generics_not_implemented, test_generics_not_implemented),
     // BDD_TEST_CASE(generic_struct_single, test_generic_struct_single),
     // BDD_TEST_CASE(missing_type_param, test_missing_type_param),
     // BDD_TEST_CASE(wrong_type_params, test_wrong_type_params),
     // BDD_TEST_CASE(type_param_conflict, test_type_param_conflict),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner using the new framework
 int main(void) {

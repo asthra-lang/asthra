@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios using the new reusable framework
 
 void test_human_review_annotation(void) {
@@ -390,7 +386,7 @@ void test_annotation_none_params(void) {
 }
 
 // Define test cases using the new framework - @wip tags based on original file
-BddTestCase annotations_test_cases[] = {
+BDD_DECLARE_TEST_CASES(annotations)
     BDD_WIP_TEST_CASE(human_review_annotation, test_human_review_annotation),
     BDD_WIP_TEST_CASE(multiple_review_levels, test_multiple_review_levels),
     BDD_WIP_TEST_CASE(constant_time_annotation, test_constant_time_annotation),
@@ -404,12 +400,7 @@ BddTestCase annotations_test_cases[] = {
     BDD_WIP_TEST_CASE(invalid_review_level, test_invalid_review_level),
     BDD_WIP_TEST_CASE(invalid_ownership, test_invalid_ownership),
     BDD_WIP_TEST_CASE(annotation_none_params, test_annotation_none_params),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner using the new framework
-int main(void) {
-    return bdd_run_test_suite("Annotations",
-                              annotations_test_cases,
-                              sizeof(annotations_test_cases) / sizeof(annotations_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Annotations", annotations_test_cases)

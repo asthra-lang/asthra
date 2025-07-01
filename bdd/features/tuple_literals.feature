@@ -7,7 +7,7 @@ Feature: Tuple Literals
     Given a new compilation context
 
   # Basic tuple creation (minimum 2 elements)
-  @wip
+
   Scenario: Two-element integer tuple
     Given the following Asthra code:
       """
@@ -20,7 +20,6 @@ Feature: Tuple Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Two-element mixed type tuple
     Given the following Asthra code:
       """
@@ -37,7 +36,6 @@ Feature: Tuple Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Three-element tuple
     Given the following Asthra code:
       """
@@ -50,7 +48,6 @@ Feature: Tuple Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Four-element tuple
     Given the following Asthra code:
       """
@@ -64,7 +61,7 @@ Feature: Tuple Literals
     Then the exit code should be 42
 
   # Tuple element access
-  @wip
+
   Scenario: Access first element
     Given the following Asthra code:
       """
@@ -77,7 +74,6 @@ Feature: Tuple Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Access middle element
     Given the following Asthra code:
       """
@@ -90,7 +86,6 @@ Feature: Tuple Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Access last element
     Given the following Asthra code:
       """
@@ -104,7 +99,7 @@ Feature: Tuple Literals
     Then the exit code should be 42
 
   # Mixed type tuples
-  @wip
+
   Scenario: Integer and boolean tuple
     Given the following Asthra code:
       """
@@ -121,7 +116,6 @@ Feature: Tuple Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: String and integer tuple
     Given the following Asthra code:
       """
@@ -138,7 +132,6 @@ Feature: Tuple Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Float and integer tuple
     Given the following Asthra code:
       """
@@ -152,7 +145,7 @@ Feature: Tuple Literals
     Then the exit code should be 42
 
   # Nested tuples
-  @wip
+
   Scenario: Tuple containing tuple
     Given the following Asthra code:
       """
@@ -166,7 +159,6 @@ Feature: Tuple Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Deeply nested tuples
     Given the following Asthra code:
       """
@@ -180,7 +172,7 @@ Feature: Tuple Literals
     Then the exit code should be 42
 
   # Tuple pattern matching
-  @wip
+
   Scenario: Basic tuple destructuring
     Given the following Asthra code:
       """
@@ -194,7 +186,6 @@ Feature: Tuple Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Tuple destructuring with underscore
     Given the following Asthra code:
       """
@@ -208,7 +199,6 @@ Feature: Tuple Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Nested tuple destructuring
     Given the following Asthra code:
       """
@@ -223,7 +213,7 @@ Feature: Tuple Literals
     Then the exit code should be 42
 
   # Tuples as function parameters
-  @wip
+
   Scenario: Pass tuple to function
     Given the following Asthra code:
       """
@@ -239,7 +229,6 @@ Feature: Tuple Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Return tuple from function
     Given the following Asthra code:
       """
@@ -256,7 +245,7 @@ Feature: Tuple Literals
     Then the exit code should be 42
 
   # Mutable tuples
-  @wip
+
   Scenario: Mutable tuple reassignment
     Given the following Asthra code:
       """
@@ -271,7 +260,7 @@ Feature: Tuple Literals
     Then the exit code should be 42
 
   # Tuple comparison
-  @wip
+
   Scenario: Compare equal tuples
     Given the following Asthra code:
       """
@@ -289,7 +278,6 @@ Feature: Tuple Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Compare different tuples
     Given the following Asthra code:
       """
@@ -308,7 +296,7 @@ Feature: Tuple Literals
     Then the exit code should be 42
 
   # Tuples in expressions
-  @wip
+
   Scenario: Tuple in conditional expression
     Given the following Asthra code:
       """
@@ -321,7 +309,6 @@ Feature: Tuple Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Tuple element in arithmetic
     Given the following Asthra code:
       """
@@ -335,7 +322,7 @@ Feature: Tuple Literals
     Then the exit code should be 42
 
   # Tuples with arrays
-  @wip
+
   Scenario: Array of tuples
     Given the following Asthra code:
       """
@@ -349,7 +336,6 @@ Feature: Tuple Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Tuple containing array
     Given the following Asthra code:
       """
@@ -363,7 +349,7 @@ Feature: Tuple Literals
     Then the exit code should be 42
 
   # Edge cases
-  @wip
+
   Scenario: Large tuple
     Given the following Asthra code:
       """
@@ -376,7 +362,6 @@ Feature: Tuple Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Tuple with unit types
     Given the following Asthra code:
       """
@@ -391,7 +376,7 @@ Feature: Tuple Literals
     Then the exit code should be 42
 
   # Const tuples
-  @wip
+
   Scenario: Const tuple declaration
     Given the following Asthra code:
       """
@@ -405,7 +390,7 @@ Feature: Tuple Literals
     Then the exit code should be 42
 
   # Tuple in match expressions
-  @wip
+
   Scenario: Match on tuple value
     Given the following Asthra code:
       """
@@ -423,7 +408,7 @@ Feature: Tuple Literals
     Then the exit code should be 42
 
   # Tuple with if-let
-  @wip
+
   Scenario: If-let with tuple pattern
     Given the following Asthra code:
       """

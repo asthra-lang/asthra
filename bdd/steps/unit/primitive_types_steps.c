@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios using the new reusable framework
 
 void test_i32_type(void) {
@@ -252,7 +248,7 @@ void test_hex_literals(void) {
 }
 
 // Define test cases using the new framework - @wip tags based on original file
-BddTestCase primitive_types_test_cases[] = {
+BDD_DECLARE_TEST_CASES(primitive_types)
     BDD_TEST_CASE(i32_type, test_i32_type),
     BDD_WIP_TEST_CASE(all_signed_integers, test_all_signed_integers),
     BDD_WIP_TEST_CASE(all_unsigned_integers, test_all_unsigned_integers),
@@ -264,12 +260,7 @@ BddTestCase primitive_types_test_cases[] = {
     BDD_WIP_TEST_CASE(integer_overflow, test_integer_overflow),
     BDD_WIP_TEST_CASE(binary_literals, test_binary_literals),
     BDD_WIP_TEST_CASE(hex_literals, test_hex_literals),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner using the new framework
-int main(void) {
-    return bdd_run_test_suite("Primitive Types",
-                              primitive_types_test_cases,
-                              sizeof(primitive_types_test_cases) / sizeof(primitive_types_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Primitive Types", primitive_types_test_cases)

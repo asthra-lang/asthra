@@ -7,7 +7,7 @@ Feature: Numeric Literals
     Given a new compilation context
 
   # Decimal integer literals
-  @wip
+
   Scenario: Simple decimal integer
     Given the following Asthra code:
       """
@@ -30,7 +30,6 @@ Feature: Numeric Literals
     When I compile and run the code
     Then the exit code should be 0
 
-  @wip
   Scenario: Large decimal integer
     Given the following Asthra code:
       """
@@ -44,7 +43,7 @@ Feature: Numeric Literals
     Then the exit code should be 56
 
   # Hexadecimal literals
-  @wip
+
   Scenario: Lowercase hex literal
     Given the following Asthra code:
       """
@@ -56,7 +55,6 @@ Feature: Numeric Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Uppercase hex literal
     Given the following Asthra code:
       """
@@ -68,7 +66,6 @@ Feature: Numeric Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Mixed case hex literal
     Given the following Asthra code:
       """
@@ -80,7 +77,6 @@ Feature: Numeric Literals
     When I compile and run the code
     Then the exit code should be 255
 
-  @wip
   Scenario: Multi-digit hex literal
     Given the following Asthra code:
       """
@@ -94,7 +90,7 @@ Feature: Numeric Literals
     Then the exit code should be 239
 
   # Binary literals
-  @wip
+
   Scenario: Lowercase binary literal
     Given the following Asthra code:
       """
@@ -106,7 +102,6 @@ Feature: Numeric Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Uppercase binary literal
     Given the following Asthra code:
       """
@@ -118,7 +113,6 @@ Feature: Numeric Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Single bit binary literal
     Given the following Asthra code:
       """
@@ -130,7 +124,6 @@ Feature: Numeric Literals
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Multi-bit binary literal
     Given the following Asthra code:
       """
@@ -143,7 +136,7 @@ Feature: Numeric Literals
     Then the exit code should be 255
 
   # Octal literals
-  @wip
+
   Scenario: Simple octal literal
     Given the following Asthra code:
       """
@@ -155,7 +148,6 @@ Feature: Numeric Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Single digit octal literal
     Given the following Asthra code:
       """
@@ -167,7 +159,6 @@ Feature: Numeric Literals
     When I compile and run the code
     Then the exit code should be 7
 
-  @wip
   Scenario: Multi-digit octal literal
     Given the following Asthra code:
       """
@@ -180,7 +171,7 @@ Feature: Numeric Literals
     Then the exit code should be 255
 
   # Float literals
-  @wip
+
   Scenario: Simple float literal
     Given the following Asthra code:
       """
@@ -193,7 +184,6 @@ Feature: Numeric Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Float with fractional part
     Given the following Asthra code:
       """
@@ -206,7 +196,6 @@ Feature: Numeric Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Float without trailing digits
     Given the following Asthra code:
       """
@@ -219,7 +208,6 @@ Feature: Numeric Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Float starting with decimal point
     Given the following Asthra code:
       """
@@ -234,7 +222,7 @@ Feature: Numeric Literals
     Then the exit code should be 42
 
   # Mixed numeric operations
-  @wip
+
   Scenario: Arithmetic with different literal formats
     Given the following Asthra code:
       """
@@ -251,7 +239,7 @@ Feature: Numeric Literals
     Then the exit code should be 42
 
   # Type inference with literals
-  @wip
+
   Scenario: Integer literal type inference
     Given the following Asthra code:
       """
@@ -266,7 +254,6 @@ Feature: Numeric Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Float literal type inference
     Given the following Asthra code:
       """
@@ -281,7 +268,7 @@ Feature: Numeric Literals
     Then the exit code should be 42
 
   # Edge cases
-  @wip
+
   Scenario: Maximum u8 value
     Given the following Asthra code:
       """
@@ -294,7 +281,6 @@ Feature: Numeric Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Negative decimal literal
     Given the following Asthra code:
       """
@@ -307,7 +293,6 @@ Feature: Numeric Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Negative hex literal
     Given the following Asthra code:
       """
@@ -321,7 +306,7 @@ Feature: Numeric Literals
     Then the exit code should be 42
 
   # Literal comparisons
-  @wip
+
   Scenario: Compare different literal formats
     Given the following Asthra code:
       """
@@ -338,7 +323,7 @@ Feature: Numeric Literals
     Then the exit code should be 42
 
   # Literals in expressions
-  @wip
+
   Scenario: Complex expression with literals
     Given the following Asthra code:
       """
@@ -351,7 +336,7 @@ Feature: Numeric Literals
     Then the exit code should be 42
 
   # Const expressions with literals
-  @wip
+
   Scenario: Const with decimal literal
     Given the following Asthra code:
       """
@@ -364,7 +349,6 @@ Feature: Numeric Literals
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Const with hex literal
     Given the following Asthra code:
       """
@@ -378,7 +362,7 @@ Feature: Numeric Literals
     Then the exit code should be 42
 
   # Zero literals in different bases
-  @wip
+
   Scenario: Zero in all bases
     Given the following Asthra code:
       """

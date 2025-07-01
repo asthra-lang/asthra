@@ -7,7 +7,7 @@ Feature: Unary Operators
     Given a new compilation context
 
   # Logical NOT operator (!) tests
-  @wip
+
   Scenario: Basic logical NOT with true value
     Given the following Asthra code:
       """
@@ -24,7 +24,6 @@ Feature: Unary Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Basic logical NOT with false value
     Given the following Asthra code:
       """
@@ -41,7 +40,6 @@ Feature: Unary Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Double logical NOT
     Given the following Asthra code:
       """
@@ -60,7 +58,6 @@ Feature: Unary Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Logical NOT in complex expressions
     Given the following Asthra code:
       """
@@ -79,7 +76,7 @@ Feature: Unary Operators
     Then the exit code should be 1
 
   # Arithmetic negation operator (-) tests
-  @wip
+
   Scenario: Basic arithmetic negation with positive integer
     Given the following Asthra code:
       """
@@ -93,7 +90,6 @@ Feature: Unary Operators
     When I compile and run the code
     Then the exit code should be -42
 
-  @wip
   Scenario: Basic arithmetic negation with negative integer
     Given the following Asthra code:
       """
@@ -120,7 +116,6 @@ Feature: Unary Operators
     When I compile and run the code
     Then the exit code should be 0
 
-  @wip
   Scenario: Arithmetic negation with different integer types
     Given the following Asthra code:
       """
@@ -138,7 +133,6 @@ Feature: Unary Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Arithmetic negation with floating point
     Given the following Asthra code:
       """
@@ -157,7 +151,7 @@ Feature: Unary Operators
     Then the exit code should be 1
 
   # Bitwise complement operator (~) tests
-  @wip
+
   Scenario: Basic bitwise complement
     Given the following Asthra code:
       """
@@ -188,7 +182,6 @@ Feature: Unary Operators
     When I compile and run the code
     Then the exit code should be 0
 
-  @wip
   Scenario: Bitwise complement with u8
     Given the following Asthra code:
       """
@@ -206,7 +199,6 @@ Feature: Unary Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Bitwise complement in expressions
     Given the following Asthra code:
       """
@@ -225,7 +217,7 @@ Feature: Unary Operators
     Then the exit code should be 1
 
   # Pointer dereference operator (*) tests
-  @wip
+
   Scenario: Basic pointer dereference
     Given the following Asthra code:
       """
@@ -242,7 +234,6 @@ Feature: Unary Operators
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Mutable pointer dereference
     Given the following Asthra code:
       """
@@ -259,7 +250,6 @@ Feature: Unary Operators
     When I compile and run the code
     Then the exit code should be 20
 
-  @wip
   Scenario: Pointer dereference in expressions
     Given the following Asthra code:
       """
@@ -279,7 +269,7 @@ Feature: Unary Operators
     Then the exit code should be 15
 
   # Address-of operator (&) tests
-  @wip
+
   Scenario: Basic address-of operator
     Given the following Asthra code:
       """
@@ -299,7 +289,6 @@ Feature: Unary Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Address-of mutable variable
     Given the following Asthra code:
       """
@@ -320,7 +309,6 @@ Feature: Unary Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Address-of in function calls
     Given the following Asthra code:
       """
@@ -340,7 +328,7 @@ Feature: Unary Operators
     Then the exit code should be 15
 
   # Combined unary operators
-  @wip
+
   Scenario: Combining arithmetic negation and logical NOT
     Given the following Asthra code:
       """
@@ -358,7 +346,6 @@ Feature: Unary Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Combining bitwise complement and arithmetic negation
     Given the following Asthra code:
       """
@@ -372,7 +359,6 @@ Feature: Unary Operators
     When I compile and run the code
     Then the exit code should be 6
 
-  @wip
   Scenario: Pointer operations with arithmetic
     Given the following Asthra code:
       """
@@ -390,7 +376,7 @@ Feature: Unary Operators
     Then the exit code should be -10
 
   # Edge cases
-  @wip
+
   Scenario: Negation of minimum i32 value
     Given the following Asthra code:
       """
@@ -409,7 +395,6 @@ Feature: Unary Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Multiple dereferences
     Given the following Asthra code:
       """
@@ -428,7 +413,7 @@ Feature: Unary Operators
     Then the exit code should be 42
 
   # Operator precedence tests
-  @wip
+
   Scenario: Unary operator precedence with multiplication
     Given the following Asthra code:
       """
@@ -442,7 +427,6 @@ Feature: Unary Operators
     When I compile and run the code
     Then the exit code should be -10
 
-  @wip
   Scenario: Unary operator precedence with addition
     Given the following Asthra code:
       """
@@ -461,7 +445,7 @@ Feature: Unary Operators
     Then the exit code should be 1
 
   # Type-specific tests
-  @wip
+
   Scenario: Logical NOT with comparison result
     Given the following Asthra code:
       """
@@ -480,7 +464,6 @@ Feature: Unary Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Bitwise complement with different widths
     Given the following Asthra code:
       """
@@ -499,7 +482,7 @@ Feature: Unary Operators
     Then the exit code should be 1
 
   # Error prevention tests (grammar restrictions)
-  @wip
+
   Scenario: Single unary operator per expression
     Given the following Asthra code:
       """
@@ -518,7 +501,6 @@ Feature: Unary Operators
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Pointer operations require unsafe blocks
     Given the following Asthra code:
       """

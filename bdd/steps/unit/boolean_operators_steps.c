@@ -1,7 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-
+#include "bdd_unit_common.h"
 // Test scenarios using the new reusable framework
 
 void test_boolean_literals(void) {
@@ -393,7 +390,7 @@ void test_type_mismatch_if(void) {
 }
 
 // Define test cases using the new framework - @wip tags based on original file
-BddTestCase boolean_operators_test_cases[] = {
+BDD_DECLARE_TEST_CASES(boolean_operators)
     BDD_TEST_CASE(boolean_literals, test_boolean_literals),
     BDD_TEST_CASE(logical_not, test_logical_not),
     BDD_TEST_CASE(logical_and, test_logical_and),
@@ -410,12 +407,7 @@ BddTestCase boolean_operators_test_cases[] = {
     BDD_TEST_CASE(type_mismatch_and, test_type_mismatch_and),
     BDD_TEST_CASE(type_mismatch_or, test_type_mismatch_or),
     BDD_TEST_CASE(type_mismatch_if, test_type_mismatch_if),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner using the new framework
-int main(void) {
-    return bdd_run_test_suite("Boolean operators",
-                              boolean_operators_test_cases,
-                              sizeof(boolean_operators_test_cases) / sizeof(boolean_operators_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Boolean operators", boolean_operators_test_cases)

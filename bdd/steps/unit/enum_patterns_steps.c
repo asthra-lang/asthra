@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios for enum patterns
 
 // Basic enum variant matching
@@ -440,7 +436,7 @@ void test_match_expression_result(void) {
 }
 
 // Define test cases
-BddTestCase enum_patterns_test_cases[] = {
+BDD_DECLARE_TEST_CASES(enum_patterns)
     // Basic enum variant matching
     BDD_WIP_TEST_CASE(match_enum_variant_without_data, test_match_enum_variant_without_data),
     BDD_WIP_TEST_CASE(match_enum_variant_with_single_value, test_match_enum_variant_with_single_value),
@@ -479,12 +475,7 @@ BddTestCase enum_patterns_test_cases[] = {
     
     // Pattern matching with expressions
     BDD_WIP_TEST_CASE(match_expression_result, test_match_expression_result),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner
-int main(void) {
-    return bdd_run_test_suite("Enum Patterns",
-                              enum_patterns_test_cases,
-                              sizeof(enum_patterns_test_cases) / sizeof(enum_patterns_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Enum Patterns", enum_patterns_test_cases)

@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios for control flow loops
 
 void test_simple_for_range(void) {
@@ -366,7 +362,7 @@ void test_return_from_loop(void) {
 }
 
 // Define test cases
-BddTestCase control_flow_loops_test_cases[] = {
+BDD_DECLARE_TEST_CASES(control_flow_loops)
     BDD_TEST_CASE(simple_for_range, test_simple_for_range),
     BDD_WIP_TEST_CASE(range_start_end, test_range_start_end),
     BDD_WIP_TEST_CASE(array_iteration, test_array_iteration),
@@ -384,12 +380,7 @@ BddTestCase control_flow_loops_test_cases[] = {
     BDD_WIP_TEST_CASE(string_iteration, test_string_iteration),
     BDD_TEST_CASE(multiple_breaks, test_multiple_breaks),
     BDD_TEST_CASE(return_from_loop, test_return_from_loop),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner
-int main(void) {
-    return bdd_run_test_suite("Control Flow Loops",
-                              control_flow_loops_test_cases,
-                              sizeof(control_flow_loops_test_cases) / sizeof(control_flow_loops_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Control Flow Loops", control_flow_loops_test_cases)

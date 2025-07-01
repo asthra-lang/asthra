@@ -1,8 +1,4 @@
-#include "bdd_support.h"
-#include "bdd_utilities.h"
-#include "bdd_test_framework.h"
-#include <sys/stat.h>
-
+#include "bdd_unit_common.h"
 // Test scenarios for pattern bindings
 
 // Simple identifier patterns
@@ -422,7 +418,7 @@ void test_bind_from_enum_containing_structs(void) {
 }
 
 // Define test cases
-BddTestCase pattern_bindings_test_cases[] = {
+BDD_DECLARE_TEST_CASES(pattern_bindings)
     // Simple identifier patterns
     BDD_WIP_TEST_CASE(bind_variable_in_match_arm, test_bind_variable_in_match_arm),
     BDD_WIP_TEST_CASE(bind_multiple_variables_in_match, test_bind_multiple_variables_in_match),
@@ -474,12 +470,7 @@ BddTestCase pattern_bindings_test_cases[] = {
     
     // Complex enum with struct patterns
     BDD_WIP_TEST_CASE(bind_from_enum_containing_structs, test_bind_from_enum_containing_structs),
-};
+BDD_END_TEST_CASES()
 
 // Main test runner
-int main(void) {
-    return bdd_run_test_suite("Pattern Bindings",
-                              pattern_bindings_test_cases,
-                              sizeof(pattern_bindings_test_cases) / sizeof(pattern_bindings_test_cases[0]),
-                              bdd_cleanup_temp_files);
-}
+BDD_UNIT_TEST_MAIN("Pattern Bindings", pattern_bindings_test_cases)

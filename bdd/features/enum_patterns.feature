@@ -7,7 +7,7 @@ Feature: Enum Patterns
     Given a new compilation context
 
   # Basic enum variant matching
-  @wip
+
   Scenario: Match enum variant without data
     Given the following Asthra code:
       """
@@ -27,7 +27,6 @@ Feature: Enum Patterns
     When I compile and run the code
     Then the exit code should be 1
 
-  @wip
   Scenario: Match enum variant with single value
     Given the following Asthra code:
       """
@@ -93,7 +92,7 @@ Feature: Enum Patterns
     Then the exit code should be 42
 
   # If-let pattern matching
-  @wip
+
   Scenario: If-let with enum variant
     Given the following Asthra code:
       """
@@ -114,7 +113,6 @@ Feature: Enum Patterns
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: If-let with enum variant returning false case
     Given the following Asthra code:
       """
@@ -136,7 +134,7 @@ Feature: Enum Patterns
     Then the exit code should be 42
 
   # Pattern with wildcards
-  @wip
+
   Scenario: Match with wildcard pattern
     Given the following Asthra code:
       """
@@ -161,7 +159,7 @@ Feature: Enum Patterns
     Then the exit code should be 42
 
   # Multiple patterns in single match arm
-  @wip
+
   Scenario: Match multiple patterns
     Given the following Asthra code:
       """
@@ -206,7 +204,7 @@ Feature: Enum Patterns
     Then the exit code should be 42
 
   # Enum construction
-  @wip
+
   Scenario: Construct enum variant without data
     Given the following Asthra code:
       """
@@ -226,7 +224,6 @@ Feature: Enum Patterns
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Construct enum variant with data
     Given the following Asthra code:
       """
@@ -247,7 +244,7 @@ Feature: Enum Patterns
     Then the exit code should be 42
 
   # Complex patterns
-  @wip
+
   Scenario: Match with variable binding
     Given the following Asthra code:
       """
@@ -300,7 +297,7 @@ Feature: Enum Patterns
     Then the exit code should be 42
 
   # Edge cases
-  @wip
+
   Scenario: Empty enum with none content
     Given the following Asthra code:
       """
@@ -315,7 +312,6 @@ Feature: Enum Patterns
     When I compile and run the code
     Then the exit code should be 42
 
-  @wip
   Scenario: Match with all patterns covered
     Given the following Asthra code:
       """
@@ -359,7 +355,7 @@ Feature: Enum Patterns
     Then the exit code should be 42
 
   # Pattern matching with expressions
-  @wip
+
   Scenario: Match expression result
     Given the following Asthra code:
       """
