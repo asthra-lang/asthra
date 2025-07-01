@@ -10,6 +10,7 @@
 #include "../analysis/type_info_lifecycle.h"
 #include <assert.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 // DWARF type encoding constants from DWARF standard
 #define DW_ATE_void 0x00

@@ -9,6 +9,8 @@
 #include "llvm_call_expr.h"
 #include "llvm_debug.h"
 #include "llvm_expr_gen.h"
+#include "llvm_locals.h"
+#include "llvm_access_expr.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,10 +24,47 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
             // We need to check this BEFORE calling generate_expression
             ASTNode *field_access = node->data.call_expr.function;
 
-            // Try to generate the object
-            LLVMValueRef self_obj =
-                generate_expression(data, field_access->data.field_access.object);
-            if (self_obj) {
+            // For method calls, we need to handle the object specially
+            ASTNode *object_node = field_access->data.field_access.object;
+            LLVMValueRef self_obj = NULL;
+            LLVMValueRef self_ptr = NULL;
+            
+            // Check if the object is an identifier (local variable)
+            if (object_node->type == AST_IDENTIFIER) {
+                const char *var_name = object_node->data.identifier.name;
+                // Look up the local variable to get its alloca
+                LocalVar *var_entry = lookup_local_var_entry(data, var_name);
+                if (var_entry) {
+                    // Use the alloca directly as the pointer
+                    self_ptr = var_entry->alloca;
+                    self_obj = LLVMBuildLoad2(data->builder, var_entry->type, var_entry->alloca, var_name);
+                }
+            }
+            // Check if the object is itself a field access (for chained access like o.inner.method())
+            else if (object_node->type == AST_FIELD_ACCESS) {
+                // For field access, we need to get the pointer to the field
+                self_ptr = generate_field_access_ptr(data, object_node);
+                if (self_ptr) {
+                    // We have the pointer, now load the value too
+                    self_obj = generate_field_access(data, object_node);
+                }
+                
+            }
+            
+            // If we don't have a pointer yet, generate the expression normally
+            if (!self_ptr) {
+                self_obj = generate_expression(data, field_access->data.field_access.object);
+                if (!self_obj) {
+                    return NULL;
+                }
+                // For now, we'll need to store it to get a pointer
+                // This is a fallback case that shouldn't normally happen
+                LLVMTypeRef obj_type = LLVMTypeOf(self_obj);
+                self_ptr = LLVMBuildAlloca(data->builder, obj_type, "self_tmp");
+                LLVMBuildStore(data->builder, self_obj, self_ptr);
+            }
+            
+            if (self_ptr) {
                 // This is likely an instance method call
                 const char *method_name = field_access->data.field_access.field_name;
 
@@ -33,7 +72,15 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
                 char mangled_name[256];
 
                 // Get the type name from the object's type info
-                const char *type_name = "Point"; // TODO: Get from type info
+                const char *type_name = "Unknown"; // Default
+                if (field_access->data.field_access.object->type_info && 
+                    field_access->data.field_access.object->type_info->name) {
+                    type_name = field_access->data.field_access.object->type_info->name;
+                } else if (object_node->type_info && object_node->type_info->name) {
+                    type_name = object_node->type_info->name;
+                }
+                
+                
                 snprintf(mangled_name, sizeof(mangled_name), "%s_instance_%s", type_name,
                          method_name);
 
@@ -60,8 +107,8 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
                 size_t total_args = arg_count + 1; // +1 for self
                 LLVMValueRef *args = malloc(total_args * sizeof(LLVMValueRef));
 
-                // First argument is self
-                args[0] = self_obj;
+                // First argument is self pointer
+                args[0] = self_ptr;
 
                 // Generate remaining arguments
                 for (size_t i = 0; i < arg_count; i++) {

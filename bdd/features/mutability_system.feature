@@ -196,7 +196,6 @@ Feature: Mutability System
     And the error should contain "immutable"
 
   # Nested mutability
-  @wip
   Scenario: Nested struct mutability
     Given the following Asthra code:
       """
@@ -222,7 +221,6 @@ Feature: Mutability System
     And the output should contain "Nested mutability works"
 
   # Pointer mutability
-  @wip
   Scenario: Mutable pointer allows dereferenced assignment
     Given the following Asthra code:
       """

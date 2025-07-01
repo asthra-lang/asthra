@@ -13,6 +13,8 @@
 #include "semantic_core.h"
 #include "semantic_symbols.h"
 #include "semantic_types.h"
+#include "type_info_lifecycle.h"
+#include "type_info_integration.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -260,6 +262,13 @@ bool analyze_method_declaration(SemanticAnalyzer *analyzer, ASTNode *method_decl
                     }
 
                     if (param_type) {
+                        // Set TypeInfo on the parameter node for code generation
+                        TypeInfo *param_type_info = type_info_from_descriptor(param_type);
+                        if (param_type_info) {
+                            ast_node_set_type_info(param, param_type_info);
+                            type_info_release(param_type_info); // ast_node_set_type_info retains it
+                        }
+                        
                         SymbolEntry *param_symbol =
                             symbol_entry_create(param_name, SYMBOL_VARIABLE, param_type, param);
                         if (param_symbol) {

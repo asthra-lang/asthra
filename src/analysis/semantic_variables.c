@@ -14,6 +14,7 @@
 #include "semantic_core.h"
 #include "semantic_symbols.h"
 #include "semantic_types.h"
+#include "semantic_type_helpers.h"
 #include "semantic_utilities.h"
 #include "type_info.h"
 #include <stdio.h>
@@ -305,10 +306,40 @@ static bool validate_assignment_target_mutability(SemanticAnalyzer *analyzer, AS
                 return false;
             }
 
-            // For pointer dereference, we need to check if the pointer itself
-            // points to mutable data (this would be checked based on pointer type)
-            // For now, allow it and let the type system handle mutable pointers
-            return validate_assignment_target_mutability(analyzer, pointer);
+            // For pointer dereference, we need to check if the pointer type is mutable
+            // First, analyze the pointer expression to get its type
+            if (!semantic_analyze_expression(analyzer, pointer)) {
+                return false;
+            }
+
+            // Get the pointer's type
+            TypeDescriptor *pointer_type = semantic_get_expression_type(analyzer, pointer);
+            if (!pointer_type) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_INFERENCE_FAILED, pointer->location,
+                                      "Cannot determine type of pointer in dereference assignment");
+                return false;
+            }
+
+            // Check if it's a pointer type
+            if (!is_pointer_type(pointer_type)) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, pointer->location,
+                                      "Cannot dereference non-pointer type in assignment");
+                type_descriptor_release(pointer_type);
+                return false;
+            }
+
+            // Check if it's a mutable pointer (*mut T)
+            bool is_mutable_pointer = pointer_type->flags.is_mutable;
+            type_descriptor_release(pointer_type);
+            
+            if (!is_mutable_pointer) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, target->location,
+                                      "Cannot assign through const pointer. Use '*mut' pointer type for mutable access.");
+                return false;
+            }
+
+            // If it's a mutable pointer, the assignment is allowed
+            return true;
         }
 
         semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, target->location,

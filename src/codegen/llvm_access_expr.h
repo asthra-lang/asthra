@@ -19,8 +19,14 @@ extern "C" {
 // Array/slice indexing
 LLVMValueRef generate_index_expr(LLVMBackendData *data, const ASTNode *node);
 
+// Array/slice slicing operations
+LLVMValueRef generate_slice_expr(LLVMBackendData *data, const ASTNode *node);
+
 // Field access
 LLVMValueRef generate_field_access(LLVMBackendData *data, const ASTNode *node);
+
+// Field access that returns a pointer to the field instead of loading it
+LLVMValueRef generate_field_access_ptr(LLVMBackendData *data, const ASTNode *node);
 
 // Array literals
 LLVMValueRef generate_array_literal(LLVMBackendData *data, const ASTNode *node);
