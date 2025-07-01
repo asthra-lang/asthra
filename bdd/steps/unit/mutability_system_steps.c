@@ -372,7 +372,7 @@ BddTestCase mutability_system_test_cases[] = {
     BDD_WIP_TEST_CASE(mutable_array_elements, test_mutable_array_elements),
     BDD_TEST_CASE(immutable_array_elements, test_immutable_array_elements),
     BDD_WIP_TEST_CASE(nested_mutability, test_nested_mutability),
-    BDD_WIP_TEST_CASE(mutable_pointer, test_mutable_pointer),
+    BDD_TEST_CASE(mutable_pointer, test_mutable_pointer),
     BDD_TEST_CASE(const_pointer, test_const_pointer),
     BDD_WIP_TEST_CASE(variable_shadowing, test_variable_shadowing),
     BDD_WIP_TEST_CASE(shadowing_mutability_change, test_shadowing_mutability_change),

@@ -166,13 +166,12 @@ void test_return_one(void) {
         "    return 1;\n"
         "}\n";
     
-    // NOTE: Currently, Asthra doesn't properly propagate main's return value to process exit code
-    // The program compiles and runs, but always exits with 0 regardless of main's return value
+    // The compiler now properly propagates main's return value to process exit code
     bdd_run_execution_scenario("Compile and run a program that returns 1",
                                "return_one.asthra",
                                source,
                                "Program will exit with code 1",
-                               0);  // Should be 1, but compiler currently always exits with 0
+                               1);  // Expecting exit code 1
 }
 
 void test_function_calls(void) {

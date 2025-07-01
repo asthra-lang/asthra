@@ -2,6 +2,7 @@
 #include "../parser/ast.h"
 #include "semantic_analyzer.h"
 #include "type_info.h"
+#include "semantic_symbols_defs.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,6 +17,23 @@ static uint64_t get_timestamp_ns(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec;
+}
+
+// Helper structure for collecting struct fields
+typedef struct {
+    SymbolEntry **fields;
+    size_t index;
+    size_t capacity;
+} FieldCollector;
+
+// Callback function for collecting struct fields from symbol table
+static bool collect_struct_field(const char *name, SymbolEntry *entry, void *user_data) {
+    FieldCollector *collector = (FieldCollector *)user_data;
+    
+    if (entry && entry->kind == SYMBOL_FIELD && collector->index < collector->capacity) {
+        collector->fields[collector->index++] = entry;
+    }
+    return true; // Continue iteration
 }
 
 // =============================================================================
@@ -177,6 +195,31 @@ TypeInfo *type_info_from_descriptor(TypeDescriptor *descriptor) {
         break;
     case TYPE_STRUCT:
         type_info->category = TYPE_INFO_STRUCT;
+        type_info->data.struct_info.field_count = descriptor->data.struct_type.field_count;
+        type_info->data.struct_info.is_packed = false; // Default to non-packed
+        
+        // Extract fields from the symbol table
+        if (descriptor->data.struct_type.field_count > 0 && descriptor->data.struct_type.fields) {
+            // Allocate array for field pointers
+            type_info->data.struct_info.fields = 
+                calloc(descriptor->data.struct_type.field_count, sizeof(SymbolEntry *));
+            
+            if (type_info->data.struct_info.fields) {
+                // Set up collector for fields
+                FieldCollector collector = {
+                    .fields = type_info->data.struct_info.fields,
+                    .index = 0,
+                    .capacity = descriptor->data.struct_type.field_count
+                };
+                
+                // Iterate through the symbol table to collect fields
+                symbol_table_iterate(descriptor->data.struct_type.fields, 
+                                   collect_struct_field, 
+                                   &collector);
+            }
+        } else {
+            type_info->data.struct_info.fields = NULL;
+        }
         break;
     case TYPE_ENUM:
         type_info->category = TYPE_INFO_ENUM;
@@ -220,8 +263,39 @@ TypeInfo *type_info_from_descriptor(TypeDescriptor *descriptor) {
         break;
     case TYPE_GENERIC_INSTANCE:
         // Generic instances should map to their base type category
-        // For now, we'll treat them as structs (since Vec<i32> is a struct)
-        type_info->category = TYPE_INFO_STRUCT;
+        if (descriptor->data.generic_instance.base_type && 
+            descriptor->data.generic_instance.base_type->category == TYPE_STRUCT) {
+            type_info->category = TYPE_INFO_STRUCT;
+            
+            // Extract fields from the base struct type
+            TypeDescriptor *base_struct = descriptor->data.generic_instance.base_type;
+            type_info->data.struct_info.field_count = base_struct->data.struct_type.field_count;
+            type_info->data.struct_info.is_packed = false;
+            
+            if (base_struct->data.struct_type.field_count > 0 && base_struct->data.struct_type.fields) {
+                // Allocate array for field pointers
+                type_info->data.struct_info.fields = 
+                    calloc(base_struct->data.struct_type.field_count, sizeof(SymbolEntry *));
+                
+                if (type_info->data.struct_info.fields) {
+                    // Set up collector for fields
+                    FieldCollector collector = {
+                        .fields = type_info->data.struct_info.fields,
+                        .index = 0,
+                        .capacity = base_struct->data.struct_type.field_count
+                    };
+                    
+                    // Iterate through the symbol table to collect fields
+                    symbol_table_iterate(base_struct->data.struct_type.fields, 
+                                       collect_struct_field, 
+                                       &collector);
+                }
+            } else {
+                type_info->data.struct_info.fields = NULL;
+            }
+        } else {
+            type_info->category = TYPE_INFO_STRUCT; // Default fallback
+        }
         break;
     case TYPE_TUPLE:
         type_info->category = TYPE_INFO_TUPLE;

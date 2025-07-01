@@ -267,6 +267,48 @@ add_bdd_test(mutability_system unit)
 # Phase 2 BDD Tests - Control Flow
 add_bdd_test(control_flow_loops unit)
 
+# Phase 2 BDD Tests - Operator Precedence
+add_bdd_test(operator_precedence unit)
+
+# Phase 2 BDD Tests - Arithmetic Operators
+add_bdd_test(arithmetic_operators unit)
+
+# Phase 2 BDD Tests - Logical Operators
+add_bdd_test(logical_operators unit)
+
+# Phase 2 BDD Tests - Comparison Operators
+add_bdd_test(comparison_operators unit)
+
+# Phase 2 BDD Tests - Unary Operators
+add_bdd_test(unary_operators unit)
+
+# Phase 2 BDD Tests - Postfix Expressions
+add_bdd_test(postfix_expressions unit)
+
+# Phase 2 BDD Tests - Enum Patterns
+add_bdd_test(enum_patterns unit)
+
+# Phase 2 BDD Tests - Struct Patterns
+add_bdd_test(struct_patterns unit)
+
+# Phase 2 BDD Tests - Tuple Patterns
+add_bdd_test(tuple_patterns unit)
+
+# Phase 2 BDD Tests - Pattern Bindings
+add_bdd_test(pattern_bindings unit)
+
+# Phase 2 BDD Tests - Numeric Literals
+add_bdd_test(numeric_literals unit)
+
+# Phase 2 BDD Tests - String Literals
+add_bdd_test(string_literals unit)
+
+# Phase 2 BDD Tests - Array Literals
+add_bdd_test(array_literals unit)
+
+# Phase 2 BDD Tests - Tuple Literals
+add_bdd_test(tuple_literals unit)
+
 # Configuration summary
 message(STATUS "BDD testing infrastructure configured")
 message(STATUS "  BDD output directory: ${BDD_OUTPUT_DIR}")

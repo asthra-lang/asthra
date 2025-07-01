@@ -301,8 +301,12 @@ bool analyze_enum_variant_declaration(SemanticAnalyzer *analyzer, ASTNode *varia
                                   "Invalid associated type for variant '%s'", variant_name);
             return false;
         }
-        // TODO: Store associated type information in variant symbol if needed
-        type_descriptor_release(associated_type);
+        
+        // Store the associated type in the variant symbol
+        // Replace the default i32 type with the actual associated type
+        type_descriptor_release(variant_symbol->type);
+        variant_symbol->type = associated_type;
+        // Don't release associated_type here as it's now owned by the symbol
     }
 
     // Validate explicit value if present

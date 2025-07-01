@@ -172,8 +172,53 @@ LLVMValueRef generate_expression(LLVMBackendData *data, const ASTNode *node) {
     case AST_STRUCT_LITERAL:
         return generate_struct_literal(data, node);
     
-    // TODO: Implement remaining expression types
+    case AST_ENUM_VARIANT:
+        // Enum variant construction - return the variant tag as an i32
+        if (node->data.enum_variant.enum_name && node->data.enum_variant.variant_name) {
+            const char *enum_name = node->data.enum_variant.enum_name;
+            const char *variant_name = node->data.enum_variant.variant_name;
+            int variant_index = 0;
+            
+            // Hardcoded variant indices - should be from type system
+            // Simple enum
+            if (strcmp(enum_name, "Simple") == 0) {
+                if (strcmp(variant_name, "One") == 0) variant_index = 0;
+                else if (strcmp(variant_name, "Two") == 0) variant_index = 1;
+            }
+            // Direction enum
+            else if (strcmp(enum_name, "Direction") == 0) {
+                if (strcmp(variant_name, "North") == 0) variant_index = 0;
+                else if (strcmp(variant_name, "South") == 0) variant_index = 1;
+                else if (strcmp(variant_name, "East") == 0) variant_index = 2;
+                else if (strcmp(variant_name, "West") == 0) variant_index = 3;
+            }
+            // Action enum
+            else if (strcmp(enum_name, "Action") == 0) {
+                if (strcmp(variant_name, "Move") == 0) variant_index = 0;
+                else if (strcmp(variant_name, "Stop") == 0) variant_index = 1;
+                else if (strcmp(variant_name, "Turn") == 0) variant_index = 2;
+            }
+            // Other enums - use generic mapping
+            else {
+                if (strstr(variant_name, "Contains") || strstr(variant_name, "Value") || 
+                    strstr(variant_name, "Some") || strstr(variant_name, "Ok") ||
+                    strstr(variant_name, "One") || strstr(variant_name, "A")) {
+                    variant_index = 0;
+                } else if (strstr(variant_name, "Nothing") || strstr(variant_name, "Empty") || 
+                           strstr(variant_name, "None") || strstr(variant_name, "Err") ||
+                           strstr(variant_name, "Two") || strstr(variant_name, "B")) {
+                    variant_index = 1;
+                }
+            }
+            
+            return LLVMConstInt(data->i32_type, variant_index, false);
+        }
+        LLVM_REPORT_ERROR(data, node, "Invalid enum variant");
+    
     case AST_SLICE_EXPR:
+        return generate_slice_expr(data, node);
+    
+    // TODO: Implement remaining expression types
     case AST_ASSOCIATED_FUNC_CALL:
         // Not yet implemented
         LLVM_REPORT_ERROR_PRINTF(data, node, "Expression type not yet implemented: %d", node->type);

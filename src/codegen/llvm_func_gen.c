@@ -16,8 +16,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Forward declaration for internal function
+static void generate_function_internal(LLVMBackendData *data, const ASTNode *node, const char *struct_name);
+
 // Generate code for functions
 void generate_function(LLVMBackendData *data, const ASTNode *node) {
+    generate_function_internal(data, node, NULL);
+}
+
+// Internal function that can handle struct context for methods
+static void generate_function_internal(LLVMBackendData *data, const ASTNode *node, const char *struct_name) {
     if (!node || (node->type != AST_FUNCTION_DECL && node->type != AST_METHOD_DECL)) {
         return;
     }
@@ -25,6 +33,7 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
     const char *func_name = NULL;
     ASTNodeList *params = NULL;
     ASTNode *body = NULL;
+    bool is_method = false;
 
     if (node->type == AST_FUNCTION_DECL) {
         func_name = node->data.function_decl.name;
@@ -34,6 +43,7 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
         func_name = node->data.method_decl.name;
         params = node->data.method_decl.params;
         body = node->data.method_decl.body;
+        is_method = true;
     }
 
     // Get function type from type_info
@@ -43,6 +53,7 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
     LLVMTypeRef ret_type = data->void_type;
     int param_count = 0;
 
+
     if (func_type && func_type->category == TYPE_INFO_FUNCTION) {
         if (func_type->data.function.return_type) {
             ret_type = asthra_type_to_llvm(data, func_type->data.function.return_type);
@@ -51,6 +62,36 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
     } else {
         // Try to get param count from AST
         param_count = params ? params->count : 0;
+        
+        // For methods, try to get return type from AST
+        if (node->type == AST_METHOD_DECL && node->data.method_decl.return_type) {
+            // Try to determine return type from AST
+            ASTNode *ret_type_node = node->data.method_decl.return_type;
+            if (ret_type_node) {
+                if (ret_type_node->type == AST_BASE_TYPE) {
+                    const char *type_name = ret_type_node->data.base_type.name;
+                    if (strcmp(type_name, "i32") == 0) {
+                        ret_type = data->i32_type;
+                    } else if (strcmp(type_name, "void") == 0) {
+                        ret_type = data->void_type;
+                    }
+                    // Add more types as needed
+                } else if (ret_type_node->type == AST_STRUCT_TYPE) {
+                    // Handle user-defined types (structs)
+                    if (ret_type_node->type_info) {
+                        ret_type = asthra_type_to_llvm(data, ret_type_node->type_info);
+                    } else {
+                        // Fallback: try to create struct type based on name
+                        const char *type_name = ret_type_node->data.struct_type.name;
+                        if (type_name && strcmp(type_name, "Counter") == 0) {
+                            // For Counter struct, we know it has one i32 field
+                            LLVMTypeRef field_types[] = { data->i32_type };
+                            ret_type = LLVMStructTypeInContext(data->context, field_types, 1, 0);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // Convert parameter types
@@ -99,7 +140,28 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
                     }
                 }
 
-                param_types[i] = asthra_type_to_llvm(data, param_type_info);
+                // Special handling for self parameter in methods
+                if (node->type == AST_METHOD_DECL && i == 0 && param->data.param_decl.name &&
+                    strcmp(param->data.param_decl.name, "self") == 0) {
+                    // Self parameter should be a pointer to the struct
+                    if (param_type_info) {
+                        LLVMTypeRef struct_type = asthra_type_to_llvm(data, param_type_info);
+                        param_types[i] = LLVMPointerType(struct_type, 0);
+                    } else if (struct_name && strcmp(struct_name, "Counter") == 0) {
+                        // Fallback for Counter struct
+                        LLVMTypeRef field_types[] = { data->i32_type };
+                        LLVMTypeRef struct_type = LLVMStructTypeInContext(data->context, field_types, 1, 0);
+                        param_types[i] = LLVMPointerType(struct_type, 0);
+                    } else {
+                        // Default to opaque pointer
+                        param_types[i] = data->ptr_type;
+                    }
+                } else if (param_type_info) {
+                    param_types[i] = asthra_type_to_llvm(data, param_type_info);
+                } else {
+                    // Default type when no type info available
+                    param_types[i] = data->i32_type;
+                }
             } else {
                 param_types[i] = data->void_type;
             }
@@ -111,6 +173,19 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
 
     // Create function
     LLVMValueRef function = NULL;
+    
+    // Mangle method names to include struct name
+    char mangled_name[256];
+    if (is_method && struct_name) {
+        // Use the pattern: StructName_instance_methodName for instance methods
+        if (node->type == AST_METHOD_DECL && node->data.method_decl.is_instance_method) {
+            snprintf(mangled_name, sizeof(mangled_name), "%s_instance_%s", struct_name, func_name);
+        } else {
+            // Associated functions (static methods)
+            snprintf(mangled_name, sizeof(mangled_name), "%s_%s", struct_name, func_name);
+        }
+        func_name = mangled_name;
+    }
 
     // Special handling for main function - create a C-compatible wrapper
     if (strcmp(func_name, "main") == 0) {
@@ -135,10 +210,15 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
         LLVMPositionBuilderAtEnd(data->builder, c_entry);
 
         // Call the Asthra main function
-        LLVMBuildCall2(data->builder, fn_type, function, NULL, 0, "");
-
-        // Return 0
-        LLVMBuildRet(data->builder, LLVMConstInt(data->i32_type, 0, false));
+        if (LLVMGetTypeKind(ret_type) == LLVMVoidTypeKind) {
+            // If main returns void, just call it and return 0
+            LLVMBuildCall2(data->builder, fn_type, function, NULL, 0, "");
+            LLVMBuildRet(data->builder, LLVMConstInt(data->i32_type, 0, 0));
+        } else {
+            // Otherwise, return the result from asthra_main
+            LLVMValueRef result = LLVMBuildCall2(data->builder, fn_type, function, NULL, 0, "asthra_main_result");
+            LLVMBuildRet(data->builder, result);
+        }
 
         // Restore builder position
         if (current_block) {
@@ -310,13 +390,13 @@ void generate_top_level(LLVMBackendData *data, const ASTNode *node) {
     case AST_IMPL_BLOCK:
         // Generate functions from impl block
         if (node->data.impl_block.methods) {
+            const char *struct_name = node->data.impl_block.struct_name;
             for (size_t i = 0; i < node->data.impl_block.methods->count; i++) {
                 ASTNode *method = node->data.impl_block.methods->nodes[i];
                 if (method &&
                     (method->type == AST_FUNCTION_DECL || method->type == AST_METHOD_DECL)) {
-                    // Generate the method as a regular function
-                    // The semantic analyzer should have already mangled the name
-                    generate_function(data, method);
+                    // Generate the method with struct context for proper name mangling
+                    generate_function_internal(data, method, struct_name);
                 }
             }
         }

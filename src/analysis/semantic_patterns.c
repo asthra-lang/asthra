@@ -160,9 +160,22 @@ bool semantic_validate_pattern_types(SemanticAnalyzer *analyzer, ASTNode *patter
             }
             // TODO: Add similar handling for Result<T,E> and other generic enums
             else {
-                // For now, assume the binding is of type int for other enums
-                // In a full implementation, we'd look up the variant's associated type
-                binding_type = semantic_get_builtin_type(analyzer, "int");
+                // Look up the variant's associated type from the enum type
+                if (expected->data.enum_type.variants) {
+                    SymbolEntry *variant_entry =
+                        symbol_table_lookup_safe(expected->data.enum_type.variants, variant_name);
+                    if (variant_entry && variant_entry->type) {
+                        // Use the variant's associated type
+                        binding_type = variant_entry->type;
+                        type_descriptor_retain(binding_type);
+                    }
+                }
+                
+                // Fallback if we couldn't find the variant's type
+                if (!binding_type) {
+                    // For compatibility with old code, default to int
+                    binding_type = semantic_get_builtin_type(analyzer, "int");
+                }
             }
 
             if (!binding_type) {
@@ -176,7 +189,10 @@ bool semantic_validate_pattern_types(SemanticAnalyzer *analyzer, ASTNode *patter
             SymbolEntry *binding_symbol =
                 symbol_entry_create(binding_name, SYMBOL_VARIABLE, binding_type, pattern);
             if (!binding_symbol) {
-                if (strcmp(enum_name, "Option") == 0 && binding_type) {
+                // Release the binding type if we retained it
+                if (binding_type && (strcmp(enum_name, "Option") == 0 || 
+                    (expected->data.enum_type.variants && 
+                     symbol_table_lookup_safe(expected->data.enum_type.variants, variant_name)))) {
                     type_descriptor_release(binding_type);
                 }
                 semantic_report_error(analyzer, SEMANTIC_ERROR_MEMORY_ALLOCATION, pattern->location,
@@ -192,7 +208,10 @@ bool semantic_validate_pattern_types(SemanticAnalyzer *analyzer, ASTNode *patter
             // Add to current scope
             if (!symbol_table_insert_safe(analyzer->current_scope, binding_name, binding_symbol)) {
                 symbol_entry_destroy(binding_symbol);
-                if (strcmp(enum_name, "Option") == 0 && binding_type) {
+                // Release the binding type if we retained it
+                if (binding_type && (strcmp(enum_name, "Option") == 0 || 
+                    (expected->data.enum_type.variants && 
+                     symbol_table_lookup_safe(expected->data.enum_type.variants, variant_name)))) {
                     type_descriptor_release(binding_type);
                 }
                 semantic_report_error(analyzer, SEMANTIC_ERROR_DUPLICATE_SYMBOL, pattern->location,
@@ -200,8 +219,11 @@ bool semantic_validate_pattern_types(SemanticAnalyzer *analyzer, ASTNode *patter
                 return false;
             }
 
-            // Release the retained type for Option
-            if (strcmp(enum_name, "Option") == 0 && binding_type) {
+            // Release the retained type if we retained it (symbol now owns it)
+            bool type_was_retained = (strcmp(enum_name, "Option") == 0 || 
+                (expected->data.enum_type.variants && 
+                 symbol_table_lookup_safe(expected->data.enum_type.variants, variant_name)));
+            if (type_was_retained && binding_type) {
                 type_descriptor_release(binding_type);
             }
         }
