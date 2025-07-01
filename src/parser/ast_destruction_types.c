@@ -52,17 +52,17 @@ void ast_free_type_nodes(ASTNode *node) {
         AST_RELEASE_NODE(node->data.option_type.value_type);
         break;
 
+    case AST_TASKHANDLE_TYPE:
+        AST_RELEASE_NODE(node->data.taskhandle_type.result_type);
+        break;
+
         /*
          * Tier 3 concurrency features removed in Phase 3:
-         * AST_CHANNEL_TYPE, AST_TASK_HANDLE_TYPE, AST_WORKER_POOL_TYPE
+         * AST_CHANNEL_TYPE, AST_WORKER_POOL_TYPE
 
         case AST_CHANNEL_TYPE:
             AST_RELEASE_NODE(node->data.channel_type.element_type);
             AST_RELEASE_NODE(node->data.channel_type.buffer_size);
-            break;
-
-        case AST_TASK_HANDLE_TYPE:
-            AST_RELEASE_NODE(node->data.task_handle_type.result_type);
             break;
 
         case AST_WORKER_POOL_TYPE:

@@ -468,6 +468,25 @@ TypeDescriptor *analyze_type_node(SemanticAnalyzer *analyzer, ASTNode *type_node
         return option_type;
     }
 
+    case AST_TASKHANDLE_TYPE: {
+        // Handle TaskHandle<T> types using the built-in TYPE_TASK_HANDLE
+        ASTNode *result_type_node = type_node->data.taskhandle_type.result_type;
+
+        if (!result_type_node)
+            return NULL;
+
+        TypeDescriptor *result_type = analyze_type_node(analyzer, result_type_node);
+        if (!result_type)
+            return NULL;
+
+        // Create TaskHandle<T> type using the dedicated type creation function
+        TypeDescriptor *taskhandle_type = type_descriptor_create_task_handle(result_type);
+        
+        type_descriptor_release(result_type);
+        
+        return taskhandle_type;
+    }
+
     case AST_TUPLE_TYPE: {
         // Handle tuple types: (T1, T2, ...)
         ASTNodeList *element_types = type_node->data.tuple_type.element_types;

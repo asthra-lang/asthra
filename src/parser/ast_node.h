@@ -181,8 +181,10 @@ struct ASTNode {
         } if_let_stmt;
 
         struct {
-            char *function_name;
-            ASTNodeList *args; // Phase 2.1: Flexible array
+            ASTNode *call_expr; // Full call expression (supports method calls)
+            // Legacy fields kept for backward compatibility
+            char *function_name; // DEPRECATED: Use call_expr instead
+            ASTNodeList *args;   // DEPRECATED: Use call_expr->data.call_expr.args
         } spawn_stmt;
 
         struct {
@@ -365,6 +367,10 @@ struct ASTNode {
         } option_type;
 
         struct {
+            ASTNode *result_type;
+        } taskhandle_type;
+
+        struct {
             ASTNodeList *element_types; // List of types in the tuple
         } tuple_type;
 
@@ -452,9 +458,11 @@ struct ASTNode {
 
         // Advanced concurrency structures - Tier 1 (Core & Simple)
         struct {
-            char *function_name;
-            ASTNodeList *args;
-            char *handle_var_name; // Variable to store the task handle
+            ASTNode *call_expr;     // Full call expression (supports method calls)
+            char *handle_var_name;  // Variable to store the task handle
+            // Legacy fields kept for backward compatibility
+            char *function_name;    // DEPRECATED: Use call_expr instead
+            ASTNodeList *args;      // DEPRECATED: Use call_expr->data.call_expr.args
         } spawn_with_handle_stmt;
 
         struct {

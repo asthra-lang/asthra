@@ -120,6 +120,26 @@ bool semantic_check_type_compatibility(SemanticAnalyzer *analyzer, TypeDescripto
             return true; // Allow for literal assignments like "let x: u8 = 255;"
         }
 
+        // Size type conversions: usize/isize to integer types
+        // NOTE: These conversions require explicit casts, not implicit conversion
+        // Removing these rules to enforce type safety
+        /*
+        if (type1_prim == PRIMITIVE_USIZE &&
+            (type2_prim == PRIMITIVE_I8 || type2_prim == PRIMITIVE_I16 ||
+             type2_prim == PRIMITIVE_I32 || type2_prim == PRIMITIVE_I64 ||
+             type2_prim == PRIMITIVE_U8 || type2_prim == PRIMITIVE_U16 ||
+             type2_prim == PRIMITIVE_U32 || type2_prim == PRIMITIVE_U64)) {
+            return true; // Allow usize to integer conversion (e.g., len() result to i32)
+        }
+
+        // Allow isize to signed integer types
+        if (type1_prim == PRIMITIVE_ISIZE &&
+            (type2_prim == PRIMITIVE_I8 || type2_prim == PRIMITIVE_I16 ||
+             type2_prim == PRIMITIVE_I32 || type2_prim == PRIMITIVE_I64)) {
+            return true; // Allow isize to signed integer conversion
+        }
+        */
+
         // Float widening: f32 -> f64
         // Can type1 be used where type2 is expected?
         if (type1_prim == PRIMITIVE_F32 && type2_prim == PRIMITIVE_F64) {

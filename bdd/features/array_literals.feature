@@ -279,7 +279,7 @@ Feature: Array Literals
       package test;
       pub fn main(none) -> i32 {
         let arr: []i32 = [10, 20, 30, 40, 50, 60, 70];
-        return arr.len as i32 * 6;
+        return len(arr) as i32 * 6;
       }
       """
     When I compile and run the code
@@ -291,7 +291,7 @@ Feature: Array Literals
       package test;
       pub fn main(none) -> i32 {
         let arr: []i32 = [none];
-        return arr.len as i32 + 42;
+        return len(arr) as i32 + 42;
       }
       """
     When I compile and run the code

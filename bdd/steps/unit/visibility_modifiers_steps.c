@@ -172,7 +172,7 @@ void test_no_visibility_struct(void) {
     const char* source = 
         "package main;\n"
         "\n"
-        "struct Point {\n"
+        "pub struct Point {\n"
         "    x: i32,\n"
         "    y: i32\n"
         "}\n"

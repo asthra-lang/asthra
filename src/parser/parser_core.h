@@ -105,6 +105,7 @@ struct Parser {
     size_t error_count;
     bool panic_mode;
     bool had_error;
+    bool speculative_parsing; // Suppress error reporting during lookahead
     SymbolTable *symbol_table;
 
     // Enhanced parser state

@@ -76,6 +76,13 @@ static PredeclaredIdentifier g_predeclared_identifiers[] = {
      .signature = "fn() -> InfiniteIterator",
      .kind = SYMBOL_FUNCTION,
      .type = NULL, // Will be created dynamically
+     .is_predeclared = true},
+
+    // Length function (overloaded for slices and arrays)
+    {.name = "len",
+     .signature = "fn(slice: []T) -> usize",
+     .kind = SYMBOL_FUNCTION,
+     .type = NULL, // Will be created dynamically
      .is_predeclared = true}};
 
 static const size_t g_predeclared_count =
@@ -203,6 +210,23 @@ TypeDescriptor *create_predeclared_function_type(const char *name, const char *s
         iterator_type->data.slice.element_type = &primitive_types[PRIMITIVE_VOID];
 
         func_type->data.function.return_type = iterator_type;
+    } else if (strcmp(name, "len") == 0) {
+        // len(slice: []T) -> usize
+        func_type->data.function.param_count = 1;
+        func_type->data.function.param_types = malloc(sizeof(TypeDescriptor *));
+        
+        // Create a generic slice type for []T - using void as placeholder
+        TypeDescriptor *slice_type = malloc(sizeof(TypeDescriptor));
+        slice_type->category = TYPE_SLICE;
+        slice_type->flags = (TypeFlags){0};
+        slice_type->size = sizeof(void *) + sizeof(size_t);
+        slice_type->alignment = _Alignof(void *);
+        slice_type->name = strdup("[]T");
+        atomic_init(&slice_type->ref_count, 1);
+        slice_type->data.slice.element_type = &primitive_types[PRIMITIVE_VOID]; // Generic placeholder
+        
+        func_type->data.function.param_types[0] = slice_type;
+        func_type->data.function.return_type = &primitive_types[PRIMITIVE_USIZE];
     } else {
         // Default case - should not happen
         fprintf(stderr, "WARNING: Unknown predeclared function signature: %s\n", signature);

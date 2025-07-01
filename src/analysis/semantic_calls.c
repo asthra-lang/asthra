@@ -62,9 +62,22 @@ bool analyze_call_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
 
         func_symbol->flags.is_used = true;
 
-        // Validate function arguments against parameter types
-        if (!validate_function_arguments(analyzer, expr, func_symbol)) {
-            return false;
+        // Special handling for predeclared functions with generic type checking
+        if (func_symbol->flags.is_predeclared && strcmp(func_name, "len") == 0) {
+            // len() function: special validation for slice/array arguments
+            if (!validate_len_function_call(analyzer, expr)) {
+                return false;
+            }
+        } else if (func_symbol->flags.is_predeclared && strcmp(func_name, "range") == 0) {
+            // range() function: special validation for overloaded signatures
+            if (!validate_range_function_call(analyzer, expr)) {
+                return false;
+            }
+        } else {
+            // Validate function arguments against parameter types
+            if (!validate_function_arguments(analyzer, expr, func_symbol)) {
+                return false;
+            }
         }
 
         // Set the return type on the call expression
@@ -383,7 +396,17 @@ bool validate_function_arguments(SemanticAnalyzer *analyzer, ASTNode *call_expr,
         return false;
     }
 
-    ASTNodeList *args = call_expr->data.call_expr.args;
+    ASTNodeList *args = NULL;
+    
+    // Handle both AST_CALL_EXPR and AST_ASSOCIATED_FUNC_CALL
+    if (call_expr->type == AST_CALL_EXPR) {
+        args = call_expr->data.call_expr.args;
+    } else if (call_expr->type == AST_ASSOCIATED_FUNC_CALL) {
+        args = call_expr->data.associated_func_call.args;
+    } else {
+        return false;
+    }
+    
     TypeDescriptor *func_type = func_symbol->type;
 
     // Check if function type has parameter information
@@ -531,6 +554,224 @@ bool validate_method_arguments(SemanticAnalyzer *analyzer, ASTNode *call_expr,
             }
 
             type_descriptor_release(arg_type);
+        }
+    }
+
+    return true;
+}
+
+// =============================================================================
+// PREDECLARED FUNCTION VALIDATION
+// =============================================================================
+
+// Validate len() function call with special slice/array type checking
+bool validate_len_function_call(SemanticAnalyzer *analyzer, ASTNode *call_expr) {
+    if (!analyzer || !call_expr || call_expr->type != AST_CALL_EXPR) {
+        return false;
+    }
+
+    ASTNodeList *args = call_expr->data.call_expr.args;
+    size_t arg_count = args ? ast_node_list_size(args) : 0;
+
+    // len() requires exactly one argument
+    if (arg_count != 1) {
+        semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_ARGUMENTS, call_expr->location,
+                              "len() requires exactly one argument, got %zu", arg_count);
+        return false;
+    }
+
+    ASTNode *arg = ast_node_list_get(args, 0);
+    if (!arg) {
+        semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, call_expr->location,
+                              "Failed to get len() argument");
+        return false;
+    }
+
+    // Analyze the argument expression
+    if (!semantic_analyze_expression(analyzer, arg)) {
+        return false;
+    }
+
+    // Get the argument's type
+    TypeDescriptor *arg_type = semantic_get_expression_type(analyzer, arg);
+    if (!arg_type) {
+        semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_INFERENCE_FAILED, arg->location,
+                              "Cannot determine type of len() argument");
+        return false;
+    }
+
+    // Validate that the argument is a slice or array
+    bool is_valid_type = false;
+    if (arg_type->category == TYPE_SLICE) {
+        is_valid_type = true;
+    } else if (arg_type->category == TYPE_ARRAY) {
+        is_valid_type = true;
+    }
+
+    if (!is_valid_type) {
+        semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_ARGUMENTS, arg->location,
+                              "len() can only be called on slices or arrays, got %s",
+                              arg_type->name ? arg_type->name : "unknown");
+        type_descriptor_release(arg_type);
+        return false;
+    }
+
+    // Set the return type to usize
+    TypeDescriptor *usize_type = &semantic_get_primitive_types_array()[PRIMITIVE_USIZE];
+    call_expr->type_info = type_info_from_descriptor(usize_type);
+    if (!call_expr->type_info) {
+        semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, call_expr->location,
+                              "Failed to create type info for len() return type");
+        type_descriptor_release(arg_type);
+        return false;
+    }
+
+    type_descriptor_release(arg_type);
+    return true;
+}
+
+// Validate range() function call with overloaded signatures
+bool validate_range_function_call(SemanticAnalyzer *analyzer, ASTNode *call_expr) {
+    if (!analyzer || !call_expr || call_expr->type != AST_CALL_EXPR) {
+        return false;
+    }
+
+    ASTNodeList *args = call_expr->data.call_expr.args;
+    size_t arg_count = args ? ast_node_list_size(args) : 0;
+
+    // range() accepts 1 or 2 arguments
+    if (arg_count != 1 && arg_count != 2) {
+        semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_ARGUMENTS, call_expr->location,
+                              "range() requires 1 or 2 arguments, got %zu", arg_count);
+        return false;
+    }
+
+    // Analyze all arguments
+    for (size_t i = 0; i < arg_count; i++) {
+        ASTNode *arg = ast_node_list_get(args, i);
+        if (!arg) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, call_expr->location,
+                                  "Failed to get range() argument %zu", i + 1);
+            return false;
+        }
+
+        // Analyze the argument expression
+        if (!semantic_analyze_expression(analyzer, arg)) {
+            return false;
+        }
+
+        // Get the argument's type
+        TypeDescriptor *arg_type = semantic_get_expression_type(analyzer, arg);
+        if (!arg_type) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_INFERENCE_FAILED, arg->location,
+                                  "Cannot determine type of range() argument %zu", i + 1);
+            return false;
+        }
+
+        // Validate that the argument is an integer type
+        bool is_valid_type = is_integer_type(arg_type);
+
+        if (!is_valid_type) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_ARGUMENTS, arg->location,
+                                  "range() argument %zu must be an integer type, got %s", i + 1,
+                                  arg_type->name ? arg_type->name : "unknown");
+            type_descriptor_release(arg_type);
+            return false;
+        }
+
+        type_descriptor_release(arg_type);
+    }
+
+    return true;
+}
+
+// =============================================================================
+// ASSOCIATED FUNCTION CALL ANALYSIS
+// =============================================================================
+
+bool analyze_associated_function_call(SemanticAnalyzer *analyzer, ASTNode *expr) {
+    if (!analyzer || !expr || expr->type != AST_ASSOCIATED_FUNC_CALL) {
+        return false;
+    }
+
+    const char *struct_name = expr->data.associated_func_call.struct_name;
+    const char *func_name = expr->data.associated_func_call.function_name;
+    ASTNodeList *args = expr->data.associated_func_call.args;
+
+    if (!struct_name || !func_name) {
+        semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, expr->location,
+                              "Invalid associated function call");
+        return false;
+    }
+
+    // Look up the struct type
+    SymbolEntry *struct_symbol = semantic_resolve_identifier(analyzer, struct_name);
+    if (!struct_symbol) {
+        semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL, expr->location,
+                              "Undefined struct: %s", struct_name);
+        return false;
+    }
+
+    if (struct_symbol->kind != SYMBOL_TYPE) {
+        semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, expr->location,
+                              "%s is not a type", struct_name);
+        return false;
+    }
+
+    TypeDescriptor *struct_type = struct_symbol->type;
+    if (!struct_type || struct_type->category != TYPE_STRUCT) {
+        semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, expr->location,
+                              "%s is not a struct type", struct_name);
+        return false;
+    }
+
+    // Look up the method in the struct's method table
+    if (!struct_type->data.struct_type.methods) {
+        semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL, expr->location,
+                              "Struct %s has no methods", struct_name);
+        return false;
+    }
+
+    SymbolEntry *method_symbol = 
+        symbol_table_lookup_safe(struct_type->data.struct_type.methods, func_name);
+    if (!method_symbol) {
+        semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL, expr->location,
+                              "Undefined method %s::%s", struct_name, func_name);
+        return false;
+    }
+
+    method_symbol->flags.is_used = true;
+
+    // Analyze arguments first
+    if (args) {
+        for (size_t i = 0; i < ast_node_list_size(args); i++) {
+            ASTNode *arg = ast_node_list_get(args, i);
+            if (!semantic_analyze_expression(analyzer, arg)) {
+                return false;
+            }
+        }
+    }
+
+    // For associated functions (not instance methods), validate arguments
+    if (!method_symbol->is_instance_method) {
+        if (!validate_function_arguments(analyzer, expr, method_symbol)) {
+            return false;
+        }
+    }
+
+    // Set the return type on the call expression
+    if (method_symbol->type && method_symbol->type->category == TYPE_FUNCTION) {
+        TypeDescriptor *return_type = method_symbol->type->data.function.return_type;
+        if (return_type) {
+            expr->type_info = type_info_from_descriptor(return_type);
+            if (!expr->type_info) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, expr->location,
+                                      "Failed to create type info for associated function call");
+                return false;
+            }
+            // DEBUG: Print type info creation
+            // fprintf(stderr, "DEBUG: Set type_info for associated function call %s::%s, type=%s\n",
+            //         struct_name, func_name, return_type->name ? return_type->name : "unknown");
         }
     }
 

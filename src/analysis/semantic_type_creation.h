@@ -20,6 +20,7 @@ TypeDescriptor *type_descriptor_create_generic_instance(TypeDescriptor *base_typ
                                                         TypeDescriptor **type_args,
                                                         size_t type_arg_count);
 TypeDescriptor *type_descriptor_create_tuple(TypeDescriptor **element_types, size_t element_count);
+TypeDescriptor *type_descriptor_create_task_handle(TypeDescriptor *result_type);
 
 // Struct type operations stubs
 bool type_descriptor_add_struct_field(TypeDescriptor *struct_type, const char *field_name,

@@ -416,6 +416,10 @@ const char *ast_node_type_name(ASTNodeType type) {
         return "PTR_TYPE";
     case AST_RESULT_TYPE:
         return "RESULT_TYPE";
+    case AST_OPTION_TYPE:
+        return "OPTION_TYPE";
+    case AST_TASKHANDLE_TYPE:
+        return "TASKHANDLE_TYPE";
     case AST_MATCH_ARM:
         return "MATCH_ARM";
     case AST_PATTERN:

@@ -187,6 +187,12 @@ void type_descriptor_release(TypeDescriptor *type) {
                 type_descriptor_release(type->data.array.element_type);
             }
             break;
+        case TYPE_TASK_HANDLE:
+            // Release result type
+            if (type->data.task_handle.result_type) {
+                type_descriptor_release(type->data.task_handle.result_type);
+            }
+            break;
         default:
             // Other types don't have nested type descriptors to release
             break;

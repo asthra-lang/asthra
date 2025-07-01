@@ -490,6 +490,22 @@ AsthraSliceHeader asthra_runtime_get_args(void) {
     return g_runtime.args_slice_initialized ? g_runtime.args_slice : (AsthraSliceHeader){0};
 }
 
+// Simplified args function for compiler compatibility
+// Returns just ptr and len as a simple struct
+struct SimplifiedSlice {
+    void *ptr;
+    size_t len;
+};
+
+struct SimplifiedSlice asthra_runtime_get_args_simple(void) {
+    AsthraSliceHeader full_slice = asthra_runtime_get_args();
+    struct SimplifiedSlice simple = {
+        .ptr = full_slice.ptr,
+        .len = full_slice.len
+    };
+    return simple;
+}
+
 // =============================================================================
 // INFINITE ITERATOR SUPPORT
 // =============================================================================

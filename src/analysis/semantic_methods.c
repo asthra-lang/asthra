@@ -192,7 +192,29 @@ bool analyze_method_declaration(SemanticAnalyzer *analyzer, ASTNode *method_decl
 
     // Set up function type data
     method_type->data.function.param_count = params ? ast_node_list_size(params) : 0;
-    method_type->data.function.return_type = NULL; // TODO: resolve return type
+    
+    // Resolve return type
+    if (method_decl->data.method_decl.return_type) {
+        ASTNode *return_type_node = method_decl->data.method_decl.return_type;
+        TypeDescriptor *return_type = analyze_type_node(analyzer, return_type_node);
+        if (return_type) {
+            method_type->data.function.return_type = return_type;
+            type_descriptor_retain(return_type);
+        } else {
+            // Default to void if we can't resolve
+            method_type->data.function.return_type = semantic_get_builtin_type(analyzer, "void");
+            if (method_type->data.function.return_type) {
+                type_descriptor_retain(method_type->data.function.return_type);
+            }
+        }
+    } else {
+        // No return type specified, default to void
+        method_type->data.function.return_type = semantic_get_builtin_type(analyzer, "void");
+        if (method_type->data.function.return_type) {
+            type_descriptor_retain(method_type->data.function.return_type);
+        }
+    }
+    
     method_type->data.function.param_types = NULL; // TODO: resolve parameter types
 
     // Create method symbol with visibility information
@@ -209,6 +231,13 @@ bool analyze_method_declaration(SemanticAnalyzer *analyzer, ASTNode *method_decl
     // Store visibility information (extend SymbolEntry if needed)
     method_symbol->visibility = visibility;
     method_symbol->is_instance_method = is_instance_method;
+    
+    // Set type info on the method declaration node
+    method_decl->type_info = type_info_from_descriptor(method_type);
+    if (!method_decl->type_info) {
+        semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, method_decl->location,
+                              "Failed to create type info for method '%s'", method_name);
+    }
 
     // Add method to struct's method table
     if (!symbol_table_insert_safe(struct_type->data.struct_type.methods, method_name,

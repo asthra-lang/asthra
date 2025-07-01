@@ -14,6 +14,7 @@
 #include "semantic_arrays.h"
 #include "semantic_binary_unary.h"
 #include "semantic_calls.h"
+#include "semantic_concurrency.h"
 #include "semantic_const_declarations.h"
 #include "semantic_core.h"
 #include "semantic_declarations.h"
@@ -156,18 +157,7 @@ bool semantic_analyze_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
 
     case AST_ASSOCIATED_FUNC_CALL:
         // Analyze associated function calls like Struct::function()
-        result = true;
-        if (expr->data.associated_func_call.args) {
-            for (size_t i = 0; i < ast_node_list_size(expr->data.associated_func_call.args); i++) {
-                ASTNode *arg = ast_node_list_get(expr->data.associated_func_call.args, i);
-                if (!semantic_analyze_expression(analyzer, arg)) {
-                    result = false;
-                    break;
-                }
-            }
-        }
-
-        // TODO: Check that the struct and function exist and are accessible
+        result = analyze_associated_function_call(analyzer, expr);
         break;
 
     case AST_AWAIT_EXPR:
@@ -176,8 +166,7 @@ bool semantic_analyze_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
         if (!analyze_tier1_concurrency_feature(analyzer, expr)) {
             result = false;
         } else {
-            // TODO: Validate the awaited handle is valid
-            result = true;
+            result = analyze_await_expression(analyzer, expr);
         }
         break;
 

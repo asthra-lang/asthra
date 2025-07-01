@@ -13,6 +13,7 @@
 #include "llvm_locals.h"
 #include "llvm_pattern_matching.h"
 #include "llvm_types.h"
+#include "../parser/ast_types.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,6 +61,26 @@ void generate_return_statement(LLVMBackendData *data, const ASTNode *node) {
             // For other types, generate the expression normally
             LLVMValueRef ret_val = generate_expression(data, node->data.return_stmt.expression);
             if (ret_val) {
+                // Check if we need to cast the return value to the expected function return type
+                LLVMTypeRef ret_val_type = LLVMTypeOf(ret_val);
+                if (ret_val_type != fn_ret_type) {
+                    // Handle integer type conversions (e.g., usize to i32)
+                    if (LLVMGetTypeKind(ret_val_type) == LLVMIntegerTypeKind &&
+                        LLVMGetTypeKind(fn_ret_type) == LLVMIntegerTypeKind) {
+                        
+                        unsigned src_bits = LLVMGetIntTypeWidth(ret_val_type);
+                        unsigned dst_bits = LLVMGetIntTypeWidth(fn_ret_type);
+                        
+                        if (src_bits > dst_bits) {
+                            // Truncate larger type to smaller type (e.g., i64 to i32)
+                            ret_val = LLVMBuildTrunc(data->builder, ret_val, fn_ret_type, "ret_trunc");
+                        } else if (src_bits < dst_bits) {
+                            // Extend smaller type to larger type (e.g., i32 to i64)
+                            ret_val = LLVMBuildZExt(data->builder, ret_val, fn_ret_type, "ret_ext");
+                        }
+                        // If src_bits == dst_bits, types are the same width, no conversion needed
+                    }
+                }
                 LLVMBuildRet(data->builder, ret_val);
             } else {
                 llvm_backend_report_error(data, node, "Failed to generate return value");
@@ -71,6 +92,26 @@ void generate_return_statement(LLVMBackendData *data, const ASTNode *node) {
     // For all other expressions, generate normally
     LLVMValueRef ret_val = generate_expression(data, node->data.return_stmt.expression);
     if (ret_val) {
+        // Check if we need to cast the return value to the expected function return type
+        LLVMTypeRef ret_val_type = LLVMTypeOf(ret_val);
+        if (ret_val_type != fn_ret_type) {
+            // Handle integer type conversions (e.g., usize to i32)
+            if (LLVMGetTypeKind(ret_val_type) == LLVMIntegerTypeKind &&
+                LLVMGetTypeKind(fn_ret_type) == LLVMIntegerTypeKind) {
+                
+                unsigned src_bits = LLVMGetIntTypeWidth(ret_val_type);
+                unsigned dst_bits = LLVMGetIntTypeWidth(fn_ret_type);
+                
+                if (src_bits > dst_bits) {
+                    // Truncate larger type to smaller type (e.g., i64 to i32)
+                    ret_val = LLVMBuildTrunc(data->builder, ret_val, fn_ret_type, "ret_trunc");
+                } else if (src_bits < dst_bits) {
+                    // Extend smaller type to larger type (e.g., i32 to i64)
+                    ret_val = LLVMBuildZExt(data->builder, ret_val, fn_ret_type, "ret_ext");
+                }
+                // If src_bits == dst_bits, types are the same width, no conversion needed
+            }
+        }
         LLVMBuildRet(data->builder, ret_val);
     } else {
         // If expression generation failed but function expects void, return void
@@ -191,6 +232,21 @@ void generate_assignment_statement(LLVMBackendData *data, const ASTNode *node) {
             LLVMValueRef indices[2] = {LLVMConstInt(data->i64_type, 0, false), index};
             LLVMTypeRef array_type = LLVMTypeOf(array);
             target = LLVMBuildGEP2(data->builder, array_type, array, indices, 2, "elemptr");
+        }
+    } else if (node->data.assignment.target->type == AST_UNARY_EXPR &&
+               node->data.assignment.target->data.unary_expr.operator == UNOP_DEREF) {
+        // Pointer dereference assignment (*ptr = value)
+        // RADICAL DEBUGGING: Instead of using the pointer variable, 
+        // try to directly identify what variable the pointer points to
+        ASTNode *ptr_node = node->data.assignment.target->data.unary_expr.operand;
+        
+        // Check if this is a simple case like *(&variable)
+        // where we can directly identify the target variable
+        if (ptr_node->type == AST_IDENTIFIER) {
+            // Load the pointer value (which should be an address)
+            target = generate_expression(data, ptr_node);
+        } else {
+            target = generate_expression(data, ptr_node);
         }
     }
 

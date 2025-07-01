@@ -39,11 +39,12 @@ typedef struct TypeInfo {
         TYPE_INFO_RESULT,    // Result<T, E> types
         TYPE_INFO_OPTION,    // Option<T> types
         TYPE_INFO_FUNCTION,  // Function types
-        TYPE_INFO_ENUM,      // Enum types (future)
-        TYPE_INFO_TUPLE,     // Tuple types (T1, T2, ...)
-        TYPE_INFO_MODULE,    // Module types (for module access)
-        TYPE_INFO_UNKNOWN,   // Unknown/unresolved types
-        TYPE_INFO_ERROR      // Error types (for error reporting)
+        TYPE_INFO_ENUM,        // Enum types (future)
+        TYPE_INFO_TUPLE,       // Tuple types (T1, T2, ...)
+        TYPE_INFO_TASK_HANDLE, // Task handle types TaskHandle<T>
+        TYPE_INFO_MODULE,      // Module types (for module access)
+        TYPE_INFO_UNKNOWN,     // Unknown/unresolved types
+        TYPE_INFO_ERROR        // Error types (for error reporting)
     } category;
 
     // Memory layout information
@@ -152,6 +153,11 @@ typedef struct TypeInfo {
             SymbolEntry **exports; // Exported symbols
             size_t export_count;   // Number of exports
         } module;
+
+        // Task handle types
+        struct {
+            struct TypeInfo *result_type; // Result type T in TaskHandle<T>
+        } task_handle;
 
         // Tuple types
         struct {

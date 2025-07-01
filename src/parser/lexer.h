@@ -86,6 +86,7 @@ typedef enum {
     TOKEN_F64,
     TOKEN_RESULT,
     TOKEN_OPTION, // Option<T> built-in type
+    TOKEN_TASKHANDLE, // TaskHandle<T> built-in type for concurrency
     TOKEN_NEVER,  // Never type for functions that don't return
 
     // Operators

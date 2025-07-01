@@ -27,7 +27,6 @@ Asthra is designed as a cross-platform programming language with first-class sup
 - **WASM32**: Browser and WASI environments
 
 #### Secondary Targets (Tier 2)
-- **ARM32**: Linux, Android (planned)
 - **RISC-V**: Linux (experimental)
 
 #### Development Platforms
@@ -127,9 +126,6 @@ The Asthra compiler uses platform detection macros defined in `src/platform.h` t
 #elif defined(__aarch64__) || defined(_M_ARM64)
     #define ASTHRA_ARCH_ARM64 1
     #define ASTHRA_ARCH_NAME "arm64"
-#elif defined(__arm__) || defined(_M_ARM)
-    #define ASTHRA_ARCH_ARM 1
-    #define ASTHRA_ARCH_NAME "arm"
 #endif
 ```
 

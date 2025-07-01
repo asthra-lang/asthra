@@ -35,12 +35,16 @@ SymbolEntry *symbol_entry_create(const char *name, SymbolKind kind, TypeDescript
 
     entry->kind = kind;
     entry->type = type;
+    if (type) {
+        type_descriptor_retain(type);
+    }
     entry->declaration = declaration;
     entry->scope_id = 0;
     entry->flags.is_used = false;
     entry->flags.is_exported = false;
     entry->flags.is_mutable = false;
     entry->flags.is_initialized = false;
+    entry->flags.is_predeclared = false;
     entry->flags.reserved = 0;
     entry->next = NULL;
 
@@ -52,7 +56,11 @@ void symbol_entry_destroy(SymbolEntry *entry) {
         return;
 
     free(entry->name);
-    // Note: We don't free type or declaration as they may be shared
+    // Release the type descriptor reference
+    if (entry->type) {
+        type_descriptor_release(entry->type);
+    }
+    // Note: We don't free declaration as it's owned by the AST
     free(entry);
 }
 

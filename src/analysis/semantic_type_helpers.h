@@ -111,6 +111,25 @@ static inline bool is_indexable_type(TypeDescriptor *type) {
            type->category == TYPE_POINTER;
 }
 
+/**
+ * Check if a type is a task handle type
+ */
+static inline bool is_task_handle_type(TypeDescriptor *type) {
+    if (!type)
+        return false;
+    return type->category == TYPE_TASK_HANDLE;
+}
+
+/**
+ * Extract the result type T from TaskHandle<T>
+ * Returns NULL if the type is not a task handle
+ */
+static inline TypeDescriptor *get_task_handle_result_type(TypeDescriptor *type) {
+    if (!type || type->category != TYPE_TASK_HANDLE)
+        return NULL;
+    return type->data.task_handle.result_type;
+}
+
 // =============================================================================
 // TYPE PROMOTION AND CONVERSION
 // =============================================================================

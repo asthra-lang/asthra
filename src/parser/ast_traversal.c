@@ -216,6 +216,15 @@ size_t ast_get_child_count_impl(const ASTNode *node) {
     case AST_PTR_TYPE:
         return node->data.ptr_type.pointee_type ? 1 : 0;
 
+    case AST_RESULT_TYPE:
+        return (node->data.result_type.ok_type ? 1 : 0) + (node->data.result_type.err_type ? 1 : 0);
+
+    case AST_OPTION_TYPE:
+        return node->data.option_type.value_type ? 1 : 0;
+
+    case AST_TASKHANDLE_TYPE:
+        return node->data.taskhandle_type.result_type ? 1 : 0;
+
     case AST_CONST_DECL:
         return (node->data.const_decl.type ? 1 : 0) + (node->data.const_decl.value ? 1 : 0) +
                (node->data.const_decl.annotations
@@ -297,6 +306,23 @@ ASTNode *ast_get_child_impl(ASTNode *node, size_t index) {
             return node->data.ptr_type.pointee_type;
         break;
 
+    case AST_RESULT_TYPE:
+        if (index == 0)
+            return node->data.result_type.ok_type;
+        if (index == 1)
+            return node->data.result_type.err_type;
+        break;
+
+    case AST_OPTION_TYPE:
+        if (index == 0)
+            return node->data.option_type.value_type;
+        break;
+
+    case AST_TASKHANDLE_TYPE:
+        if (index == 0)
+            return node->data.taskhandle_type.result_type;
+        break;
+
     case AST_ENUM_VARIANT_DECL:
         if (index == 0 && node->data.enum_variant_decl.associated_type) {
             return node->data.enum_variant_decl.associated_type;
@@ -365,6 +391,23 @@ const ASTNode *ast_get_child_const_impl(const ASTNode *node, size_t index) {
     case AST_PTR_TYPE:
         if (index == 0)
             return node->data.ptr_type.pointee_type;
+        break;
+
+    case AST_RESULT_TYPE:
+        if (index == 0)
+            return node->data.result_type.ok_type;
+        if (index == 1)
+            return node->data.result_type.err_type;
+        break;
+
+    case AST_OPTION_TYPE:
+        if (index == 0)
+            return node->data.option_type.value_type;
+        break;
+
+    case AST_TASKHANDLE_TYPE:
+        if (index == 0)
+            return node->data.taskhandle_type.result_type;
         break;
 
     case AST_ENUM_VARIANT_DECL:

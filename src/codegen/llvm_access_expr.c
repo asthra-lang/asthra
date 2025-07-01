@@ -44,7 +44,35 @@ LLVMValueRef generate_index_expr(LLVMBackendData *data, const ASTNode *node) {
             };
             
             LLVMTypeRef array_type = LLVMTypeOf(array);
-            element_ptr = LLVMBuildGEP2(data->builder, array_type, array, indices, 2, "array_elemptr");
+            LLVMValueRef array_ptr = array;
+            
+            // Check if array is a value or a pointer
+            if (LLVMGetTypeKind(array_type) != LLVMPointerTypeKind) {
+                // OPTIMIZATION: For small arrays, consider using extractvalue instead of alloca+store
+                // This avoids unnecessary memory operations for register-sized values
+                if (LLVMGetTypeKind(array_type) == LLVMArrayTypeKind) {
+                    unsigned array_length = LLVMGetArrayLength(array_type);
+                    LLVMTypeRef elem_type_check = LLVMGetElementType(array_type);
+                    
+                    // For very small arrays (<=4 elements of primitive types), use extractvalue
+                    if (array_length <= 4 && LLVMGetTypeKind(elem_type_check) == LLVMIntegerTypeKind) {
+                        // Direct extraction if index is constant
+                        if (LLVMIsConstant(index)) {
+                            unsigned idx = (unsigned)LLVMConstIntGetZExtValue(index);
+                            if (idx < array_length) {
+                                return LLVMBuildExtractValue(data->builder, array, idx, "array_elem_direct");
+                            }
+                        }
+                    }
+                }
+                
+                // Fallback to alloca for larger arrays or non-constant indices
+                LLVMValueRef temp_alloca = LLVMBuildAlloca(data->builder, array_type, "array_temp");
+                LLVMBuildStore(data->builder, array, temp_alloca);
+                array_ptr = temp_alloca;
+            }
+            
+            element_ptr = LLVMBuildGEP2(data->builder, array_type, array_ptr, indices, 2, "array_elemptr");
         } else {
             // This is a true slice - extract the data pointer from the slice struct
             // Slice is a struct { ptr, length }
@@ -134,6 +162,13 @@ LLVMValueRef generate_slice_expr(LLVMBackendData *data, const ASTNode *node) {
 
     // Calculate slice length
     LLVMValueRef length = LLVMBuildSub(data->builder, end_idx, start_idx, "slice_len");
+    
+    // Ensure length is i64 to match slice struct
+    LLVMTypeRef length_type = LLVMTypeOf(length);
+    if (length_type != data->i64_type) {
+        // Cast length to i64 if it's not already
+        length = LLVMBuildIntCast2(data->builder, length, data->i64_type, false, "slice_len_i64");
+    }
 
     // Create a slice struct type (data pointer + length)
     LLVMTypeRef slice_fields[2] = {
@@ -149,7 +184,17 @@ LLVMValueRef generate_slice_expr(LLVMBackendData *data, const ASTNode *node) {
     };
     
     LLVMTypeRef array_type = LLVMTypeOf(array);
-    LLVMValueRef slice_data = LLVMBuildGEP2(data->builder, array_type, array, indices, 2, "slice_data");
+    LLVMValueRef array_ptr = array;
+    
+    // Check if array is a value or a pointer
+    if (LLVMGetTypeKind(array_type) != LLVMPointerTypeKind) {
+        // Array is a value (e.g., [5 x i32]), we need to store it to get a pointer
+        LLVMValueRef temp_alloca = LLVMBuildAlloca(data->builder, array_type, "array_temp");
+        LLVMBuildStore(data->builder, array, temp_alloca);
+        array_ptr = temp_alloca;
+    }
+    
+    LLVMValueRef slice_data = LLVMBuildGEP2(data->builder, array_type, array_ptr, indices, 2, "slice_data");
 
     // Create the slice struct
     LLVMValueRef slice = LLVMGetUndef(slice_type);
@@ -295,8 +340,9 @@ LLVMValueRef generate_field_access_ptr(LLVMBackendData *data, const ASTNode *nod
     LLVMTypeRef obj_type = LLVMTypeOf(object);
     
     if (LLVMGetTypeKind(obj_type) != LLVMPointerTypeKind) {
-        // Object is a value, not a pointer. We need to store it temporarily
-        // to get a pointer for GEP
+        // NOTE: This function is supposed to return a pointer to the field
+        // We cannot use extractvalue optimization here because callers expect a pointer
+        // Always create an alloca and store the value
         LLVMValueRef temp_alloca = LLVMBuildAlloca(data->builder, obj_type, "temp_struct");
         LLVMBuildStore(data->builder, object, temp_alloca);
         object_ptr = temp_alloca;
@@ -309,24 +355,31 @@ LLVMValueRef generate_field_access_ptr(LLVMBackendData *data, const ASTNode *nod
 
 // Generate code for field access
 LLVMValueRef generate_field_access(LLVMBackendData *data, const ASTNode *node) {
-    LLVMValueRef field_ptr = generate_field_access_ptr(data, node);
-    if (!field_ptr) {
+    // Check if we can use the extractvalue optimization for small structs
+    LLVMValueRef object = generate_expression(data, node->data.field_access.object);
+    if (!object) {
         return NULL;
     }
     
-    // Get field type for loading
     const char *field_name = node->data.field_access.field_name;
+    
+    // Get struct type info from the object's AST node
     TypeInfo *struct_type_info = NULL;
     if (node->data.field_access.object->type_info) {
         struct_type_info = node->data.field_access.object->type_info;
     }
     
+    // Find field index
+    uint32_t field_index = 0;
     LLVMTypeRef field_type = data->i32_type; // Default
+    
     if (struct_type_info && struct_type_info->category == TYPE_INFO_STRUCT) {
-        // Search for field by name to get its type
+        // Search for field by name
         for (size_t i = 0; i < struct_type_info->data.struct_info.field_count; i++) {
             SymbolEntry *field = struct_type_info->data.struct_info.fields[i];
             if (field && field->name && strcmp(field->name, field_name) == 0) {
+                field_index = (uint32_t)i;
+                // Get field type
                 if (field->type) {
                     TypeInfo *field_type_info = type_info_from_descriptor(field->type);
                     if (field_type_info) {
@@ -337,6 +390,30 @@ LLVMValueRef generate_field_access(LLVMBackendData *data, const ASTNode *node) {
                 break;
             }
         }
+    }
+    
+    // OPTIMIZATION: For struct values, use extractvalue for small structs
+    LLVMTypeRef obj_type = LLVMTypeOf(object);
+    if (LLVMGetTypeKind(obj_type) == LLVMStructTypeKind) {
+        unsigned num_fields = LLVMCountStructElementTypes(obj_type);
+        
+        // For small structs (<=4 fields), use extractvalue directly if field index is known
+        if (num_fields <= 4 && field_index < num_fields) {
+            return LLVMBuildExtractValue(data->builder, object, field_index, field_name);
+        }
+    }
+    
+    // Fallback to using field pointer
+    LLVMValueRef field_ptr = generate_field_access_ptr(data, node);
+    if (!field_ptr) {
+        return NULL;
+    }
+    
+    // Load the value from the pointer
+    LLVMTypeRef field_ptr_type = LLVMTypeOf(field_ptr);
+    if (LLVMGetTypeKind(field_ptr_type) != LLVMPointerTypeKind) {
+        // Already have the value, no need to load
+        return field_ptr;
     }
     
     return LLVMBuildLoad2(data->builder, field_type, field_ptr, field_name);

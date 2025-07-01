@@ -9,6 +9,7 @@
  */
 
 #include "semantic_builtins.h"
+#include <stdio.h>
 #include <string.h>
 
 // =============================================================================
@@ -44,10 +45,15 @@ TypeDescriptor *semantic_get_builtin_type(SemanticAnalyzer *analyzer, const char
         return analyzer->builtin_types[PRIMITIVE_I32];
     } else if (strcmp(name, "float") == 0) {
         return analyzer->builtin_types[PRIMITIVE_F32];
-    } else if (strcmp(name, "usize") == 0) {
-        return analyzer->builtin_types[PRIMITIVE_U64];
+    }
+    // Note: usize and isize are not aliases - they have their own primitive types
+    // They should be found in the main loop above
+
+    // Fallback for usize/isize if not found in main loop 
+    if (strcmp(name, "usize") == 0) {
+        return get_builtin_type("usize");
     } else if (strcmp(name, "isize") == 0) {
-        return analyzer->builtin_types[PRIMITIVE_I64];
+        return get_builtin_type("isize");
     }
 
     return NULL;

@@ -124,6 +124,8 @@ const char *token_type_name(TokenType type) {
         return "RESULT";
     case TOKEN_OPTION:
         return "OPTION";
+    case TOKEN_TASKHANDLE:
+        return "TASKHANDLE";
     case TOKEN_NEVER:
         return "NEVER";
 
@@ -244,7 +246,7 @@ bool token_is_keyword(TokenType type) {
     }
 
     // Regular keywords and type keywords
-    return (type >= TOKEN_PACKAGE && type <= TOKEN_RESULT) ||
+    return (type >= TOKEN_PACKAGE && type <= TOKEN_NEVER) ||
            (type >= TOKEN_SPAWN_WITH_HANDLE && type <= TOKEN_AWAIT);
 }
 
@@ -257,5 +259,5 @@ bool token_is_literal(TokenType type) {
 }
 
 bool token_is_type(TokenType type) {
-    return type >= TOKEN_INT && type <= TOKEN_RESULT;
+    return type >= TOKEN_INT && type <= TOKEN_NEVER;
 }

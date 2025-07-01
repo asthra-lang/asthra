@@ -37,8 +37,9 @@ bool analyze_function_declaration(SemanticAnalyzer *analyzer, ASTNode *func_decl
     }
 
     // Check for duplicate function declaration in current scope
+    // Allow shadowing of predeclared functions
     SymbolEntry *existing = symbol_table_lookup_safe(analyzer->current_scope, func_name);
-    if (existing) {
+    if (existing && !existing->flags.is_predeclared) {
         semantic_report_error(analyzer, SEMANTIC_ERROR_DUPLICATE_SYMBOL, func_decl->location,
                               "Duplicate function declaration: %s", func_name);
         return false;

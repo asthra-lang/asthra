@@ -137,6 +137,11 @@ void type_info_release(TypeInfo *type_info) {
                 free(type_info->data.module.module_name);
             }
             break;
+        case TYPE_INFO_TASK_HANDLE:
+            if (type_info->data.task_handle.result_type) {
+                type_info_release(type_info->data.task_handle.result_type);
+            }
+            break;
         default:
             break;
         }
@@ -161,6 +166,8 @@ TypeInfo *type_info_from_descriptor(TypeDescriptor *descriptor) {
     if (!descriptor)
         return NULL;
 
+    // Debug output - removed to clean up output
+
     // Create a basic TypeInfo from the TypeDescriptor
     TypeInfo *type_info = type_info_create(descriptor->name ? descriptor->name : "unknown", 0);
     if (!type_info)
@@ -174,23 +181,70 @@ TypeInfo *type_info_from_descriptor(TypeDescriptor *descriptor) {
     case TYPE_FLOAT:
     case TYPE_BOOL:
         type_info->category = TYPE_INFO_PRIMITIVE;
-        // Set primitive kind based on name
-        if (descriptor->name) {
-            if (strcmp(descriptor->name, "i32") == 0) {
-                type_info->data.primitive.kind = PRIMITIVE_INFO_I32;
-            } else if (strcmp(descriptor->name, "i64") == 0) {
-                type_info->data.primitive.kind = PRIMITIVE_INFO_I64;
-            } else if (strcmp(descriptor->name, "f32") == 0) {
-                type_info->data.primitive.kind = PRIMITIVE_INFO_F32;
-            } else if (strcmp(descriptor->name, "f64") == 0) {
-                type_info->data.primitive.kind = PRIMITIVE_INFO_F64;
-            } else if (strcmp(descriptor->name, "bool") == 0) {
-                type_info->data.primitive.kind = PRIMITIVE_INFO_BOOL;
-            } else if (strcmp(descriptor->name, "string") == 0) {
-                type_info->data.primitive.kind = PRIMITIVE_INFO_STRING;
-            } else if (strcmp(descriptor->name, "void") == 0) {
-                type_info->data.primitive.kind = PRIMITIVE_INFO_VOID;
-            }
+        // Set primitive kind based on the actual primitive_kind in the TypeDescriptor
+        // instead of using string comparison which can miss types like usize
+        switch (descriptor->data.primitive.primitive_kind) {
+        case PRIMITIVE_VOID:
+            type_info->data.primitive.kind = PRIMITIVE_INFO_VOID;
+            break;
+        case PRIMITIVE_BOOL:
+            type_info->data.primitive.kind = PRIMITIVE_INFO_BOOL;
+            break;
+        case PRIMITIVE_I8:
+            type_info->data.primitive.kind = PRIMITIVE_INFO_I8;
+            break;
+        case PRIMITIVE_I16:
+            type_info->data.primitive.kind = PRIMITIVE_INFO_I16;
+            break;
+        case PRIMITIVE_I32:
+            type_info->data.primitive.kind = PRIMITIVE_INFO_I32;
+            break;
+        case PRIMITIVE_I64:
+            type_info->data.primitive.kind = PRIMITIVE_INFO_I64;
+            break;
+        case PRIMITIVE_I128:
+            type_info->data.primitive.kind = PRIMITIVE_INFO_I128;
+            break;
+        case PRIMITIVE_ISIZE:
+            type_info->data.primitive.kind = PRIMITIVE_INFO_ISIZE;
+            break;
+        case PRIMITIVE_U8:
+            type_info->data.primitive.kind = PRIMITIVE_INFO_U8;
+            break;
+        case PRIMITIVE_U16:
+            type_info->data.primitive.kind = PRIMITIVE_INFO_U16;
+            break;
+        case PRIMITIVE_U32:
+            type_info->data.primitive.kind = PRIMITIVE_INFO_U32;
+            break;
+        case PRIMITIVE_U64:
+            type_info->data.primitive.kind = PRIMITIVE_INFO_U64;
+            break;
+        case PRIMITIVE_U128:
+            type_info->data.primitive.kind = PRIMITIVE_INFO_U128;
+            break;
+        case PRIMITIVE_USIZE:
+            type_info->data.primitive.kind = PRIMITIVE_INFO_USIZE;
+            break;
+        case PRIMITIVE_F32:
+            type_info->data.primitive.kind = PRIMITIVE_INFO_F32;
+            break;
+        case PRIMITIVE_F64:
+            type_info->data.primitive.kind = PRIMITIVE_INFO_F64;
+            break;
+        case PRIMITIVE_CHAR:
+            type_info->data.primitive.kind = PRIMITIVE_INFO_CHAR;
+            break;
+        case PRIMITIVE_STRING:
+            type_info->data.primitive.kind = PRIMITIVE_INFO_STRING;
+            break;
+        case PRIMITIVE_NEVER:
+            type_info->data.primitive.kind = PRIMITIVE_INFO_NEVER;
+            break;
+        default:
+            // Fallback to VOID for unknown types
+            type_info->data.primitive.kind = PRIMITIVE_INFO_VOID;
+            break;
         }
         break;
     case TYPE_STRUCT:
@@ -310,6 +364,14 @@ TypeInfo *type_info_from_descriptor(TypeDescriptor *descriptor) {
                         type_info_from_descriptor(descriptor->data.tuple.element_types[i]);
                 }
             }
+        }
+        break;
+    case TYPE_TASK_HANDLE:
+        type_info->category = TYPE_INFO_TASK_HANDLE;
+        // Copy task handle-specific data
+        if (descriptor->data.task_handle.result_type) {
+            type_info->data.task_handle.result_type =
+                type_info_from_descriptor(descriptor->data.task_handle.result_type);
         }
         break;
     default:

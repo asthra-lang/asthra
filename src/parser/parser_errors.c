@@ -26,6 +26,11 @@ void report_error_at(Parser *parser, SourceLocation location, const char *messag
     if (!parser || !message)
         return;
 
+    // Don't record or report errors during speculative parsing
+    if (parser->speculative_parsing) {
+        return;
+    }
+
     // Check if we've hit the error limit
     if (parser->error_count >= parser->config.max_errors) {
         return;

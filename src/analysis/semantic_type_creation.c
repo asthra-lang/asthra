@@ -524,6 +524,50 @@ TypeDescriptor *type_descriptor_create_tuple(TypeDescriptor **element_types, siz
     return tuple_type;
 }
 
+TypeDescriptor *type_descriptor_create_task_handle(TypeDescriptor *result_type) {
+    if (!result_type)
+        return NULL;
+
+    TypeDescriptor *task_handle_type = malloc(sizeof(TypeDescriptor));
+    if (!task_handle_type)
+        return NULL;
+
+    task_handle_type->category = TYPE_TASK_HANDLE;
+    task_handle_type->flags.is_mutable = false;
+    task_handle_type->flags.is_owned = true;  // Task handles are owned resources
+    task_handle_type->flags.is_borrowed = false;
+    task_handle_type->flags.is_constant = false;
+    task_handle_type->flags.is_volatile = false;
+    task_handle_type->flags.is_atomic = false;
+    task_handle_type->flags.is_ffi_compatible = false; // Task handles are internal to Asthra
+    task_handle_type->flags.reserved = 0;
+
+    // Task handle size is opaque pointer size
+    task_handle_type->size = sizeof(void *);
+    task_handle_type->alignment = _Alignof(void *);
+
+    // Generate name for task handle type (e.g., "TaskHandle<i32>")
+    if (result_type->name) {
+        size_t name_len = strlen("TaskHandle<>") + strlen(result_type->name) + 1;
+        char *name_buffer = malloc(name_len);
+        if (name_buffer) {
+            snprintf(name_buffer, name_len, "TaskHandle<%s>", result_type->name);
+            task_handle_type->name = name_buffer;
+        } else {
+            task_handle_type->name = NULL;
+        }
+    } else {
+        task_handle_type->name = strdup("TaskHandle<?>");
+    }
+
+    task_handle_type->data.task_handle.result_type = result_type;
+    type_descriptor_retain(result_type); // Retain the result type
+
+    atomic_init(&task_handle_type->ref_count, 1);
+
+    return task_handle_type;
+}
+
 // =============================================================================
 // STRUCT TYPE OPERATIONS STUBS
 // =============================================================================
