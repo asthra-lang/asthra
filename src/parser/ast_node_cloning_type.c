@@ -42,6 +42,10 @@ ASTNode *clone_type_node(ASTNode *node, ASTNode *clone) {
         clone->data.option_type.value_type = ast_clone_node(node->data.option_type.value_type);
         break;
 
+    case AST_TASKHANDLE_TYPE:
+        clone->data.taskhandle_type.result_type = ast_clone_node(node->data.taskhandle_type.result_type);
+        break;
+
     case AST_STRUCT_TYPE:
         if (node->data.struct_type.name) {
             clone->data.struct_type.name = strdup(node->data.struct_type.name);

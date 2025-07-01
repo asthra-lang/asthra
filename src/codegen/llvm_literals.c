@@ -24,16 +24,34 @@ LLVMValueRef generate_integer_literal(LLVMBackendData *data, const ASTNode *node
     if (node->type_info && node->type_info->category == TYPE_INFO_PRIMITIVE) {
         switch (node->type_info->data.primitive.kind) {
         case PRIMITIVE_INFO_I8:
-            int_type = LLVMInt8Type();
+            int_type = LLVMInt8TypeInContext(data->context);
+            break;
+        case PRIMITIVE_INFO_U8:
+            int_type = LLVMInt8TypeInContext(data->context);
             break;
         case PRIMITIVE_INFO_I16:
-            int_type = LLVMInt16Type();
+            int_type = LLVMInt16TypeInContext(data->context);
+            break;
+        case PRIMITIVE_INFO_U16:
+            int_type = LLVMInt16TypeInContext(data->context);
             break;
         case PRIMITIVE_INFO_I32:
             int_type = data->i32_type;
             break;
+        case PRIMITIVE_INFO_U32:
+            int_type = LLVMInt32TypeInContext(data->context);
+            break;
         case PRIMITIVE_INFO_I64:
             int_type = data->i64_type;
+            break;
+        case PRIMITIVE_INFO_U64:
+            int_type = LLVMInt64TypeInContext(data->context);
+            break;
+        case PRIMITIVE_INFO_USIZE:
+            int_type = data->i64_type; // usize is i64 on 64-bit platforms
+            break;
+        case PRIMITIVE_INFO_ISIZE:
+            int_type = data->i64_type; // isize is i64 on 64-bit platforms
             break;
         default:
             int_type = data->i32_type;

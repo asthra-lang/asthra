@@ -212,6 +212,51 @@ ASTNode *parse_type(Parser *parser) {
         return node;
     }
 
+    // Handle TaskHandle<T> types
+    if (match_token(parser, TOKEN_TASKHANDLE)) {
+        // Look ahead to see if this is the built-in TaskHandle type or user-defined
+        Token next = peek_token(parser);
+        if (next.type != TOKEN_LESS_THAN) {
+            // User-defined TaskHandle type, parse as regular identifier
+            char *name = strdup("TaskHandle");
+            advance_token(parser);
+            
+            ASTNode *node = ast_create_node(AST_BASE_TYPE, start_loc);
+            if (!node) {
+                free(name);
+                return NULL;
+            }
+            node->data.base_type.name = name;
+            return node;
+        }
+        
+        // Built-in TaskHandle type with type parameter
+        advance_token(parser);
+
+        if (!expect_token(parser, TOKEN_LESS_THAN)) {
+            return NULL;
+        }
+
+        ASTNode *result_type = parse_type(parser);
+        if (!result_type)
+            return NULL;
+
+        if (!expect_token(parser, TOKEN_GREATER_THAN)) {
+            ast_free_node(result_type);
+            return NULL;
+        }
+
+        ASTNode *node = ast_create_node(AST_TASKHANDLE_TYPE, start_loc);
+        if (!node) {
+            ast_free_node(result_type);
+            return NULL;
+        }
+
+        node->data.taskhandle_type.result_type = result_type;
+
+        return node;
+    }
+
     // Handle tuple types: (Type1, Type2, ...)
     if (match_token(parser, TOKEN_LEFT_PAREN)) {
         advance_token(parser); // consume '('

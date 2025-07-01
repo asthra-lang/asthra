@@ -209,16 +209,64 @@ static void generate_function_internal(LLVMBackendData *data, const ASTNode *nod
         LLVMBasicBlockRef c_entry = LLVMAppendBasicBlockInContext(data->context, c_main, "entry");
         LLVMPositionBuilderAtEnd(data->builder, c_entry);
 
+        // Get argc and argv parameters
+        LLVMValueRef argc = LLVMGetParam(c_main, 0);
+        LLVMValueRef argv = LLVMGetParam(c_main, 1);
+
+        // Declare asthra_runtime_init_with_args function
+        LLVMValueRef runtime_init_fn = LLVMGetNamedFunction(data->module, "asthra_runtime_init_with_args");
+        if (!runtime_init_fn) {
+            // int asthra_runtime_init_with_args(AsthraGCConfig *gc_config, int argc, char **argv)
+            LLVMTypeRef init_param_types[] = {
+                data->ptr_type,                    // AsthraGCConfig *gc_config (NULL for default)
+                data->i32_type,                    // int argc
+                LLVMPointerType(data->ptr_type, 0) // char **argv
+            };
+            LLVMTypeRef init_fn_type = LLVMFunctionType(data->i32_type, init_param_types, 3, false);
+            runtime_init_fn = LLVMAddFunction(data->module, "asthra_runtime_init_with_args", init_fn_type);
+            LLVMSetLinkage(runtime_init_fn, LLVMExternalLinkage);
+        }
+
+        // Call asthra_runtime_init_with_args(NULL, argc, argv)
+        LLVMValueRef init_args[] = {
+            LLVMConstPointerNull(data->ptr_type), // NULL for default GC config
+            argc,
+            argv
+        };
+        LLVMBuildCall2(data->builder, LLVMGlobalGetValueType(runtime_init_fn), 
+                       runtime_init_fn, init_args, 3, "");
+
         // Call the Asthra main function
+        LLVMValueRef asthra_result;
         if (LLVMGetTypeKind(ret_type) == LLVMVoidTypeKind) {
             // If main returns void, just call it and return 0
             LLVMBuildCall2(data->builder, fn_type, function, NULL, 0, "");
-            LLVMBuildRet(data->builder, LLVMConstInt(data->i32_type, 0, 0));
+            asthra_result = LLVMConstInt(data->i32_type, 0, 0);
         } else {
-            // Otherwise, return the result from asthra_main
-            LLVMValueRef result = LLVMBuildCall2(data->builder, fn_type, function, NULL, 0, "asthra_main_result");
-            LLVMBuildRet(data->builder, result);
+            // Otherwise, get the result from asthra_main
+            asthra_result = LLVMBuildCall2(data->builder, fn_type, function, NULL, 0, "asthra_main_result");
         }
+
+        // Declare asthra_runtime_cleanup function
+        LLVMValueRef runtime_cleanup_fn = LLVMGetNamedFunction(data->module, "asthra_runtime_cleanup");
+        if (!runtime_cleanup_fn) {
+            // void asthra_runtime_cleanup(void)
+            LLVMTypeRef cleanup_fn_type = LLVMFunctionType(data->void_type, NULL, 0, false);
+            runtime_cleanup_fn = LLVMAddFunction(data->module, "asthra_runtime_cleanup", cleanup_fn_type);
+            LLVMSetLinkage(runtime_cleanup_fn, LLVMExternalLinkage);
+        }
+
+        // Call asthra_runtime_cleanup()
+        LLVMBuildCall2(data->builder, LLVMGlobalGetValueType(runtime_cleanup_fn),
+                       runtime_cleanup_fn, NULL, 0, "");
+
+        // Return the result (cast to i32 if needed for C main compatibility)
+        LLVMTypeRef asthra_result_type = LLVMTypeOf(asthra_result);
+        if (asthra_result_type != data->i32_type) {
+            // Cast to i32 for C main function compatibility
+            asthra_result = LLVMBuildIntCast2(data->builder, asthra_result, data->i32_type, false, "main_result_cast");
+        }
+        LLVMBuildRet(data->builder, asthra_result);
 
         // Restore builder position
         if (current_block) {
@@ -295,10 +343,18 @@ static void generate_function_internal(LLVMBackendData *data, const ASTNode *nod
             for (size_t i = 0; statements && i < statements->count; i++) {
                 ASTNode *stmt = statements->nodes[i];
 
-                // Check if this is the last statement and it's an expression statement
-                if (i == statements->count - 1 && stmt->type == AST_EXPR_STMT) {
-                    // For the last expression, generate it as a value (potential return)
-                    last_value = generate_expression(data, stmt->data.expr_stmt.expression);
+                // Check if this is the last statement and it's an expression statement or unsafe block
+                if (i == statements->count - 1) {
+                    if (stmt->type == AST_EXPR_STMT) {
+                        // For the last expression, generate it as a value (potential return)
+                        last_value = generate_expression(data, stmt->data.expr_stmt.expression);
+                    } else if (stmt->type == AST_UNSAFE_BLOCK) {
+                        // Unsafe blocks are expression-oriented when used as the last statement
+                        last_value = generate_expression(data, stmt);
+                    } else {
+                        // Generate as regular statement
+                        generate_statement(data, stmt);
+                    }
                 } else {
                     // Generate as regular statement
                     generate_statement(data, stmt);

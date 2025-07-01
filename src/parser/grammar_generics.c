@@ -119,6 +119,10 @@ static ASTNodeList *try_parse_generic_type_args(Parser *parser, bool *success) {
     Token saved_current = parser->current_token;
     Token saved_peek = parser->lexer->peek_token;
     bool saved_has_peek = parser->lexer->has_peek;
+    bool saved_speculative = parser->speculative_parsing;
+
+    // Enable speculative parsing to suppress error reporting
+    parser->speculative_parsing = true;
 
     advance_token(parser); // consume '<'
 
@@ -165,6 +169,9 @@ static ASTNodeList *try_parse_generic_type_args(Parser *parser, bool *success) {
         parser->lexer->peek_token = saved_peek;
         parser->lexer->has_peek = saved_has_peek;
     }
+
+    // Restore speculative parsing flag
+    parser->speculative_parsing = saved_speculative;
 
     *success = parsed_successfully;
     return type_args;

@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 // DWARF type encoding constants from DWARF standard
 #define DW_ATE_void 0x00
@@ -47,6 +48,7 @@ LLVMTypeRef asthra_type_to_llvm(LLVMBackendData *data, const TypeInfo *type) {
 
     switch (type->category) {
     case TYPE_INFO_PRIMITIVE:
+        // Primitive type mapping completed successfully
         switch (type->data.primitive.kind) {
         case PRIMITIVE_INFO_I32:
             return data->i32_type;
@@ -80,6 +82,10 @@ LLVMTypeRef asthra_type_to_llvm(LLVMBackendData *data, const TypeInfo *type) {
             return data->void_type;
         case PRIMITIVE_INFO_NEVER:
             return data->void_type; // Never type functions don't return
+        case PRIMITIVE_INFO_USIZE:
+            return data->i64_type; // usize is platform pointer size, using i64 for 64-bit
+        case PRIMITIVE_INFO_ISIZE:
+            return data->i64_type; // isize is platform pointer size, using i64 for 64-bit
         default:
             return data->void_type;
         }
@@ -233,6 +239,11 @@ LLVMTypeRef asthra_type_to_llvm(LLVMBackendData *data, const TypeInfo *type) {
             return LLVMStructTypeInContext(data->context, fields, 3, 0);
         }
 
+    case TYPE_INFO_TASK_HANDLE:
+        // TaskHandle<T> is represented as an opaque pointer
+        // The actual task handle structure is managed by the runtime
+        return data->ptr_type;
+
     default:
         return data->void_type;
     }
@@ -320,6 +331,10 @@ LLVMMetadataRef asthra_type_to_debug_type(LLVMBackendData *data, const TypeInfo 
 
     case TYPE_INFO_RESULT:
         // TODO: Implement Result<T, E> debug info as composite type
+        return data->di_ptr_type;
+
+    case TYPE_INFO_TASK_HANDLE:
+        // TaskHandle<T> debug info as pointer type
         return data->di_ptr_type;
 
     default:

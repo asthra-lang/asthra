@@ -132,6 +132,33 @@ static bool generate_range_loop(LLVMBackendData *data, const ASTNode *node,
         llvm_backend_report_error(data, node, "Invalid range function call arguments");
         return false;
     }
+    
+    // Ensure range bounds are i32 type
+    LLVMTypeRef start_type = LLVMTypeOf(start_val);
+    LLVMTypeRef end_type = LLVMTypeOf(end_val);
+    
+    // Convert to i32 if needed
+    if (start_type != data->i32_type) {
+        if (LLVMGetTypeKind(start_type) == LLVMIntegerTypeKind) {
+            unsigned bits = LLVMGetIntTypeWidth(start_type);
+            if (bits > 32) {
+                start_val = LLVMBuildTrunc(data->builder, start_val, data->i32_type, "start_trunc");
+            } else if (bits < 32) {
+                start_val = LLVMBuildZExt(data->builder, start_val, data->i32_type, "start_ext");
+            }
+        }
+    }
+    
+    if (end_type != data->i32_type) {
+        if (LLVMGetTypeKind(end_type) == LLVMIntegerTypeKind) {
+            unsigned bits = LLVMGetIntTypeWidth(end_type);
+            if (bits > 32) {
+                end_val = LLVMBuildTrunc(data->builder, end_val, data->i32_type, "end_trunc");
+            } else if (bits < 32) {
+                end_val = LLVMBuildZExt(data->builder, end_val, data->i32_type, "end_ext");
+            }
+        }
+    }
 
     // Create basic blocks
     LLVMValueRef function = data->current_function;

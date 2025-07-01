@@ -485,7 +485,7 @@ void test_chained_field_and_method_access(void) {
         "pub fn main(none) -> i32 {\n"
         "    let i: Inner = Inner { value: 21 };\n"
         "    let o: Outer = Outer { inner: i };\n"
-        "    return o.inner.double(none);\n"
+        "    return o.inner.double();\n"
         "}\n";
     
     bdd_run_execution_scenario("Chained field and method access",

@@ -286,7 +286,7 @@ Feature: Postfix Expressions
       package test;
       pub fn main(none) -> i32 {
         let arr: [42]i32 = [0; 42];
-        return arr.len;
+        return len(arr);
       }
       """
     When I compile and run the code
@@ -299,7 +299,7 @@ Feature: Postfix Expressions
       pub fn main(none) -> i32 {
         let slice: []i32 = [1, 2, 3, 4, 5];
         let sub: []i32 = slice[1:4];
-        return sub.len;  // Should be 3
+        return len(sub);  // Should be 3
       }
       """
     When I compile and run the code
@@ -311,7 +311,7 @@ Feature: Postfix Expressions
       package test;
       pub fn main(none) -> i32 {
         let s: string = "Hello, World!";
-        return s.len;  // Should be 13
+        return len(s);  // Should be 13
       }
       """
     When I compile and run the code
@@ -469,7 +469,7 @@ Feature: Postfix Expressions
       package test;
       pub fn main(none) -> i32 {
         let arr: []i32 = [none];
-        return arr.len;  // Should be 0
+        return len(arr);  // Should be 0
       }
       """
     When I compile and run the code

@@ -309,6 +309,23 @@ add_bdd_test(array_literals unit)
 # Phase 2 BDD Tests - Tuple Literals
 add_bdd_test(tuple_literals unit)
 
+# Phase 4 BDD Tests - Specialized Features - Concurrency
+add_bdd_test(spawn_statements unit)
+add_bdd_test(spawn_with_handle unit)
+add_bdd_test(await_expressions unit)
+
+# Phase 4 BDD Tests - Specialized Features - Memory Safety
+add_bdd_test(unsafe_blocks unit)
+add_bdd_test(pointer_operations unit)
+add_bdd_test(sizeof_operator unit)
+
+# Phase 4 BDD Tests - Specialized Features - Special Features
+add_bdd_test(predeclared_identifiers unit)
+add_bdd_test(associated_functions unit)
+add_bdd_test(slice_operations unit)
+add_bdd_test(return_statements unit)
+add_bdd_test(comment_syntax unit)
+
 # Configuration summary
 message(STATUS "BDD testing infrastructure configured")
 message(STATUS "  BDD output directory: ${BDD_OUTPUT_DIR}")

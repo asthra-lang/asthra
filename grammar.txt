@@ -68,7 +68,7 @@ ExternParamList<- ExternParam (',' ExternParam)* / 'none'  # External function p
 ExternParam    <- SafeFFIAnnotation? SimpleIdent ':' Type  # External parameter with single FFI annotation (no MutModifier allowed)
 
 # Type system with built-in and composite types
-Type           <- BaseType / SliceType / FixedArrayType / StructType / EnumType / PtrType / ResultType / OptionType / TupleType / NeverType  # All supported types
+Type           <- BaseType / SliceType / FixedArrayType / StructType / EnumType / PtrType / ResultType / OptionType / TaskHandleType / TupleType / NeverType  # All supported types
 TupleType      <- '(' Type ',' Type (',' Type)* ')'       # Tuple types: (T, U) or (T, U, V) - minimum 2 elements
 NeverType      <- 'Never'                                  # Never type for functions that don't return
 BaseType       <- 'int' / 'float' / 'bool' / 'string' / 'void' / 'usize' / 'isize' /  # Primitive types (void preserved as legitimate type)
@@ -81,6 +81,7 @@ TypeArgs       <- '<' Type (',' Type)* '>'                 # Generic type argume
 PtrType        <- '*mut' Type / '*const' Type              # Mutable and immutable pointers
 ResultType     <- 'Result' '<' Type ',' Type '>'           # Error handling: Result<Success, Error>
 OptionType     <- 'Option' '<' Type '>'                    # Optional values: Option<T>
+TaskHandleType <- 'TaskHandle' '<' Type '>'                # Concurrency task handles: TaskHandle<T>
 
 # Code blocks and statements
 Block          <- '{' Statement* '}'                       # Code block with multiple statements
@@ -126,7 +127,7 @@ UnaryPrefix    <- LogicalPrefix? PointerPrefix?            # Restricted unary op
 LogicalPrefix  <- ('!' / '-' / '~')                        # Logical not, arithmetic negation, bitwise complement
 PointerPrefix  <- ('*' / '&')                              # Dereference and address-of operators
 PostfixExpr    <- Primary PostfixSuffix*                   # Postfix operations (highest precedence)
-PostfixSuffix  <- '(' ArgList ')' / '.' FieldOrIndex / '[' SliceOrIndexExpr ']' / '.' 'len'  # Function calls, field/tuple access, slice/index, length
+PostfixSuffix  <- '(' ArgList ')' / '.' FieldOrIndex / '[' SliceOrIndexExpr ']'  # Function calls, field/tuple access, slice/index
 FieldOrIndex   <- SimpleIdent / TupleIndex                  # Field name or tuple element index
 TupleIndex     <- [0-9]+                                     # Numeric index for tuple element access: .0, .1, .2, etc.
 SliceOrIndexExpr <- SliceExpr / Expr                      # Go-style slicing or indexing
@@ -206,6 +207,7 @@ ReservedKeyword <- 'as'                                     # Import aliasing
                  / 'none'                                   # Structural absence marker (semantic clarity)
                  / 'Result'                                 # Built-in Result<T,E> type
                  / 'Option'                                 # Built-in Option<T> type
+                 / 'TaskHandle'                             # Built-in TaskHandle<T> type
 
 # =============================================================================
 # USER IDENTIFIERS
@@ -285,6 +287,7 @@ CHAR           <- "'" (EscapeSequence / (!"'" .)) "'"      # Character literals 
 # - panic(message: string) -> Never           # Program termination with error message
 # - exit(status: i32) -> Never                # Program termination with exit code
 # - args() -> []string                        # Access command-line arguments
+# - len(slice: []T) -> usize                   # Get length of slice or array
 #
 # Range Functions (overloaded):
 # - range(end: i32) -> []i32                  # Generate [0, 1, 2, ..., end-1]
@@ -313,4 +316,4 @@ CHAR           <- "'" (EscapeSequence / (!"'" .)) "'"      # Character literals 
 # - Overload resolution happens during semantic analysis, not parsing
 #
 # This production is never used in parsing, only for documentation and tooling:
-PredeclaredIdent <- 'log' / 'range' / 'infinite' / 'panic' / 'exit' / 'args'
+PredeclaredIdent <- 'log' / 'range' / 'infinite' / 'panic' / 'exit' / 'args' / 'len'

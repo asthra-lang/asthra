@@ -174,6 +174,7 @@ ASTNode *ast_clone_node(ASTNode *node) {
     case AST_PTR_TYPE:
     case AST_RESULT_TYPE:
     case AST_OPTION_TYPE:
+    case AST_TASKHANDLE_TYPE:
     case AST_STRUCT_TYPE:
     case AST_ENUM_TYPE:
     case AST_TUPLE_TYPE:

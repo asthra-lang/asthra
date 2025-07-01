@@ -317,7 +317,7 @@ Feature: Associated functions
           }
           
           pub fn process_slice(slice: []i32) -> i32 {
-              return slice.len as i32;
+              return len(slice) as i32;
           }
       }
 

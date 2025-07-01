@@ -273,7 +273,7 @@ Feature: Return statements
       package test;
 
       pub fn find_first_even(array: [5]i32) -> i32 {
-          for i in range(array.len) {
+          for i in range(len(array)) {
               if array[i] % 2 == 0 {
                   return array[i];
               }

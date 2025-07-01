@@ -197,7 +197,7 @@ Feature: Special Types
       package main;
       
       pub fn get_array_length<T>(arr: []T) -> usize {
-          return arr.len();
+          return len(arr);
       }
       
       pub fn main(none) -> void {

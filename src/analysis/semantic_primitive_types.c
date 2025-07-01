@@ -235,21 +235,8 @@ void semantic_init_primitive_types(SemanticAnalyzer *analyzer) {
         symbol_table_insert_safe(analyzer->global_scope, "float", float_alias);
     }
 
-    // 'usize' is an alias for 'u64' (on 64-bit systems)
-    TypeDescriptor *u64_type = &g_builtin_types[PRIMITIVE_U64];
-    SymbolEntry *usize_alias = symbol_entry_create("usize", SYMBOL_TYPE, u64_type, NULL);
-    if (usize_alias) {
-        usize_alias->flags.is_predeclared = true;
-        symbol_table_insert_safe(analyzer->global_scope, "usize", usize_alias);
-    }
-
-    // 'isize' is an alias for 'i64' (on 64-bit systems)
-    TypeDescriptor *i64_type = &g_builtin_types[PRIMITIVE_I64];
-    SymbolEntry *isize_alias = symbol_entry_create("isize", SYMBOL_TYPE, i64_type, NULL);
-    if (isize_alias) {
-        isize_alias->flags.is_predeclared = true;
-        symbol_table_insert_safe(analyzer->global_scope, "isize", isize_alias);
-    }
+    // usize and isize are already registered as builtin types above
+    // No need to create aliases - they have their own primitive types
 }
 
 // Simple helper to get builtin type without analyzer
@@ -270,9 +257,9 @@ TypeDescriptor *get_builtin_type(const char *name) {
     } else if (strcmp(name, "float") == 0) {
         return &g_builtin_types[PRIMITIVE_F32];
     } else if (strcmp(name, "usize") == 0) {
-        return &g_builtin_types[PRIMITIVE_U64];
+        return &g_builtin_types[PRIMITIVE_USIZE];
     } else if (strcmp(name, "isize") == 0) {
-        return &g_builtin_types[PRIMITIVE_I64];
+        return &g_builtin_types[PRIMITIVE_ISIZE];
     }
 
     return NULL;

@@ -140,6 +140,16 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
         }
     }
 
+    // Check if this is a predeclared function call like len()
+    if (node->data.call_expr.function->type == AST_IDENTIFIER) {
+        const char *func_name = node->data.call_expr.function->data.identifier.name;
+        
+        // Handle len() predeclared function
+        if (strcmp(func_name, "len") == 0) {
+            return generate_len_function_call(data, node);
+        }
+    }
+
     LLVMValueRef function = generate_expression(data, node->data.call_expr.function);
     if (!function) {
         // Check if this is an associated function call like Option.Some
@@ -370,4 +380,40 @@ LLVMValueRef generate_result_function_call(LLVMBackendData *data, const ASTNode 
     }
 
     return NULL;
+}
+
+// Generate code for len() function calls
+LLVMValueRef generate_len_function_call(LLVMBackendData *data, const ASTNode *node) {
+    // len() should have exactly one argument (slice or array)
+    if (!node->data.call_expr.args || node->data.call_expr.args->count != 1) {
+        LLVM_REPORT_ERROR(data, node, "len() requires exactly one argument");
+    }
+    
+    ASTNode *arg_node = node->data.call_expr.args->nodes[0];
+    LLVMValueRef arg = generate_expression(data, arg_node);
+    if (!arg) {
+        LLVM_REPORT_ERROR(data, arg_node, "Failed to generate argument for len()");
+    }
+    
+    // Check the argument type to determine how to extract length
+    if (!arg_node->type_info) {
+        LLVM_REPORT_ERROR(data, arg_node, "Argument to len() missing type info");
+    }
+    
+    if (arg_node->type_info->category == TYPE_INFO_SLICE) {
+        // Check if this is actually a fixed-size array
+        if (arg_node->type_info->type_descriptor && 
+            arg_node->type_info->type_descriptor->category == TYPE_ARRAY) {
+            // Fixed-size array - return the compile-time constant size
+            size_t array_size = arg_node->type_info->type_descriptor->data.array.size;
+            return LLVMConstInt(data->i64_type, array_size, false); // usize is i64
+        } else {
+            // True slice - extract length from slice struct
+            // Slice is a struct { ptr, length }
+            LLVMValueRef length = LLVMBuildExtractValue(data->builder, arg, 1, "slice_len");
+            return length;
+        }
+    } else {
+        LLVM_REPORT_ERROR(data, arg_node, "len() can only be called on slices and arrays");
+    }
 }

@@ -72,6 +72,7 @@ typedef enum {
     TYPE_BOOL,             // Boolean type
     TYPE_GENERIC_INSTANCE, // Instantiated generic types (e.g., Vec<i32>)
     TYPE_TUPLE,            // Tuple types (T1, T2, ...)
+    TYPE_TASK_HANDLE,      // Task handle types (TaskHandle<T>)
     TYPE_UNKNOWN,
     TYPE_ERROR,
     TYPE_COUNT // For validation
@@ -167,6 +168,10 @@ struct TypeDescriptor {
             TypeDescriptor *element_type; // Type of array elements
             size_t size;                  // Number of elements (compile-time constant)
         } array;
+        
+        struct {
+            TypeDescriptor *result_type;  // Type T in TaskHandle<T>
+        } task_handle;
     } data;
 
     // C17 atomic reference counting for thread-safe type management

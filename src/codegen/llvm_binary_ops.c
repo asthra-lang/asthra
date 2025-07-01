@@ -9,6 +9,7 @@
 #include "llvm_binary_ops.h"
 #include "llvm_debug.h"
 #include "llvm_expr_gen.h"
+#include "llvm_types.h"
 #include "../analysis/type_info_types.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -66,7 +67,35 @@ LLVMValueRef generate_binary_op(LLVMBackendData *data, const ASTNode *node) {
             LLVMTypeRef fn_type = LLVMFunctionType(data->ptr_type, param_types, 2, false);
             return LLVMBuildCall2(data->builder, fn_type, data->runtime_string_concat_fn, 
                                   args, 2, "string_concat");
-        } else if (LLVMGetTypeKind(LLVMTypeOf(left)) == LLVMFloatTypeKind ||
+        } 
+        // OPTIMIZATION: Check for pointer arithmetic (ptr + integer)
+        else if (LLVMGetTypeKind(LLVMTypeOf(left)) == LLVMPointerTypeKind) {
+            // Left is pointer, right should be integer offset
+            // Use GEP for more efficient pointer arithmetic
+            TypeInfo *left_type_info = node->data.binary_expr.left->type_info;
+            if (left_type_info && left_type_info->category == TYPE_INFO_POINTER) {
+                TypeInfo *pointee_type_info = left_type_info->data.pointer.pointee_type;
+                LLVMTypeRef pointee_type = asthra_type_to_llvm(data, pointee_type_info);
+                return LLVMBuildGEP2(data->builder, pointee_type, left, &right, 1, "ptr_add");
+            } else {
+                // Fallback to regular pointer addition
+                return LLVMBuildAdd(data->builder, left, right, "add");
+            }
+        }
+        else if (LLVMGetTypeKind(LLVMTypeOf(right)) == LLVMPointerTypeKind) {
+            // Right is pointer, left should be integer offset (commutative)
+            // Use GEP for more efficient pointer arithmetic
+            TypeInfo *right_type_info = node->data.binary_expr.right->type_info;
+            if (right_type_info && right_type_info->category == TYPE_INFO_POINTER) {
+                TypeInfo *pointee_type_info = right_type_info->data.pointer.pointee_type;
+                LLVMTypeRef pointee_type = asthra_type_to_llvm(data, pointee_type_info);
+                return LLVMBuildGEP2(data->builder, pointee_type, right, &left, 1, "ptr_add");
+            } else {
+                // Fallback to regular addition
+                return LLVMBuildAdd(data->builder, left, right, "add");
+            }
+        }
+        else if (LLVMGetTypeKind(LLVMTypeOf(left)) == LLVMFloatTypeKind ||
                    LLVMGetTypeKind(LLVMTypeOf(left)) == LLVMDoubleTypeKind) {
             return LLVMBuildFAdd(data->builder, left, right, "add");
         } else {
@@ -74,7 +103,38 @@ LLVMValueRef generate_binary_op(LLVMBackendData *data, const ASTNode *node) {
         }
 
     case BINOP_SUB:
-        if (LLVMGetTypeKind(LLVMTypeOf(left)) == LLVMFloatTypeKind ||
+        // OPTIMIZATION: Check for pointer arithmetic (ptr - integer) or pointer difference
+        if (LLVMGetTypeKind(LLVMTypeOf(left)) == LLVMPointerTypeKind) {
+            if (LLVMGetTypeKind(LLVMTypeOf(right)) == LLVMPointerTypeKind) {
+                // Pointer difference - calculate number of elements between pointers
+                TypeInfo *left_type_info = node->data.binary_expr.left->type_info;
+                if (left_type_info && left_type_info->category == TYPE_INFO_POINTER) {
+                    TypeInfo *pointee_type_info = left_type_info->data.pointer.pointee_type;
+                    LLVMTypeRef pointee_type = asthra_type_to_llvm(data, pointee_type_info);
+                    
+                    // Convert pointers to integers for subtraction
+                    LLVMValueRef left_int = LLVMBuildPtrToInt(data->builder, left, data->i64_type, "ptr_to_int_left");
+                    LLVMValueRef right_int = LLVMBuildPtrToInt(data->builder, right, data->i64_type, "ptr_to_int_right");
+                    LLVMValueRef byte_diff = LLVMBuildSub(data->builder, left_int, right_int, "byte_diff");
+                    
+                    // Divide by element size to get element count
+                    LLVMTypeRef elem_types[] = {pointee_type};
+                    size_t elem_size = LLVMStoreSizeOfType(LLVMGetModuleDataLayout(data->module), pointee_type);
+                    LLVMValueRef size_val = LLVMConstInt(data->i64_type, elem_size, false);
+                    return LLVMBuildSDiv(data->builder, byte_diff, size_val, "ptr_diff");
+                }
+            } else {
+                // Pointer - integer: use negative GEP
+                TypeInfo *left_type_info = node->data.binary_expr.left->type_info;
+                if (left_type_info && left_type_info->category == TYPE_INFO_POINTER) {
+                    TypeInfo *pointee_type_info = left_type_info->data.pointer.pointee_type;
+                    LLVMTypeRef pointee_type = asthra_type_to_llvm(data, pointee_type_info);
+                    LLVMValueRef neg_offset = LLVMBuildNeg(data->builder, right, "neg_offset");
+                    return LLVMBuildGEP2(data->builder, pointee_type, left, &neg_offset, 1, "ptr_sub");
+                }
+            }
+        }
+        else if (LLVMGetTypeKind(LLVMTypeOf(left)) == LLVMFloatTypeKind ||
             LLVMGetTypeKind(LLVMTypeOf(left)) == LLVMDoubleTypeKind) {
             return LLVMBuildFSub(data->builder, left, right, "sub");
         } else {

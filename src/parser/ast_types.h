@@ -119,6 +119,7 @@ typedef enum {
     AST_PTR_TYPE,
     AST_RESULT_TYPE,
     AST_OPTION_TYPE, // Option<T> type
+    AST_TASKHANDLE_TYPE, // TaskHandle<T> type
     AST_TUPLE_TYPE,  // Tuple types: (T1, T2, ...)
 
     // Pattern matching

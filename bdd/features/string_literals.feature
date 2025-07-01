@@ -344,7 +344,7 @@ Line3\tTabbed""";
       package test;
       pub fn main(none) -> i32 {
         let s: string = "Hello";
-        let len: i32 = s.len as i32;
+        let len: i32 = len(s) as i32;
         if len == 5 {
           return 42;
         } else {

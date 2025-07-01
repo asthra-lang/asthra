@@ -271,7 +271,7 @@ Feature: Predeclared identifiers
 
       pub fn main(none) -> i32 {
           let custom_range = range("custom");
-          return custom_range.len;
+          return len(custom_range);
       }
       """
     When I compile and run the program
@@ -310,7 +310,7 @@ Feature: Predeclared identifiers
 
       pub fn main(none) -> i32 {
           let arguments: []string = args();
-          log("Arguments count: " + string(arguments.len));
+          log("Arguments count: " + string(len(arguments)));
           
           let mut sum: i32 = 0;
           for i in range(1, 6) {

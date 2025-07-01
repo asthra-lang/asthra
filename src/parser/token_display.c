@@ -198,6 +198,8 @@ const char *token_type_display_name(TokenType type) {
         return "Result";
     case TOKEN_OPTION:
         return "Option";
+    case TOKEN_TASKHANDLE:
+        return "TaskHandle";
     case TOKEN_NEVER:
         return "never";
 
