@@ -68,7 +68,6 @@ on:
           - 'native'
           - 'x86_64'
           - 'aarch64'
-          - 'arm'
           - 'both-x86-arm'
 
 env:
