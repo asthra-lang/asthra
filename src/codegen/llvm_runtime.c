@@ -83,7 +83,8 @@ void declare_runtime_functions(LLVMBackendData *data) {
         // char* asthra_string_concat_wrapper(const char* left, const char* right)
         LLVMTypeRef param_types[] = {data->ptr_type, data->ptr_type};
         LLVMTypeRef fn_type = LLVMFunctionType(data->ptr_type, param_types, 2, false);
-        data->runtime_string_concat_fn = LLVMAddFunction(data->module, "asthra_string_concat_wrapper", fn_type);
+        data->runtime_string_concat_fn =
+            LLVMAddFunction(data->module, "asthra_string_concat_wrapper", fn_type);
         LLVMSetLinkage(data->runtime_string_concat_fn, LLVMExternalLinkage);
     }
 
@@ -93,6 +94,24 @@ void declare_runtime_functions(LLVMBackendData *data) {
         LLVMTypeRef param_types[] = {data->ptr_type};
         LLVMTypeRef fn_type = LLVMFunctionType(data->i32_type, param_types, 1, true); // variadic
         LLVMValueRef fn = LLVMAddFunction(data->module, "printf", fn_type);
+        LLVMSetLinkage(fn, LLVMExternalLinkage);
+    }
+
+    // Predeclared log function
+    {
+        // void log(const char* message) - maps to asthra_simple_log
+        LLVMTypeRef param_types[] = {data->ptr_type};
+        LLVMTypeRef fn_type = LLVMFunctionType(data->void_type, param_types, 1, false);
+        LLVMValueRef fn = LLVMAddFunction(data->module, "log", fn_type);
+        LLVMSetLinkage(fn, LLVMExternalLinkage);
+    }
+
+    // Add alias from log to asthra_simple_log for linking
+    {
+        // void asthra_simple_log(const char* message)
+        LLVMTypeRef param_types[] = {data->ptr_type};
+        LLVMTypeRef fn_type = LLVMFunctionType(data->void_type, param_types, 1, false);
+        LLVMValueRef fn = LLVMAddFunction(data->module, "asthra_simple_log", fn_type);
         LLVMSetLinkage(fn, LLVMExternalLinkage);
     }
 }
