@@ -7,6 +7,7 @@
 
 // Literal expression analysis functions
 bool analyze_identifier_expression(SemanticAnalyzer *analyzer, ASTNode *expr);
+bool analyze_const_expression(SemanticAnalyzer *analyzer, ASTNode *expr);
 bool analyze_literal_expression(SemanticAnalyzer *analyzer, ASTNode *expr);
 bool analyze_char_literal(SemanticAnalyzer *analyzer, ASTNode *literal);
 bool analyze_string_literal(SemanticAnalyzer *analyzer, ASTNode *literal);

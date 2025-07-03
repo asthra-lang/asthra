@@ -30,59 +30,64 @@ LLVMValueRef generate_index_expr(LLVMBackendData *data, const ASTNode *node) {
 
     LLVMValueRef element_ptr = NULL;
     LLVMTypeRef elem_type = data->i32_type; // Default fallback
-    
+
     if (array_node->type_info->category == TYPE_INFO_SLICE) {
         // Check if this is actually a fixed-size array
-        if (array_node->type_info->type_descriptor && 
+        if (array_node->type_info->type_descriptor &&
             array_node->type_info->type_descriptor->category == TYPE_ARRAY) {
             // This is a fixed-size array
             elem_type = asthra_type_to_llvm(data, array_node->type_info->data.slice.element_type);
-            
+
             LLVMValueRef indices[2] = {
                 LLVMConstInt(data->i64_type, 0, false), // First index for array decay
                 index                                   // Actual index
             };
-            
+
             LLVMTypeRef array_type = LLVMTypeOf(array);
             LLVMValueRef array_ptr = array;
-            
+
             // Check if array is a value or a pointer
             if (LLVMGetTypeKind(array_type) != LLVMPointerTypeKind) {
-                // OPTIMIZATION: For small arrays, consider using extractvalue instead of alloca+store
-                // This avoids unnecessary memory operations for register-sized values
+                // OPTIMIZATION: For small arrays, consider using extractvalue instead of
+                // alloca+store This avoids unnecessary memory operations for register-sized values
                 if (LLVMGetTypeKind(array_type) == LLVMArrayTypeKind) {
                     unsigned array_length = LLVMGetArrayLength(array_type);
                     LLVMTypeRef elem_type_check = LLVMGetElementType(array_type);
-                    
+
                     // For very small arrays (<=4 elements of primitive types), use extractvalue
-                    if (array_length <= 4 && LLVMGetTypeKind(elem_type_check) == LLVMIntegerTypeKind) {
+                    if (array_length <= 4 &&
+                        LLVMGetTypeKind(elem_type_check) == LLVMIntegerTypeKind) {
                         // Direct extraction if index is constant
                         if (LLVMIsConstant(index)) {
                             unsigned idx = (unsigned)LLVMConstIntGetZExtValue(index);
                             if (idx < array_length) {
-                                return LLVMBuildExtractValue(data->builder, array, idx, "array_elem_direct");
+                                return LLVMBuildExtractValue(data->builder, array, idx,
+                                                             "array_elem_direct");
                             }
                         }
                     }
                 }
-                
+
                 // Fallback to alloca for larger arrays or non-constant indices
                 LLVMValueRef temp_alloca = LLVMBuildAlloca(data->builder, array_type, "array_temp");
                 LLVMBuildStore(data->builder, array, temp_alloca);
                 array_ptr = temp_alloca;
             }
-            
-            element_ptr = LLVMBuildGEP2(data->builder, array_type, array_ptr, indices, 2, "array_elemptr");
+
+            element_ptr =
+                LLVMBuildGEP2(data->builder, array_type, array_ptr, indices, 2, "array_elemptr");
         } else {
             // This is a true slice - extract the data pointer from the slice struct
             // Slice is a struct { ptr, length }
-            LLVMValueRef data_ptr = LLVMBuildExtractValue(data->builder, array, 0, "slice_data_ptr");
-            
+            LLVMValueRef data_ptr =
+                LLVMBuildExtractValue(data->builder, array, 0, "slice_data_ptr");
+
             // Get element type
             elem_type = asthra_type_to_llvm(data, array_node->type_info->data.slice.element_type);
-            
+
             // Index into the data pointer
-            element_ptr = LLVMBuildGEP2(data->builder, elem_type, data_ptr, &index, 1, "slice_elemptr");
+            element_ptr =
+                LLVMBuildGEP2(data->builder, elem_type, data_ptr, &index, 1, "slice_elemptr");
         }
     } else {
         LLVM_REPORT_ERROR(data, array_node, "Cannot index non-array/non-slice type");
@@ -115,12 +120,12 @@ LLVMValueRef generate_slice_expr(LLVMBackendData *data, const ASTNode *node) {
     LLVMTypeRef elem_type = data->i32_type; // Default
     size_t array_size = 0;
     bool is_fixed_array = false;
-    
+
     if (array_node->type_info->category == TYPE_INFO_SLICE) {
         elem_type = asthra_type_to_llvm(data, array_node->type_info->data.slice.element_type);
-        
+
         // Check if this is actually a fixed-size array
-        if (array_node->type_info->type_descriptor && 
+        if (array_node->type_info->type_descriptor &&
             array_node->type_info->type_descriptor->category == TYPE_ARRAY) {
             is_fixed_array = true;
             array_size = array_node->type_info->type_descriptor->data.array.size;
@@ -162,7 +167,7 @@ LLVMValueRef generate_slice_expr(LLVMBackendData *data, const ASTNode *node) {
 
     // Calculate slice length
     LLVMValueRef length = LLVMBuildSub(data->builder, end_idx, start_idx, "slice_len");
-    
+
     // Ensure length is i64 to match slice struct
     LLVMTypeRef length_type = LLVMTypeOf(length);
     if (length_type != data->i64_type) {
@@ -172,20 +177,20 @@ LLVMValueRef generate_slice_expr(LLVMBackendData *data, const ASTNode *node) {
 
     // Create a slice struct type (data pointer + length)
     LLVMTypeRef slice_fields[2] = {
-        LLVMPointerType(elem_type, 0),  // data pointer
-        data->i64_type                   // length
+        LLVMPointerType(elem_type, 0), // data pointer
+        data->i64_type                 // length
     };
     LLVMTypeRef slice_type = LLVMStructTypeInContext(data->context, slice_fields, 2, false);
 
     // Get pointer to the start element
     LLVMValueRef indices[2] = {
-        LLVMConstInt(data->i64_type, 0, false),  // First index for array decay
-        start_idx                                 // Start index
+        LLVMConstInt(data->i64_type, 0, false), // First index for array decay
+        start_idx                               // Start index
     };
-    
+
     LLVMTypeRef array_type = LLVMTypeOf(array);
     LLVMValueRef array_ptr = array;
-    
+
     // Check if array is a value or a pointer
     if (LLVMGetTypeKind(array_type) != LLVMPointerTypeKind) {
         // Array is a value (e.g., [5 x i32]), we need to store it to get a pointer
@@ -193,8 +198,9 @@ LLVMValueRef generate_slice_expr(LLVMBackendData *data, const ASTNode *node) {
         LLVMBuildStore(data->builder, array, temp_alloca);
         array_ptr = temp_alloca;
     }
-    
-    LLVMValueRef slice_data = LLVMBuildGEP2(data->builder, array_type, array_ptr, indices, 2, "slice_data");
+
+    LLVMValueRef slice_data =
+        LLVMBuildGEP2(data->builder, array_type, array_ptr, indices, 2, "slice_data");
 
     // Create the slice struct
     LLVMValueRef slice = LLVMGetUndef(slice_type);
@@ -235,42 +241,50 @@ LLVMValueRef generate_field_access_ptr(LLVMBackendData *data, const ASTNode *nod
 
             return LLVMConstNamedStruct(option_type, values, 2);
         }
-        
+
         // Handle enum variant construction (e.g., Direction.North, Action.Move)
         // Check if this is an enum variant access
         if (node->type_info && node->type_info->category == TYPE_INFO_ENUM) {
             // This is enum variant construction
             // For now, return the variant index as an i32
             int variant_index = 0;
-            
-            
+
             // Hardcoded variant indices - should be from type system
             // Simple enum
             if (strcmp(type_name, "Simple") == 0) {
-                if (strcmp(field_name, "One") == 0) variant_index = 0;
-                else if (strcmp(field_name, "Two") == 0) variant_index = 1;
+                if (strcmp(field_name, "One") == 0)
+                    variant_index = 0;
+                else if (strcmp(field_name, "Two") == 0)
+                    variant_index = 1;
             }
             // Direction enum
             else if (strcmp(type_name, "Direction") == 0) {
-                if (strcmp(field_name, "North") == 0) variant_index = 0;
-                else if (strcmp(field_name, "South") == 0) variant_index = 1;
-                else if (strcmp(field_name, "East") == 0) variant_index = 2;
-                else if (strcmp(field_name, "West") == 0) variant_index = 3;
+                if (strcmp(field_name, "North") == 0)
+                    variant_index = 0;
+                else if (strcmp(field_name, "South") == 0)
+                    variant_index = 1;
+                else if (strcmp(field_name, "East") == 0)
+                    variant_index = 2;
+                else if (strcmp(field_name, "West") == 0)
+                    variant_index = 3;
             }
             // Action enum
             else if (strcmp(type_name, "Action") == 0) {
-                if (strcmp(field_name, "Move") == 0) variant_index = 0;
-                else if (strcmp(field_name, "Stop") == 0) variant_index = 1;
-                else if (strcmp(field_name, "Turn") == 0) variant_index = 2;
+                if (strcmp(field_name, "Move") == 0)
+                    variant_index = 0;
+                else if (strcmp(field_name, "Stop") == 0)
+                    variant_index = 1;
+                else if (strcmp(field_name, "Turn") == 0)
+                    variant_index = 2;
             }
             // Other enums
             else {
                 // Default mapping for other tests
-                if (strstr(field_name, "Contains") || strstr(field_name, "Value") || 
+                if (strstr(field_name, "Contains") || strstr(field_name, "Value") ||
                     strstr(field_name, "Some") || strstr(field_name, "Ok") ||
                     strstr(field_name, "One")) {
                     variant_index = 0;
-                } else if (strstr(field_name, "Nothing") || strstr(field_name, "Empty") || 
+                } else if (strstr(field_name, "Nothing") || strstr(field_name, "Empty") ||
                            strstr(field_name, "None") || strstr(field_name, "Err") ||
                            strstr(field_name, "Two")) {
                     variant_index = 1;
@@ -334,11 +348,11 @@ LLVMValueRef generate_field_access_ptr(LLVMBackendData *data, const ASTNode *nod
             struct_type = object_type;
         }
     }
-    
+
     // Check if object is a pointer or a value
     LLVMValueRef object_ptr = object;
     LLVMTypeRef obj_type = LLVMTypeOf(object);
-    
+
     if (LLVMGetTypeKind(obj_type) != LLVMPointerTypeKind) {
         // NOTE: This function is supposed to return a pointer to the field
         // We cannot use extractvalue optimization here because callers expect a pointer
@@ -347,7 +361,7 @@ LLVMValueRef generate_field_access_ptr(LLVMBackendData *data, const ASTNode *nod
         LLVMBuildStore(data->builder, object, temp_alloca);
         object_ptr = temp_alloca;
     }
-    
+
     LLVMValueRef field_ptr =
         LLVMBuildGEP2(data->builder, struct_type, object_ptr, indices, 2, field_name);
     return field_ptr;
@@ -360,19 +374,19 @@ LLVMValueRef generate_field_access(LLVMBackendData *data, const ASTNode *node) {
     if (!object) {
         return NULL;
     }
-    
+
     const char *field_name = node->data.field_access.field_name;
-    
+
     // Get struct type info from the object's AST node
     TypeInfo *struct_type_info = NULL;
     if (node->data.field_access.object->type_info) {
         struct_type_info = node->data.field_access.object->type_info;
     }
-    
+
     // Find field index
     uint32_t field_index = 0;
     LLVMTypeRef field_type = data->i32_type; // Default
-    
+
     if (struct_type_info && struct_type_info->category == TYPE_INFO_STRUCT) {
         // Search for field by name
         for (size_t i = 0; i < struct_type_info->data.struct_info.field_count; i++) {
@@ -391,31 +405,31 @@ LLVMValueRef generate_field_access(LLVMBackendData *data, const ASTNode *node) {
             }
         }
     }
-    
+
     // OPTIMIZATION: For struct values, use extractvalue for small structs
     LLVMTypeRef obj_type = LLVMTypeOf(object);
     if (LLVMGetTypeKind(obj_type) == LLVMStructTypeKind) {
         unsigned num_fields = LLVMCountStructElementTypes(obj_type);
-        
+
         // For small structs (<=4 fields), use extractvalue directly if field index is known
         if (num_fields <= 4 && field_index < num_fields) {
             return LLVMBuildExtractValue(data->builder, object, field_index, field_name);
         }
     }
-    
+
     // Fallback to using field pointer
     LLVMValueRef field_ptr = generate_field_access_ptr(data, node);
     if (!field_ptr) {
         return NULL;
     }
-    
+
     // Load the value from the pointer
     LLVMTypeRef field_ptr_type = LLVMTypeOf(field_ptr);
     if (LLVMGetTypeKind(field_ptr_type) != LLVMPointerTypeKind) {
         // Already have the value, no need to load
         return field_ptr;
     }
-    
+
     return LLVMBuildLoad2(data->builder, field_type, field_ptr, field_name);
 }
 
@@ -425,8 +439,29 @@ LLVMValueRef generate_array_literal(LLVMBackendData *data, const ASTNode *node) 
         node->data.array_literal.elements ? node->data.array_literal.elements->count : 0;
 
     if (elem_count == 0) {
-        // Empty array
-        return LLVMConstArray(data->i32_type, NULL, 0);
+        // Empty array - return a slice struct with null pointer and zero length
+        // For empty arrays/slices, we need to return a slice struct { ptr, len }
+
+        // Try to determine element type from type information
+        LLVMTypeRef elem_type = data->i32_type; // default fallback
+        if (node->type_info && node->type_info->category == TYPE_INFO_SLICE) {
+            elem_type = asthra_type_to_llvm(data, node->type_info->data.slice.element_type);
+        }
+
+        // Create slice struct fields: { ptr, len }
+        LLVMTypeRef slice_fields[2] = {
+            LLVMPointerType(elem_type, 0), // ptr to element type
+            data->i64_type                 // len as i64
+        };
+        LLVMTypeRef slice_type = LLVMStructTypeInContext(data->context, slice_fields, 2, false);
+
+        // Create empty slice: { null, 0 }
+        LLVMValueRef slice_values[2] = {
+            LLVMConstPointerNull(LLVMPointerType(elem_type, 0)), // null pointer
+            LLVMConstInt(data->i64_type, 0, false)               // zero length
+        };
+
+        return LLVMConstNamedStruct(slice_type, slice_values, 2);
     }
 
     // Generate element values

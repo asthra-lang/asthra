@@ -82,25 +82,6 @@ void ast_print(ASTNode *node, int indent) {
                node->data.enum_variant.variant_name ? node->data.enum_variant.variant_name
                                                     : "null");
         break;
-    case AST_STRUCT_PATTERN:
-        printf(" (%s with %zu field patterns)",
-               node->data.struct_pattern.struct_name ? node->data.struct_pattern.struct_name
-                                                     : "null",
-               node->data.struct_pattern.field_patterns
-                   ? ast_node_list_size(node->data.struct_pattern.field_patterns)
-                   : 0);
-        break;
-    case AST_FIELD_PATTERN:
-        printf(" (field: %s",
-               node->data.field_pattern.field_name ? node->data.field_pattern.field_name : "null");
-        if (node->data.field_pattern.binding_name) {
-            printf(", binding: %s", node->data.field_pattern.binding_name);
-        }
-        if (node->data.field_pattern.is_ignored) {
-            printf(", ignored");
-        }
-        printf(")");
-        break;
     case AST_CALL_EXPR:
         printf(" (function: %p)", (void *)node->data.call_expr.function);
         break;
@@ -154,19 +135,6 @@ void ast_print(ASTNode *node, int indent) {
                 ASTNode *stmt_node = ast_node_list_get(node->data.block.statements, i);
                 if (stmt_node) {
                     ast_print(stmt_node, indent + 1);
-                }
-            }
-        }
-        break;
-
-    case AST_STRUCT_PATTERN:
-        if (node->data.struct_pattern.field_patterns) {
-            for (size_t i = 0; i < ast_node_list_size(node->data.struct_pattern.field_patterns);
-                 i++) {
-                ASTNode *field_pattern =
-                    ast_node_list_get(node->data.struct_pattern.field_patterns, i);
-                if (field_pattern) {
-                    ast_print(field_pattern, indent + 1);
                 }
             }
         }
@@ -426,10 +394,6 @@ const char *ast_node_type_name(ASTNodeType type) {
         return "PATTERN";
     case AST_ENUM_PATTERN:
         return "ENUM_PATTERN";
-    case AST_STRUCT_PATTERN:
-        return "STRUCT_PATTERN";
-    case AST_FIELD_PATTERN:
-        return "FIELD_PATTERN";
     case AST_ENUM_VARIANT:
         return "ENUM_VARIANT";
     case AST_SEMANTIC_TAG:

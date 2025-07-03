@@ -14,9 +14,9 @@
 #include "../framework/compiler_test_utils.h"
 #include "../framework/test_framework.h"
 #endif
+#include "../../framework/backend_stubs.h"
 #include "ast.h"
 #include "compiler.h"
-#include "../../framework/backend_stubs.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>

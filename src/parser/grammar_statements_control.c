@@ -13,6 +13,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Disable debug logging
+// #define DEBUG_PARSER 1
+
 // =============================================================================
 // CONTROL FLOW STATEMENTS
 // =============================================================================
@@ -269,18 +272,29 @@ ASTNode *parse_match_stmt(Parser *parser) {
 
     SourceLocation start_loc = parser->current_token.location;
 
+    // Debug trace disabled
+    // fprintf(stderr, "TRACE: parse_match_stmt called with token type=%d\n",
+    // parser->current_token.type);
+
     if (!expect_token(parser, TOKEN_MATCH)) {
+        // fprintf(stderr, "TRACE: parse_match_stmt failed at TOKEN_MATCH\n");
         return NULL;
     }
 
+    // fprintf(stderr, "TRACE: about to parse match expression\n");
     ASTNode *expression = parse_expr(parser);
-    if (!expression)
+    if (!expression) {
+        // fprintf(stderr, "TRACE: failed to parse match expression\n");
         return NULL;
+    }
+    // fprintf(stderr, "TRACE: successfully parsed match expression\n");
 
     if (!expect_token(parser, TOKEN_LEFT_BRACE)) {
+        // fprintf(stderr, "TRACE: failed to find left brace\n");
         ast_free_node(expression);
         return NULL;
     }
+    // fprintf(stderr, "TRACE: successfully found left brace, entering match arms loop\n");
 
     ASTNode **arms = NULL;
     size_t arm_count = 0;
@@ -293,6 +307,9 @@ ASTNode *parse_match_stmt(Parser *parser) {
     }
 
     while (!match_token(parser, TOKEN_RIGHT_BRACE) && !at_end(parser)) {
+        // ALWAYS print this debug message
+        // fprintf(stderr, "TRACE: match loop iteration - token type=%d\n",
+        // parser->current_token.type);
         ASTNode *arm = parse_match_arm(parser);
         if (!arm) {
             for (size_t i = 0; i < arm_count; i++) {
@@ -378,6 +395,14 @@ ASTNode *parse_match_arm(Parser *parser) {
 
     SourceLocation start_loc = parser->current_token.location;
 
+    // ALWAYS print this debug message
+    // fprintf(stderr, "TRACE: parse_match_arm called with token type=%d\n",
+    // parser->current_token.type);
+
+#ifdef DEBUG_PARSER
+    fprintf(stderr, "parse_match_arm: starting with token type=%d\n", parser->current_token.type);
+#endif
+
     ASTNode *pattern = parse_pattern(parser);
     if (!pattern) {
         return NULL;
@@ -392,9 +417,23 @@ ASTNode *parse_match_arm(Parser *parser) {
     if (match_token(parser, TOKEN_LEFT_BRACE)) {
         body = parse_block(parser);
     } else {
-        body = parse_expr(parser);
+        ASTNode *expr = parse_expr(parser);
+        if (!expr) {
+            ast_free_node(pattern);
+            return NULL;
+        }
+
+        // Wrap expression in AST_EXPR_STMT for semantic analyzer
+        body = ast_create_node(AST_EXPR_STMT, expr->location);
+        if (!body) {
+            ast_free_node(pattern);
+            ast_free_node(expr);
+            return NULL;
+        }
+        body->data.expr_stmt.expression = expr;
+
         // Make semicolon optional for match arm expression bodies
-        if (body && match_token(parser, TOKEN_SEMICOLON)) {
+        if (match_token(parser, TOKEN_SEMICOLON)) {
             advance_token(parser); // consume optional semicolon
         }
     }

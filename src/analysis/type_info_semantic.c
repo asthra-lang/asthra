@@ -1,9 +1,9 @@
 #include "semantic_analyzer.h"
 #include "semantic_type_creation.h"
 #include "type_info.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 // =============================================================================
 // HELPER FUNCTIONS FOR TYPE MAPPING
@@ -12,15 +12,16 @@
 // Map TypeDescriptor primitive kinds to TypeInfo primitive kinds
 static int map_descriptor_to_info_primitive(int descriptor_kind) {
     // Debug output for all mappings
-    fprintf(stderr, "DEBUG: map_descriptor_to_info_primitive called with descriptor_kind=%d\n", descriptor_kind);
+    fprintf(stderr, "DEBUG: map_descriptor_to_info_primitive called with descriptor_kind=%d\n",
+            descriptor_kind);
     fprintf(stderr, "DEBUG: PRIMITIVE_USIZE constant = %d\n", PRIMITIVE_USIZE);
-    
+
     // Debug output for usize mapping
     if (descriptor_kind == PRIMITIVE_USIZE) {
-        fprintf(stderr, "DEBUG: Mapping PRIMITIVE_USIZE (%d) to PRIMITIVE_INFO_USIZE (%d)\n", 
+        fprintf(stderr, "DEBUG: Mapping PRIMITIVE_USIZE (%d) to PRIMITIVE_INFO_USIZE (%d)\n",
                 descriptor_kind, PRIMITIVE_INFO_USIZE);
     }
-    
+
     switch (descriptor_kind) {
     case PRIMITIVE_VOID:
         return PRIMITIVE_INFO_VOID;
@@ -55,12 +56,14 @@ static int map_descriptor_to_info_primitive(int descriptor_kind) {
     case PRIMITIVE_STRING:
         return PRIMITIVE_INFO_STRING;
     case PRIMITIVE_USIZE:
-        fprintf(stderr, "DEBUG: Hit PRIMITIVE_USIZE case, returning PRIMITIVE_INFO_USIZE (%d)\n", PRIMITIVE_INFO_USIZE);
+        fprintf(stderr, "DEBUG: Hit PRIMITIVE_USIZE case, returning PRIMITIVE_INFO_USIZE (%d)\n",
+                PRIMITIVE_INFO_USIZE);
         return PRIMITIVE_INFO_USIZE;
     case PRIMITIVE_ISIZE:
         return PRIMITIVE_INFO_ISIZE;
     default:
-        fprintf(stderr, "DEBUG: Unknown primitive kind %d, falling back to PRIMITIVE_INFO_VOID\n", descriptor_kind);
+        fprintf(stderr, "DEBUG: Unknown primitive kind %d, falling back to PRIMITIVE_INFO_VOID\n",
+                descriptor_kind);
         return PRIMITIVE_INFO_VOID; // fallback
     }
 }
@@ -119,8 +122,9 @@ TypeInfo *type_info_from_type_descriptor(const TypeDescriptor *descriptor) {
 
     TypeInfo *type_info = NULL;
 
-    fprintf(stderr, "DEBUG: type_info_from_type_descriptor called with descriptor=%p, category=%d\n", 
-            (void*)descriptor, descriptor->category);
+    fprintf(stderr,
+            "DEBUG: type_info_from_type_descriptor called with descriptor=%p, category=%d\n",
+            (void *)descriptor, descriptor->category);
 
     switch (descriptor->category) {
     case TYPE_PRIMITIVE: {
@@ -128,15 +132,19 @@ TypeInfo *type_info_from_type_descriptor(const TypeDescriptor *descriptor) {
         fprintf(stderr, "DEBUG: TYPE_PRIMITIVE case for type '%s'\n", name);
         int mapped_kind =
             map_descriptor_to_info_primitive(descriptor->data.primitive.primitive_kind);
-        
+
         // Debug output for usize
         if (strcmp(name, "usize") == 0) {
-            fprintf(stderr, "DEBUG type_info_semantic: usize descriptor kind=%d, mapped to info kind=%d, size=%zu\n",
+            fprintf(stderr,
+                    "DEBUG type_info_semantic: usize descriptor kind=%d, mapped to info kind=%d, "
+                    "size=%zu\n",
                     descriptor->data.primitive.primitive_kind, mapped_kind, descriptor->size);
-            fprintf(stderr, "DEBUG type_info_semantic: PRIMITIVE_USIZE constant = %d\n", PRIMITIVE_USIZE);
-            fprintf(stderr, "DEBUG type_info_semantic: PRIMITIVE_INFO_USIZE constant = %d\n", PRIMITIVE_INFO_USIZE);
+            fprintf(stderr, "DEBUG type_info_semantic: PRIMITIVE_USIZE constant = %d\n",
+                    PRIMITIVE_USIZE);
+            fprintf(stderr, "DEBUG type_info_semantic: PRIMITIVE_INFO_USIZE constant = %d\n",
+                    PRIMITIVE_INFO_USIZE);
         }
-        
+
         type_info = type_info_create_primitive(name, mapped_kind, descriptor->size);
         break;
     }

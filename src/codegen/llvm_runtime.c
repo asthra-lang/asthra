@@ -97,16 +97,7 @@ void declare_runtime_functions(LLVMBackendData *data) {
         LLVMSetLinkage(fn, LLVMExternalLinkage);
     }
 
-    // Predeclared log function
-    {
-        // void log(const char* message) - maps to asthra_simple_log
-        LLVMTypeRef param_types[] = {data->ptr_type};
-        LLVMTypeRef fn_type = LLVMFunctionType(data->void_type, param_types, 1, false);
-        LLVMValueRef fn = LLVMAddFunction(data->module, "log", fn_type);
-        LLVMSetLinkage(fn, LLVMExternalLinkage);
-    }
-
-    // Add alias from log to asthra_simple_log for linking
+    // Predeclared log function - maps directly to asthra_simple_log
     {
         // void asthra_simple_log(const char* message)
         LLVMTypeRef param_types[] = {data->ptr_type};

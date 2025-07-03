@@ -21,13 +21,13 @@
 #include <string.h>
 
 // Test framework
+#include "../framework/backend_stubs.h"
 #include "../framework/lexer_test_utils.h"
 #include "../framework/parser_test_utils.h"
 #include "../framework/test_assertions.h"
 #include "../framework/test_context.h"
 #include "../framework/test_statistics.h"
 #include "../framework/test_suite.h"
-#include "../framework/backend_stubs.h"
 
 // Asthra components
 #include "../../../src/compiler.h"

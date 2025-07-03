@@ -3,8 +3,8 @@
  * Tests Option<T> enum usage patterns
  */
 
-#include "test_enum_integration_common.h"
 #include "../framework/backend_stubs.h"
+#include "test_enum_integration_common.h"
 
 // Test Option type usage patterns
 static void test_option_type_integration(void) {

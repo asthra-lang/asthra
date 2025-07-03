@@ -7,13 +7,13 @@
  */
 
 #include "llvm_basic_stmts.h"
+#include "../parser/ast_types.h"
 #include "llvm_backend_internal.h"
 #include "llvm_debug.h"
 #include "llvm_expr_gen.h"
 #include "llvm_locals.h"
 #include "llvm_pattern_matching.h"
 #include "llvm_types.h"
-#include "../parser/ast_types.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,6 +30,15 @@ void generate_return_statement(LLVMBackendData *data, const ASTNode *node) {
     // Get the function return type
     LLVMTypeRef fn_type = LLVMGlobalGetValueType(data->current_function);
     LLVMTypeRef fn_ret_type = LLVMGetReturnType(fn_type);
+
+    // Get current function's return type info to check for Never type
+    TypeInfo *current_func_return_type = NULL;
+    if (data->current_function) {
+        LLVMValueRef current_func = data->current_function;
+        // Check if current function has Never return type by examining function type
+        LLVMTypeRef current_func_type = LLVMGlobalGetValueType(current_func);
+        // For now, we'll detect this during the expression check below
+    }
 
     // Handle no expression case (implicit return)
     if (!node->data.return_stmt.expression) {
@@ -67,13 +76,13 @@ void generate_return_statement(LLVMBackendData *data, const ASTNode *node) {
                     // Handle integer type conversions (e.g., usize to i32)
                     if (LLVMGetTypeKind(ret_val_type) == LLVMIntegerTypeKind &&
                         LLVMGetTypeKind(fn_ret_type) == LLVMIntegerTypeKind) {
-                        
                         unsigned src_bits = LLVMGetIntTypeWidth(ret_val_type);
                         unsigned dst_bits = LLVMGetIntTypeWidth(fn_ret_type);
-                        
+
                         if (src_bits > dst_bits) {
                             // Truncate larger type to smaller type (e.g., i64 to i32)
-                            ret_val = LLVMBuildTrunc(data->builder, ret_val, fn_ret_type, "ret_trunc");
+                            ret_val =
+                                LLVMBuildTrunc(data->builder, ret_val, fn_ret_type, "ret_trunc");
                         } else if (src_bits < dst_bits) {
                             // Extend smaller type to larger type (e.g., i32 to i64)
                             ret_val = LLVMBuildZExt(data->builder, ret_val, fn_ret_type, "ret_ext");
@@ -89,19 +98,110 @@ void generate_return_statement(LLVMBackendData *data, const ASTNode *node) {
         return;
     }
 
+    // Check if the return expression is a Never type call
+    bool is_never_return = false;
+    if (node->data.return_stmt.expression->type == AST_CALL_EXPR) {
+        ASTNode *call_node = node->data.return_stmt.expression;
+        if (call_node->data.call_expr.function && call_node->data.call_expr.function->type_info) {
+            TypeInfo *func_type_info = call_node->data.call_expr.function->type_info;
+            if (func_type_info->category == TYPE_INFO_FUNCTION &&
+                func_type_info->data.function.return_type &&
+                func_type_info->data.function.return_type->category == TYPE_INFO_PRIMITIVE &&
+                func_type_info->data.function.return_type->data.primitive.kind ==
+                    PRIMITIVE_INFO_NEVER) {
+                is_never_return = true;
+            }
+        }
+        // Also check if the call expression itself has Never type info
+        else if (call_node->type_info && call_node->type_info->category == TYPE_INFO_PRIMITIVE &&
+                 call_node->type_info->data.primitive.kind == PRIMITIVE_INFO_NEVER) {
+            is_never_return = true;
+        }
+    }
+
+    // For Never type calls, just generate the expression (which will add unreachable)
+    // and don't generate any return instruction
+    if (is_never_return) {
+        generate_expression(data, node->data.return_stmt.expression);
+        // Never type calls end with unreachable, so no return instruction needed
+        return;
+    }
+
+    // Check if the return expression is a field access that might be a Never type method
+    bool is_never_method_return = false;
+    if (node->data.return_stmt.expression->type == AST_CALL_EXPR) {
+        ASTNode *call_node = node->data.return_stmt.expression;
+        if (call_node->data.call_expr.function &&
+            call_node->data.call_expr.function->type == AST_FIELD_ACCESS) {
+            ASTNode *field_access = call_node->data.call_expr.function;
+            if (field_access->type_info &&
+                field_access->type_info->category == TYPE_INFO_FUNCTION &&
+                field_access->type_info->data.function.return_type &&
+                field_access->type_info->data.function.return_type->category ==
+                    TYPE_INFO_PRIMITIVE &&
+                field_access->type_info->data.function.return_type->data.primitive.kind ==
+                    PRIMITIVE_INFO_NEVER) {
+                is_never_method_return = true;
+            }
+        }
+    }
+
+    // For Never type method calls, just generate the expression (which will add unreachable)
+    // and don't generate any return instruction
+    if (is_never_method_return) {
+        generate_expression(data, node->data.return_stmt.expression);
+        // Never type method calls end with unreachable, so no return instruction needed
+        return;
+    }
+
+    // Check if the return expression is a void method call
+    bool is_void_method_return = false;
+    if (node->data.return_stmt.expression->type == AST_CALL_EXPR) {
+        ASTNode *call_node = node->data.return_stmt.expression;
+        if (call_node->data.call_expr.function &&
+            call_node->data.call_expr.function->type == AST_FIELD_ACCESS) {
+            ASTNode *field_access = call_node->data.call_expr.function;
+            if (field_access->type_info &&
+                field_access->type_info->category == TYPE_INFO_FUNCTION &&
+                field_access->type_info->data.function.return_type &&
+                field_access->type_info->data.function.return_type->category ==
+                    TYPE_INFO_PRIMITIVE &&
+                field_access->type_info->data.function.return_type->data.primitive.kind ==
+                    PRIMITIVE_INFO_VOID) {
+                is_void_method_return = true;
+            }
+        }
+    }
+
+    // For void method calls, just generate the expression and emit ret void
+    if (is_void_method_return) {
+        generate_expression(data, node->data.return_stmt.expression);
+        // For void functions, emit ret void
+        LLVMBuildRetVoid(data->builder);
+        return;
+    }
+
     // For all other expressions, generate normally
     LLVMValueRef ret_val = generate_expression(data, node->data.return_stmt.expression);
     if (ret_val) {
-        // Check if we need to cast the return value to the expected function return type
+        // Check the type of the returned value
         LLVMTypeRef ret_val_type = LLVMTypeOf(ret_val);
+
+        // Special handling for void values - if we're returning a void expression,
+        // just emit ret void instead of trying to return the void value
+        if (ret_val_type == data->void_type || LLVMGetTypeKind(ret_val_type) == LLVMVoidTypeKind) {
+            LLVMBuildRetVoid(data->builder);
+            return;
+        }
+
+        // Check if we need to cast the return value to the expected function return type
         if (ret_val_type != fn_ret_type) {
             // Handle integer type conversions (e.g., usize to i32)
             if (LLVMGetTypeKind(ret_val_type) == LLVMIntegerTypeKind &&
                 LLVMGetTypeKind(fn_ret_type) == LLVMIntegerTypeKind) {
-                
                 unsigned src_bits = LLVMGetIntTypeWidth(ret_val_type);
                 unsigned dst_bits = LLVMGetIntTypeWidth(fn_ret_type);
-                
+
                 if (src_bits > dst_bits) {
                     // Truncate larger type to smaller type (e.g., i64 to i32)
                     ret_val = LLVMBuildTrunc(data->builder, ret_val, fn_ret_type, "ret_trunc");
@@ -234,12 +334,12 @@ void generate_assignment_statement(LLVMBackendData *data, const ASTNode *node) {
             target = LLVMBuildGEP2(data->builder, array_type, array, indices, 2, "elemptr");
         }
     } else if (node->data.assignment.target->type == AST_UNARY_EXPR &&
-               node->data.assignment.target->data.unary_expr.operator == UNOP_DEREF) {
+               node->data.assignment.target->data.unary_expr.operator== UNOP_DEREF) {
         // Pointer dereference assignment (*ptr = value)
-        // RADICAL DEBUGGING: Instead of using the pointer variable, 
+        // RADICAL DEBUGGING: Instead of using the pointer variable,
         // try to directly identify what variable the pointer points to
         ASTNode *ptr_node = node->data.assignment.target->data.unary_expr.operand;
-        
+
         // Check if this is a simple case like *(&variable)
         // where we can directly identify the target variable
         if (ptr_node->type == AST_IDENTIFIER) {
@@ -380,6 +480,14 @@ void generate_match_statement(LLVMBackendData *data, const ASTNode *node) {
     LLVMBasicBlockRef match_end_bb =
         LLVMAppendBasicBlockInContext(data->context, function, "match_end");
 
+    // Create the first pattern check block and branch to it
+    LLVMBasicBlockRef first_check_bb = NULL;
+    if (node->data.match_stmt.arms->count > 0) {
+        first_check_bb = LLVMAppendBasicBlockInContext(data->context, function, "match_check_0");
+        LLVMBuildBr(data->builder, first_check_bb);
+        LLVMPositionBuilderAtEnd(data->builder, first_check_bb);
+    }
+
     // Generate code for each match arm
     for (size_t i = 0; i < node->data.match_stmt.arms->count; i++) {
         ASTNode *arm = node->data.match_stmt.arms->nodes[i];
@@ -394,16 +502,21 @@ void generate_match_statement(LLVMBackendData *data, const ASTNode *node) {
         LLVMBasicBlockRef arm_block =
             LLVMAppendBasicBlockInContext(data->context, function, arm_name);
 
-        char next_name[64];
-        snprintf(next_name, sizeof(next_name), "match_next_%zu", i);
-        LLVMBasicBlockRef next_block =
-            (i == node->data.match_stmt.arms->count - 1)
-                ? match_end_bb
-                : LLVMAppendBasicBlockInContext(data->context, function, next_name);
+        // Determine the next check block (where to go if this pattern doesn't match)
+        LLVMBasicBlockRef next_check_block;
+        if (i == node->data.match_stmt.arms->count - 1) {
+            // Last arm - if it doesn't match, go to end (or error)
+            next_check_block = match_end_bb;
+        } else {
+            // Create a block for checking the next pattern
+            char next_check_name[64];
+            snprintf(next_check_name, sizeof(next_check_name), "match_check_%zu", i + 1);
+            next_check_block = LLVMAppendBasicBlockInContext(data->context, function, next_check_name);
+        }
 
-        // Generate pattern check
+        // Generate pattern check from current position
         if (!generate_pattern_check(data, arm->data.match_arm.pattern, match_value, arm_block,
-                                    next_block)) {
+                                    next_check_block)) {
             llvm_backend_report_error(data, arm, "Failed to generate pattern check");
             continue;
         }
@@ -434,7 +547,7 @@ void generate_match_statement(LLVMBackendData *data, const ASTNode *node) {
                     LLVMAppendBasicBlockInContext(data->context, function, guard_true_name);
 
                 // If guard fails, go to next arm
-                LLVMBuildCondBr(data->builder, guard_value, guard_true_bb, next_block);
+                LLVMBuildCondBr(data->builder, guard_value, guard_true_bb, next_check_block);
                 LLVMPositionBuilderAtEnd(data->builder, guard_true_bb);
             }
         }
@@ -449,9 +562,9 @@ void generate_match_statement(LLVMBackendData *data, const ASTNode *node) {
             LLVMBuildBr(data->builder, match_end_bb);
         }
 
-        // Position builder for next iteration
+        // Position builder at next check block for next iteration
         if (i < node->data.match_stmt.arms->count - 1) {
-            LLVMPositionBuilderAtEnd(data->builder, next_block);
+            LLVMPositionBuilderAtEnd(data->builder, next_check_block);
         }
     }
 

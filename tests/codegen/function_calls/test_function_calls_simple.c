@@ -12,11 +12,11 @@
 
 // Include necessary headers for backend and compiler interfaces
 #include "../../../src/compiler.h"
+#include "../../framework/backend_stubs.h"
 #include "ast.h"
 #include "lexer.h"
 #include "parser.h"
 #include "semantic_analyzer.h"
-#include "../../framework/backend_stubs.h"
 
 // Direct declarations for types we don't need full definitions for
 typedef struct Lexer Lexer;

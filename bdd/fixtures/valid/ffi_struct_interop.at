@@ -47,9 +47,9 @@ pub fn make_message(id: int, text: string) -> Option<*mut CMessage> {
         let msg_ptr: *mut CMessage = create_message(id, text_ptr);
         
         if msg_ptr == null {
-            return Option::None;
+            return Option.None;
         } else {
-            return Option::Some(msg_ptr);
+            return Option.Some(msg_ptr);
         }
     }
 }
@@ -94,11 +94,11 @@ pub fn main(none) -> void {
     // Test message creation/destruction
     let msg_opt: Option<*mut CMessage> = make_message(123, "Hello from Asthra");
     match msg_opt {
-        Option::Some(msg_ptr) => {
+        Option.Some(msg_ptr) => {
             print("Message created");
             cleanup_message(msg_ptr);
         }
-        Option::None => {
+        Option.None => {
             print("Failed to create message");
         }
     }

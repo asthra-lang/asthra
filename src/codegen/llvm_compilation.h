@@ -28,7 +28,6 @@ extern "C" {
 AsthraLLVMToolResult asthra_llvm_compile(const char *input_file,
                                          const AsthraLLVMToolOptions *options);
 
-
 #ifdef __cplusplus
 }
 #endif

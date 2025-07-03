@@ -218,9 +218,9 @@ pub fn bounds_safe_access(none) -> i32 {
 pub fn find_user(id: i32) -> Option<User> {
     let user: User = lookup_user(id);
     if user.is_valid() {
-        return Option::Some(user);
+        return Option.Some(user);
     }
-    return Option::None;
+    return Option.None;
 }
 
 // Pattern matching forces null handling
@@ -228,8 +228,8 @@ pub fn process_user(id: i32) -> string {
     let maybe_user: Option<User> = find_user(id);
     
     match maybe_user {
-        Option::Some(user) => return user.name,
-        Option::None => return "User not found"
+        Option.Some(user) => return user.name,
+        Option.None => return "User not found"
     }
 }
 ```

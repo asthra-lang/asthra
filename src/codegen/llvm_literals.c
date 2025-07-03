@@ -190,40 +190,40 @@ LLVMValueRef generate_struct_literal(LLVMBackendData *data, const ASTNode *node)
     if (!data || !node) {
         return NULL;
     }
-    
+
     // Need forward declaration of generate_expression
     extern LLVMValueRef generate_expression(LLVMBackendData * data, const ASTNode *node);
-    
+
     // Get struct name and field initializations
     const char *struct_name = node->data.struct_literal.struct_name;
     ASTNodeList *field_inits = node->data.struct_literal.field_inits;
-    
+
     if (!struct_name) {
         LLVM_REPORT_ERROR(data, node, "Struct literal has no struct name");
     }
-    
+
     // Get the struct type from type info
     if (!node->type_info || node->type_info->category != TYPE_INFO_STRUCT) {
-        LLVM_REPORT_ERROR_PRINTF(data, node, "Struct literal for '%s' has invalid type info", 
+        LLVM_REPORT_ERROR_PRINTF(data, node, "Struct literal for '%s' has invalid type info",
                                  struct_name);
     }
-    
+
     // Convert struct type info to LLVM type
     LLVMTypeRef struct_type = asthra_type_to_llvm(data, node->type_info);
     if (!struct_type) {
-        LLVM_REPORT_ERROR_PRINTF(data, node, "Failed to convert struct type '%s' to LLVM", 
+        LLVM_REPORT_ERROR_PRINTF(data, node, "Failed to convert struct type '%s' to LLVM",
                                  struct_name);
     }
-    
+
     // Create an undefined value of the struct type
     LLVMValueRef struct_value = LLVMGetUndef(struct_type);
-    
+
     // Handle empty structs (no field initializations)
     if (!field_inits || ast_node_list_size(field_inits) == 0) {
         // For empty structs, return the undefined value
         return struct_value;
     }
-    
+
     // Process field initializations
     size_t field_init_count = ast_node_list_size(field_inits);
     for (size_t i = 0; i < field_init_count; i++) {
@@ -231,48 +231,50 @@ LLVMValueRef generate_struct_literal(LLVMBackendData *data, const ASTNode *node)
         if (!field_init || field_init->type != AST_ASSIGNMENT) {
             LLVM_REPORT_ERROR(data, node, "Invalid field initialization in struct literal");
         }
-        
+
         // Get field name from the assignment target
         ASTNode *field_target = field_init->data.assignment.target;
         if (!field_target || field_target->type != AST_IDENTIFIER) {
-            LLVM_REPORT_ERROR(data, field_init, "Field initialization target must be an identifier");
+            LLVM_REPORT_ERROR(data, field_init,
+                              "Field initialization target must be an identifier");
         }
-        
+
         const char *field_name = field_target->data.identifier.name;
         if (!field_name) {
             LLVM_REPORT_ERROR(data, field_init, "Field initialization has no field name");
         }
-        
+
         // Find the field index in the struct
         // This requires looking up the field in the struct's type info
         size_t field_index = (size_t)-1;
         if (node->type_info->data.struct_info.fields) {
             for (size_t j = 0; j < node->type_info->data.struct_info.field_count; j++) {
                 SymbolEntry *field_entry = node->type_info->data.struct_info.fields[j];
-                if (field_entry && field_entry->name && strcmp(field_entry->name, field_name) == 0) {
+                if (field_entry && field_entry->name &&
+                    strcmp(field_entry->name, field_name) == 0) {
                     field_index = j;
                     break;
                 }
             }
         }
-        
+
         if (field_index == (size_t)-1) {
-            LLVM_REPORT_ERROR_PRINTF(data, field_init, "Field '%s' not found in struct '%s'", 
+            LLVM_REPORT_ERROR_PRINTF(data, field_init, "Field '%s' not found in struct '%s'",
                                      field_name, struct_name);
         }
-        
+
         // Generate the field value expression
         ASTNode *field_value_node = field_init->data.assignment.value;
         LLVMValueRef field_value = generate_expression(data, field_value_node);
         if (!field_value) {
-            LLVM_REPORT_ERROR_PRINTF(data, field_init, "Failed to generate value for field '%s'", 
+            LLVM_REPORT_ERROR_PRINTF(data, field_init, "Failed to generate value for field '%s'",
                                      field_name);
         }
-        
+
         // Insert the field value into the struct
-        struct_value = LLVMBuildInsertValue(data->builder, struct_value, field_value, 
+        struct_value = LLVMBuildInsertValue(data->builder, struct_value, field_value,
                                             (unsigned)field_index, "");
     }
-    
+
     return struct_value;
 }

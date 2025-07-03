@@ -4,8 +4,8 @@
  * Part of Phase 4: Integration and Testing (Enum Variant Construction Implementation Plan)
  */
 
-#include "test_enum_integration_common.h"
 #include "../framework/backend_stubs.h"
+#include "test_enum_integration_common.h"
 
 // Test end-to-end enum variant construction in a function
 static void test_enum_variant_end_to_end(void) {

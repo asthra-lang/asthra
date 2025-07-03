@@ -200,14 +200,14 @@ ASTNode *parse_enum_decl(Parser *parser) {
                         free(enum_name);
                         return NULL;
                     }
-                    
+
                     // Add first type to list
                     ast_node_list_add(&type_list, first_type);
-                    
+
                     // Parse remaining types
                     while (match_token(parser, TOKEN_COMMA)) {
                         advance_token(parser);
-                        
+
                         ASTNode *type = parse_type(parser);
                         if (!type) {
                             ast_node_list_destroy(type_list);
@@ -221,10 +221,10 @@ ASTNode *parse_enum_decl(Parser *parser) {
                             free(enum_name);
                             return NULL;
                         }
-                        
+
                         ast_node_list_add(&type_list, type);
                     }
-                    
+
                     // Create tuple type from the type list
                     associated_type = ast_create_node(AST_TUPLE_TYPE, variant_loc);
                     if (!associated_type) {
@@ -389,6 +389,9 @@ ASTNode *parse_enum_decl(Parser *parser) {
     } else {
         node->data.enum_decl.variants = NULL;
     }
+
+    // Register the enum name in the symbol table so it can be recognized as a type
+    register_symbol(parser, enum_name, node);
 
     return node;
 }

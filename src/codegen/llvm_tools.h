@@ -40,7 +40,7 @@ typedef struct {
     const char *features;      // CPU features (e.g., "+avx2,+fma")
     bool debug_info;
     bool verbose;
-    bool coverage; // Enable coverage instrumentation
+    bool coverage;          // Enable coverage instrumentation
     AsthraPIEMode pie_mode; // Position Independent Executable mode
 
     // Tool-specific options

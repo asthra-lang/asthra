@@ -220,9 +220,9 @@ AsthraTestResult test_grammar_valid_associated_function_calls(AsthraV12TestConte
     const char *valid_associated_patterns[] = {"Vec::new()",       // Simple associated function
                                                "Point::default()", // Another simple case
                                                "MyStruct::create(42, \"test\")", // With arguments
-                                               "Result::Ok(value)",       // Enum constructor style
+                                               "Result.Ok(value)",        // Enum constructor style
                                                "String::from(\"hello\")", // Type conversion
-                                               "Option::Some(42)", // Generic enum constructor
+                                               "Option.Some(42)", // Generic enum constructor
                                                NULL};
 
     for (int i = 0; valid_associated_patterns[i] != NULL; i++) {

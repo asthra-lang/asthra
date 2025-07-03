@@ -288,3 +288,121 @@ bool semantic_can_cast(SemanticAnalyzer *analyzer, TypeDescriptor *from, TypeDes
 
     return false;
 }
+
+// =============================================================================
+// CAST COMPATIBILITY VALIDATION
+// =============================================================================
+
+bool semantic_validate_cast_compatibility(SemanticAnalyzer *analyzer, TypeDescriptor *from_type,
+                                          TypeDescriptor *to_type, SourceLocation location) {
+    (void)analyzer;
+    (void)location;
+
+    if (!from_type || !to_type) {
+        return false;
+    }
+
+    // Casting to the same type is always allowed
+    if (type_descriptor_equals(from_type, to_type)) {
+        return true;
+    }
+
+    // Primitive type casting rules
+    if (from_type->category == TYPE_PRIMITIVE && to_type->category == TYPE_PRIMITIVE) {
+        int from_prim = from_type->data.primitive.primitive_kind;
+        int to_prim = to_type->data.primitive.primitive_kind;
+
+        // Integer to integer casting (all combinations allowed with explicit cast)
+        if ((from_prim == PRIMITIVE_I8 || from_prim == PRIMITIVE_I16 ||
+             from_prim == PRIMITIVE_I32 || from_prim == PRIMITIVE_I64 ||
+             from_prim == PRIMITIVE_U8 || from_prim == PRIMITIVE_U16 ||
+             from_prim == PRIMITIVE_U32 || from_prim == PRIMITIVE_U64 ||
+             from_prim == PRIMITIVE_ISIZE || from_prim == PRIMITIVE_USIZE) &&
+            (to_prim == PRIMITIVE_I8 || to_prim == PRIMITIVE_I16 || to_prim == PRIMITIVE_I32 ||
+             to_prim == PRIMITIVE_I64 || to_prim == PRIMITIVE_U8 || to_prim == PRIMITIVE_U16 ||
+             to_prim == PRIMITIVE_U32 || to_prim == PRIMITIVE_U64 || to_prim == PRIMITIVE_ISIZE ||
+             to_prim == PRIMITIVE_USIZE)) {
+            return true;
+        }
+
+        // Float to float casting (f32 <-> f64)
+        if ((from_prim == PRIMITIVE_F32 || from_prim == PRIMITIVE_F64) &&
+            (to_prim == PRIMITIVE_F32 || to_prim == PRIMITIVE_F64)) {
+            return true;
+        }
+
+        // Integer to float casting (explicit cast allowed)
+        if ((from_prim == PRIMITIVE_I8 || from_prim == PRIMITIVE_I16 ||
+             from_prim == PRIMITIVE_I32 || from_prim == PRIMITIVE_I64 ||
+             from_prim == PRIMITIVE_U8 || from_prim == PRIMITIVE_U16 ||
+             from_prim == PRIMITIVE_U32 || from_prim == PRIMITIVE_U64 ||
+             from_prim == PRIMITIVE_ISIZE || from_prim == PRIMITIVE_USIZE) &&
+            (to_prim == PRIMITIVE_F32 || to_prim == PRIMITIVE_F64)) {
+            return true;
+        }
+
+        // Float to integer casting (explicit cast allowed)
+        if ((from_prim == PRIMITIVE_F32 || from_prim == PRIMITIVE_F64) &&
+            (to_prim == PRIMITIVE_I8 || to_prim == PRIMITIVE_I16 || to_prim == PRIMITIVE_I32 ||
+             to_prim == PRIMITIVE_I64 || to_prim == PRIMITIVE_U8 || to_prim == PRIMITIVE_U16 ||
+             to_prim == PRIMITIVE_U32 || to_prim == PRIMITIVE_U64 || to_prim == PRIMITIVE_ISIZE ||
+             to_prim == PRIMITIVE_USIZE)) {
+            return true;
+        }
+
+        // Boolean to integer casting (explicit cast allowed for C interop)
+        if (from_prim == PRIMITIVE_BOOL &&
+            (to_prim == PRIMITIVE_I8 || to_prim == PRIMITIVE_I16 || to_prim == PRIMITIVE_I32 ||
+             to_prim == PRIMITIVE_I64 || to_prim == PRIMITIVE_U8 || to_prim == PRIMITIVE_U16 ||
+             to_prim == PRIMITIVE_U32 || to_prim == PRIMITIVE_U64)) {
+            return true;
+        }
+
+        // Integer to boolean casting (explicit cast allowed)
+        if ((from_prim == PRIMITIVE_I8 || from_prim == PRIMITIVE_I16 ||
+             from_prim == PRIMITIVE_I32 || from_prim == PRIMITIVE_I64 ||
+             from_prim == PRIMITIVE_U8 || from_prim == PRIMITIVE_U16 ||
+             from_prim == PRIMITIVE_U32 || from_prim == PRIMITIVE_U64) &&
+            to_prim == PRIMITIVE_BOOL) {
+            return true;
+        }
+    }
+
+    // Pointer casting rules
+    if (from_type->category == TYPE_POINTER && to_type->category == TYPE_POINTER) {
+        // Pointer to pointer casting is generally allowed with explicit cast
+        // This includes changing mutability: *const T -> *mut T (unsafe but allowed)
+        return true;
+    }
+
+    // Pointer to integer casting (for low-level operations)
+    if (from_type->category == TYPE_POINTER && to_type->category == TYPE_PRIMITIVE) {
+        int to_prim = to_type->data.primitive.primitive_kind;
+        if (to_prim == PRIMITIVE_USIZE || to_prim == PRIMITIVE_ISIZE || to_prim == PRIMITIVE_U64 ||
+            to_prim == PRIMITIVE_I64) {
+            return true; // Allow casting pointers to address-sized integers
+        }
+    }
+
+    // Integer to pointer casting (for low-level operations)
+    if (from_type->category == TYPE_PRIMITIVE && to_type->category == TYPE_POINTER) {
+        int from_prim = from_type->data.primitive.primitive_kind;
+        if (from_prim == PRIMITIVE_USIZE || from_prim == PRIMITIVE_ISIZE ||
+            from_prim == PRIMITIVE_U64 || from_prim == PRIMITIVE_I64) {
+            return true; // Allow casting address-sized integers to pointers
+        }
+    }
+
+    // Array to slice casting (implicit conversion allowed, but explicit cast also ok)
+    if (from_type->category == TYPE_ARRAY && to_type->category == TYPE_SLICE) {
+        TypeDescriptor *array_element = from_type->data.array.element_type;
+        TypeDescriptor *slice_element = to_type->data.slice.element_type;
+        if (array_element && slice_element &&
+            type_descriptor_equals(array_element, slice_element)) {
+            return true;
+        }
+    }
+
+    // For other type combinations, explicit casting is not allowed
+    return false;
+}

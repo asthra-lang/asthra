@@ -38,7 +38,7 @@ bool analyze_spawn_statement(SemanticAnalyzer *analyzer, ASTNode *stmt) {
     if (stmt->data.spawn_stmt.call_expr) {
         // New path: Analyze the full call expression
         ASTNode *call_expr = stmt->data.spawn_stmt.call_expr;
-        
+
         // Analyze the call expression
         bool call_result = semantic_analyze_expression(analyzer, call_expr);
         if (!call_result) {
@@ -46,24 +46,24 @@ bool analyze_spawn_statement(SemanticAnalyzer *analyzer, ASTNode *stmt) {
                                   "Invalid expression in spawn statement");
             return false;
         }
-        
+
         // Verify it's a function call that returns void
         if (!call_expr->type_info) {
             semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, stmt->location,
                                   "Spawned function call has no type information");
             return false;
         }
-        
+
         TypeInfo *call_type_info = call_expr->type_info;
         TypeDescriptor *call_type = type_descriptor_from_type_info(call_type_info);
-        
+
         // Check if it's void type
         bool is_void = false;
-        if (call_type && call_type->category == TYPE_PRIMITIVE && 
+        if (call_type && call_type->category == TYPE_PRIMITIVE &&
             call_type->data.primitive.primitive_kind == PRIMITIVE_VOID) {
             is_void = true;
         }
-        
+
         if (!is_void) {
             semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, stmt->location,
                                   "Spawned function must return void");
@@ -72,17 +72,17 @@ bool analyze_spawn_statement(SemanticAnalyzer *analyzer, ASTNode *stmt) {
             }
             return false;
         }
-        
+
         if (call_type) {
             type_descriptor_release(call_type);
         }
-        
+
         // Set the statement type info to void
         TypeDescriptor *void_type = get_builtin_type("void");
         stmt->type_info = type_info_from_type_descriptor(void_type);
         return true;
     }
-    
+
     // Legacy path: Use function_name and args
     const char *function_name = stmt->data.spawn_stmt.function_name;
     ASTNodeList *args = stmt->data.spawn_stmt.args;
@@ -156,7 +156,7 @@ bool analyze_spawn_with_handle_statement(SemanticAnalyzer *analyzer, ASTNode *st
     }
 
     char *handle_var_name = stmt->data.spawn_with_handle_stmt.handle_var_name;
-    
+
     if (!handle_var_name) {
         semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, stmt->location,
                               "spawn_with_handle statement missing handle variable name");
@@ -167,7 +167,7 @@ bool analyze_spawn_with_handle_statement(SemanticAnalyzer *analyzer, ASTNode *st
     if (stmt->data.spawn_with_handle_stmt.call_expr) {
         // New path: Analyze the full call expression
         ASTNode *call_expr = stmt->data.spawn_with_handle_stmt.call_expr;
-        
+
         // Analyze the call expression
         bool call_result = semantic_analyze_expression(analyzer, call_expr);
         if (!call_result) {
@@ -175,40 +175,56 @@ bool analyze_spawn_with_handle_statement(SemanticAnalyzer *analyzer, ASTNode *st
                                   "Invalid expression in spawn_with_handle statement");
             return false;
         }
-        
+
         // Get the function's return type to create TaskHandle<T>
         TypeDescriptor *return_type = NULL;
         if (call_expr->type_info) {
             return_type = type_descriptor_from_type_info(call_expr->type_info);
         }
-        
+
         TypeDescriptor *handle_type = NULL;
         if (return_type) {
             // Create proper TaskHandle<return_type> type
             handle_type = type_descriptor_create_task_handle(return_type);
             type_descriptor_release(return_type);
         }
-        
+
         if (!handle_type) {
             TypeDescriptor *void_type = get_builtin_type("void");
             handle_type = type_descriptor_create_task_handle(void_type);
         }
-        
-        // Create a variable for the handle
-        bool declare_result = semantic_declare_symbol(analyzer, handle_var_name, SYMBOL_VARIABLE,
-                                                      handle_type, stmt);
-        if (!declare_result) {
+
+        // Check if handle variable already exists in current scope
+        SymbolEntry *existing_handle =
+            symbol_table_lookup_local(analyzer->current_scope, handle_var_name);
+        if (existing_handle) {
+            // Variable already exists - verify it has the correct type
+            if (!semantic_check_type_compatibility(analyzer, handle_type, existing_handle->type)) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, stmt->location,
+                                      "Handle variable '%s' exists but has incompatible type",
+                                      handle_var_name);
+                type_descriptor_release(handle_type);
+                return false;
+            }
+            // Variable exists with correct type - just use it
             type_descriptor_release(handle_type);
-            return false;
+        } else {
+            // Create a new variable for the handle
+            bool declare_result = semantic_declare_symbol(analyzer, handle_var_name,
+                                                          SYMBOL_VARIABLE, handle_type, stmt);
+            if (!declare_result) {
+                type_descriptor_release(handle_type);
+                return false;
+            }
+            type_descriptor_release(handle_type);
         }
-        
-        // Set the statement type info to void  
+
+        // Set the statement type info to void
         TypeDescriptor *void_type = get_builtin_type("void");
         stmt->type_info = type_info_from_type_descriptor(void_type);
-        type_descriptor_release(handle_type);
         return true;
     }
-    
+
     // Legacy path: Use function_name and args
     char *function_name = stmt->data.spawn_with_handle_stmt.function_name;
     ASTNodeList *args = stmt->data.spawn_with_handle_stmt.args;
@@ -241,17 +257,48 @@ bool analyze_spawn_with_handle_statement(SemanticAnalyzer *analyzer, ASTNode *st
     SymbolEntry *existing_handle =
         symbol_table_lookup_local(analyzer->current_scope, handle_var_name);
     if (existing_handle) {
-        semantic_report_error(analyzer, SEMANTIC_ERROR_DUPLICATE_SYMBOL, stmt->location,
-                              "Handle variable '%s' already defined in current scope",
-                              handle_var_name);
-        return false;
+        // Variable already exists - verify it has the correct type
+        if (!handle_type) {
+            // Create default TaskHandle<void> type if we couldn't determine the function's return
+            // type
+            TypeDescriptor *void_type = get_builtin_type("void");
+            handle_type = type_descriptor_create_task_handle(void_type);
+        }
+
+        if (!semantic_check_type_compatibility(analyzer, handle_type, existing_handle->type)) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, stmt->location,
+                                  "Handle variable '%s' exists but has incompatible type",
+                                  handle_var_name);
+            if (handle_type) {
+                type_descriptor_release(handle_type);
+            }
+            return false;
+        }
+        // Variable exists with correct type - just use it
+        if (handle_type) {
+            type_descriptor_release(handle_type);
+        }
+
+        // Still need to analyze the arguments
+        if (args) {
+            for (size_t i = 0; i < ast_node_list_size(args); i++) {
+                ASTNode *arg = ast_node_list_get(args, i);
+                if (!semantic_analyze_expression(analyzer, arg)) {
+                    return false;
+                }
+            }
+        }
+
+        // Set the statement type info to void
+        TypeDescriptor *void_type = get_builtin_type("void");
+        stmt->type_info = type_info_from_type_descriptor(void_type);
+        return true;
     }
 
     // Create a symbol entry for the handle variable
-    SymbolEntry *handle_symbol =
-        symbol_entry_create(handle_var_name, SYMBOL_VARIABLE,
-                            handle_type, // Use the TaskHandle<T> type
-                            stmt);
+    SymbolEntry *handle_symbol = symbol_entry_create(handle_var_name, SYMBOL_VARIABLE,
+                                                     handle_type, // Use the TaskHandle<T> type
+                                                     stmt);
     if (!handle_symbol) {
         if (handle_type) {
             type_descriptor_release(handle_type);
@@ -283,11 +330,32 @@ bool analyze_spawn_with_handle_statement(SemanticAnalyzer *analyzer, ASTNode *st
 }
 
 bool analyze_await_statement(SemanticAnalyzer *analyzer, ASTNode *stmt) {
-    (void)analyzer;
-    (void)stmt;
-    // TODO: Implement await statement analysis
-    // Tier 1 concurrency: Basic await is deterministic and doesn't require annotation
-    return true;
+    if (!analyzer || !stmt) {
+        return false;
+    }
+
+    // An await statement is an await expression used in statement context
+    // We delegate to the expression analysis which handles all the validation
+    if (stmt->type != AST_AWAIT_EXPR) {
+        semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, stmt->location,
+                              "Expected await expression in await statement");
+        return false;
+    }
+
+    // Analyze the await expression - this handles all the semantic validation
+    // including checking that the handle is a TaskHandle<T> type
+    bool result = analyze_await_expression(analyzer, stmt);
+
+    if (result) {
+        // For statement context, we don't need to do anything special with the result type
+        // The value returned by await is simply discarded in statement context
+        // This is similar to how function calls can be used as statements
+
+        // Note: Tier 1 concurrency features like await are deterministic and don't require
+        // additional annotations or special handling beyond type checking
+    }
+
+    return result;
 }
 
 bool analyze_await_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
@@ -320,14 +388,14 @@ bool analyze_await_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
         // Look up the handle variable
         const char *handle_name = handle_expr->data.identifier.name;
         SymbolEntry *handle_symbol = semantic_resolve_identifier(analyzer, handle_name);
-        
+
         if (!handle_symbol) {
             semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL, handle_expr->location,
                                   "Undefined handle '%s'", handle_name);
             type_descriptor_release(handle_type);
             return false;
         }
-        
+
         // Check if this is actually a task handle type
         if (handle_symbol->kind != SYMBOL_VARIABLE || !is_task_handle_type(handle_symbol->type)) {
             const char *type_name = "unknown";
@@ -337,7 +405,7 @@ bool analyze_await_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
                 } else {
                     // Type exists but name is NULL - show category
                     static char type_desc[128];
-                    snprintf(type_desc, sizeof(type_desc), "(unnamed type, category=%d)", 
+                    snprintf(type_desc, sizeof(type_desc), "(unnamed type, category=%d)",
                              handle_symbol->type->category);
                     type_name = type_desc;
                 }
@@ -348,7 +416,7 @@ bool analyze_await_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
             type_descriptor_release(handle_type);
             return false;
         }
-        
+
         // Extract the result type T from TaskHandle<T>
         TypeDescriptor *result_type = get_task_handle_result_type(handle_symbol->type);
         if (result_type) {

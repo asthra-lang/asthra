@@ -94,6 +94,13 @@ ASTNode *parse_pointer_prefix_or_postfix(Parser *parser) {
 
         advance_token(parser);
 
+        // Check for &mut syntax for mutable references
+        bool is_mutable = false;
+        if (pointer_op == UNOP_ADDRESS_OF && match_token(parser, TOKEN_MUT)) {
+            is_mutable = true;
+            advance_token(parser); // consume 'mut'
+        }
+
         // Special case: if the next token is also a unary operator, we need to parse it as such
         // This handles cases like *&var where & is also a unary operator
         ASTNode *operand = NULL;

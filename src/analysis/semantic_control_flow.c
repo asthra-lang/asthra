@@ -335,6 +335,144 @@ bool analyze_match_statement(SemanticAnalyzer *analyzer, ASTNode *stmt) {
     return true;
 }
 
+bool analyze_match_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
+    if (!analyzer || !expr || expr->type != AST_MATCH_EXPR) {
+        return false;
+    }
+
+    ASTNode *expression = expr->data.match_expr.expression;
+    ASTNodeList *arms = expr->data.match_expr.arms;
+
+    if (!expression) {
+        semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, expr->location,
+                              "Match expression missing expression");
+        return false;
+    }
+    if (!arms || arms->count == 0) {
+        semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, expr->location,
+                              "Match expression missing match arms");
+        return false;
+    }
+
+    // Analyze match expression
+    if (!semantic_analyze_expression(analyzer, expression)) {
+        return false;
+    }
+
+    TypeDescriptor *expr_type = semantic_get_expression_type(analyzer, expression);
+    if (!expr_type) {
+        semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_INFERENCE_FAILED, expression->location,
+                              "Failed to infer type of match expression");
+        return false;
+    }
+
+    // Track the type that all match arms must return (expression evaluation)
+    TypeDescriptor *match_result_type = NULL;
+    bool first_arm = true;
+
+    // Analyze each match arm
+    for (size_t i = 0; i < arms->count; i++) {
+        ASTNode *arm = arms->nodes[i];
+        if (!arm || arm->type != AST_MATCH_ARM) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, expr->location,
+                                  "Invalid match arm in match expression");
+            type_descriptor_release(expr_type);
+            if (match_result_type)
+                type_descriptor_release(match_result_type);
+            return false;
+        }
+
+        ASTNode *pattern = arm->data.match_arm.pattern;
+        ASTNode *body = arm->data.match_arm.body;
+
+        if (!pattern || !body) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, arm->location,
+                                  "Match arm missing pattern or body");
+            type_descriptor_release(expr_type);
+            if (match_result_type)
+                type_descriptor_release(match_result_type);
+            return false;
+        }
+
+        // Create new scope for pattern bindings
+        semantic_enter_scope(analyzer);
+
+        // Analyze the pattern against the matched expression type
+        if (!semantic_validate_pattern_types(analyzer, pattern, expr_type)) {
+            semantic_exit_scope(analyzer);
+            type_descriptor_release(expr_type);
+            if (match_result_type)
+                type_descriptor_release(match_result_type);
+            return false;
+        }
+
+        // For match expressions, the body must be an expression that returns a value
+        // The body is typically wrapped in AST_EXPR_STMT by the parser
+        if (body->type == AST_EXPR_STMT) {
+            ASTNode *body_expr = body->data.expr_stmt.expression;
+            if (!semantic_analyze_expression(analyzer, body_expr)) {
+                semantic_exit_scope(analyzer);
+                type_descriptor_release(expr_type);
+                if (match_result_type)
+                    type_descriptor_release(match_result_type);
+                return false;
+            }
+
+            // Get the type of this arm's result
+            TypeDescriptor *arm_type = semantic_get_expression_type(analyzer, body_expr);
+            if (!arm_type) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_INFERENCE_FAILED,
+                                      body_expr->location,
+                                      "Failed to infer type of match arm expression");
+                semantic_exit_scope(analyzer);
+                type_descriptor_release(expr_type);
+                if (match_result_type)
+                    type_descriptor_release(match_result_type);
+                return false;
+            }
+
+            // Check type consistency between arms
+            if (first_arm) {
+                match_result_type = arm_type;
+                type_descriptor_retain(arm_type);
+                first_arm = false;
+            } else {
+                if (!type_descriptor_equals(match_result_type, arm_type)) {
+                    semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH,
+                                          body_expr->location,
+                                          "Match arm returns different type than previous arms");
+                    type_descriptor_release(arm_type);
+                    semantic_exit_scope(analyzer);
+                    type_descriptor_release(expr_type);
+                    type_descriptor_release(match_result_type);
+                    return false;
+                }
+            }
+            type_descriptor_release(arm_type);
+        } else {
+            // For non-expression bodies (blocks), we need to ensure they return a value
+            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, body->location,
+                                  "Match expression arms must be expressions, not statements");
+            semantic_exit_scope(analyzer);
+            type_descriptor_release(expr_type);
+            if (match_result_type)
+                type_descriptor_release(match_result_type);
+            return false;
+        }
+
+        semantic_exit_scope(analyzer);
+    }
+
+    // Set the type of the entire match expression
+    if (match_result_type) {
+        semantic_set_expression_type(analyzer, expr, match_result_type);
+        type_descriptor_release(match_result_type);
+    }
+
+    type_descriptor_release(expr_type);
+    return true;
+}
+
 // =============================================================================
 // CONTROL FLOW HELPERS
 // =============================================================================

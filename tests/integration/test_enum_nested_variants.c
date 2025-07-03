@@ -3,8 +3,8 @@
  * Tests complex enum nesting patterns
  */
 
-#include "test_enum_integration_common.h"
 #include "../framework/backend_stubs.h"
+#include "test_enum_integration_common.h"
 
 // Test nested enum variants
 static void test_nested_enum_variants(void) {

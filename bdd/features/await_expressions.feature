@@ -160,9 +160,9 @@ Feature: Await expressions
 
       pub fn safe_divide(a: i32, b: i32) -> Result<i32, string> {
           if b == 0 {
-              return Result::Err("Division by zero");
+              return Result.Err("Division by zero");
           } else {
-              return Result::Ok(a / b);
+              return Result.Ok(a / b);
           }
       }
 
@@ -182,9 +182,9 @@ Feature: Await expressions
 
       pub fn find_value(search: bool) -> Option<i32> {
           if search {
-              return Option::Some(99);
+              return Option.Some(99);
           } else {
-              return Option::None;
+              return Option.None;
           }
       }
 

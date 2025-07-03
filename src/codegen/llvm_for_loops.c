@@ -132,11 +132,11 @@ static bool generate_range_loop(LLVMBackendData *data, const ASTNode *node,
         llvm_backend_report_error(data, node, "Invalid range function call arguments");
         return false;
     }
-    
+
     // Ensure range bounds are i32 type
     LLVMTypeRef start_type = LLVMTypeOf(start_val);
     LLVMTypeRef end_type = LLVMTypeOf(end_val);
-    
+
     // Convert to i32 if needed
     if (start_type != data->i32_type) {
         if (LLVMGetTypeKind(start_type) == LLVMIntegerTypeKind) {
@@ -148,7 +148,7 @@ static bool generate_range_loop(LLVMBackendData *data, const ASTNode *node,
             }
         }
     }
-    
+
     if (end_type != data->i32_type) {
         if (LLVMGetTypeKind(end_type) == LLVMIntegerTypeKind) {
             unsigned bits = LLVMGetIntTypeWidth(end_type);
@@ -317,8 +317,8 @@ static bool generate_array_loop(LLVMBackendData *data, const ASTNode *node, LLVM
     LLVMPositionBuilderAtEnd(data->builder, loop_inc_bb);
     // Reload current index in increment block
     current_index = LLVMBuildLoad2(data->builder, index_type, index_var, "array_index_inc");
-    LLVMValueRef inc_index = LLVMBuildAdd(data->builder, current_index,
-                                          LLVMConstInt(index_type, 1, false), "array_inc");
+    LLVMValueRef inc_index =
+        LLVMBuildAdd(data->builder, current_index, LLVMConstInt(index_type, 1, false), "array_inc");
     LLVMBuildStore(data->builder, inc_index, index_var);
     LLVMBuildBr(data->builder, loop_bb);
 
@@ -425,8 +425,8 @@ static bool generate_slice_loop(LLVMBackendData *data, const ASTNode *node, LLVM
     LLVMPositionBuilderAtEnd(data->builder, loop_inc_bb);
     // Reload current index in increment block
     current_index = LLVMBuildLoad2(data->builder, index_type, index_var, "slice_index_inc");
-    LLVMValueRef inc_index = LLVMBuildAdd(data->builder, current_index,
-                                          LLVMConstInt(index_type, 1, false), "slice_inc");
+    LLVMValueRef inc_index =
+        LLVMBuildAdd(data->builder, current_index, LLVMConstInt(index_type, 1, false), "slice_inc");
     LLVMBuildStore(data->builder, inc_index, index_var);
     LLVMBuildBr(data->builder, loop_bb);
 

@@ -9,6 +9,7 @@
 // Global state for temp file management
 static char* temp_source_file = NULL;
 static char* temp_executable = NULL;
+static char* temp_compiler_output = NULL;
 
 // Command execution utilities
 char* bdd_execute_command(const char* command, int* exit_code) {
@@ -38,6 +39,16 @@ char* bdd_execute_command(const char* command, int* exit_code) {
     } else {
         // Process didn't exit normally (e.g., killed by signal)
         *exit_code = -1;
+    }
+    
+    // If no output was captured, return an empty string instead of NULL
+    // This prevents NULL pointer issues in test assertions
+    if (result == NULL) {
+        result = strdup("");
+        if (!result) {
+            // Memory allocation failed, return NULL
+            return NULL;
+        }
     }
     
     return result;
@@ -185,6 +196,9 @@ void bdd_cleanup_temp_files(void) {
         unlink(temp_executable);
         bdd_cleanup_string(&temp_executable);
     }
+    if (temp_compiler_output) {
+        bdd_cleanup_string(&temp_compiler_output);
+    }
     
     // Check environment variable to control cleanup behavior
     const char* keep_artifacts = getenv("BDD_KEEP_ARTIFACTS");
@@ -215,10 +229,21 @@ int bdd_compile_source_file(const char* source_file, const char* output_file, co
     int exit_code;
     char* output = bdd_execute_command(command, &exit_code);
     
+    // Store the compiler output globally for error checking
+    bdd_cleanup_string(&temp_compiler_output);
+    temp_compiler_output = output ? strdup(output) : NULL;
+    
     // If compilation failed, show the compiler output for debugging
     if (exit_code != 0 && output && strlen(output) > 0) {
         fprintf(stderr, "Compilation failed with exit code %d\n", exit_code);
         fprintf(stderr, "Compiler output:\n%s\n", output);
+    }
+    
+    // Also check for LLVM verification errors even if exit code is 0
+    if (exit_code == 0 && output && strstr(output, "LLVM function verification failed")) {
+        fprintf(stderr, "LLVM verification error detected (exit code was 0)\n");
+        fprintf(stderr, "Compiler output:\n%s\n", output);
+        exit_code = 255; // Force failure for LLVM verification errors
     }
     
     bdd_cleanup_string(&output);

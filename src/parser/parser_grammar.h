@@ -70,8 +70,6 @@ ASTNode *parse_match_stmt(Parser *parser);
 ASTNode *parse_match_arm(Parser *parser);
 ASTNode *parse_pattern(Parser *parser);
 ASTNode *parse_enum_pattern(Parser *parser);
-ASTNode *parse_struct_pattern(Parser *parser);
-ASTNode *parse_field_pattern(Parser *parser);
 
 // Expressions (disambiguated hierarchy) with precedence validation
 ASTNode *parse_expr(Parser *parser);

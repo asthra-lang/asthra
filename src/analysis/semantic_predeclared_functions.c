@@ -214,7 +214,7 @@ TypeDescriptor *create_predeclared_function_type(const char *name, const char *s
         // len(slice: []T) -> usize
         func_type->data.function.param_count = 1;
         func_type->data.function.param_types = malloc(sizeof(TypeDescriptor *));
-        
+
         // Create a generic slice type for []T - using void as placeholder
         TypeDescriptor *slice_type = malloc(sizeof(TypeDescriptor));
         slice_type->category = TYPE_SLICE;
@@ -223,8 +223,9 @@ TypeDescriptor *create_predeclared_function_type(const char *name, const char *s
         slice_type->alignment = _Alignof(void *);
         slice_type->name = strdup("[]T");
         atomic_init(&slice_type->ref_count, 1);
-        slice_type->data.slice.element_type = &primitive_types[PRIMITIVE_VOID]; // Generic placeholder
-        
+        slice_type->data.slice.element_type =
+            &primitive_types[PRIMITIVE_VOID]; // Generic placeholder
+
         func_type->data.function.param_types[0] = slice_type;
         func_type->data.function.return_type = &primitive_types[PRIMITIVE_USIZE];
     } else {

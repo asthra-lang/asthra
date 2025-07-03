@@ -105,7 +105,7 @@ static AsthraTestResult test_if_let_enum_patterns(AsthraTestContext *context) {
 }
 
 /**
- * Test: Struct patterns in if-let
+ * Test: Struct patterns in if-let (should fail as struct patterns are removed)
  */
 static AsthraTestResult test_if_let_struct_patterns(AsthraTestContext *context) {
     const char *test_cases[] = {"if let Point { x: a, y: b } = get_point() { }",
@@ -114,6 +114,8 @@ static AsthraTestResult test_if_let_struct_patterns(AsthraTestContext *context) 
                                 "if let Empty { } = create_empty() { }", // Edge case: empty struct
                                 NULL};
 
+    // Since struct patterns have been removed from the language,
+    // these should all fail to parse
     for (int i = 0; test_cases[i] != NULL; i++) {
         Parser *parser = create_test_parser(test_cases[i]);
 
@@ -124,20 +126,18 @@ static AsthraTestResult test_if_let_struct_patterns(AsthraTestContext *context) 
 
         ASTNode *result = parse_if_stmt(parser);
 
-        if (!asthra_test_assert_not_null(context, result, "Failed to parse if-let struct: %s",
-                                         test_cases[i])) {
-            destroy_test_parser(parser);
-            return ASTHRA_TEST_FAIL;
-        }
-
-        if (!asthra_test_assert_int_eq(context, result->type, AST_IF_LET_STMT,
-                                       "Expected if-let statement for: %s", test_cases[i])) {
+        // We expect parsing to fail for struct patterns
+        if (asthra_test_assert_null(context, result,
+                                    "Struct patterns should not parse (removed from language): %s",
+                                    test_cases[i])) {
+            // Good - parsing failed as expected
+        } else {
+            // Parsing succeeded when it shouldn't have
             ast_free_node(result);
             destroy_test_parser(parser);
             return ASTHRA_TEST_FAIL;
         }
 
-        ast_free_node(result);
         destroy_test_parser(parser);
     }
 
@@ -149,8 +149,10 @@ static AsthraTestResult test_if_let_struct_patterns(AsthraTestContext *context) 
  */
 static AsthraTestResult test_if_let_nested_patterns(AsthraTestContext *context) {
     const char *test_cases[] = {"if let Option.Some(Result.Ok(value)) = nested { }",
-                                "if let Result.Ok(Option.Some(data)) = complex { }",
-                                "if let Wrapper.Inner(Point { x: a, y: b }) = wrapped { }", NULL};
+                                "if let Result.Ok(Option.Some(data)) = complex { }", NULL};
+
+    // Test case with struct pattern removed since struct patterns are no longer supported
+    // "if let Wrapper.Inner(Point { x: a, y: b }) = wrapped { }"
 
     for (int i = 0; test_cases[i] != NULL; i++) {
         Parser *parser = create_test_parser(test_cases[i]);

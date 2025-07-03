@@ -6,8 +6,8 @@
  * Licensed under the terms specified in LICENSE
  */
 
-#include <stddef.h> // for size_t
 #include "../compiler.h" // for AsthraCompilerOptions
+#include <stddef.h>      // for size_t
 
 // Minimal backend structure definition for LLVM-only backend
 typedef struct AsthraBackend {
@@ -299,22 +299,23 @@ static const char *llvm_backend_get_name(AsthraBackend *backend) {
 }
 
 // Direct LLVM code generation function
-int asthra_generate_llvm_code(AsthraCompilerContext *ctx, const ASTNode *ast, const char *output_file) {
+int asthra_generate_llvm_code(AsthraCompilerContext *ctx, const ASTNode *ast,
+                              const char *output_file) {
     // Create a temporary backend structure for compatibility
     AsthraBackend backend = {0};
     backend.name = "llvm";
-    
+
     // Initialize LLVM backend
     if (llvm_backend_initialize(&backend, &ctx->options) != 0) {
         return -1;
     }
-    
+
     // Generate code
     int result = llvm_backend_generate(&backend, ctx, ast, output_file);
-    
+
     // Cleanup
     llvm_backend_cleanup(&backend);
-    
+
     return result;
 }
 

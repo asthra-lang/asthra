@@ -51,9 +51,9 @@ ASTNode *parse_struct_literal_with_name_and_type_args(Parser *parser, char *stru
         return NULL;
     }
 
-    while (!match_token(parser, TOKEN_RIGHT_BRACE) && !at_end(parser)) {
+    while (!check_token(parser, TOKEN_RIGHT_BRACE) && !at_end(parser)) {
         // Parse field initialization: field_name: value
-        if (!match_token(parser, TOKEN_IDENTIFIER)) {
+        if (!check_token(parser, TOKEN_IDENTIFIER)) {
             report_error(parser, "Expected field name in struct literal");
             for (size_t i = 0; i < field_count; i++) {
                 ast_free_node(field_inits[i]);

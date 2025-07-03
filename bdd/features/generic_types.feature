@@ -64,9 +64,9 @@ Feature: Generic Types
       }
       
       pub fn main(none) -> void {
-          let some_int: Option<i32> = Option::Some(42);
-          let some_str: Option<string> = Option::Some("hello");
-          let none_int: Option<i32> = Option::None;
+          let some_int: Option<i32> = Option.Some(42);
+          let some_str: Option<string> = Option.Some("hello");
+          let none_int: Option<i32> = Option.None;
           log("Generic enum works");
           return ();
       }
@@ -150,7 +150,7 @@ Feature: Generic Types
       
       pub fn main(none) -> void {
           let nested: Box<Option<i32>> = Box { 
-              value: Option::Some(42) 
+              value: Option.Some(42) 
           };
           log("Nested generics work");
           return ();
@@ -193,9 +193,9 @@ Feature: Generic Types
       
       pub fn divide(a: i32, b: i32) -> Result<i32, string> {
           if b == 0 {
-              return Result::Err("Division by zero");
+              return Result.Err("Division by zero");
           }
-          return Result::Ok(a / b);
+          return Result.Ok(a / b);
       }
       
       pub fn main(none) -> void {
@@ -219,9 +219,9 @@ Feature: Generic Types
       
       pub fn find_value(key: string) -> Option<i32> {
           if key == "answer" {
-              return Option::Some(42);
+              return Option.Some(42);
           }
-          return Option::None;
+          return Option.None;
       }
       
       pub fn main(none) -> void {

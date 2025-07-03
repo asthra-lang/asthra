@@ -40,11 +40,11 @@ bool test_end_to_end_compilation_mock(void) {
 bool test_grammar_compliance(void) {
     // Test cases that should parse according to the grammar:
     // IfLetStmt <- 'if' 'let' Pattern '=' Expr Block ('else' Block)?
+    // Note: Struct patterns have been removed from the language
 
     const char *valid_cases[] = {
         "if let x = compute() { }",                           // Simple identifier pattern
         "if let Option.Some(x) = get_option() { }",           // Enum pattern
-        "if let Point { x: a, y: b } = get_point() { }",      // Struct pattern
         "if let Option.Some(x) = maybe_value() { } else { }", // With else clause
         NULL};
 

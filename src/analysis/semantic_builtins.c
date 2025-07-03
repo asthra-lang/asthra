@@ -49,7 +49,7 @@ TypeDescriptor *semantic_get_builtin_type(SemanticAnalyzer *analyzer, const char
     // Note: usize and isize are not aliases - they have their own primitive types
     // They should be found in the main loop above
 
-    // Fallback for usize/isize if not found in main loop 
+    // Fallback for usize/isize if not found in main loop
     if (strcmp(name, "usize") == 0) {
         return get_builtin_type("usize");
     } else if (strcmp(name, "isize") == 0) {

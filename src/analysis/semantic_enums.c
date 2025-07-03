@@ -146,14 +146,16 @@ bool analyze_enum_declaration(SemanticAnalyzer *analyzer, ASTNode *enum_decl) {
         // We're shadowing a predeclared type, which is allowed
         // Remove the predeclared entry first
         symbol_table_remove(enum_scope, enum_name);
-        
+
         // Now insert the new enum
         if (!symbol_table_insert_safe(enum_scope, enum_name, enum_symbol)) {
             symbol_entry_destroy(enum_symbol);
             free((char *)enum_type->name);
             free(enum_type);
-            semantic_report_error(analyzer, SEMANTIC_ERROR_SYMBOL_TABLE, enum_decl->location,
-                                  "Failed to insert enum '%s' into symbol table after removing predeclared type", enum_name);
+            semantic_report_error(
+                analyzer, SEMANTIC_ERROR_SYMBOL_TABLE, enum_decl->location,
+                "Failed to insert enum '%s' into symbol table after removing predeclared type",
+                enum_name);
             return false;
         }
     } else if (!symbol_table_insert_safe(enum_scope, enum_name, enum_symbol)) {
@@ -301,7 +303,7 @@ bool analyze_enum_variant_declaration(SemanticAnalyzer *analyzer, ASTNode *varia
                                   "Invalid associated type for variant '%s'", variant_name);
             return false;
         }
-        
+
         // Store the associated type in the variant symbol
         // Replace the default i32 type with the actual associated type
         type_descriptor_release(variant_symbol->type);

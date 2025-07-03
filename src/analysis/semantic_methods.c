@@ -13,8 +13,8 @@
 #include "semantic_core.h"
 #include "semantic_symbols.h"
 #include "semantic_types.h"
-#include "type_info_lifecycle.h"
 #include "type_info_integration.h"
+#include "type_info_lifecycle.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -192,7 +192,7 @@ bool analyze_method_declaration(SemanticAnalyzer *analyzer, ASTNode *method_decl
 
     // Set up function type data
     method_type->data.function.param_count = params ? ast_node_list_size(params) : 0;
-    
+
     // Resolve return type
     if (method_decl->data.method_decl.return_type) {
         ASTNode *return_type_node = method_decl->data.method_decl.return_type;
@@ -214,7 +214,7 @@ bool analyze_method_declaration(SemanticAnalyzer *analyzer, ASTNode *method_decl
             type_descriptor_retain(method_type->data.function.return_type);
         }
     }
-    
+
     method_type->data.function.param_types = NULL; // TODO: resolve parameter types
 
     // Create method symbol with visibility information
@@ -231,7 +231,7 @@ bool analyze_method_declaration(SemanticAnalyzer *analyzer, ASTNode *method_decl
     // Store visibility information (extend SymbolEntry if needed)
     method_symbol->visibility = visibility;
     method_symbol->is_instance_method = is_instance_method;
-    
+
     // Set type info on the method declaration node
     method_decl->type_info = type_info_from_descriptor(method_type);
     if (!method_decl->type_info) {
@@ -297,7 +297,7 @@ bool analyze_method_declaration(SemanticAnalyzer *analyzer, ASTNode *method_decl
                             ast_node_set_type_info(param, param_type_info);
                             type_info_release(param_type_info); // ast_node_set_type_info retains it
                         }
-                        
+
                         SymbolEntry *param_symbol =
                             symbol_entry_create(param_name, SYMBOL_VARIABLE, param_type, param);
                         if (param_symbol) {
@@ -310,13 +310,18 @@ bool analyze_method_declaration(SemanticAnalyzer *analyzer, ASTNode *method_decl
         }
     }
 
+    // Set the current function context for return type checking
+    SymbolEntry *previous_function = analyzer->current_function;
+    analyzer->current_function = method_symbol;
+
     // Analyze method body
     bool body_success = true;
     if (body) {
         body_success = semantic_analyze_statement(analyzer, body);
     }
 
-    // TODO: Verify return type matches
+    // Restore previous function context
+    analyzer->current_function = previous_function;
 
     // Exit method scope
     semantic_exit_scope(analyzer);

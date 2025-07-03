@@ -60,7 +60,7 @@ static AsthraTestResult test_valid_associated_function_calls(AsthraTestContext *
     const char *valid_expressions[] = {"Vec::new()",       // Simple associated function
                                        "Point::default()", // Another simple case
                                        "MyStruct::create(42, \"test\")", // With arguments
-                                       "Result::Ok(value)",              // Enum constructor style
+                                       "Result.Ok(value)",               // Enum constructor style
                                        NULL};
 
     for (int i = 0; valid_expressions[i] != NULL; i++) {

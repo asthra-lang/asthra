@@ -68,7 +68,7 @@ ExternParamList<- ExternParam (',' ExternParam)* / 'none'  # External function p
 ExternParam    <- SafeFFIAnnotation? SimpleIdent ':' Type  # External parameter with single FFI annotation (no MutModifier allowed)
 
 # Type system with built-in and composite types
-Type           <- BaseType / SliceType / FixedArrayType / StructType / EnumType / PtrType / ResultType / OptionType / TaskHandleType / TupleType / NeverType  # All supported types
+Type           <- BaseType / SliceType / FixedArrayType / StructType / EnumType / PtrType / ResultType / OptionType / TupleType / NeverType  # All supported types
 TupleType      <- '(' Type ',' Type (',' Type)* ')'       # Tuple types: (T, U) or (T, U, V) - minimum 2 elements
 NeverType      <- 'Never'                                  # Never type for functions that don't return
 BaseType       <- 'int' / 'float' / 'bool' / 'string' / 'void' / 'usize' / 'isize' /  # Primitive types (void preserved as legitimate type)
@@ -81,7 +81,6 @@ TypeArgs       <- '<' Type (',' Type)* '>'                 # Generic type argume
 PtrType        <- '*mut' Type / '*const' Type              # Mutable and immutable pointers
 ResultType     <- 'Result' '<' Type ',' Type '>'           # Error handling: Result<Success, Error>
 OptionType     <- 'Option' '<' Type '>'                    # Optional values: Option<T>
-TaskHandleType <- 'TaskHandle' '<' Type '>'                # Concurrency task handles: TaskHandle<T>
 
 # Code blocks and statements
 Block          <- '{' Statement* '}'                       # Code block with multiple statements
@@ -102,13 +101,10 @@ BreakStmt      <- 'break' ';'                              # Exit current loop
 ContinueStmt   <- 'continue' ';'                           # Skip to next iteration
 
 # Pattern matching system for destructuring
-Pattern        <- EnumPattern / StructPattern / TuplePattern / SimpleIdent  # Supported pattern types
+Pattern        <- EnumPattern / TuplePattern / SimpleIdent  # Supported pattern types (struct patterns removed)
 TuplePattern   <- '(' Pattern ',' Pattern (',' Pattern)* ')'  # Tuple patterns: (pattern1, pattern2) or (pattern1, pattern2, pattern3) - minimum 2 elements
 EnumPattern    <- SimpleIdent '.' SimpleIdent ('(' PatternArgs ')')?  # Enum variant matching with optional extraction
 PatternArgs    <- Pattern (',' Pattern)* / 'none'         # Nested patterns for complex destructuring: explicit patterns or none marker
-StructPattern  <- SimpleIdent TypeArgs? '{' FieldPattern (',' FieldPattern)* '}'      # Struct destructuring with optional generics
-FieldPattern   <- SimpleIdent ':' FieldBinding                # Always explicit field binding syntax
-FieldBinding   <- SimpleIdent / '_'                        # Binding name or ignore marker
 
 # Expression system with proper operator precedence (fixed shift operator precedence)
 Expr           <- LogicOr                                   # Entry point for expressions
@@ -207,7 +203,6 @@ ReservedKeyword <- 'as'                                     # Import aliasing
                  / 'none'                                   # Structural absence marker (semantic clarity)
                  / 'Result'                                 # Built-in Result<T,E> type
                  / 'Option'                                 # Built-in Option<T> type
-                 / 'TaskHandle'                             # Built-in TaskHandle<T> type
 
 # =============================================================================
 # USER IDENTIFIERS

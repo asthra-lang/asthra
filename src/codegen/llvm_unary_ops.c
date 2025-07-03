@@ -7,11 +7,11 @@
  */
 
 #include "llvm_unary_ops.h"
+#include "llvm_access_expr.h"
 #include "llvm_debug.h"
 #include "llvm_expr_gen.h"
-#include "llvm_types.h"
 #include "llvm_locals.h"
-#include "llvm_access_expr.h"
+#include "llvm_types.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,27 +30,27 @@ LLVMValueRef generate_unary_op(LLVMBackendData *data, const ASTNode *node) {
     }
 
     // Handle sizeof specially since its operand is a type, not an expression
-    if (node->data.unary_expr.operator == UNOP_SIZEOF) {
+    if (node->data.unary_expr.operator== UNOP_SIZEOF) {
         // sizeof operator processing
         // sizeof operator - operand is a type node, not an expression
         // The operand doesn't have type_info because it's a type specification
         // We need to resolve the type from the operand AST node
-        
+
         if (!node->data.unary_expr.operand) {
             LLVM_REPORT_ERROR(data, node, "sizeof missing operand");
         }
-        
+
         // For sizeof, we need to get the type from the operand AST node
         // The operand represents a type (like i32, Point, etc.), not an expression
         LLVMTypeRef llvm_type = NULL;
-        
+
         const ASTNode *type_operand = node->data.unary_expr.operand;
-        
+
         // Handle different types of type operands
         if (type_operand->type == AST_BASE_TYPE) {
             // Base type like i32, usize, etc.
             const char *type_name = type_operand->data.base_type.name;
-            
+
             // Get primitive type
             if (strcmp(type_name, "i8") == 0) {
                 llvm_type = LLVMInt8TypeInContext(data->context);
@@ -82,7 +82,7 @@ LLVMValueRef generate_unary_op(LLVMBackendData *data, const ASTNode *node) {
         } else if (type_operand->type == AST_IDENTIFIER) {
             // Simple type like i32, usize, etc. (fallback for some cases)
             const char *type_name = type_operand->data.identifier.name;
-            
+
             // Get primitive type
             if (strcmp(type_name, "i8") == 0) {
                 llvm_type = LLVMInt8TypeInContext(data->context);
@@ -118,11 +118,11 @@ LLVMValueRef generate_unary_op(LLVMBackendData *data, const ASTNode *node) {
             // Array types like [3]i32, [5]u8
             const ASTNode *element_type_node = type_operand->data.array_type.element_type;
             const ASTNode *size_node = type_operand->data.array_type.size;
-            
+
             if (!element_type_node || !size_node) {
                 LLVM_REPORT_ERROR(data, node, "Array type missing element type or size");
             }
-            
+
             // Get the element type
             LLVMTypeRef element_type = NULL;
             if (element_type_node->type == AST_BASE_TYPE) {
@@ -148,12 +148,13 @@ LLVMValueRef generate_unary_op(LLVMBackendData *data, const ASTNode *node) {
                 } else if (strcmp(type_name, "f64") == 0) {
                     element_type = data->f64_type;
                 } else {
-                    LLVM_REPORT_ERROR_PRINTF(data, node, "Unknown array element type: %s", type_name);
+                    LLVM_REPORT_ERROR_PRINTF(data, node, "Unknown array element type: %s",
+                                             type_name);
                 }
             } else {
                 LLVM_REPORT_ERROR(data, node, "Complex array element types not yet supported");
             }
-            
+
             // Get the array size (must be a constant integer)
             unsigned array_size = 0;
             if (size_node->type == AST_INTEGER_LITERAL) {
@@ -161,20 +162,20 @@ LLVMValueRef generate_unary_op(LLVMBackendData *data, const ASTNode *node) {
             } else {
                 LLVM_REPORT_ERROR(data, node, "Array size must be a constant integer");
             }
-            
+
             // Create the array type
             llvm_type = LLVMArrayType(element_type, array_size);
         } else {
             LLVM_REPORT_ERROR(data, node, "Complex types in sizeof not yet supported");
         }
-        
+
         if (!llvm_type) {
             LLVM_REPORT_ERROR(data, node, "Failed to resolve type for sizeof");
         }
-        
+
         // Get size of the type
         LLVMValueRef size = LLVMSizeOf(llvm_type);
-        
+
         // The result type should be usize (i64 on 64-bit platforms)
         // LLVMSizeOf returns the target's size type, which might be i32 or smaller
         // We need to extend it to i64 to match usize
@@ -223,12 +224,12 @@ LLVMValueRef generate_unary_op(LLVMBackendData *data, const ASTNode *node) {
         if (!node->type_info) {
             LLVM_REPORT_ERROR(data, node, "Dereference node missing type info");
         }
-        
+
         LLVMTypeRef elem_type = asthra_type_to_llvm(data, node->type_info);
         if (!elem_type) {
             LLVM_REPORT_ERROR(data, node, "Failed to convert dereference result type to LLVM type");
         }
-        
+
         return LLVMBuildLoad2(data->builder, elem_type, operand, "deref");
     }
 
@@ -237,7 +238,6 @@ LLVMValueRef generate_unary_op(LLVMBackendData *data, const ASTNode *node) {
         // Generate the address of the operand without loading it
         return generate_lvalue(data, node->data.unary_expr.operand);
     }
-
 
     default:
         LLVM_REPORT_ERROR_PRINTF(data, node, "Unsupported unary operator: %d",
@@ -274,15 +274,16 @@ static LLVMValueRef generate_lvalue(LLVMBackendData *data, const ASTNode *node) 
             // We need to create an alloca and store the parameter value
             LLVMTypeRef fn_type = LLVMGlobalGetValueType(data->current_function);
             unsigned param_count = LLVMCountParamTypes(fn_type);
-            
+
             for (unsigned i = 0; i < param_count; i++) {
                 LLVMValueRef param = LLVMGetParam(data->current_function, i);
                 const char *param_name = LLVMGetValueName(param);
                 if (param_name && strcmp(param_name, name) == 0) {
                     // Parameters are values, not addresses, so we can't take their address
-                    LLVM_REPORT_ERROR_PRINTF(data, node, 
-                        "Cannot take address of parameter '%s'. Consider copying to a local variable first.", 
-                        name);
+                    LLVM_REPORT_ERROR_PRINTF(data, node,
+                                             "Cannot take address of parameter '%s'. Consider "
+                                             "copying to a local variable first.",
+                                             name);
                 }
             }
         }
@@ -319,13 +320,14 @@ static LLVMValueRef generate_lvalue(LLVMBackendData *data, const ASTNode *node) 
     }
 
     case AST_UNARY_EXPR:
-        if (node->data.unary_expr.operator == UNOP_DEREF) {
+        if (node->data.unary_expr.operator== UNOP_DEREF) {
             // For &(*ptr), just return ptr
             return generate_expression(data, node->data.unary_expr.operand);
         }
         LLVM_REPORT_ERROR(data, node, "Cannot take address of unary expression");
 
     default:
-        LLVM_REPORT_ERROR_PRINTF(data, node, "Cannot take address of expression type %d", node->type);
+        LLVM_REPORT_ERROR_PRINTF(data, node, "Cannot take address of expression type %d",
+                                 node->type);
     }
 }

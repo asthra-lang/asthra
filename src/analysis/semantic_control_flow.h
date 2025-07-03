@@ -9,6 +9,7 @@ bool analyze_return_statement(SemanticAnalyzer *analyzer, ASTNode *stmt);
 bool analyze_if_statement(SemanticAnalyzer *analyzer, ASTNode *stmt);
 bool analyze_if_let_statement(SemanticAnalyzer *analyzer, ASTNode *stmt);
 bool analyze_match_statement(SemanticAnalyzer *analyzer, ASTNode *stmt);
+bool analyze_match_expression(SemanticAnalyzer *analyzer, ASTNode *expr);
 
 /**
  * Check if a block statement returns Never type

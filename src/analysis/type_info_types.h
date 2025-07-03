@@ -32,13 +32,13 @@ typedef struct TypeInfo {
 
     // Type categorization
     enum {
-        TYPE_INFO_PRIMITIVE, // Built-in primitive types
-        TYPE_INFO_STRUCT,    // User-defined struct types
-        TYPE_INFO_SLICE,     // Slice types []T
-        TYPE_INFO_POINTER,   // Pointer types *T, *mut T
-        TYPE_INFO_RESULT,    // Result<T, E> types
-        TYPE_INFO_OPTION,    // Option<T> types
-        TYPE_INFO_FUNCTION,  // Function types
+        TYPE_INFO_PRIMITIVE,   // Built-in primitive types
+        TYPE_INFO_STRUCT,      // User-defined struct types
+        TYPE_INFO_SLICE,       // Slice types []T
+        TYPE_INFO_POINTER,     // Pointer types *T, *mut T
+        TYPE_INFO_RESULT,      // Result<T, E> types
+        TYPE_INFO_OPTION,      // Option<T> types
+        TYPE_INFO_FUNCTION,    // Function types
         TYPE_INFO_ENUM,        // Enum types (future)
         TYPE_INFO_TUPLE,       // Tuple types (T1, T2, ...)
         TYPE_INFO_TASK_HANDLE, // Task handle types TaskHandle<T>

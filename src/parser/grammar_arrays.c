@@ -62,6 +62,17 @@ ASTNode *parse_array_literal(Parser *parser) {
         return NULL;
     }
 
+    // Check for empty array syntax []
+    if (match_token(parser, TOKEN_RIGHT_BRACKET)) {
+        advance_token(parser);
+
+        ASTNode *array = ast_create_node(AST_ARRAY_LITERAL, start_loc);
+        if (array) {
+            array->data.array_literal.elements = NULL;
+        }
+        return array;
+    }
+
     // Try to parse as repeated element syntax [value; count]
     ASTNode *first_expr = parse_expr(parser);
     if (!first_expr) {

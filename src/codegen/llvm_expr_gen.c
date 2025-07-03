@@ -7,11 +7,11 @@
  */
 
 #include "llvm_expr_gen.h"
+#include "llvm_basic_stmts.h"
 #include "llvm_debug.h"
 #include "llvm_locals.h"
-#include "llvm_types.h"
 #include "llvm_stmt_gen.h"
-#include "llvm_basic_stmts.h"
+#include "llvm_types.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -77,11 +77,12 @@ LLVMValueRef generate_identifier(LLVMBackendData *data, const ASTNode *node) {
         // which returns a simplified slice struct {ptr, len}
         LLVMValueRef args_fn = LLVMGetNamedFunction(data->module, "asthra_runtime_get_args_simple");
         if (!args_fn) {
-            // Declare asthra_runtime_get_args_simple function: SimplifiedSlice asthra_runtime_get_args_simple()
-            // SimplifiedSlice structure: struct { void *ptr; size_t len; }
+            // Declare asthra_runtime_get_args_simple function: SimplifiedSlice
+            // asthra_runtime_get_args_simple() SimplifiedSlice structure: struct { void *ptr;
+            // size_t len; }
             LLVMTypeRef slice_fields[2] = {
-                data->ptr_type,  // void *ptr
-                data->i64_type   // size_t len
+                data->ptr_type, // void *ptr
+                data->i64_type  // size_t len
             };
             LLVMTypeRef slice_type = LLVMStructTypeInContext(data->context, slice_fields, 2, 0);
             LLVMTypeRef fn_type = LLVMFunctionType(slice_type, NULL, 0, false);
@@ -178,71 +179,89 @@ LLVMValueRef generate_expression(LLVMBackendData *data, const ASTNode *node) {
 
     case AST_STRUCT_LITERAL:
         return generate_struct_literal(data, node);
-    
+
     case AST_ENUM_VARIANT:
         // Enum variant construction - return the variant tag as an i32
         if (node->data.enum_variant.enum_name && node->data.enum_variant.variant_name) {
             const char *enum_name = node->data.enum_variant.enum_name;
             const char *variant_name = node->data.enum_variant.variant_name;
             int variant_index = 0;
-            
+
             // Hardcoded variant indices - should be from type system
             // Simple enum
             if (strcmp(enum_name, "Simple") == 0) {
-                if (strcmp(variant_name, "One") == 0) variant_index = 0;
-                else if (strcmp(variant_name, "Two") == 0) variant_index = 1;
+                if (strcmp(variant_name, "One") == 0)
+                    variant_index = 0;
+                else if (strcmp(variant_name, "Two") == 0)
+                    variant_index = 1;
             }
             // Direction enum
             else if (strcmp(enum_name, "Direction") == 0) {
-                if (strcmp(variant_name, "North") == 0) variant_index = 0;
-                else if (strcmp(variant_name, "South") == 0) variant_index = 1;
-                else if (strcmp(variant_name, "East") == 0) variant_index = 2;
-                else if (strcmp(variant_name, "West") == 0) variant_index = 3;
+                if (strcmp(variant_name, "North") == 0)
+                    variant_index = 0;
+                else if (strcmp(variant_name, "South") == 0)
+                    variant_index = 1;
+                else if (strcmp(variant_name, "East") == 0)
+                    variant_index = 2;
+                else if (strcmp(variant_name, "West") == 0)
+                    variant_index = 3;
             }
             // Action enum
             else if (strcmp(enum_name, "Action") == 0) {
-                if (strcmp(variant_name, "Move") == 0) variant_index = 0;
-                else if (strcmp(variant_name, "Stop") == 0) variant_index = 1;
-                else if (strcmp(variant_name, "Turn") == 0) variant_index = 2;
+                if (strcmp(variant_name, "Move") == 0)
+                    variant_index = 0;
+                else if (strcmp(variant_name, "Stop") == 0)
+                    variant_index = 1;
+                else if (strcmp(variant_name, "Turn") == 0)
+                    variant_index = 2;
+            }
+            // MyEnum (used in BDD tests)
+            else if (strcmp(enum_name, "MyEnum") == 0) {
+                if (strcmp(variant_name, "First") == 0)
+                    variant_index = 0;
+                else if (strcmp(variant_name, "Second") == 0)
+                    variant_index = 1;
+                else if (strcmp(variant_name, "Third") == 0)
+                    variant_index = 2;
             }
             // Other enums - use generic mapping
             else {
-                if (strstr(variant_name, "Contains") || strstr(variant_name, "Value") || 
+                if (strstr(variant_name, "Contains") || strstr(variant_name, "Value") ||
                     strstr(variant_name, "Some") || strstr(variant_name, "Ok") ||
                     strstr(variant_name, "One") || strstr(variant_name, "A")) {
                     variant_index = 0;
-                } else if (strstr(variant_name, "Nothing") || strstr(variant_name, "Empty") || 
+                } else if (strstr(variant_name, "Nothing") || strstr(variant_name, "Empty") ||
                            strstr(variant_name, "None") || strstr(variant_name, "Err") ||
                            strstr(variant_name, "Two") || strstr(variant_name, "B")) {
                     variant_index = 1;
                 }
             }
-            
+
             return LLVMConstInt(data->i32_type, variant_index, false);
         }
         LLVM_REPORT_ERROR(data, node, "Invalid enum variant");
-    
+
     case AST_SLICE_EXPR:
         return generate_slice_expr(data, node);
-    
+
     case AST_UNSAFE_BLOCK: {
         // Unsafe blocks are expression-oriented - they return the value of their last expression
         if (!node->data.unsafe_block.block) {
             LLVM_REPORT_ERROR(data, node, "Unsafe block has no body");
         }
-        
+
         // Generate the block contents
         ASTNode *block = node->data.unsafe_block.block;
         if (block->type != AST_BLOCK) {
             LLVM_REPORT_ERROR(data, node, "Unsafe block body is not a block");
         }
-        
+
         LLVMValueRef last_value = NULL;
         if (block->data.block.statements) {
             ASTNodeList *statements = block->data.block.statements;
             for (size_t i = 0; i < statements->count; i++) {
                 ASTNode *stmt = statements->nodes[i];
-                
+
                 // For the last statement, if it's an expression statement,
                 // capture its value as the result of the unsafe block
                 if (i == statements->count - 1 && stmt->type == AST_EXPR_STMT) {
@@ -253,28 +272,29 @@ LLVMValueRef generate_expression(LLVMBackendData *data, const ASTNode *node) {
                 }
             }
         }
-        
+
         return last_value;
     }
-    
+
     case AST_AWAIT_EXPR: {
         // Simple implementation: just load the value from the handle variable
         ASTNode *handle_expr = node->data.await_expr.task_handle_expr;
         if (!handle_expr) {
             LLVM_REPORT_ERROR(data, node, "Await expression missing handle");
         }
-        
+
         // For now, only support simple identifier handles
         if (handle_expr->type != AST_IDENTIFIER) {
-            LLVM_REPORT_ERROR(data, node, "Await only supports simple handle identifiers currently");
+            LLVM_REPORT_ERROR(data, node,
+                              "Await only supports simple handle identifiers currently");
         }
-        
+
         const char *handle_name = handle_expr->data.identifier.name;
         LLVMValueRef handle_var = lookup_local_var(data, handle_name);
         if (!handle_var) {
             LLVM_REPORT_ERROR_PRINTF(data, node, "Undefined handle variable: %s", handle_name);
         }
-        
+
         // Load the value from the handle variable
         LocalVar *var_entry = lookup_local_var_entry(data, handle_name);
         if (var_entry) {
@@ -283,28 +303,28 @@ LLVMValueRef generate_expression(LLVMBackendData *data, const ASTNode *node) {
             LLVM_REPORT_ERROR(data, node, "Cannot determine type of handle variable");
         }
     }
-    
+
     // TODO: Implement remaining expression types
     case AST_ASSOCIATED_FUNC_CALL: {
         // Generate associated function call like Math::add(1, 2)
         const char *struct_name = node->data.associated_func_call.struct_name;
         const char *func_name = node->data.associated_func_call.function_name;
         ASTNodeList *args = node->data.associated_func_call.args;
-        
+
         if (!struct_name || !func_name) {
             LLVM_REPORT_ERROR(data, node, "Invalid associated function call");
         }
-        
+
         // Generate the mangled function name: StructName_methodName
         char mangled_name[256];
         snprintf(mangled_name, sizeof(mangled_name), "%s_%s", struct_name, func_name);
-        
+
         // Look up the function in the module
         LLVMValueRef function = LLVMGetNamedFunction(data->module, mangled_name);
         if (!function) {
             LLVM_REPORT_ERROR_PRINTF(data, node, "Associated function not found: %s", mangled_name);
         }
-        
+
         // Generate arguments
         size_t arg_count = args ? ast_node_list_size(args) : 0;
         LLVMValueRef *arg_values = NULL;
@@ -318,19 +338,15 @@ LLVMValueRef generate_expression(LLVMBackendData *data, const ASTNode *node) {
                 }
             }
         }
-        
+
         // Generate the function call
-        LLVMValueRef result = LLVMBuildCall2(data->builder, 
-                                            LLVMGlobalGetValueType(function),
-                                            function, 
-                                            arg_values, 
-                                            arg_count, 
-                                            "assoc_func_result");
-        
+        LLVMValueRef result = LLVMBuildCall2(data->builder, LLVMGlobalGetValueType(function),
+                                             function, arg_values, arg_count, "assoc_func_result");
+
         if (arg_values) {
             free(arg_values);
         }
-        
+
         return result;
     }
 

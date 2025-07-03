@@ -71,6 +71,117 @@ bool analyze_identifier_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
     return true;
 }
 
+bool analyze_const_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
+    if (!analyzer || !expr || expr->type != AST_CONST_EXPR) {
+        return false;
+    }
+
+    // Mark as constant expression
+    expr->flags.is_constant_expr = true;
+
+    // Analyze the underlying expression based on const expression type
+    switch (expr->data.const_expr.expr_type) {
+    case CONST_EXPR_LITERAL:
+        // Analyze the literal
+        return semantic_analyze_expression(analyzer, expr->data.const_expr.data.literal);
+
+    case CONST_EXPR_IDENTIFIER: {
+        // Look up identifier in symbol table
+        const char *identifier_name = expr->data.const_expr.data.identifier;
+        SymbolEntry *symbol = semantic_resolve_identifier(analyzer, identifier_name);
+        if (!symbol) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL, expr->location,
+                                  "Undefined constant identifier '%s'", identifier_name);
+            return false;
+        }
+
+        if (symbol->kind != SYMBOL_CONST) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, expr->location,
+                                  "Identifier '%s' is not a constant", identifier_name);
+            return false;
+        }
+
+        // Mark symbol as used
+        symbol->flags.is_used = true;
+
+        // Set type information from the symbol
+        if (symbol->type) {
+            expr->type_info = create_type_info_from_descriptor(symbol->type);
+            if (!expr->type_info) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, expr->location,
+                                      "Failed to create type info for const identifier '%s'",
+                                      identifier_name);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    case CONST_EXPR_BINARY_OP:
+        // Analyze both operands
+        if (!semantic_analyze_expression(analyzer, expr->data.const_expr.data.binary.left) ||
+            !semantic_analyze_expression(analyzer, expr->data.const_expr.data.binary.right)) {
+            return false;
+        }
+
+        // Verify both operands are constant expressions
+        if (!expr->data.const_expr.data.binary.left->flags.is_constant_expr ||
+            !expr->data.const_expr.data.binary.right->flags.is_constant_expr) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_EXPRESSION, expr->location,
+                                  "Binary const expression requires constant operands");
+            return false;
+        }
+
+        // For now, set type_info to NULL - the important thing is that this is marked as constant
+        // A more sophisticated implementation would do proper type inference
+        expr->type_info = NULL;
+
+        return true;
+
+    case CONST_EXPR_UNARY_OP:
+        // Analyze the operand
+        if (!semantic_analyze_expression(analyzer, expr->data.const_expr.data.unary.operand)) {
+            return false;
+        }
+
+        // Verify operand is a constant expression
+        if (!expr->data.const_expr.data.unary.operand->flags.is_constant_expr) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_EXPRESSION, expr->location,
+                                  "Unary const expression requires constant operand");
+            return false;
+        }
+
+        // For now, set type_info to NULL - the important thing is that this is marked as constant
+        expr->type_info = NULL;
+
+        return true;
+
+    case CONST_EXPR_SIZEOF:
+        // Analyze the type
+        TypeDescriptor *type =
+            analyze_type_node(analyzer, expr->data.const_expr.data.sizeof_expr.type);
+        if (!type) {
+            return false;
+        }
+
+        // Create integer type info for sizeof result
+        expr->type_info = type_info_create_primitive("usize", PRIMITIVE_USIZE, 8);
+        if (!expr->type_info) {
+            type_descriptor_release(type);
+            return false;
+        }
+
+        type_descriptor_release(type);
+        return true;
+
+    default:
+        semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, expr->location,
+                              "Unsupported const expression type");
+        return false;
+    }
+}
+
 bool analyze_literal_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
     if (!analyzer || !expr) {
         return false;

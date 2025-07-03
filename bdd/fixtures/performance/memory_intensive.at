@@ -25,7 +25,7 @@ pub fn create_large_array(size: int) -> []int {
 // Recursive data structure creation
 pub fn create_linked_list(depth: int, value: int) -> Option<DataNode> {
     if depth <= 0 {
-        return Option::None;
+        return Option.None;
     }
     
     let node: DataNode = DataNode {
@@ -34,7 +34,7 @@ pub fn create_linked_list(depth: int, value: int) -> Option<DataNode> {
         next: create_linked_list(depth - 1, value + 1)
     };
     
-    return Option::Some(node);
+    return Option.Some(node);
 }
 
 // Matrix operations for memory testing

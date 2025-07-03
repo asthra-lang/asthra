@@ -181,10 +181,8 @@ ASTNode *ast_clone_node(ASTNode *node) {
         return clone_type_node(node, clone);
 
     case AST_MATCH_ARM:
-    case AST_STRUCT_PATTERN:
     case AST_TUPLE_PATTERN:
     case AST_ENUM_PATTERN:
-    case AST_FIELD_PATTERN:
         return clone_pattern_node(node, clone);
 
     // Default case

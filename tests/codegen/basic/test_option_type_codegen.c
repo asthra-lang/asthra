@@ -11,9 +11,9 @@
 #include "../../../src/analysis/semantic_analyzer.h"
 #include "../../../src/compiler.h"
 #include "../../../src/parser/parser.h"
+#include "../codegen_backend_wrapper.h"
 #include "../framework/compiler_test_utils.h"
 #include "../framework/test_framework.h"
-#include "../codegen_backend_wrapper.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

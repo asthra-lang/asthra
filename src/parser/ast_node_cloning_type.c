@@ -43,7 +43,8 @@ ASTNode *clone_type_node(ASTNode *node, ASTNode *clone) {
         break;
 
     case AST_TASKHANDLE_TYPE:
-        clone->data.taskhandle_type.result_type = ast_clone_node(node->data.taskhandle_type.result_type);
+        clone->data.taskhandle_type.result_type =
+            ast_clone_node(node->data.taskhandle_type.result_type);
         break;
 
     case AST_STRUCT_TYPE:

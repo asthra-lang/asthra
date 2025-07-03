@@ -16,6 +16,7 @@
 #include "semantic_calls.h"
 #include "semantic_concurrency.h"
 #include "semantic_const_declarations.h"
+#include "semantic_control_flow.h"
 #include "semantic_core.h"
 #include "semantic_declarations.h"
 #include "semantic_errors.h"
@@ -35,6 +36,7 @@
 #include "semantic_type_helpers.h"
 #include "semantic_types.h"
 #include "semantic_utilities.h"
+#include "type_checking.h"
 #include "type_info.h"
 #include <assert.h>
 #include <stdarg.h>
@@ -79,6 +81,10 @@ bool semantic_analyze_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
 
     case AST_IDENTIFIER:
         result = analyze_identifier_expression(analyzer, expr);
+        break;
+
+    case AST_CONST_EXPR:
+        result = analyze_const_expression(analyzer, expr);
         break;
 
     case AST_INTEGER_LITERAL:
@@ -435,10 +441,115 @@ bool semantic_analyze_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
         break;
     }
 
-    default:
-        // For other expression types, just return true for now
-        // TODO: Implement analysis for other expression types
+    case AST_POSTFIX_EXPR:
+        // Analyze postfix expressions (should be handled by the individual postfix operations)
+        // This type might be deprecated in favor of specific operations like FIELD_ACCESS,
+        // INDEX_ACCESS
+        result = semantic_analyze_expression(analyzer, expr->data.postfix_expr.base);
+        if (result && expr->data.postfix_expr.base) {
+            // Propagate type from base expression
+            TypeDescriptor *base_type =
+                semantic_get_expression_type(analyzer, expr->data.postfix_expr.base);
+            if (base_type) {
+                semantic_set_expression_type(analyzer, expr, base_type);
+                type_descriptor_release(base_type);
+            }
+        }
+        break;
+
+    case AST_SLICE_LENGTH_ACCESS:
+        // Analyze slice length access (.len operation)
         result = true;
+        if (expr->data.slice_length_access.slice) {
+            result = semantic_analyze_expression(analyzer, expr->data.slice_length_access.slice);
+            if (result) {
+                // Verify the operand is actually a slice or array
+                TypeDescriptor *slice_type =
+                    semantic_get_expression_type(analyzer, expr->data.slice_length_access.slice);
+                if (slice_type) {
+                    if (slice_type->category == TYPE_SLICE || slice_type->category == TYPE_ARRAY) {
+                        // .len always returns usize
+                        TypeDescriptor *usize_type =
+                            type_descriptor_create_primitive(PRIMITIVE_USIZE);
+                        if (usize_type) {
+                            semantic_set_expression_type(analyzer, expr, usize_type);
+                            type_descriptor_release(usize_type);
+                        }
+                    } else {
+                        semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH,
+                                              expr->location,
+                                              "Cannot access length of non-slice/array type");
+                        result = false;
+                    }
+                    type_descriptor_release(slice_type);
+                }
+            }
+        } else {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_EXPRESSION, expr->location,
+                                  "Slice length access missing operand");
+            result = false;
+        }
+        break;
+
+    case AST_CAST_EXPR:
+        // Analyze cast expressions (expr as Type)
+        result = true;
+        if (expr->data.cast_expr.expression && expr->data.cast_expr.target_type) {
+            // Analyze the source expression
+            if (!semantic_analyze_expression(analyzer, expr->data.cast_expr.expression)) {
+                result = false;
+                break;
+            }
+
+            // Resolve the target type
+            TypeDescriptor *target_type =
+                analyze_type_node(analyzer, expr->data.cast_expr.target_type);
+            if (!target_type) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_TYPE,
+                                      expr->data.cast_expr.target_type->location,
+                                      "Invalid target type in cast expression");
+                result = false;
+                break;
+            }
+
+            // Get source type and validate cast is allowed
+            TypeDescriptor *source_type =
+                semantic_get_expression_type(analyzer, expr->data.cast_expr.expression);
+            if (source_type) {
+                // Basic cast validation - ensure types are compatible for casting
+                if (!semantic_validate_cast_compatibility(analyzer, source_type, target_type,
+                                                          expr->location)) {
+                    result = false;
+                } else {
+                    // Set the result type to the target type
+                    semantic_set_expression_type(analyzer, expr, target_type);
+                }
+                type_descriptor_release(source_type);
+            } else {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_INFERENCE_FAILED,
+                                      expr->location,
+                                      "Cannot determine source type for cast expression");
+                result = false;
+            }
+
+            type_descriptor_release(target_type);
+        } else {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_EXPRESSION, expr->location,
+                                  "Cast expression missing source expression or target type");
+            result = false;
+        }
+        break;
+
+    case AST_MATCH_EXPR:
+        // Analyze match expressions
+        result = analyze_match_expression(analyzer, expr);
+        break;
+
+    default:
+        // All major expression types should now be handled
+        semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_EXPRESSION, expr->location,
+                              "Unsupported expression type %d in semantic analysis", expr->type);
+        result = false;
         break;
     }
 

@@ -3,8 +3,8 @@
  * Tests memory safety and management for enum variants
  */
 
-#include "test_enum_integration_common.h"
 #include "../framework/backend_stubs.h"
+#include "test_enum_integration_common.h"
 
 // Test enum variant memory management
 static void test_enum_variant_memory_management(void) {

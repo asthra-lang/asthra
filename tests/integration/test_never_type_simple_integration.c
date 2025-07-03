@@ -13,11 +13,11 @@
  * Licensed under the terms specified in LICENSE
  */
 
+#include "../framework/backend_stubs.h"
 #include "../framework/compiler_test_utils.h"
 #include "../framework/test_framework.h"
 #include "compiler.h"
 #include "semantic_analyzer.h"
-#include "../framework/backend_stubs.h"
 #include <stdio.h>
 #include <string.h>
 

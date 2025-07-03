@@ -29,11 +29,11 @@ pub fn find_first_negative(values: []int) -> Option<int> {
     // Early return with break
     for val in values {
         if val < 0 {
-            return Option::Some(val);
+            return Option.Some(val);
         }
     }
     
-    return Option::None;
+    return Option.None;
 }
 
 pub fn count_even_numbers(numbers: []int) -> int {

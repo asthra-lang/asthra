@@ -139,10 +139,12 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
                 bool is_never_method = false;
                 if (field_access && field_access->type_info) {
                     TypeInfo *method_type_info = field_access->type_info;
-                    if (method_type_info->category == TYPE_INFO_FUNCTION && 
+                    if (method_type_info->category == TYPE_INFO_FUNCTION &&
                         method_type_info->data.function.return_type &&
-                        method_type_info->data.function.return_type->category == TYPE_INFO_PRIMITIVE &&
-                        method_type_info->data.function.return_type->data.primitive.kind == PRIMITIVE_INFO_NEVER) {
+                        method_type_info->data.function.return_type->category ==
+                            TYPE_INFO_PRIMITIVE &&
+                        method_type_info->data.function.return_type->data.primitive.kind ==
+                            PRIMITIVE_INFO_NEVER) {
                         is_never_method = true;
                     }
                 }
@@ -171,7 +173,7 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
         if (strcmp(func_name, "len") == 0) {
             return generate_len_function_call(data, node);
         }
-        
+
         // Handle log() predeclared function
         if (strcmp(func_name, "log") == 0) {
             return generate_log_function_call(data, node);
@@ -249,10 +251,11 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
     bool is_never_call = false;
     if (node->data.call_expr.function && node->data.call_expr.function->type_info) {
         TypeInfo *func_type_info = node->data.call_expr.function->type_info;
-        if (func_type_info->category == TYPE_INFO_FUNCTION && 
+        if (func_type_info->category == TYPE_INFO_FUNCTION &&
             func_type_info->data.function.return_type &&
             func_type_info->data.function.return_type->category == TYPE_INFO_PRIMITIVE &&
-            func_type_info->data.function.return_type->data.primitive.kind == PRIMITIVE_INFO_NEVER) {
+            func_type_info->data.function.return_type->data.primitive.kind ==
+                PRIMITIVE_INFO_NEVER) {
             is_never_call = true;
         }
     }
@@ -480,15 +483,15 @@ LLVMValueRef generate_log_function_call(LLVMBackendData *data, const ASTNode *no
         LLVM_REPORT_ERROR(data, arg_node, "Failed to generate argument for log()");
     }
 
-    // Get the log function from the module
-    LLVMValueRef log_fn = LLVMGetNamedFunction(data->module, "log");
+    // Get the asthra_simple_log function from the module
+    LLVMValueRef log_fn = LLVMGetNamedFunction(data->module, "asthra_simple_log");
     if (!log_fn) {
         LLVM_REPORT_ERROR(data, node, "log() function not found in module");
     }
 
     // Create arguments array
     LLVMValueRef args[] = {arg};
-    
+
     // Get function type
     LLVMTypeRef fn_type = LLVMGlobalGetValueType(log_fn);
     if (!fn_type) {
@@ -497,6 +500,6 @@ LLVMValueRef generate_log_function_call(LLVMBackendData *data, const ASTNode *no
 
     // Call the log function
     LLVMValueRef result = LLVMBuildCall2(data->builder, fn_type, log_fn, args, 1, "");
-    
+
     return result;
 }

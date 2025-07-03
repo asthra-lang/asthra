@@ -265,6 +265,11 @@ struct ASTNode {
             ASTNode *target_type; // Target type to cast to
         } cast_expr;
 
+        struct {
+            ASTNode *expression;
+            ASTNodeList *arms; // Match arms for expression evaluation
+        } match_expr;
+
         // Literals
         struct {
             int64_t value;
@@ -384,27 +389,9 @@ struct ASTNode {
         struct {
             char *enum_name;
             char *variant_name;
-            char *binding; // Optional variable binding
+            char *binding;    // Optional variable binding (for backward compatibility)
+            ASTNode *pattern; // Optional nested pattern for complex matching
         } enum_pattern;
-
-        // Struct pattern for destructuring: Point { x, y } or Point { x: new_x, y }
-        struct {
-            char *struct_name;      // Name of the struct type (e.g., "Point")
-            ASTNodeList *type_args; // Optional type arguments (e.g., <T> in Vec<T> { ... }) - Phase
-                                    // 2: Generic Structs
-            ASTNodeList *field_patterns; // List of field pattern bindings
-            ASTNodeList *fields;         // Alias for field_patterns for compatibility
-            bool is_partial;             // true if pattern uses ".." (partial matching)
-        } struct_pattern;
-
-        // Field pattern for struct destructuring: x, x: new_x, or x: _
-        struct {
-            char *field_name;   // Name of the field in the struct (e.g., "x")
-            char *binding_name; // Variable name to bind to (e.g., "new_x"), NULL for same as
-                                // field_name
-            bool is_ignored;    // true if pattern is "_" (ignored binding)
-            ASTNode *pattern;   // Pattern for this field
-        } field_pattern;
 
         // Tuple pattern for destructuring: (pattern1, pattern2, ...)
         struct {
@@ -458,11 +445,11 @@ struct ASTNode {
 
         // Advanced concurrency structures - Tier 1 (Core & Simple)
         struct {
-            ASTNode *call_expr;     // Full call expression (supports method calls)
-            char *handle_var_name;  // Variable to store the task handle
+            ASTNode *call_expr;    // Full call expression (supports method calls)
+            char *handle_var_name; // Variable to store the task handle
             // Legacy fields kept for backward compatibility
-            char *function_name;    // DEPRECATED: Use call_expr instead
-            ASTNodeList *args;      // DEPRECATED: Use call_expr->data.call_expr.args
+            char *function_name; // DEPRECATED: Use call_expr instead
+            ASTNodeList *args;   // DEPRECATED: Use call_expr->data.call_expr.args
         } spawn_with_handle_stmt;
 
         struct {

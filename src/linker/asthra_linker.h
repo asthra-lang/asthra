@@ -216,7 +216,6 @@ bool asthra_linker_set_executable_permissions(Asthra_Linker *linker, const char 
 bool asthra_linker_validate_executable(Asthra_Linker *linker, const char *executable_path,
                                        Asthra_ExecutableMetadata *metadata);
 
-
 // =============================================================================
 // RUNTIME LIBRARY INTEGRATION
 // =============================================================================

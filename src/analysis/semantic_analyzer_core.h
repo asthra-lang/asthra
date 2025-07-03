@@ -36,7 +36,7 @@ _Static_assert(__STDC_VERSION__ >= 201710L,
 
 typedef struct ImportedModule {
     char *path;
-    SourceLocation location;  // Location of the import declaration
+    SourceLocation location; // Location of the import declaration
 } ImportedModule;
 
 typedef struct SemanticAnalyzer {

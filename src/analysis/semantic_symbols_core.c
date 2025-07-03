@@ -161,6 +161,10 @@ SymbolEntry *symbol_table_lookup_safe(SymbolTable *table, const char *name) {
     return symbol_table_lookup_impl(table, name);
 }
 
+bool symbol_table_remove_safe(SymbolTable *table, const char *name) {
+    return symbol_table_remove(table, name);
+}
+
 // ===============================
 // ADDITIONAL SYMBOL TABLE OPERATIONS
 // ===============================

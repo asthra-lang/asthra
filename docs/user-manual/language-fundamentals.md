@@ -802,6 +802,10 @@ priv fn complex_error_handling(void) -> Result<string, string> "Success: " + fin
 }
 ```
 
+### Match Statement Limitations
+
+> **Important**: In Asthra, `match` is a **statement**, not an expression. You cannot use `match` in contexts that require expressions (like `return match ...` or `let x = match ...`). For detailed examples and workarounds, see [Match Statement Limitations](../spec/advanced-features.md#match-statement-limitations) in the Advanced Features specification.
+
 ## Object-Oriented Programming
 
 ✅ **Status: FULLY IMPLEMENTED** - Asthra supports modern object-oriented programming through visibility control, implementation blocks, and instance methods.

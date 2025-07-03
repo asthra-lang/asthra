@@ -347,6 +347,9 @@ TypeDescriptor *analyze_type_node(SemanticAnalyzer *analyzer, ASTNode *type_node
                         const_value_create_integer(symbol->const_value->data.integer_value);
                 }
             }
+        } else if (size_node->type == AST_CONST_EXPR) {
+            // Handle const expressions properly
+            size_value = evaluate_const_expression(analyzer, size_node);
         } else {
             // Try the general const expression evaluator
             size_value = evaluate_literal_as_const(analyzer, size_node);
@@ -481,9 +484,9 @@ TypeDescriptor *analyze_type_node(SemanticAnalyzer *analyzer, ASTNode *type_node
 
         // Create TaskHandle<T> type using the dedicated type creation function
         TypeDescriptor *taskhandle_type = type_descriptor_create_task_handle(result_type);
-        
+
         type_descriptor_release(result_type);
-        
+
         return taskhandle_type;
     }
 

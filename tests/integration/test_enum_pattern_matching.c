@@ -3,8 +3,8 @@
  * Tests enum usage in pattern matching contexts
  */
 
-#include "test_enum_integration_common.h"
 #include "../framework/backend_stubs.h"
+#include "test_enum_integration_common.h"
 
 // Test enum variants in match expressions
 static void test_enum_variants_with_pattern_matching(void) {

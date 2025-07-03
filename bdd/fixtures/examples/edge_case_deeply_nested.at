@@ -68,23 +68,23 @@ pub fn deeply_nested_control_flow(x: int) -> int {
 pub fn deeply_nested_match(opt: Option<Result<Option<int>, string>>) -> int {
     // Deeply nested pattern matching
     match opt {
-        Option::Some(res) => {
+        Option.Some(res) => {
             match res {
-                Result::Ok(inner_opt) => {
+                Result.Ok(inner_opt) => {
                     match inner_opt {
-                        Option::Some(value) => {
+                        Option.Some(value) => {
                             if value > 0 {
                                 value
                             } else {
                                 -value
                             }
                         }
-                        Option::None => {
+                        Option.None => {
                             0
                         }
                     }
                 }
-                Result::Err(msg) => {
+                Result.Err(msg) => {
                     match msg {
                         "error1" => { -1 }
                         "error2" => { -2 }
@@ -93,7 +93,7 @@ pub fn deeply_nested_match(opt: Option<Result<Option<int>, string>>) -> int {
                 }
             }
         }
-        Option::None => {
+        Option.None => {
             -1000
         }
     }
@@ -107,7 +107,7 @@ pub fn main(none) -> void {
             data: 2,
             next: Level3 {
                 data: 3,
-                next: Option::Some(Level4 {
+                next: Option.Some(Level4 {
                     data: 4,
                     values: [][]int{
                         []int{1, 2, 3},
@@ -125,7 +125,7 @@ pub fn main(none) -> void {
     
     // Test deeply nested pattern matching
     let complex: Option<Result<Option<int>, string>> = 
-        Option::Some(Result::Ok(Option::Some(42)));
+        Option.Some(Result.Ok(Option.Some(42)));
     let result2: int = deeply_nested_match(complex);
     print(result2);
     

@@ -35,9 +35,9 @@ pub fn allocate_buffer(size: usize) -> Option<*mut void> {
     unsafe {
         let ptr: *mut void = malloc(size);
         if ptr == null {
-            return Option::None;
+            return Option.None;
         } else {
-            return Option::Some(ptr);
+            return Option.Some(ptr);
         }
     }
 }
@@ -81,11 +81,11 @@ pub fn main(none) -> void {
     // Test memory allocation
     let buffer: Option<*mut void> = allocate_buffer(1024);
     match buffer {
-        Option::Some(ptr) => {
+        Option.Some(ptr) => {
             print("Allocation successful");
             deallocate_buffer(ptr);
         }
-        Option::None => {
+        Option.None => {
             print("Allocation failed");
         }
     }

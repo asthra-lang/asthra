@@ -342,7 +342,7 @@ static bool test_continue_in_for_loop() {
     // Check that the terminator jumps to increment block, not condition
     LLVMValueRef terminator = LLVMGetBasicBlockTerminator(LLVMGetInsertBlock(data->builder));
     bool correct_jump = false;
-    
+
     if (terminator && LLVMIsABranchInst(terminator)) {
         // For unconditional branch (continue), check it goes to increment block
         if (LLVMGetNumOperands(terminator) == 1) {

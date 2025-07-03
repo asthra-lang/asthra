@@ -14,8 +14,8 @@
 #include "../../../src/analysis/semantic_analyzer.h"
 #include "../../../src/compiler.h"
 #include "../../../src/parser/ast.h"
-#include "../codegen_backend_wrapper.h"
 #include "../../framework/backend_stubs.h"
+#include "../codegen_backend_wrapper.h"
 
 // Direct declarations for parser types
 typedef struct Lexer Lexer;
