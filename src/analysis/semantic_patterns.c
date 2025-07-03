@@ -136,8 +136,48 @@ bool semantic_validate_pattern_types(SemanticAnalyzer *analyzer, ASTNode *patter
             }
         }
 
-        // Handle variable binding if present (e.g., Some(x))
-        if (pattern->data.enum_pattern.binding) {
+        // Handle nested pattern if present (e.g., Some(inner_pattern))
+        if (pattern->data.enum_pattern.pattern) {
+            // Determine the type for the nested pattern based on the enum variant
+            TypeDescriptor *nested_type = NULL;
+
+            // Special handling for Option<T>
+            if (strcmp(enum_name, "Option") == 0 && strcmp(variant_name, "Some") == 0) {
+                // For Option<T>, the nested type is T
+                if (expected->category == TYPE_OPTION) {
+                    nested_type = expected->data.option.value_type;
+                } else {
+                    semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, pattern->location,
+                                          "Option pattern on non-Option type");
+                    return false;
+                }
+            }
+            // TODO: Add similar handling for Result<T,E> and other generic enums
+            else {
+                // Look up the variant's associated type from the enum type
+                if (expected->data.enum_type.variants) {
+                    SymbolEntry *variant_entry =
+                        symbol_table_lookup_safe(expected->data.enum_type.variants, variant_name);
+                    if (variant_entry && variant_entry->type) {
+                        // Use the variant's associated type
+                        nested_type = variant_entry->type;
+                    }
+                }
+            }
+
+            if (!nested_type) {
+                semantic_report_error(
+                    analyzer, SEMANTIC_ERROR_TYPE_INFERENCE_FAILED, pattern->location,
+                    "Failed to determine type for nested pattern in variant '%s'", variant_name);
+                return false;
+            }
+
+            // Recursively validate the nested pattern
+            return semantic_validate_pattern_types(analyzer, pattern->data.enum_pattern.pattern,
+                                                   nested_type);
+        }
+        // Handle variable binding if present (e.g., Some(x)) - backward compatibility
+        else if (pattern->data.enum_pattern.binding) {
             const char *binding_name = pattern->data.enum_pattern.binding;
 
             // Determine the binding type based on the enum type
@@ -170,7 +210,7 @@ bool semantic_validate_pattern_types(SemanticAnalyzer *analyzer, ASTNode *patter
                         type_descriptor_retain(binding_type);
                     }
                 }
-                
+
                 // Fallback if we couldn't find the variant's type
                 if (!binding_type) {
                     // For compatibility with old code, default to int
@@ -190,9 +230,10 @@ bool semantic_validate_pattern_types(SemanticAnalyzer *analyzer, ASTNode *patter
                 symbol_entry_create(binding_name, SYMBOL_VARIABLE, binding_type, pattern);
             if (!binding_symbol) {
                 // Release the binding type if we retained it
-                if (binding_type && (strcmp(enum_name, "Option") == 0 || 
-                    (expected->data.enum_type.variants && 
-                     symbol_table_lookup_safe(expected->data.enum_type.variants, variant_name)))) {
+                if (binding_type &&
+                    (strcmp(enum_name, "Option") == 0 ||
+                     (expected->data.enum_type.variants &&
+                      symbol_table_lookup_safe(expected->data.enum_type.variants, variant_name)))) {
                     type_descriptor_release(binding_type);
                 }
                 semantic_report_error(analyzer, SEMANTIC_ERROR_MEMORY_ALLOCATION, pattern->location,
@@ -209,9 +250,10 @@ bool semantic_validate_pattern_types(SemanticAnalyzer *analyzer, ASTNode *patter
             if (!symbol_table_insert_safe(analyzer->current_scope, binding_name, binding_symbol)) {
                 symbol_entry_destroy(binding_symbol);
                 // Release the binding type if we retained it
-                if (binding_type && (strcmp(enum_name, "Option") == 0 || 
-                    (expected->data.enum_type.variants && 
-                     symbol_table_lookup_safe(expected->data.enum_type.variants, variant_name)))) {
+                if (binding_type &&
+                    (strcmp(enum_name, "Option") == 0 ||
+                     (expected->data.enum_type.variants &&
+                      symbol_table_lookup_safe(expected->data.enum_type.variants, variant_name)))) {
                     type_descriptor_release(binding_type);
                 }
                 semantic_report_error(analyzer, SEMANTIC_ERROR_DUPLICATE_SYMBOL, pattern->location,
@@ -220,100 +262,14 @@ bool semantic_validate_pattern_types(SemanticAnalyzer *analyzer, ASTNode *patter
             }
 
             // Release the retained type if we retained it (symbol now owns it)
-            bool type_was_retained = (strcmp(enum_name, "Option") == 0 || 
-                (expected->data.enum_type.variants && 
-                 symbol_table_lookup_safe(expected->data.enum_type.variants, variant_name)));
+            bool type_was_retained =
+                (strcmp(enum_name, "Option") == 0 ||
+                 (expected->data.enum_type.variants &&
+                  symbol_table_lookup_safe(expected->data.enum_type.variants, variant_name)));
             if (type_was_retained && binding_type) {
                 type_descriptor_release(binding_type);
             }
         }
-
-        return true;
-    }
-
-    case AST_STRUCT_PATTERN: {
-        // Struct pattern matching - validate struct type and fields
-        const char *struct_name = pattern->data.struct_pattern.struct_name;
-
-        if (!struct_name) {
-            semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_EXPRESSION, pattern->location,
-                                  "Struct pattern missing struct name");
-            return false;
-        }
-
-        // Handle both regular structs and generic instances
-        TypeDescriptor *expected_struct_type = expected;
-        if (expected->category == TYPE_GENERIC_INSTANCE) {
-            // For generic instances, we need to check the base type
-            expected_struct_type = expected->data.generic_instance.base_type;
-            if (!expected_struct_type || expected_struct_type->category != TYPE_STRUCT) {
-                semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, pattern->location,
-                                      "Generic instance base type is not a struct");
-                return false;
-            }
-
-            // For generic patterns, we need to validate type arguments match
-            if (pattern->data.struct_pattern.type_args) {
-                // Pattern has type args - create generic instance and compare
-                size_t pattern_arg_count =
-                    ast_node_list_size(pattern->data.struct_pattern.type_args);
-                if (pattern_arg_count != expected->data.generic_instance.type_arg_count) {
-                    semantic_report_error(
-                        analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, pattern->location,
-                        "Pattern type argument count mismatch: expected %zu, got %zu",
-                        expected->data.generic_instance.type_arg_count, pattern_arg_count);
-                    return false;
-                }
-
-                // Validate each type argument matches
-                for (size_t i = 0; i < pattern_arg_count; i++) {
-                    ASTNode *pattern_arg =
-                        ast_node_list_get(pattern->data.struct_pattern.type_args, i);
-                    if (!pattern_arg)
-                        continue;
-
-                    // Analyze the pattern's type argument
-                    TypeDescriptor *pattern_arg_type = analyze_type_node(analyzer, pattern_arg);
-                    if (!pattern_arg_type) {
-                        semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_TYPE,
-                                              pattern_arg->location,
-                                              "Invalid type argument in pattern");
-                        return false;
-                    }
-
-                    // Compare with expected type argument
-                    TypeDescriptor *expected_arg_type =
-                        expected->data.generic_instance.type_args[i];
-                    if (!type_descriptor_equals(pattern_arg_type, expected_arg_type)) {
-                        semantic_report_error(
-                            analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, pattern_arg->location,
-                            "Pattern type argument mismatch: expected %s, got %s",
-                            expected_arg_type->name ? expected_arg_type->name : "unknown",
-                            pattern_arg_type->name ? pattern_arg_type->name : "unknown");
-                        type_descriptor_release(pattern_arg_type);
-                        return false;
-                    }
-
-                    type_descriptor_release(pattern_arg_type);
-                }
-            }
-        } else if (expected->category != TYPE_STRUCT) {
-            semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, pattern->location,
-                                  "Cannot match struct pattern against non-struct type");
-            return false;
-        }
-
-        // Check that struct names match (use base name for generic instances)
-        const char *expected_struct_name = expected_struct_type->name;
-        if (strcmp(expected_struct_name, struct_name) != 0) {
-            semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, pattern->location,
-                                  "Struct pattern '%s' does not match expected struct type '%s'",
-                                  struct_name, expected_struct_name);
-            return false;
-        }
-
-        // TODO: Validate field patterns
-        // ASTNodeList *field_patterns = pattern->data.struct_pattern.field_patterns;
 
         return true;
     }

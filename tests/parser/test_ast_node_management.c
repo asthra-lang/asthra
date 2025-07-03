@@ -53,10 +53,9 @@ static AsthraTestResult test_ast_node_creation_all_types(AsthraTestContext *cont
         AST_BINARY_EXPR,     AST_UNARY_EXPR,    AST_CALL_EXPR,
         AST_INTEGER_LITERAL, // Fixed: was AST_LITERAL
         AST_IDENTIFIER,      AST_IF_STMT,       AST_FOR_STMT,    AST_RETURN_STMT, AST_BLOCK,
-        AST_BASE_TYPE,     // Fixed: was AST_TYPE_PRIMITIVE
-        AST_PTR_TYPE,      // Fixed: was AST_TYPE_POINTER
-        AST_ENUM_PATTERN,  // Fixed: was AST_PATTERN_LITERAL
-        AST_STRUCT_PATTERN // Fixed: was AST_PATTERN_VARIABLE
+        AST_BASE_TYPE,   // Fixed: was AST_TYPE_PRIMITIVE
+        AST_PTR_TYPE,    // Fixed: was AST_TYPE_POINTER
+        AST_ENUM_PATTERN // Fixed: was AST_PATTERN_LITERAL
     };
 
     size_t type_count = sizeof(node_types) / sizeof(node_types[0]);

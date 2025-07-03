@@ -354,7 +354,7 @@ static AsthraTestResult test_for_loop_continue_increment(AsthraTestContext *cont
                          "}\n";
 
     bool success = compile_and_analyze(source, "test_for_loop_continue_increment");
-    ASTHRA_TEST_ASSERT_TRUE(context, success, 
+    ASTHRA_TEST_ASSERT_TRUE(context, success,
                             "For loop with continue statements should compile successfully");
 
     return ASTHRA_TEST_PASS;

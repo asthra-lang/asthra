@@ -51,10 +51,10 @@ pub fn calculate_area(shape: Shape) -> float {
 pub fn process_option(opt: Option<int>) -> int {
     // Match on Option type
     match opt {
-        Option::Some(value) => {
+        Option.Some(value) => {
             return value * 2;
         }
-        Option::None => {
+        Option.None => {
             return 0;
         }
     }
@@ -63,11 +63,11 @@ pub fn process_option(opt: Option<int>) -> int {
 pub fn handle_result(res: Result<int, string>) -> void {
     // Match on Result type
     match res {
-        Result::Ok(value) => {
+        Result.Ok(value) => {
             print("Success: ");
             print(value);
         }
-        Result::Err(error) => {
+        Result.Err(error) => {
             print("Error: ");
             print(error);
         }
@@ -88,11 +88,11 @@ pub fn main(none) -> void {
     let area: float = calculate_area(circle);
     print(area);
     
-    let some_value: Option<int> = Option::Some(21);
+    let some_value: Option<int> = Option.Some(21);
     let doubled: int = process_option(some_value);
     print(doubled);
     
-    let result: Result<int, string> = Result::Ok(42);
+    let result: Result<int, string> = Result.Ok(42);
     handle_result(result);
     
     return ();

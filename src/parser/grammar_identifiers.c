@@ -13,6 +13,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Forward declaration from grammar_generics.c
+ASTNode *parse_identifier_with_generics(Parser *parser, char *name, SourceLocation start_loc);
+
 /**
  * Parse Result keyword as enum name or type
  */
@@ -60,14 +63,14 @@ ASTNode *parse_result_keyword(Parser *parser, SourceLocation start_loc) {
                         free(variant_name);
                         return NULL;
                     }
-                    
+
                     // Add first argument to list
                     ast_node_list_add(&arg_list, value);
-                    
+
                     // Parse remaining arguments
                     while (match_token(parser, TOKEN_COMMA)) {
                         advance_token(parser);
-                        
+
                         ASTNode *arg = parse_expr(parser);
                         if (!arg) {
                             ast_node_list_destroy(arg_list);
@@ -75,10 +78,10 @@ ASTNode *parse_result_keyword(Parser *parser, SourceLocation start_loc) {
                             free(variant_name);
                             return NULL;
                         }
-                        
+
                         ast_node_list_add(&arg_list, arg);
                     }
-                    
+
                     // Create tuple literal for multiple values
                     value = ast_create_node(AST_TUPLE_LITERAL, start_loc);
                     if (!value) {
@@ -115,17 +118,25 @@ ASTNode *parse_result_keyword(Parser *parser, SourceLocation start_loc) {
         node->data.enum_variant.value = value; // Store the single value
 
         return node;
-    } else {
-        // Just "Result" by itself - create a type node
-        ASTNode *node = ast_create_node(AST_BASE_TYPE, start_loc);
-        if (!node) {
-            free(name);
-            return NULL;
+    } else if (match_token(parser, TOKEN_LESS_THAN)) {
+        // Handle generic Result type (e.g., Result<i32, string>)
+        ASTNode *generic_node = parse_identifier_with_generics(parser, name, start_loc);
+        if (generic_node) {
+            free(name); // parse_identifier_with_generics makes its own copy
+            return generic_node;
         }
-
-        node->data.base_type.name = name;
-        return node;
+        // If generic parsing failed, fall through to create base type
     }
+
+    // Default case: Just "Result" by itself - create a type node
+    ASTNode *node = ast_create_node(AST_BASE_TYPE, start_loc);
+    if (!node) {
+        free(name);
+        return NULL;
+    }
+
+    node->data.base_type.name = name;
+    return node;
 }
 
 /**
@@ -175,14 +186,14 @@ ASTNode *parse_option_keyword(Parser *parser, SourceLocation start_loc) {
                         free(variant_name);
                         return NULL;
                     }
-                    
+
                     // Add first argument to list
                     ast_node_list_add(&arg_list, value);
-                    
+
                     // Parse remaining arguments
                     while (match_token(parser, TOKEN_COMMA)) {
                         advance_token(parser);
-                        
+
                         ASTNode *arg = parse_expr(parser);
                         if (!arg) {
                             ast_node_list_destroy(arg_list);
@@ -190,10 +201,10 @@ ASTNode *parse_option_keyword(Parser *parser, SourceLocation start_loc) {
                             free(variant_name);
                             return NULL;
                         }
-                        
+
                         ast_node_list_add(&arg_list, arg);
                     }
-                    
+
                     // Create tuple literal for multiple values
                     value = ast_create_node(AST_TUPLE_LITERAL, start_loc);
                     if (!value) {
@@ -230,17 +241,25 @@ ASTNode *parse_option_keyword(Parser *parser, SourceLocation start_loc) {
         node->data.enum_variant.value = value; // Store the single value
 
         return node;
-    } else {
-        // Just "Option" by itself - create a type node
-        ASTNode *node = ast_create_node(AST_BASE_TYPE, start_loc);
-        if (!node) {
-            free(name);
-            return NULL;
+    } else if (match_token(parser, TOKEN_LESS_THAN)) {
+        // Handle generic Option type (e.g., Option<i32>)
+        ASTNode *generic_node = parse_identifier_with_generics(parser, name, start_loc);
+        if (generic_node) {
+            free(name); // parse_identifier_with_generics makes its own copy
+            return generic_node;
         }
-
-        node->data.base_type.name = name;
-        return node;
+        // If generic parsing failed, fall through to create base type
     }
+
+    // Default case: Just "Option" by itself - create a type node
+    ASTNode *node = ast_create_node(AST_BASE_TYPE, start_loc);
+    if (!node) {
+        free(name);
+        return NULL;
+    }
+
+    node->data.base_type.name = name;
+    return node;
 }
 
 /**
@@ -282,24 +301,24 @@ static ASTNode *parse_enum_constructor(Parser *parser, char *enum_name, SourceLo
                     free(variant_name);
                     return NULL;
                 }
-                
+
                 // Add first argument to list
                 ast_node_list_add(&arg_list, first_arg);
-                
+
                 // Parse remaining arguments
                 while (match_token(parser, TOKEN_COMMA)) {
                     advance_token(parser);
-                    
+
                     ASTNode *arg = parse_expr(parser);
                     if (!arg) {
                         ast_node_list_destroy(arg_list);
                         free(variant_name);
                         return NULL;
                     }
-                    
+
                     ast_node_list_add(&arg_list, arg);
                 }
-                
+
                 // Create tuple literal for multiple values
                 value = ast_create_node(AST_TUPLE_LITERAL, start_loc);
                 if (!value) {

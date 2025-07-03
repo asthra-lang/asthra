@@ -16,9 +16,7 @@
 // =============================================================================
 
 ASTNode *parse_enum_pattern_impl(Parser *parser, char *name, SourceLocation start_loc) {
-    // We've already consumed the dot, so parse the variant
-    advance_token(parser);
-
+    // We've already consumed the dot or double colon, so parse the variant
     char *variant_name = NULL;
     if (match_token(parser, TOKEN_IDENTIFIER)) {
         variant_name = strdup(parser->current_token.data.identifier.name);
@@ -28,12 +26,13 @@ ASTNode *parse_enum_pattern_impl(Parser *parser, char *name, SourceLocation star
         variant_name = strdup("none");
         advance_token(parser);
     } else {
-        report_error(parser, "Expected variant name after '.'");
+        report_error(parser, "Expected variant name after '.' or '::'");
         free(name);
         return NULL;
     }
 
     char *binding = NULL;
+    ASTNode *pattern = NULL;
     if (match_token(parser, TOKEN_LEFT_PAREN)) {
         advance_token(parser);
 
@@ -43,6 +42,7 @@ ASTNode *parse_enum_pattern_impl(Parser *parser, char *name, SourceLocation star
             // Explicit none for empty pattern arguments (current grammar semantic clarity)
             advance_token(parser);
             binding = NULL; // No binding
+            pattern = NULL;
         } else if (match_token(parser, TOKEN_VOID)) {
             // Legacy compatibility error with helpful message
             report_error(parser, "Unexpected 'void' in pattern arguments. Use 'none' for "
@@ -50,10 +50,19 @@ ASTNode *parse_enum_pattern_impl(Parser *parser, char *name, SourceLocation star
             free(name);
             free(variant_name);
             return NULL;
-        } else if (match_token(parser, TOKEN_IDENTIFIER)) {
-            // Parse actual pattern binding
-            binding = strdup(parser->current_token.data.identifier.name);
-            advance_token(parser);
+        } else {
+            // Parse nested pattern recursively
+            pattern = parse_pattern(parser);
+            if (!pattern) {
+                free(name);
+                free(variant_name);
+                return NULL;
+            }
+
+            // For simple identifier patterns, extract the binding name for backward compatibility
+            if (pattern->type == AST_IDENTIFIER) {
+                binding = strdup(pattern->data.identifier.name);
+            }
         }
 
         if (!expect_token(parser, TOKEN_RIGHT_PAREN)) {
@@ -61,6 +70,8 @@ ASTNode *parse_enum_pattern_impl(Parser *parser, char *name, SourceLocation star
             free(variant_name);
             if (binding)
                 free(binding);
+            if (pattern)
+                ast_free_node(pattern);
             return NULL;
         }
     }
@@ -71,12 +82,15 @@ ASTNode *parse_enum_pattern_impl(Parser *parser, char *name, SourceLocation star
         free(variant_name);
         if (binding)
             free(binding);
+        if (pattern)
+            ast_free_node(pattern);
         return NULL;
     }
 
     node->data.enum_pattern.enum_name = name;
     node->data.enum_pattern.variant_name = variant_name;
     node->data.enum_pattern.binding = binding;
+    node->data.enum_pattern.pattern = pattern;
 
     return node;
 }

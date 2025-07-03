@@ -21,6 +21,10 @@
 #include "grammar_identifiers.c"
 #include "grammar_literals.c"
 
+// Forward declaration for struct literal parsing
+ASTNode *parse_struct_literal_with_name(Parser *parser, char *struct_name,
+                                        SourceLocation start_loc);
+
 // =============================================================================
 // PRIMARY EXPRESSIONS COORDINATION
 // =============================================================================
@@ -64,8 +68,17 @@ ASTNode *parse_primary(Parser *parser) {
         char *name = strdup(parser->current_token.data.identifier.name);
         advance_token(parser);
 
-        // Don't try to parse generics here - they should only be parsed in type contexts
-        // or when we know we're parsing a struct literal (handled in postfix)
+        // Try to parse as generic type with potential associated function call
+        // This handles cases like Vec<i32>::new() or Result<T,E>::Ok()
+        if (match_token(parser, TOKEN_LESS_THAN)) {
+            ASTNode *generic_node = parse_identifier_with_generics(parser, name, start_loc);
+            if (generic_node) {
+                free(name); // parse_identifier_with_generics makes its own copy
+                // The postfix parser will handle struct literal conversion if needed
+                return generic_node;
+            }
+            // If generic parsing failed, fall through to regular identifier handling
+        }
 
         // Check for associated function call: Type::function
         if (match_token(parser, TOKEN_DOUBLE_COLON)) {
@@ -96,44 +109,12 @@ ASTNode *parse_primary(Parser *parser) {
             return node;
         }
 
-        // Check for generic type arguments when followed by struct literal syntax
-        // This handles cases like Container<i32> { ... }
-        if (match_token(parser, TOKEN_LESS_THAN)) {
-            // Try to parse as generic identifier - this will handle the type arguments
-            ASTNode *generic_node = parse_identifier_with_generics(parser, name, start_loc);
-            if (generic_node) {
-                // Successfully parsed generic type, check if it's followed by struct literal
-                if (match_token(parser, TOKEN_LEFT_BRACE)) {
-                    // This looks like a generic struct literal
-                    // Convert to STRUCT_TYPE if it's not already
-                    if (generic_node->type == AST_ENUM_TYPE) {
-                        // Convert enum type to struct type for struct literal parsing
-                        ASTNode *struct_node = ast_create_node(AST_STRUCT_TYPE, start_loc);
-                        if (struct_node) {
-                            struct_node->data.struct_type.name =
-                                strdup(generic_node->data.enum_type.name);
-                            struct_node->data.struct_type.type_args =
-                                generic_node->data.enum_type.type_args;
-                            // Prevent double-free by clearing the original type_args
-                            generic_node->data.enum_type.type_args = NULL;
-                            ast_free_node(generic_node);
-                            free(name); // name was already used by generic_node
-                            return struct_node;
-                        }
-                    }
-                    // If it's already a struct type or other generic node, return as is
-                    free(name); // name was already used by generic_node
-                    return generic_node;
-                }
-                // Generic type not followed by struct literal, return the parsed node
-                free(name); // name was already used by generic_node
-                return generic_node;
-            }
-            // Failed to parse as generic type, fall through to regular identifier
-        }
+        // Don't parse struct literals here in primary expressions
+        // They need special handling to avoid conflicts with match/if statements
+        // The solution is to parse them in specific contexts where they're expected
 
         // For simple cases, just create a regular identifier
-        // The postfix parser will handle dots and other operations
+        // Struct literals will be handled elsewhere
         node = ast_create_node(AST_IDENTIFIER, start_loc);
         if (!node) {
             free(name);
@@ -184,6 +165,14 @@ ASTNode *parse_primary(Parser *parser) {
 
         node->data.unsafe_block.block = block;
         return node;
+    }
+
+    // Try if expressions
+    if (match_token(parser, TOKEN_IF)) {
+        // If can be used as an expression in Asthra
+        // We'll use the existing parse_if_stmt function since if expressions
+        // and if statements have the same structure in Asthra
+        return parse_if_stmt(parser);
     }
 
     // No valid primary expression found

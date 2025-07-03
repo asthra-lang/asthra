@@ -43,6 +43,11 @@ function(add_bdd_test name category)
             ${CMAKE_CURRENT_SOURCE_DIR}/steps/${category}/${name}_steps.c
             ${CMAKE_CURRENT_SOURCE_DIR}/steps/${category}/common_steps.c
         )
+    elseif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/steps/${category}/edge_cases/${name}_steps.c)
+        # Check for edge_cases subdirectory
+        file(GLOB step_sources 
+            ${CMAKE_CURRENT_SOURCE_DIR}/steps/${category}/edge_cases/${name}_steps.c
+        )
     else()
         # Look in root steps directory
         file(GLOB step_sources 
@@ -325,6 +330,20 @@ add_bdd_test(associated_functions unit)
 add_bdd_test(slice_operations unit)
 add_bdd_test(return_statements unit)
 add_bdd_test(comment_syntax unit)
+
+# Edge Cases BDD Tests
+add_bdd_test(reserved_keywords unit)
+add_bdd_test(identifier_shadowing unit)
+add_bdd_test(empty_structures unit)
+add_bdd_test(type_inference unit)
+add_bdd_test(error_handling unit)
+add_bdd_test(enum_variant_syntax unit)
+add_bdd_test(function_syntax_validation unit)
+add_bdd_test(struct_syntax_validation unit)
+add_bdd_test(array_syntax_validation unit)
+add_bdd_test(type_annotation_validation unit)
+add_bdd_test(method_syntax_validation unit)
+add_bdd_test(import_syntax_validation unit)
 
 # Configuration summary
 message(STATUS "BDD testing infrastructure configured")

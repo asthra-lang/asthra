@@ -20,9 +20,9 @@
 #endif
 #include "ast.h"
 // Backend interface removed - using LLVM directly
+#include "../../framework/backend_stubs.h"
 #include "compiler.h"
 #include "semantic_analyzer.h"
-#include "../../framework/backend_stubs.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>

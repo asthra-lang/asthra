@@ -38,7 +38,7 @@ ASTNode *parse_spawn_stmt(Parser *parser) {
     char *function_name = NULL;
     ASTNode **args = NULL;
     size_t arg_count = 0;
-    ASTNode *stored_call_expr = NULL;  // Store the complete call expression
+    ASTNode *stored_call_expr = NULL; // Store the complete call expression
 
     if (is_spawn_with_handle) {
         // spawn_with_handle syntax: spawn_with_handle variable = function(args);
@@ -66,7 +66,9 @@ ASTNode *parse_spawn_stmt(Parser *parser) {
         // Verify that the parsed expression is a call expression
         if (call_expr->type != AST_CALL_EXPR && call_expr->type != AST_ASSOCIATED_FUNC_CALL) {
             char error_msg[256];
-            snprintf(error_msg, sizeof(error_msg), "Expected function call after '=' in spawn_with_handle, got AST type %d", call_expr->type);
+            snprintf(error_msg, sizeof(error_msg),
+                     "Expected function call after '=' in spawn_with_handle, got AST type %d",
+                     call_expr->type);
             report_error(parser, error_msg);
             ast_free_node(call_expr);
             free(handle_var_name);
@@ -75,16 +77,17 @@ ASTNode *parse_spawn_stmt(Parser *parser) {
 
         // Store the complete call expression for method call support
         stored_call_expr = call_expr;
-        
+
         // Extract function name for backward compatibility
         // TODO: Remove this once all code uses call_expr instead of function_name
         ASTNodeList *arg_list = NULL;
-        
+
         if (call_expr->type == AST_CALL_EXPR) {
             // For regular function calls, including method calls
             if (call_expr->data.call_expr.function) {
                 if (call_expr->data.call_expr.function->type == AST_IDENTIFIER) {
-                    function_name = strdup(call_expr->data.call_expr.function->data.identifier.name);
+                    function_name =
+                        strdup(call_expr->data.call_expr.function->data.identifier.name);
                 } else if (call_expr->data.call_expr.function->type == AST_FIELD_ACCESS) {
                     // Method call: obj.method - generate a descriptive name
                     ASTNode *field_access = call_expr->data.call_expr.function;
@@ -101,7 +104,8 @@ ASTNode *parse_spawn_stmt(Parser *parser) {
             char *struct_name = call_expr->data.associated_func_call.struct_name;
             char *method_name = call_expr->data.associated_func_call.function_name;
             if (struct_name && method_name) {
-                size_t name_len = strlen(struct_name) + strlen(method_name) + 3; // type + "::" + method + null
+                size_t name_len =
+                    strlen(struct_name) + strlen(method_name) + 3; // type + "::" + method + null
                 function_name = malloc(name_len);
                 if (function_name) {
                     snprintf(function_name, name_len, "%s::%s", struct_name, method_name);
@@ -144,7 +148,8 @@ ASTNode *parse_spawn_stmt(Parser *parser) {
         // Verify that the parsed expression is a call expression
         if (call_expr->type != AST_CALL_EXPR && call_expr->type != AST_ASSOCIATED_FUNC_CALL) {
             char error_msg[256];
-            snprintf(error_msg, sizeof(error_msg), "Expected function call after spawn, got AST type %d", call_expr->type);
+            snprintf(error_msg, sizeof(error_msg),
+                     "Expected function call after spawn, got AST type %d", call_expr->type);
             report_error(parser, error_msg);
             ast_free_node(call_expr);
             if (handle_var_name)
@@ -154,16 +159,17 @@ ASTNode *parse_spawn_stmt(Parser *parser) {
 
         // Store the complete call expression for method call support
         stored_call_expr = call_expr;
-        
+
         // Extract function name for backward compatibility
         // TODO: Remove this once all code uses call_expr instead of function_name
         ASTNodeList *arg_list = NULL;
-        
+
         if (call_expr->type == AST_CALL_EXPR) {
             // For regular function calls, including method calls
             if (call_expr->data.call_expr.function) {
                 if (call_expr->data.call_expr.function->type == AST_IDENTIFIER) {
-                    function_name = strdup(call_expr->data.call_expr.function->data.identifier.name);
+                    function_name =
+                        strdup(call_expr->data.call_expr.function->data.identifier.name);
                 } else if (call_expr->data.call_expr.function->type == AST_FIELD_ACCESS) {
                     // Method call: obj.method - generate a descriptive name
                     ASTNode *field_access = call_expr->data.call_expr.function;
@@ -180,7 +186,8 @@ ASTNode *parse_spawn_stmt(Parser *parser) {
             char *struct_name = call_expr->data.associated_func_call.struct_name;
             char *method_name = call_expr->data.associated_func_call.function_name;
             if (struct_name && method_name) {
-                size_t name_len = strlen(struct_name) + strlen(method_name) + 3; // type + "::" + method + null
+                size_t name_len =
+                    strlen(struct_name) + strlen(method_name) + 3; // type + "::" + method + null
                 function_name = malloc(name_len);
                 if (function_name) {
                     snprintf(function_name, name_len, "%s::%s", struct_name, method_name);

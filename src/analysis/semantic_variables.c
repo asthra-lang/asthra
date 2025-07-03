@@ -13,8 +13,8 @@
 #include "../parser/ast_node_list.h"
 #include "semantic_core.h"
 #include "semantic_symbols.h"
-#include "semantic_types.h"
 #include "semantic_type_helpers.h"
+#include "semantic_types.h"
 #include "semantic_utilities.h"
 #include "type_info.h"
 #include <stdio.h>
@@ -315,7 +315,8 @@ static bool validate_assignment_target_mutability(SemanticAnalyzer *analyzer, AS
             // Get the pointer's type
             TypeDescriptor *pointer_type = semantic_get_expression_type(analyzer, pointer);
             if (!pointer_type) {
-                semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_INFERENCE_FAILED, pointer->location,
+                semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_INFERENCE_FAILED,
+                                      pointer->location,
                                       "Cannot determine type of pointer in dereference assignment");
                 return false;
             }
@@ -331,10 +332,11 @@ static bool validate_assignment_target_mutability(SemanticAnalyzer *analyzer, AS
             // Check if it's a mutable pointer (*mut T)
             bool is_mutable_pointer = pointer_type->flags.is_mutable;
             type_descriptor_release(pointer_type);
-            
+
             if (!is_mutable_pointer) {
                 semantic_report_error(analyzer, SEMANTIC_ERROR_INVALID_OPERATION, target->location,
-                                      "Cannot assign through const pointer. Use '*mut' pointer type for mutable access.");
+                                      "Cannot assign through const pointer. Use '*mut' pointer "
+                                      "type for mutable access.");
                 return false;
             }
 

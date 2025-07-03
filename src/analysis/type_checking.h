@@ -10,4 +10,7 @@ bool semantic_check_type_compatibility(SemanticAnalyzer *analyzer, TypeDescripto
 
 bool semantic_can_cast(SemanticAnalyzer *analyzer, TypeDescriptor *from, TypeDescriptor *to);
 
+bool semantic_validate_cast_compatibility(SemanticAnalyzer *analyzer, TypeDescriptor *from_type,
+                                          TypeDescriptor *to_type, SourceLocation location);
+
 #endif // TYPE_CHECKING_H

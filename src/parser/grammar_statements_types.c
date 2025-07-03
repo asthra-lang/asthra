@@ -13,6 +13,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Forward declaration of const expression converter
+static ASTNode *convert_to_const_expr(ASTNode *expr);
+
 // =============================================================================
 // TYPE PARSING
 // =============================================================================
@@ -81,6 +84,15 @@ ASTNode *parse_type(Parser *parser) {
             if (!size_expr)
                 return NULL;
 
+            // Convert to const expression since array sizes must be const
+            // This enables proper handling of const identifiers and arithmetic
+            ASTNode *const_size_expr = convert_to_const_expr(size_expr);
+            if (!const_size_expr) {
+                ast_free_node(size_expr);
+                return NULL;
+            }
+            size_expr = const_size_expr;
+
             if (!expect_token(parser, TOKEN_RIGHT_BRACKET)) {
                 ast_free_node(size_expr);
                 return NULL;
@@ -116,7 +128,7 @@ ASTNode *parse_type(Parser *parser) {
             // User-defined Result type, parse as regular identifier
             char *name = strdup("Result");
             advance_token(parser);
-            
+
             ASTNode *node = ast_create_node(AST_BASE_TYPE, start_loc);
             if (!node) {
                 free(name);
@@ -125,7 +137,7 @@ ASTNode *parse_type(Parser *parser) {
             node->data.base_type.name = name;
             return node;
         }
-        
+
         // Built-in Result type with type parameters
         advance_token(parser);
 
@@ -175,7 +187,7 @@ ASTNode *parse_type(Parser *parser) {
             // User-defined Option type, parse as regular identifier
             char *name = strdup("Option");
             advance_token(parser);
-            
+
             ASTNode *node = ast_create_node(AST_BASE_TYPE, start_loc);
             if (!node) {
                 free(name);
@@ -184,7 +196,7 @@ ASTNode *parse_type(Parser *parser) {
             node->data.base_type.name = name;
             return node;
         }
-        
+
         // Built-in Option type with type parameter
         advance_token(parser);
 
@@ -220,7 +232,7 @@ ASTNode *parse_type(Parser *parser) {
             // User-defined TaskHandle type, parse as regular identifier
             char *name = strdup("TaskHandle");
             advance_token(parser);
-            
+
             ASTNode *node = ast_create_node(AST_BASE_TYPE, start_loc);
             if (!node) {
                 free(name);
@@ -229,7 +241,7 @@ ASTNode *parse_type(Parser *parser) {
             node->data.base_type.name = name;
             return node;
         }
-        
+
         // Built-in TaskHandle type with type parameter
         advance_token(parser);
 
@@ -512,4 +524,110 @@ ASTNode *parse_type(Parser *parser) {
 
     report_error(parser, "Expected type");
     return NULL;
+}
+
+// =============================================================================
+// CONST EXPRESSION CONVERSION FOR ARRAY SIZES
+// =============================================================================
+
+/**
+ * Convert a regular expression to a const expression for array sizes
+ * This is similar to the convert_expr_to_const_expr function in grammar_toplevel_const.c
+ * but duplicated here to avoid circular dependencies
+ */
+static ASTNode *convert_to_const_expr(ASTNode *expr) {
+    if (!expr)
+        return NULL;
+
+    SourceLocation loc = expr->location;
+
+    // Create const expression wrapper node
+    ASTNode *const_expr = ast_create_node(AST_CONST_EXPR, loc);
+    if (!const_expr) {
+        return NULL;
+    }
+
+    // Set const expression type based on parsed expression
+    switch (expr->type) {
+    case AST_INTEGER_LITERAL:
+    case AST_FLOAT_LITERAL:
+    case AST_STRING_LITERAL:
+    case AST_BOOL_LITERAL:
+    case AST_CHAR_LITERAL:
+        const_expr->data.const_expr.expr_type = CONST_EXPR_LITERAL;
+        const_expr->data.const_expr.data.literal = expr;
+        break;
+
+    case AST_IDENTIFIER:
+        const_expr->data.const_expr.expr_type = CONST_EXPR_IDENTIFIER;
+        const_expr->data.const_expr.data.identifier = strdup(expr->data.identifier.name);
+        ast_free_node(expr); // Free original, we copied the name
+        break;
+
+    case AST_BINARY_EXPR: {
+        const_expr->data.const_expr.expr_type = CONST_EXPR_BINARY_OP;
+
+        // Recursively convert left and right operands
+        const_expr->data.const_expr.data.binary.left =
+            convert_to_const_expr(expr->data.binary_expr.left);
+        const_expr->data.const_expr.data.binary.op = expr->data.binary_expr.operator;
+        const_expr->data.const_expr.data.binary.right =
+            convert_to_const_expr(expr->data.binary_expr.right);
+
+        // Check if conversion succeeded
+        if (!const_expr->data.const_expr.data.binary.left ||
+            !const_expr->data.const_expr.data.binary.right) {
+            ast_free_node(const_expr);
+            ast_free_node(expr);
+            return NULL;
+        }
+
+        // Free the original binary expression wrapper (children are now owned by const_expr)
+        expr->data.binary_expr.left = NULL;
+        expr->data.binary_expr.right = NULL;
+        ast_free_node(expr);
+        break;
+    }
+
+    case AST_UNARY_EXPR: {
+        // Check if this is a sizeof expression
+        if (expr->data.unary_expr.operator== UNOP_SIZEOF) {
+            const_expr->data.const_expr.expr_type = CONST_EXPR_SIZEOF;
+            const_expr->data.const_expr.data.sizeof_expr.type = expr->data.unary_expr.operand;
+
+            // Transfer ownership of the type node
+            expr->data.unary_expr.operand = NULL;
+            ast_free_node(expr);
+        } else {
+            // Regular unary expression
+            const_expr->data.const_expr.expr_type = CONST_EXPR_UNARY_OP;
+            const_expr->data.const_expr.data.unary.op = expr->data.unary_expr.operator;
+
+            // Recursively convert operand
+            const_expr->data.const_expr.data.unary.operand =
+                convert_to_const_expr(expr->data.unary_expr.operand);
+
+            // Check if conversion succeeded
+            if (!const_expr->data.const_expr.data.unary.operand) {
+                ast_free_node(const_expr);
+                ast_free_node(expr);
+                return NULL;
+            }
+
+            // Free the original unary expression wrapper (operand is now owned by const_expr)
+            expr->data.unary_expr.operand = NULL;
+            ast_free_node(expr);
+        }
+        break;
+    }
+
+    default:
+        // For other expression types, treat as literal for now
+        // Semantic analysis will validate if it's actually compile-time evaluable
+        const_expr->data.const_expr.expr_type = CONST_EXPR_LITERAL;
+        const_expr->data.const_expr.data.literal = expr;
+        break;
+    }
+
+    return const_expr;
 }

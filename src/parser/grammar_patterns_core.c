@@ -11,9 +11,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Debug logging disabled - pattern parsing issue resolved
+// #define DEBUG_PARSER 1
+
 // Forward declarations for functions in other pattern modules
 extern ASTNode *parse_enum_pattern_impl(Parser *parser, char *name, SourceLocation start_loc);
-extern ASTNode *parse_struct_pattern_impl(Parser *parser, char *name, SourceLocation start_loc);
 
 // =============================================================================
 // CORE PATTERN PARSING
@@ -25,13 +27,30 @@ ASTNode *parse_pattern(Parser *parser) {
 
     SourceLocation start_loc = parser->current_token.location;
 
+    // Debug trace disabled
+    // fprintf(stderr, "TRACE: parse_pattern called with token type=%d\n",
+    // parser->current_token.type);
+
 #ifdef DEBUG_PARSER
     fprintf(stderr, "parse_pattern: current token type=%d\n", parser->current_token.type);
     if (parser->current_token.type == TOKEN_IDENTIFIER) {
         fprintf(stderr, "parse_pattern: identifier='%s'\n",
                 parser->current_token.data.identifier.name);
     }
+    // Validate parser state integrity
+    if (parser->current_token.type == TOKEN_ERROR) {
+        fprintf(stderr, "parse_pattern: WARNING - parser in error state\n");
+    }
+    if (at_end(parser)) {
+        fprintf(stderr, "parse_pattern: WARNING - parser at end of input\n");
+    }
 #endif
+
+    // Additional parser state validation to catch corruption early
+    if (parser->current_token.type == TOKEN_ERROR) {
+        report_error(parser, "Invalid token state detected in pattern parsing");
+        return NULL;
+    }
 
     // Handle 'mut' modifier for mutable bindings in patterns
     bool is_mutable = false;
@@ -42,8 +61,8 @@ ASTNode *parse_pattern(Parser *parser) {
         start_loc = parser->current_token.location;
     }
 
-    // Handle enum patterns like Result.Ok(value) and Option.Some(value) and struct patterns like
-    // Point { x, y } Also handle Result and Option keywords for enum patterns
+    // Handle enum patterns like Result.Ok(value) and Option.Some(value)
+    // Also handle Result and Option keywords for enum patterns
     if (match_token(parser, TOKEN_IDENTIFIER) || match_token(parser, TOKEN_RESULT) ||
         match_token(parser, TOKEN_OPTION)) {
         char *name;
@@ -57,13 +76,75 @@ ASTNode *parse_pattern(Parser *parser) {
 
         advance_token(parser);
 
-        if (match_token(parser, TOKEN_DOT)) {
+#ifdef DEBUG_PARSER
+        fprintf(stderr, "parse_pattern: after advance, current token type=%d\n",
+                parser->current_token.type);
+        if (parser->current_token.type == TOKEN_DOT) {
+            fprintf(stderr, "parse_pattern: found DOT token, routing to enum pattern\n");
+        }
+#endif
+
+        // Strengthen enum pattern detection with multiple validation approaches
+        bool is_enum_pattern = false;
+
+        // Primary check: direct token type comparison (most reliable)
+        if (parser->current_token.type == TOKEN_DOT) {
+            is_enum_pattern = true;
+        }
+        // Secondary check: use match_token function (backup validation)
+        else if (match_token(parser, TOKEN_DOT)) {
+            is_enum_pattern = true;
+        }
+        // Tertiary check: use check_token function (additional validation)
+        else if (check_token(parser, TOKEN_DOT)) {
+            is_enum_pattern = true;
+        }
+
+        // Additional enum pattern detection: look ahead for enum-like patterns
+        // This handles cases where current token corruption might occur
+        if (!is_enum_pattern) {
+            Token next_token = peek_token(parser);
+            if (next_token.type == TOKEN_DOT) {
+                // This suggests we might have missed a token due to state corruption
+                // Let's try to recover by checking if this looks like an enum pattern
+#ifdef DEBUG_PARSER
+                fprintf(stderr, "parse_pattern: detected potential enum pattern via peek-ahead\n");
+#endif
+                is_enum_pattern = true;
+            }
+        }
+
+        // Check for invalid double colon usage in patterns
+        if (match_token(parser, TOKEN_DOUBLE_COLON)) {
+            report_error(parser, "Invalid '::' usage in pattern. Use '.' instead of '::' for enum "
+                                 "variants (e.g., Result.Ok instead of Result::Ok)");
+            free(name);
+            return NULL;
+        }
+
+        if (is_enum_pattern) {
             // This is an enum pattern: EnumName.Variant(binding)
+            // Note: Enhanced detection logic to handle token synchronization issues
+            // that can occur after enum expression parsing
+#ifdef DEBUG_PARSER
+            fprintf(stderr, "parse_pattern: routing to enum pattern for '%s'\n", name);
+#endif
+            advance_token(parser); // consume the dot
             return parse_enum_pattern_impl(parser, name, start_loc);
-        } else if (match_token(parser, TOKEN_LESS_THAN) || match_token(parser, TOKEN_LEFT_BRACE)) {
-            // This is a struct pattern: StructName<T> { field1, field2 } or StructName { field1,
-            // field2 }
-            return parse_struct_pattern_impl(parser, name, start_loc);
+        } else if (match_token(parser, TOKEN_LESS_THAN)) {
+            // Struct patterns with type args are no longer supported
+            report_error(parser, "Struct patterns like 'Point<T> { ... }' are no longer supported "
+                                 "in match statements. Use a simple identifier binding (e.g., 'p') "
+                                 "and access fields in the match arm body (e.g., 'p.x')");
+            free(name);
+            return NULL;
+        } else if (match_token(parser, TOKEN_LEFT_BRACE)) {
+            // Struct patterns are no longer supported
+            report_error(parser, "Struct patterns like 'Point { x, y }' are no longer supported in "
+                                 "match statements. Use a simple identifier binding (e.g., 'p') "
+                                 "and access fields in the match arm body (e.g., 'p.x')");
+            free(name);
+            return NULL;
         } else if (match_token(parser, TOKEN_LEFT_PAREN)) {
             // This looks like a function call pattern, which is not supported
             // Users must use qualified syntax like Option.Some(x)
@@ -72,6 +153,46 @@ ASTNode *parse_pattern(Parser *parser) {
             free(name);
             return NULL;
         } else {
+#ifdef DEBUG_PARSER
+            fprintf(stderr,
+                    "parse_pattern: no specific pattern detected, checking identifier/wildcard for "
+                    "'%s'\n",
+                    name);
+            fprintf(stderr, "parse_pattern: current token after routing checks: type=%d\n",
+                    parser->current_token.type);
+            if (parser->current_token.type == TOKEN_LEFT_BRACE) {
+                fprintf(stderr, "parse_pattern: ERROR - Found LEFT_BRACE but struct pattern "
+                                "condition failed!\n");
+                fprintf(stderr,
+                        "parse_pattern: match_token(TOKEN_LESS_THAN)=%d, "
+                        "match_token(TOKEN_LEFT_BRACE)=%d\n",
+                        match_token(parser, TOKEN_LESS_THAN),
+                        match_token(parser, TOKEN_LEFT_BRACE));
+            }
+#endif
+
+            // Additional heuristic-based enum pattern detection
+            // Check if this looks like a known enum type that might have been missed
+            if ((strcmp(name, "Result") == 0 || strcmp(name, "Option") == 0) &&
+                !match_token(parser, TOKEN_LEFT_BRACE) && !match_token(parser, TOKEN_LESS_THAN)) {
+                // This looks like an enum type without proper dot detection
+                // Try to see if the next token after this point is an identifier (variant name)
+                Token next_token = peek_token(parser);
+                if (next_token.type == TOKEN_IDENTIFIER) {
+#ifdef DEBUG_PARSER
+                    fprintf(stderr,
+                            "parse_pattern: heuristic enum pattern detection for '%s' - attempting "
+                            "recovery\n",
+                            name);
+#endif
+                    // This might be an enum pattern where the dot got lost
+                    // Create an error but try to continue with enum parsing if possible
+                    report_error(parser, "Possible malformed enum pattern - expected '.' between "
+                                         "enum name and variant");
+                    // Don't return NULL, continue to see if we can recover
+                }
+            }
+
             // Check for wildcard pattern
             if (strcmp(name, "_") == 0) {
                 free(name);
@@ -82,6 +203,7 @@ ASTNode *parse_pattern(Parser *parser) {
             }
 
             // Simple identifier pattern
+            // fprintf(stderr, "parse_pattern: creating identifier pattern for '%s'\n", name);
             ASTNode *node = ast_create_node(AST_IDENTIFIER, start_loc);
             if (!node) {
                 free(name);
@@ -96,9 +218,8 @@ ASTNode *parse_pattern(Parser *parser) {
         }
     }
 
-    // Note: According to grammar line 105, StructPattern requires SimpleIdent
-    // StructPattern <- SimpleIdent TypeArgs? '{' FieldPattern (',' FieldPattern)* '}'
-    // So we don't allow anonymous struct patterns like { x, y } here
+    // Note: Struct patterns have been removed from the language
+    // Anonymous patterns like { x, y } are not supported
 
     // Handle tuple patterns: (pattern1, pattern2, ...)
     if (match_token(parser, TOKEN_LEFT_PAREN)) {

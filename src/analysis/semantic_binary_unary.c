@@ -53,6 +53,9 @@ static TypeDescriptor *get_binary_op_result_type(SemanticAnalyzer *analyzer, Bin
     } else if (left_type->category == TYPE_ENUM && right_type->category == TYPE_ENUM &&
                (op == BINOP_EQ || op == BINOP_NE)) {
         compatible = true; // Enum comparison
+    } else if (is_string_type(left_type) && is_string_type(right_type) &&
+               (op == BINOP_EQ || op == BINOP_NE)) {
+        compatible = true; // String comparison
     }
 
     if (!compatible) {

@@ -112,6 +112,13 @@ ASTNode *parse_struct_decl(Parser *parser) {
             ast_node_list_destroy(type_params);
         free(struct_name);
         return NULL;
+    } else if (match_token(parser, TOKEN_RIGHT_BRACE)) {
+        // Empty struct without 'none' - this is an error
+        report_error(parser, "empty struct must contain 'none'");
+        if (type_params)
+            ast_node_list_destroy(type_params);
+        free(struct_name);
+        return NULL;
     } else {
         // Parse actual struct fields
         fields = malloc(field_capacity * sizeof(ASTNode *));
@@ -278,6 +285,9 @@ ASTNode *parse_struct_decl(Parser *parser) {
     } else {
         node->data.struct_decl.fields = NULL;
     }
+
+    // Register the struct name in the symbol table so it can be recognized as a type
+    register_symbol(parser, struct_name, node);
 
     return node;
 }

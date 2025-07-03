@@ -13,13 +13,13 @@
 #define ASTHRA_COMPILER_TEST_UTILS_H
 
 // Include all the modular test utilities
+#include "backend_stubs.h"
 #include "lexer_test_utils.h"
 #include "parser_test_utils.h"
 #include "performance_test_utils.h"
 #include "semantic_test_utils.h"
 #include "test_assertions.h"
 #include "test_data_utils.h"
-#include "backend_stubs.h"
 
 #ifdef __cplusplus
 extern "C" {

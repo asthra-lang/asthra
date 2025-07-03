@@ -23,7 +23,8 @@ extern "C" {
  * @param output_file Output file path
  * @return 0 on success, negative on error
  */
-int asthra_generate_llvm_code(AsthraCompilerContext *ctx, const ASTNode *ast, const char *output_file);
+int asthra_generate_llvm_code(AsthraCompilerContext *ctx, const ASTNode *ast,
+                              const char *output_file);
 
 #ifdef __cplusplus
 }

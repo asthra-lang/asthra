@@ -24,8 +24,6 @@ ASTNode *parse_pattern(Parser *parser);
 
 // Specific pattern types
 ASTNode *parse_enum_pattern(Parser *parser);
-ASTNode *parse_struct_pattern(Parser *parser);
-ASTNode *parse_field_pattern(Parser *parser);
 
 #ifdef __cplusplus
 }

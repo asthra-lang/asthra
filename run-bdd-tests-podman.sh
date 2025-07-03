@@ -7,6 +7,7 @@ SCRIPT_NAME=$(basename "$0")
 # Default values
 RUN_ALL=false
 VERBOSE=false
+CLEAN_LOGS=false
 FEATURE_FILTER=""
 TAG_FILTER=""
 
@@ -20,6 +21,7 @@ Run BDD tests for the Asthra compiler in a Podman container.
 OPTIONS:
     -h, --help              Show this help message
     -v, --verbose           Enable verbose output
+    --clean-logs            Clean BDD log files before running tests
     -f, --feature PATTERN   Run only features matching pattern
     -t, --tag TAG           Run only scenarios with specific tag (e.g., @wip)
     --all                   Run all tests including @wip scenarios (default: skip @wip)
@@ -27,6 +29,7 @@ OPTIONS:
 EXAMPLES:
     $SCRIPT_NAME                    # Run all BDD tests (excluding @wip)
     $SCRIPT_NAME --all              # Run all BDD tests including @wip
+    $SCRIPT_NAME --clean-logs       # Clean logs and run tests
     $SCRIPT_NAME -f parser          # Run only parser-related features
     $SCRIPT_NAME -t @wip            # Run only @wip scenarios
     $SCRIPT_NAME -v                 # Verbose output
@@ -44,6 +47,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -v|--verbose)
             VERBOSE=true
+            shift
+            ;;
+        --clean-logs)
+            CLEAN_LOGS=true
             shift
             ;;
         -f|--feature)
@@ -87,6 +94,7 @@ podman run --rm -t \
     -v "$(pwd):/workspace:ro" \
     -e "RUN_ALL=$RUN_ALL" \
     -e "VERBOSE=$VERBOSE" \
+    -e "CLEAN_LOGS=$CLEAN_LOGS" \
     -e "FEATURE_FILTER=$FEATURE_FILTER" \
     -e "TAG_FILTER=$TAG_FILTER" \
     asthra-bdd-test \
@@ -152,7 +160,18 @@ cmake --build . --target build-tests 2>&1 | tee cmake-build-tests.log
 
 echo ""
 echo "=== Running BDD unit tests ==="
-mkdir -p bdd-logs
+
+# Set log directory
+LOG_DIR="bdd-podman-logs"
+
+# Clean logs if requested
+if [ "$CLEAN_LOGS" = "true" ]; then
+    echo "Cleaning BDD log directory: $LOG_DIR"
+    rm -rf "$LOG_DIR"
+fi
+
+# Create logs directory
+mkdir -p "$LOG_DIR"
 
 # Find the asthra compiler binary
 ASTHRA_COMPILER_PATH="$(find . -name "asthra" -type f -executable | grep -E "(bin/asthra|asthra)$" | head -1)"
@@ -244,7 +263,7 @@ for test in bdd/bin/bdd_unit_*; do
         echo "=== Running $TEST_NAME ==="
         SUITES_RUN=$((SUITES_RUN + 1))
         # Use tee to show output while also saving to log
-        $test --reporter spec 2>&1 | tee "bdd-logs/${TEST_NAME}.log"
+        $test --reporter spec 2>&1 | tee "$LOG_DIR/${TEST_NAME}.log"
         # Check exit status of the test command (not tee)
         if [ ${PIPESTATUS[0]} -eq 0 ]; then
             echo "✓ $TEST_NAME PASSED"
@@ -261,8 +280,8 @@ for test in bdd/bin/bdd_unit_*; do
         
         # Extract test counts from the summary line
         # Looking for pattern: "Passed: X", "Failed: Y", "Skipped: Z"
-        if [ -f "bdd-logs/${TEST_NAME}.log" ]; then
-            SUMMARY_LINE=$(grep -E "^\s*Passed:|Test Summary" "bdd-logs/${TEST_NAME}.log" | tail -1)
+        if [ -f "$LOG_DIR/${TEST_NAME}.log" ]; then
+            SUMMARY_LINE=$(grep -E "^\s*Passed:|Test Summary" "$LOG_DIR/${TEST_NAME}.log" | tail -1)
             if [[ "$SUMMARY_LINE" =~ Passed:[[:space:]]*([0-9]+) ]]; then
                 TOTAL_TESTS_PASSED=$((TOTAL_TESTS_PASSED + ${BASH_REMATCH[1]}))
             fi

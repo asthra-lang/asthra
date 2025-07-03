@@ -15,11 +15,11 @@
 // Include the necessary headers for code generation testing
 #include "ast.h"
 // Backend interface removed - using LLVM directly
+#include "../../framework/backend_stubs.h"
 #include "compiler.h"
 #include "lexer.h"
 #include "parser.h"
 #include "semantic_core.h"
-#include "../../framework/backend_stubs.h"
 
 // Test helper structure to track both backend and analyzer
 typedef struct {

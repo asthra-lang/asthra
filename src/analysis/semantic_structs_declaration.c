@@ -31,9 +31,14 @@ bool analyze_struct_declaration(SemanticAnalyzer *analyzer, ASTNode *struct_decl
     // Check if struct name is already declared
     SymbolEntry *existing = symbol_table_lookup_local(analyzer->current_scope, struct_name);
     if (existing) {
-        semantic_report_error(analyzer, SEMANTIC_ERROR_DUPLICATE_SYMBOL, struct_decl->location,
-                              "Struct '%s' is already declared", struct_name);
-        return false;
+        // Allow shadowing of predeclared identifiers (log, panic, etc.)
+        if (!existing->flags.is_predeclared) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_DUPLICATE_SYMBOL, struct_decl->location,
+                                  "Struct '%s' is already declared", struct_name);
+            return false;
+        }
+        // If it's a predeclared identifier, remove it to allow shadowing
+        symbol_table_remove_safe(analyzer->current_scope, struct_name);
     }
 
     // Phase 3: Validate type parameters if present (generic structs)

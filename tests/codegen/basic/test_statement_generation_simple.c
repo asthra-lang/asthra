@@ -21,8 +21,8 @@
 #include "../../../src/parser/ast.h"
 #include "../../../src/parser/lexer.h"
 #include "../../../src/parser/parser.h"
-#include "../codegen_backend_wrapper.h"
 #include "../../framework/backend_stubs.h"
+#include "../codegen_backend_wrapper.h"
 
 bool test_variable_declaration(void) {
     printf("Testing variable declaration generation...\n");

@@ -534,7 +534,7 @@ TypeDescriptor *type_descriptor_create_task_handle(TypeDescriptor *result_type) 
 
     task_handle_type->category = TYPE_TASK_HANDLE;
     task_handle_type->flags.is_mutable = false;
-    task_handle_type->flags.is_owned = true;  // Task handles are owned resources
+    task_handle_type->flags.is_owned = true; // Task handles are owned resources
     task_handle_type->flags.is_borrowed = false;
     task_handle_type->flags.is_constant = false;
     task_handle_type->flags.is_volatile = false;

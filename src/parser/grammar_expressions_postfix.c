@@ -119,16 +119,17 @@ ASTNode *parse_postfix_expr(Parser *parser) {
             } else if (match_token(parser, TOKEN_IDENTIFIER)) {
                 field_name = strdup(parser->current_token.data.identifier.name);
                 advance_token(parser);
-                
-                // Check if this could be an enum constructor (uppercase identifier followed by parenthesis)
+
+                // Check if this could be an enum constructor (uppercase identifier followed by
+                // parenthesis)
                 if (expr->type == AST_IDENTIFIER) {
                     const char *enum_name = expr->data.identifier.name;
                     // Check if enum name starts with uppercase (type convention)
-                    if (enum_name && enum_name[0] >= 'A' && enum_name[0] <= 'Z' && 
+                    if (enum_name && enum_name[0] >= 'A' && enum_name[0] <= 'Z' &&
                         match_token(parser, TOKEN_LEFT_PAREN)) {
                         // This looks like an enum constructor call
                         advance_token(parser); // consume '('
-                        
+
                         // Parse constructor arguments
                         ASTNode *value = NULL;
                         if (!match_token(parser, TOKEN_RIGHT_PAREN)) {
@@ -150,14 +151,14 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                                     ast_free_node(expr);
                                     return NULL;
                                 }
-                                
+
                                 // Add first argument to list
                                 ast_node_list_add(&arg_list, first_arg);
-                                
+
                                 // Parse remaining arguments
                                 while (match_token(parser, TOKEN_COMMA)) {
                                     advance_token(parser);
-                                    
+
                                     ASTNode *arg = parse_expr(parser);
                                     if (!arg) {
                                         ast_node_list_destroy(arg_list);
@@ -165,10 +166,10 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                                         ast_free_node(expr);
                                         return NULL;
                                     }
-                                    
+
                                     ast_node_list_add(&arg_list, arg);
                                 }
-                                
+
                                 // Create tuple literal for multiple values
                                 value = ast_create_node(AST_TUPLE_LITERAL, op_loc);
                                 if (!value) {
@@ -183,7 +184,7 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                                 value = first_arg;
                             }
                         }
-                        
+
                         if (!expect_token(parser, TOKEN_RIGHT_PAREN)) {
                             if (value)
                                 ast_free_node(value);
@@ -191,7 +192,7 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                             ast_free_node(expr);
                             return NULL;
                         }
-                        
+
                         // Create enum variant node
                         ASTNode *enum_variant = ast_create_node(AST_ENUM_VARIANT, op_loc);
                         if (!enum_variant) {
@@ -201,17 +202,17 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                             ast_free_node(expr);
                             return NULL;
                         }
-                        
+
                         enum_variant->data.enum_variant.enum_name = strdup(enum_name);
                         enum_variant->data.enum_variant.variant_name = field_name;
                         enum_variant->data.enum_variant.value = value;
-                        
+
                         ast_free_node(expr); // Free the identifier node
                         expr = enum_variant;
                         continue; // Continue with postfix processing
                     }
                 }
-                
+
                 // Regular field access
             } else {
                 report_error(parser, "Expected field name or tuple index after '.'");
@@ -464,65 +465,53 @@ ASTNode *parse_postfix_expr(Parser *parser) {
 
                 expr = call;
             }
-        } else if (match_token(parser, TOKEN_LEFT_BRACE) &&
-                   (expr->type == AST_IDENTIFIER || expr->type == AST_STRUCT_TYPE ||
-                    expr->type == AST_ENUM_TYPE)) {
-            // Struct literal: Identifier { ... }, StructType<T> { ... }, or EnumType<T> { ... }
-            // Use safer lookahead to distinguish from blocks that happen to follow identifiers
+        } else if (check_token(parser, TOKEN_LEFT_BRACE) &&
+                   (expr->type == AST_STRUCT_TYPE || expr->type == AST_ENUM_TYPE ||
+                    expr->type == AST_IDENTIFIER)) {
+            // Struct literal handling with improved lookahead to avoid for-loop conflicts
 
             bool is_struct_literal = false;
 
-            // Look ahead to check if this is actually a struct literal
-            // A struct literal has the pattern: field_name : expression
-            // Use peek to avoid consuming tokens
-            Token peek1 = peek_token(parser); // This should be the token after '{'
+            Token next_token = peek_token_ahead(parser, 1); // Token after {
 
-            if (peek1.type == TOKEN_RIGHT_BRACE) {
-                // Empty braces {} - could be an empty struct literal
-                // Use the same heuristics as for non-empty cases
-                if (expr->type == AST_STRUCT_TYPE || expr->type == AST_ENUM_TYPE) {
-                    // Generic types are more likely to be struct literals
-                    is_struct_literal = true;
-                } else if (expr->type == AST_IDENTIFIER) {
-                    // For plain identifiers, check if it starts with uppercase (type convention)
-                    const char *name = expr->data.identifier.name;
-                    if (name && name[0] >= 'A' && name[0] <= 'Z') {
-                        // Uppercase identifiers are likely type names
+            if (next_token.type == TOKEN_RIGHT_BRACE) {
+                // Empty struct literal: StructName { }
+                is_struct_literal = true;
+            } else if (next_token.type == TOKEN_IDENTIFIER && expr->type == AST_IDENTIFIER) {
+                // For non-empty struct literals, use heuristics to distinguish from other
+                // constructs This is a conservative approach that checks for common patterns
+
+                const char *struct_name = expr->data.identifier.name;
+                if (struct_name) {
+                    // Check if this identifier is a registered type (struct or enum)
+                    ASTNode *symbol = lookup_symbol(parser, struct_name);
+                    if (symbol &&
+                        (symbol->type == AST_STRUCT_DECL || symbol->type == AST_ENUM_DECL)) {
+                        is_struct_literal = true;
+                    } else if (struct_name[0] >= 'A' && struct_name[0] <= 'Z') {
+                        // Fallback: assume uppercase identifiers are struct types
+                        // This helps with built-in types or forward references
                         is_struct_literal = true;
                     } else {
-                        // Lowercase identifiers are likely not struct literals
-                        is_struct_literal = false;
-                    }
-                } else {
-                    is_struct_literal = false;
-                }
-            } else if (peek1.type == TOKEN_IDENTIFIER) {
-                // We have { identifier ..., need to check if followed by colon
-                // We need to peek further ahead, but we only have single token lookahead
-                // So we'll use a conservative heuristic: assume it's a struct literal
-                // only if we're parsing a known struct type expression
+                        // For lowercase identifiers that aren't registered types,
+                        // be more conservative to avoid false positives with for-loops
 
-                // For now, be conservative and only treat it as struct literal if
-                // the expression is a struct type (not just any identifier)
-                if (expr->type == AST_STRUCT_TYPE || expr->type == AST_ENUM_TYPE) {
-                    // Generic types are more likely to be struct literals
-                    is_struct_literal = true;
-                } else if (expr->type == AST_IDENTIFIER) {
-                    // For plain identifiers, check if it starts with uppercase (type convention)
-                    const char *name = expr->data.identifier.name;
-                    if (name && name[0] >= 'A' && name[0] <= 'Z') {
-                        // Uppercase identifiers are likely type names
-                        is_struct_literal = true;
-                    } else {
-                        // Lowercase identifiers in match context are likely not struct literals
-                        is_struct_literal = false;
+                        // Check for common struct-like field names
+                        const char *field_name = next_token.data.identifier.name;
+                        if (field_name &&
+                            (strcmp(field_name, "width") == 0 ||
+                             strcmp(field_name, "height") == 0 || strcmp(field_name, "size") == 0 ||
+                             strcmp(field_name, "length") == 0 ||
+                             strcmp(field_name, "count") == 0 || strcmp(field_name, "id") == 0 ||
+                             strcmp(field_name, "key") == 0 || strcmp(field_name, "message") == 0 ||
+                             strcmp(field_name, "error") == 0 || strcmp(field_name, "field") == 0 ||
+                             strcmp(field_name, "fields") == 0 || strcmp(field_name, "level") == 0)) {
+                            is_struct_literal = true;
+                        }
+                        // If no common field patterns, assume it's not a struct literal
+                        // This helps avoid parsing "for x in collection {" as a struct literal
                     }
-                } else {
-                    is_struct_literal = false;
                 }
-            } else {
-                // Not starting with identifier, definitely not a struct literal
-                is_struct_literal = false;
             }
 
             if (is_struct_literal) {
@@ -547,26 +536,47 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                     expr->data.enum_type.type_args = NULL; // Transfer ownership
                 }
 
-                // Free the original expression since we're replacing it
-                ast_free_node(expr);
+                // We've only checked for TOKEN_LEFT_BRACE, not consumed it
+                // The struct literal parser will consume it
 
-                // Parse the struct literal with the extracted name and type args
+                // Parse struct literal
                 ASTNode *struct_literal = parse_struct_literal_with_name_and_type_args(
                     parser, struct_name, type_args, struct_loc);
-                if (!struct_literal) {
+
+                if (struct_literal) {
+                    // Success! Free the original expression and use struct literal
+                    ast_free_node(expr);
+                    expr = struct_literal;
+                } else {
+                    // Failed to parse as struct literal
+                    // Since we're in expression context, this is an error
+                    // The error has already been reported by
+                    // parse_struct_literal_with_name_and_type_args
+                    ast_free_node(expr);
                     return NULL;
                 }
-
-                expr = struct_literal;
             } else {
-                // Not a struct literal - stop postfix parsing and let the caller handle the brace
+                // Not a struct literal - stop postfix parsing
                 break;
             }
         } else if (match_token(parser, TOKEN_DOUBLE_COLON)) {
             // Reject postfix :: usage - this violates current grammar
-            report_error(parser,
-                         "Invalid postfix '::' usage. Use '::' only for type-level associated "
-                         "functions like 'Type::function()' or 'Type<T>::function()'");
+            // Check if this might be an enum variant usage and provide helpful message
+            bool might_be_enum_variant = false;
+            if (expr->type == AST_IDENTIFIER) {
+                // Simplified check - if the next token after :: is an identifier,
+                // this might be intended as an enum variant
+                might_be_enum_variant = peek_token(parser).type == TOKEN_IDENTIFIER;
+            }
+
+            if (might_be_enum_variant) {
+                report_error(parser, "Invalid postfix '::' usage. Use '.' instead of '::' for enum "
+                                     "variants (e.g., Result.Ok instead of Result::Ok)");
+            } else {
+                report_error(parser,
+                             "Invalid postfix '::' usage. Use '::' only for type-level associated "
+                             "functions like 'Type::function()' or 'Type<T>::function()'");
+            }
             ast_free_node(expr);
             return NULL;
         } else {

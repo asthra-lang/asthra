@@ -3,8 +3,8 @@
  * Tests complete compilation pipeline for enum variants
  */
 
-#include "test_enum_integration_common.h"
 #include "../framework/backend_stubs.h"
+#include "test_enum_integration_common.h"
 
 // Test compilation pipeline integration
 static void test_compilation_pipeline_integration(void) {

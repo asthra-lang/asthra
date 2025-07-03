@@ -193,9 +193,9 @@ package example;
 pub fn main(none) -> void " + (
     // Type-level operations (static methods)
     let vec: Vec<i32> = Vec::new();                    // Simple type
-    let result: Result<String, Error> = Result::Ok("success");  // Generic type
+    let result: Result<String, Error> = Result.Ok("success");  // Generic type
     let map: HashMap<String, i32> = HashMap::new();   // Generic type
-    let option: Option<User> = Option::None();         // Generic type
+    let option: Option<User> = Option.None();         // Generic type
     
     // Instance-level operations (methods)
     let length: usize = vec.len();                     // Instance method
@@ -231,7 +231,7 @@ pub fn main(none) -> void " + (
 // ✅ VALID CODE UNCHANGED: All legitimate patterns still work
 Vec::new()                    // Still valid
 Point::default()              // Still valid  
-Result::Ok(value)             // Still valid
+Result.Ok(value)             // Still valid
 Vec<i32>::new()               // Now properly supported
 HashMap<String, i32>::new()   // Now properly supported
 

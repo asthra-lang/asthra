@@ -414,6 +414,54 @@ static ConstValue *evaluate_const_sizeof(SemanticAnalyzer *analyzer, ASTNode *ty
         size = 16; // Pointer + length
         break;
 
+    case TYPE_ARRAY: {
+        // Fixed-size array: size = element_size * array_count
+        if (type->data.array.element_type && type->data.array.size > 0) {
+            // Recursively calculate element size
+            size_t element_size = 0;
+            TypeDescriptor *elem_type = type->data.array.element_type;
+
+            // Simple size calculation for primitive element types
+            if (elem_type->category == TYPE_PRIMITIVE) {
+                switch (elem_type->data.primitive.primitive_kind) {
+                case PRIMITIVE_I8:
+                case PRIMITIVE_U8:
+                    element_size = 1;
+                    break;
+                case PRIMITIVE_I16:
+                case PRIMITIVE_U16:
+                    element_size = 2;
+                    break;
+                case PRIMITIVE_I32:
+                case PRIMITIVE_U32:
+                case PRIMITIVE_F32:
+                    element_size = 4;
+                    break;
+                case PRIMITIVE_I64:
+                case PRIMITIVE_U64:
+                case PRIMITIVE_F64:
+                    element_size = 8;
+                    break;
+                case PRIMITIVE_BOOL:
+                    element_size = 1;
+                    break;
+                default:
+                    element_size = 8; // Default size
+                    break;
+                }
+            } else {
+                // For non-primitive types, use default size
+                // In a full implementation, we'd recursively calculate sizes
+                element_size = 8;
+            }
+
+            size = element_size * type->data.array.size;
+        } else {
+            size = 0; // Invalid array
+        }
+        break;
+    }
+
     default:
         // For complex types, use a default size for now
         // In a full implementation, we'd calculate actual struct/enum sizes

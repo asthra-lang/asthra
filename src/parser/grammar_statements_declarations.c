@@ -115,12 +115,45 @@ ASTNode *parse_var_decl(Parser *parser) {
 
     // Regular identifier-based let statement
     if (!match_token(parser, TOKEN_IDENTIFIER)) {
-        report_error(parser, "Expected variable name or pattern");
+        // Check if this is a reserved keyword being used as a variable name
+        TokenType current_type = parser->current_token.type;
+        if (current_type == TOKEN_FN || current_type == TOKEN_LET || current_type == TOKEN_CONST ||
+            current_type == TOKEN_MUT || current_type == TOKEN_IF || current_type == TOKEN_ELSE ||
+            current_type == TOKEN_ENUM || current_type == TOKEN_MATCH ||
+            current_type == TOKEN_RETURN || current_type == TOKEN_STRUCT ||
+            current_type == TOKEN_EXTERN || current_type == TOKEN_SPAWN ||
+            current_type == TOKEN_UNSAFE || current_type == TOKEN_PACKAGE ||
+            current_type == TOKEN_IMPORT || current_type == TOKEN_FOR || current_type == TOKEN_IN ||
+            current_type == TOKEN_AWAIT || current_type == TOKEN_BREAK ||
+            current_type == TOKEN_CONTINUE || current_type == TOKEN_SIZEOF ||
+            current_type == TOKEN_PUB || current_type == TOKEN_PRIV || current_type == TOKEN_IMPL ||
+            current_type == TOKEN_SELF || current_type == TOKEN_VOID ||
+            current_type == TOKEN_NONE || current_type == TOKEN_AS ||
+            current_type == TOKEN_BOOL_TRUE || current_type == TOKEN_BOOL_FALSE ||
+            current_type == TOKEN_RESULT || current_type == TOKEN_OPTION ||
+            current_type == TOKEN_TASKHANDLE || current_type == TOKEN_SPAWN_WITH_HANDLE) {
+            report_error(parser, "Cannot use reserved keyword as variable name");
+        } else {
+            report_error(parser, "Expected variable name or pattern");
+        }
         return NULL;
     }
 
     char *var_name = strdup(parser->current_token.data.identifier.name);
     advance_token(parser);
+
+    // Check if this might be missing type annotation
+    if (match_token(parser, TOKEN_ASSIGN)) {
+        // Missing type annotation - report clear error
+        char error_msg[256];
+        snprintf(error_msg, sizeof(error_msg),
+                 "Missing type annotation in variable declaration. "
+                 "Type annotations are mandatory - use 'let %s: Type = value;'",
+                 var_name);
+        report_error(parser, error_msg);
+        free(var_name);
+        return NULL;
+    }
 
     // Type annotation now REQUIRED
     if (!expect_token(parser, TOKEN_COLON)) {

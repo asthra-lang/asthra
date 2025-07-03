@@ -168,9 +168,9 @@ struct TypeDescriptor {
             TypeDescriptor *element_type; // Type of array elements
             size_t size;                  // Number of elements (compile-time constant)
         } array;
-        
+
         struct {
-            TypeDescriptor *result_type;  // Type T in TaskHandle<T>
+            TypeDescriptor *result_type; // Type T in TaskHandle<T>
         } task_handle;
     } data;
 

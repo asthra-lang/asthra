@@ -11,6 +11,7 @@
 #include "semantic_ffi.h"
 #include "semantic_core.h"
 #include <stdlib.h>
+#include <string.h>
 
 // =============================================================================
 // FFI TYPE VALIDATION
@@ -27,6 +28,9 @@ bool semantic_validate_ffi_type(SemanticAnalyzer *analyzer, TypeDescriptor *type
     }
 
     switch (type->category) {
+    case TYPE_PRIMITIVE:
+        // Primitive types are generally FFI compatible, including void
+        return true;
     case TYPE_BOOL:
     case TYPE_INTEGER: // Covers all integer types (i8, i16, i32, i64, u8, u16, u32, u64)
     case TYPE_FLOAT:   // Covers floating point types (f32, f64)
@@ -36,6 +40,12 @@ bool semantic_validate_ffi_type(SemanticAnalyzer *analyzer, TypeDescriptor *type
 
     case TYPE_POINTER:
         // Pointers are generally FFI compatible. Recursively check pointee type.
+        // Special case: void* is always FFI compatible
+        if (type->data.pointer.pointee_type &&
+            type->data.pointer.pointee_type->category == TYPE_PRIMITIVE &&
+            strcmp(type->data.pointer.pointee_type->name, "void") == 0) {
+            return true;
+        }
         return semantic_validate_ffi_type(analyzer, type->data.pointer.pointee_type);
 
     case TYPE_SLICE:

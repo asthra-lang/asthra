@@ -210,9 +210,9 @@ Feature: Return statements
 
       pub fn safe_divide(a: i32, b: i32) -> Result<i32, string> {
           if b == 0 {
-              return Result::Err("Division by zero");
+              return Result.Err("Division by zero");
           }
-          return Result::Ok(a / b);
+          return Result.Ok(a / b);
       }
 
       pub fn main(none) -> i32 {
@@ -230,9 +230,9 @@ Feature: Return statements
 
       pub fn find_positive(value: i32) -> Option<i32> {
           if value > 0 {
-              return Option::Some(value);
+              return Option.Some(value);
           }
-          return Option::None;
+          return Option.None;
       }
 
       pub fn main(none) -> i32 {

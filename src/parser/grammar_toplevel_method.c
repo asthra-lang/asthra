@@ -57,7 +57,7 @@ ASTNode *parse_impl_block(Parser *parser) {
         // Parse annotations first (methods can have annotations)
         ASTNodeList *annotations = parse_annotation_list(parser);
 
-        // Parse method visibility
+        // Parse method visibility - must be explicit
         VisibilityType method_visibility = VISIBILITY_PRIVATE;
         if (match_token(parser, TOKEN_PUB)) {
             method_visibility = VISIBILITY_PUBLIC;
@@ -65,6 +65,22 @@ ASTNode *parse_impl_block(Parser *parser) {
         } else if (match_token(parser, TOKEN_PRIV)) {
             method_visibility = VISIBILITY_PRIVATE;
             advance_token(parser);
+        } else if (match_token(parser, TOKEN_FN)) {
+            // Method without visibility modifier
+            report_error(parser, "methods must have explicit visibility");
+
+            // Free annotations on error
+            if (annotations) {
+                ast_node_list_destroy(annotations);
+            }
+
+            // Free methods array
+            for (size_t i = 0; i < method_count; i++) {
+                ast_free_node(methods[i]);
+            }
+            free(methods);
+            free(struct_name);
+            return NULL;
         }
 
         // Expect function declaration

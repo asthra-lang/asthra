@@ -7,10 +7,10 @@
  */
 
 #include "llvm_call_expr.h"
+#include "llvm_access_expr.h"
 #include "llvm_debug.h"
 #include "llvm_expr_gen.h"
 #include "llvm_locals.h"
-#include "llvm_access_expr.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,7 +28,7 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
             ASTNode *object_node = field_access->data.field_access.object;
             LLVMValueRef self_obj = NULL;
             LLVMValueRef self_ptr = NULL;
-            
+
             // Check if the object is an identifier (local variable)
             if (object_node->type == AST_IDENTIFIER) {
                 const char *var_name = object_node->data.identifier.name;
@@ -37,10 +37,12 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
                 if (var_entry) {
                     // Use the alloca directly as the pointer
                     self_ptr = var_entry->alloca;
-                    self_obj = LLVMBuildLoad2(data->builder, var_entry->type, var_entry->alloca, var_name);
+                    self_obj =
+                        LLVMBuildLoad2(data->builder, var_entry->type, var_entry->alloca, var_name);
                 }
             }
-            // Check if the object is itself a field access (for chained access like o.inner.method())
+            // Check if the object is itself a field access (for chained access like
+            // o.inner.method())
             else if (object_node->type == AST_FIELD_ACCESS) {
                 // For field access, we need to get the pointer to the field
                 self_ptr = generate_field_access_ptr(data, object_node);
@@ -48,9 +50,8 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
                     // We have the pointer, now load the value too
                     self_obj = generate_field_access(data, object_node);
                 }
-                
             }
-            
+
             // If we don't have a pointer yet, generate the expression normally
             if (!self_ptr) {
                 self_obj = generate_expression(data, field_access->data.field_access.object);
@@ -63,7 +64,7 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
                 self_ptr = LLVMBuildAlloca(data->builder, obj_type, "self_tmp");
                 LLVMBuildStore(data->builder, self_obj, self_ptr);
             }
-            
+
             if (self_ptr) {
                 // This is likely an instance method call
                 const char *method_name = field_access->data.field_access.field_name;
@@ -73,14 +74,13 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
 
                 // Get the type name from the object's type info
                 const char *type_name = "Unknown"; // Default
-                if (field_access->data.field_access.object->type_info && 
+                if (field_access->data.field_access.object->type_info &&
                     field_access->data.field_access.object->type_info->name) {
                     type_name = field_access->data.field_access.object->type_info->name;
                 } else if (object_node->type_info && object_node->type_info->name) {
                     type_name = object_node->type_info->name;
                 }
-                
-                
+
                 snprintf(mangled_name, sizeof(mangled_name), "%s_instance_%s", type_name,
                          method_name);
 
@@ -134,19 +134,49 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
 
                 LLVMValueRef result = LLVMBuildCall2(data->builder, fn_type, function, args,
                                                      (unsigned)total_args, method_result_name);
+
+                // Check if this is a Never type method call
+                bool is_never_method = false;
+                if (field_access && field_access->type_info) {
+                    TypeInfo *method_type_info = field_access->type_info;
+                    if (method_type_info->category == TYPE_INFO_FUNCTION &&
+                        method_type_info->data.function.return_type &&
+                        method_type_info->data.function.return_type->category ==
+                            TYPE_INFO_PRIMITIVE &&
+                        method_type_info->data.function.return_type->data.primitive.kind ==
+                            PRIMITIVE_INFO_NEVER) {
+                        is_never_method = true;
+                    }
+                }
+
+                // For Never type method calls, add unreachable instruction
+                if (is_never_method) {
+                    LLVMBuildUnreachable(data->builder);
+                    free(args);
+                    return LLVMGetUndef(data->void_type);
+                }
+
+                // For void method calls, we still need to return a value for LLVM consistency
+                // The calling code will handle void returns appropriately
+
                 free(args);
                 return result;
             }
         }
     }
 
-    // Check if this is a predeclared function call like len()
+    // Check if this is a predeclared function call like len() or log()
     if (node->data.call_expr.function->type == AST_IDENTIFIER) {
         const char *func_name = node->data.call_expr.function->data.identifier.name;
-        
+
         // Handle len() predeclared function
         if (strcmp(func_name, "len") == 0) {
             return generate_len_function_call(data, node);
+        }
+
+        // Handle log() predeclared function
+        if (strcmp(func_name, "log") == 0) {
+            return generate_log_function_call(data, node);
         }
     }
 
@@ -216,6 +246,28 @@ LLVMValueRef generate_call_expr(LLVMBackendData *data, const ASTNode *node) {
 
     LLVMValueRef result = LLVMBuildCall2(data->builder, fn_type, function, args,
                                          (unsigned)actual_arg_count, result_name);
+
+    // Check if this is a Never type function call
+    bool is_never_call = false;
+    if (node->data.call_expr.function && node->data.call_expr.function->type_info) {
+        TypeInfo *func_type_info = node->data.call_expr.function->type_info;
+        if (func_type_info->category == TYPE_INFO_FUNCTION &&
+            func_type_info->data.function.return_type &&
+            func_type_info->data.function.return_type->category == TYPE_INFO_PRIMITIVE &&
+            func_type_info->data.function.return_type->data.primitive.kind ==
+                PRIMITIVE_INFO_NEVER) {
+            is_never_call = true;
+        }
+    }
+
+    // For Never type function calls, add unreachable instruction
+    if (is_never_call) {
+        LLVMBuildUnreachable(data->builder);
+        // Return a placeholder value that will never be used
+        if (args)
+            free(args);
+        return LLVMGetUndef(data->void_type);
+    }
 
     if (args)
         free(args);
@@ -388,21 +440,21 @@ LLVMValueRef generate_len_function_call(LLVMBackendData *data, const ASTNode *no
     if (!node->data.call_expr.args || node->data.call_expr.args->count != 1) {
         LLVM_REPORT_ERROR(data, node, "len() requires exactly one argument");
     }
-    
+
     ASTNode *arg_node = node->data.call_expr.args->nodes[0];
     LLVMValueRef arg = generate_expression(data, arg_node);
     if (!arg) {
         LLVM_REPORT_ERROR(data, arg_node, "Failed to generate argument for len()");
     }
-    
+
     // Check the argument type to determine how to extract length
     if (!arg_node->type_info) {
         LLVM_REPORT_ERROR(data, arg_node, "Argument to len() missing type info");
     }
-    
+
     if (arg_node->type_info->category == TYPE_INFO_SLICE) {
         // Check if this is actually a fixed-size array
-        if (arg_node->type_info->type_descriptor && 
+        if (arg_node->type_info->type_descriptor &&
             arg_node->type_info->type_descriptor->category == TYPE_ARRAY) {
             // Fixed-size array - return the compile-time constant size
             size_t array_size = arg_node->type_info->type_descriptor->data.array.size;
@@ -416,4 +468,38 @@ LLVMValueRef generate_len_function_call(LLVMBackendData *data, const ASTNode *no
     } else {
         LLVM_REPORT_ERROR(data, arg_node, "len() can only be called on slices and arrays");
     }
+}
+
+// Generate code for log() function calls
+LLVMValueRef generate_log_function_call(LLVMBackendData *data, const ASTNode *node) {
+    // log() should have exactly one argument (string message)
+    if (!node->data.call_expr.args || node->data.call_expr.args->count != 1) {
+        LLVM_REPORT_ERROR(data, node, "log() requires exactly one argument");
+    }
+
+    ASTNode *arg_node = node->data.call_expr.args->nodes[0];
+    LLVMValueRef arg = generate_expression(data, arg_node);
+    if (!arg) {
+        LLVM_REPORT_ERROR(data, arg_node, "Failed to generate argument for log()");
+    }
+
+    // Get the asthra_simple_log function from the module
+    LLVMValueRef log_fn = LLVMGetNamedFunction(data->module, "asthra_simple_log");
+    if (!log_fn) {
+        LLVM_REPORT_ERROR(data, node, "log() function not found in module");
+    }
+
+    // Create arguments array
+    LLVMValueRef args[] = {arg};
+
+    // Get function type
+    LLVMTypeRef fn_type = LLVMGlobalGetValueType(log_fn);
+    if (!fn_type) {
+        LLVM_REPORT_ERROR(data, node, "Failed to get log() function type");
+    }
+
+    // Call the log function
+    LLVMValueRef result = LLVMBuildCall2(data->builder, fn_type, log_fn, args, 1, "");
+
+    return result;
 }

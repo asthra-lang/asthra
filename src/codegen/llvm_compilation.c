@@ -78,4 +78,3 @@ AsthraLLVMToolResult asthra_llvm_compile(const char *input_file,
 
     return execute_command(argv, options->verbose);
 }
-

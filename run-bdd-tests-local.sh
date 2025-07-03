@@ -16,6 +16,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="build"
 VERBOSE=0
 CLEAN_BUILD=0
+CLEAN_LOGS=0
 PARALLEL_JOBS=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
 FEATURE_FILTER=""
 TAG_FILTER=""
@@ -49,6 +50,7 @@ OPTIONS:
     -h, --help              Show this help message
     -v, --verbose           Enable verbose output
     -c, --clean             Clean build before running tests
+    --clean-logs            Clean BDD log files before running tests
     -j, --jobs NUM          Number of parallel build jobs (default: $PARALLEL_JOBS)
     -b, --build-dir DIR     Build directory (default: $BUILD_DIR)
     -f, --feature PATTERN   Run only features matching pattern
@@ -61,6 +63,7 @@ EXAMPLES:
     $SCRIPT_NAME                    # Run all BDD tests (excluding @wip)
     $SCRIPT_NAME --all              # Run all BDD tests including @wip
     $SCRIPT_NAME -c                 # Clean build and run tests
+    $SCRIPT_NAME --clean-logs       # Clean logs and run tests
     $SCRIPT_NAME -f parser          # Run only parser-related features
     $SCRIPT_NAME -t @wip            # Run only @wip scenarios
     $SCRIPT_NAME -v -j 8            # Verbose output with 8 parallel jobs
@@ -163,6 +166,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --all)
             RUN_ALL=1
+            shift
+            ;;
+        --clean-logs)
+            CLEAN_LOGS=1
             shift
             ;;
         --list-features)
@@ -292,8 +299,17 @@ main() {
     WIP_TEST_SUITES="bdd_unit_annotations bdd_unit_bitwise_operators bdd_unit_boolean_operators bdd_unit_compilation bdd_unit_compiler_basic bdd_unit_composite_types bdd_unit_function_calls bdd_unit_generic_types bdd_unit_import_system bdd_unit_package_declaration bdd_unit_primitive_types bdd_unit_special_types bdd_unit_user_defined_types bdd_unit_visibility_modifiers"
     WIP_SUITES_FAILED=0
     
+    # Set log directory
+    LOG_DIR="$BUILD_DIR/bdd-local-logs"
+    
+    # Clean logs if requested
+    if [ $CLEAN_LOGS -eq 1 ]; then
+        print_info "Cleaning BDD log directory: $LOG_DIR"
+        rm -rf "$LOG_DIR"
+    fi
+    
     # Create logs directory
-    mkdir -p "$BUILD_DIR/bdd-logs"
+    mkdir -p "$LOG_DIR"
     
     # Run individual BDD test suites and collect results
     print_info "Running BDD test suites..."
@@ -316,7 +332,7 @@ main() {
             SUITES_RUN=$((SUITES_RUN + 1))
             
             # Run test and capture output
-            LOG_FILE="$BUILD_DIR/bdd-logs/${TEST_NAME}.log"
+            LOG_FILE="$LOG_DIR/${TEST_NAME}.log"
             if $test --reporter spec 2>&1 | tee "$LOG_FILE"; then
                 print_success "✓ $TEST_NAME PASSED"
             else
@@ -404,7 +420,7 @@ main() {
     print_info "Skipping cucumber integration phase (known to hang)"
     print_info "All individual BDD test suites have been run"
     
-    # CUCUMBER_LOG="$BUILD_DIR/bdd-logs/cucumber_run.log"
+    # CUCUMBER_LOG="$LOG_DIR/cucumber_run.log"
     # if cmake $build_args 2>&1 | tee "$CUCUMBER_LOG"; then
     #     print_success "Cucumber tests completed"
     # else
@@ -460,7 +476,7 @@ main() {
             # Provide helpful debugging info
             print_info "To debug, you can:"
             print_info "  1. Run with verbose output: $SCRIPT_NAME -v"
-            print_info "  2. Check logs in: $BUILD_DIR/bdd-logs/"
+            print_info "  2. Check logs in: $LOG_DIR/"
             print_info "  3. Run specific features: $SCRIPT_NAME -f <feature_name>"
             print_info "  4. Check CMake configuration: cmake -LA $BUILD_DIR | grep BDD"
             

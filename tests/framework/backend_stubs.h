@@ -1,6 +1,6 @@
 /**
  * Backend API Stubs for Tests
- * 
+ *
  * Provides stub implementations for the removed backend abstraction layer
  * to maintain test compatibility during the transition to direct LLVM usage.
  */

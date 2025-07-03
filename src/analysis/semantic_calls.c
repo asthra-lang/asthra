@@ -397,7 +397,7 @@ bool validate_function_arguments(SemanticAnalyzer *analyzer, ASTNode *call_expr,
     }
 
     ASTNodeList *args = NULL;
-    
+
     // Handle both AST_CALL_EXPR and AST_ASSOCIATED_FUNC_CALL
     if (call_expr->type == AST_CALL_EXPR) {
         args = call_expr->data.call_expr.args;
@@ -406,7 +406,7 @@ bool validate_function_arguments(SemanticAnalyzer *analyzer, ASTNode *call_expr,
     } else {
         return false;
     }
-    
+
     TypeDescriptor *func_type = func_symbol->type;
 
     // Check if function type has parameter information
@@ -696,6 +696,7 @@ bool analyze_associated_function_call(SemanticAnalyzer *analyzer, ASTNode *expr)
 
     const char *struct_name = expr->data.associated_func_call.struct_name;
     const char *func_name = expr->data.associated_func_call.function_name;
+    ASTNodeList *type_args = expr->data.associated_func_call.type_args;
     ASTNodeList *args = expr->data.associated_func_call.args;
 
     if (!struct_name || !func_name) {
@@ -718,25 +719,147 @@ bool analyze_associated_function_call(SemanticAnalyzer *analyzer, ASTNode *expr)
         return false;
     }
 
-    TypeDescriptor *struct_type = struct_symbol->type;
-    if (!struct_type || struct_type->category != TYPE_STRUCT) {
+    TypeDescriptor *type = struct_symbol->type;
+    if (!type) {
         semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, expr->location,
-                              "%s is not a struct type", struct_name);
+                              "%s has no type descriptor", struct_name);
         return false;
     }
 
-    // Look up the method in the struct's method table
-    if (!struct_type->data.struct_type.methods) {
-        semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL, expr->location,
-                              "Struct %s has no methods", struct_name);
-        return false;
+    // Handle generic type arguments if provided
+    TypeDescriptor *type_to_use = type;
+    if (type_args && ast_node_list_size(type_args) > 0) {
+        // This is a generic type instantiation (e.g., Vec<i32>::new())
+        size_t type_arg_count = ast_node_list_size(type_args);
+
+        // Resolve type arguments to TypeDescriptors
+        TypeDescriptor **resolved_type_args = calloc(type_arg_count, sizeof(TypeDescriptor *));
+        if (!resolved_type_args) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, expr->location,
+                                  "Failed to allocate memory for type arguments");
+            return false;
+        }
+
+        bool success = true;
+        for (size_t i = 0; i < type_arg_count; i++) {
+            ASTNode *type_arg_node = ast_node_list_get(type_args, i);
+            if (!type_arg_node) {
+                success = false;
+                break;
+            }
+
+            // Analyze the type argument
+            TypeDescriptor *type_arg = analyze_type_node(analyzer, type_arg_node);
+            if (!type_arg) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_INFERENCE_FAILED,
+                                      type_arg_node->location,
+                                      "Failed to resolve type argument %zu", i + 1);
+                success = false;
+                break;
+            }
+
+            resolved_type_args[i] = type_arg;
+        }
+
+        if (success) {
+            // Create a generic instance with the resolved type arguments
+            TypeDescriptor *generic_instance =
+                type_descriptor_create_generic_instance(type, resolved_type_args, type_arg_count);
+
+            if (generic_instance) {
+                type_to_use = generic_instance;
+            } else {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, expr->location,
+                                      "Failed to instantiate generic type %s", struct_name);
+                success = false;
+            }
+        }
+
+        // Clean up resolved type arguments (they're retained by generic instance if successful)
+        for (size_t i = 0; i < type_arg_count; i++) {
+            if (resolved_type_args[i]) {
+                type_descriptor_release(resolved_type_args[i]);
+            }
+        }
+        free(resolved_type_args);
+
+        if (!success) {
+            return false;
+        }
     }
 
-    SymbolEntry *method_symbol = 
-        symbol_table_lookup_safe(struct_type->data.struct_type.methods, func_name);
-    if (!method_symbol) {
-        semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL, expr->location,
-                              "Undefined method %s::%s", struct_name, func_name);
+    SymbolEntry *method_symbol = NULL;
+
+    // Use the potentially instantiated generic type
+    if (type_to_use->category == TYPE_STRUCT) {
+        // Look up the method in the struct's method table
+        if (!type_to_use->data.struct_type.methods) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL, expr->location,
+                                  "Struct %s has no methods", struct_name);
+            if (type_to_use != type) {
+                type_descriptor_release(type_to_use);
+            }
+            return false;
+        }
+
+        method_symbol = symbol_table_lookup_safe(type_to_use->data.struct_type.methods, func_name);
+        if (!method_symbol) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL, expr->location,
+                                  "Undefined method %s::%s", struct_name, func_name);
+            if (type_to_use != type) {
+                type_descriptor_release(type_to_use);
+            }
+            return false;
+        }
+    } else if (type_to_use->category == TYPE_ENUM) {
+        // Error: :: is not allowed for enum variants
+        semantic_report_error(
+            analyzer, SEMANTIC_ERROR_INVALID_OPERATION, expr->location,
+            "Use '.' instead of '::' for enum variants (e.g., %s.%s instead of %s::%s)",
+            struct_name, func_name, struct_name, func_name);
+        if (type_to_use != type) {
+            type_descriptor_release(type_to_use);
+        }
+        return false;
+    } else if (type_to_use->category == TYPE_GENERIC_INSTANCE) {
+        // For generic instances, look up methods on the base type
+        TypeDescriptor *base_type = type_to_use->data.generic_instance.base_type;
+        if (base_type->category == TYPE_STRUCT) {
+            if (!base_type->data.struct_type.methods) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL, expr->location,
+                                      "Struct %s has no methods", struct_name);
+                if (type_to_use != type) {
+                    type_descriptor_release(type_to_use);
+                }
+                return false;
+            }
+            method_symbol =
+                symbol_table_lookup_safe(base_type->data.struct_type.methods, func_name);
+            if (!method_symbol) {
+                semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL, expr->location,
+                                      "Undefined method %s::%s", struct_name, func_name);
+                if (type_to_use != type) {
+                    type_descriptor_release(type_to_use);
+                }
+                return false;
+            }
+        } else if (base_type->category == TYPE_ENUM) {
+            // Error: :: is not allowed for enum variants (even for generic enums)
+            semantic_report_error(
+                analyzer, SEMANTIC_ERROR_INVALID_OPERATION, expr->location,
+                "Use '.' instead of '::' for enum variants (e.g., %s.%s instead of %s::%s)",
+                struct_name, func_name, struct_name, func_name);
+            if (type_to_use != type) {
+                type_descriptor_release(type_to_use);
+            }
+            return false;
+        }
+    } else {
+        semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, expr->location,
+                              "%s is not a struct or enum type", struct_name);
+        if (type_to_use != type) {
+            type_descriptor_release(type_to_use);
+        }
         return false;
     }
 
@@ -767,12 +890,21 @@ bool analyze_associated_function_call(SemanticAnalyzer *analyzer, ASTNode *expr)
             if (!expr->type_info) {
                 semantic_report_error(analyzer, SEMANTIC_ERROR_INTERNAL, expr->location,
                                       "Failed to create type info for associated function call");
+                if (type_to_use != type) {
+                    type_descriptor_release(type_to_use);
+                }
                 return false;
             }
             // DEBUG: Print type info creation
-            // fprintf(stderr, "DEBUG: Set type_info for associated function call %s::%s, type=%s\n",
+            // fprintf(stderr, "DEBUG: Set type_info for associated function call %s::%s,
+            // type=%s\n",
             //         struct_name, func_name, return_type->name ? return_type->name : "unknown");
         }
+    }
+
+    // Clean up the generic instance if we created one
+    if (type_to_use != type) {
+        type_descriptor_release(type_to_use);
     }
 
     return true;

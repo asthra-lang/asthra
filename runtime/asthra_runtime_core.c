@@ -499,10 +499,7 @@ struct SimplifiedSlice {
 
 struct SimplifiedSlice asthra_runtime_get_args_simple(void) {
     AsthraSliceHeader full_slice = asthra_runtime_get_args();
-    struct SimplifiedSlice simple = {
-        .ptr = full_slice.ptr,
-        .len = full_slice.len
-    };
+    struct SimplifiedSlice simple = {.ptr = full_slice.ptr, .len = full_slice.len};
     return simple;
 }
 

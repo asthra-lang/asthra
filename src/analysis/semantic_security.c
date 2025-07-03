@@ -77,59 +77,270 @@ bool semantic_validate_constant_time_function(SemanticAnalyzer *analyzer, ASTNod
     // 1. No data-dependent branches (if, match, loops where condition depends on secret data).
     // 2. No data-dependent memory accesses (indexing arrays with secret data).
     // 3. All operations take constant time (e.g., no early exits from loops).
+    // 4. No division/modulo by non-constants.
+    // 5. Only calls to other constant-time functions.
 
-    // Simplified validation: Check for obvious non-constant-time constructs within the body.
-    // This will be enhanced in future phases with proper AST traversal and data flow analysis.
+    // Use the comprehensive validation for the function body
     ASTNode *body = func_decl->data.function_decl.body;
-    if (body && body->type == AST_BLOCK) {
-        // Iterate through statements in the body
-        for (size_t i = 0; i < body->data.block.statements->count; i++) {
-            ASTNode *stmt = body->data.block.statements->nodes[i];
-            if (!stmt)
-                continue;
-
-            // Detect basic non-constant-time patterns
-            if (stmt->type == AST_IF_STMT || stmt->type == AST_MATCH_STMT ||
-                stmt->type == AST_FOR_STMT) {
-                semantic_report_error(
-                    analyzer, SEMANTIC_ERROR_SECURITY_VIOLATION, stmt->location,
-                    "Constant-time function contains data-dependent control flow (%s)",
-                    ast_node_type_name(stmt->type));
-                return false;
-            }
-            // TODO: Add checks for variable-time operations like division by non-constant, etc.
-        }
+    if (body) {
+        return semantic_validate_constant_time_block(analyzer, body);
     }
 
     return true;
 }
 
 bool semantic_validate_constant_time_block(SemanticAnalyzer *analyzer, ASTNode *block) {
-    (void)analyzer;
-    (void)block;
-    // TODO: Implement constant-time block validation
+    if (!analyzer || !block || block->type != AST_BLOCK)
+        return false;
+
+    // Check all statements in the block for constant-time violations
+    if (block->data.block.statements) {
+        for (size_t i = 0; i < block->data.block.statements->count; i++) {
+            ASTNode *stmt = block->data.block.statements->nodes[i];
+            if (stmt && !semantic_validate_constant_time_statement(analyzer, stmt)) {
+                return false;
+            }
+        }
+    }
+
     return true;
 }
 
 bool semantic_validate_constant_time_statement(SemanticAnalyzer *analyzer, ASTNode *stmt) {
-    (void)analyzer;
-    (void)stmt;
-    // TODO: Implement constant-time statement validation
-    return true;
+    if (!analyzer || !stmt)
+        return false;
+
+    switch (stmt->type) {
+    // Control flow statements are not allowed in constant-time code
+    case AST_IF_STMT:
+        semantic_report_error(analyzer, SEMANTIC_ERROR_SECURITY_VIOLATION, stmt->location,
+                              "If statements are not allowed in constant-time code");
+        return false;
+
+    case AST_MATCH_STMT:
+        semantic_report_error(analyzer, SEMANTIC_ERROR_SECURITY_VIOLATION, stmt->location,
+                              "Match statements are not allowed in constant-time code");
+        return false;
+
+    case AST_FOR_STMT:
+        semantic_report_error(analyzer, SEMANTIC_ERROR_SECURITY_VIOLATION, stmt->location,
+                              "For loops are not allowed in constant-time code");
+        return false;
+
+        // Note: Asthra doesn't have while loops
+
+    case AST_RETURN_STMT:
+        // Early returns based on data are not allowed
+        // For now, allow all returns but ideally should check if it's conditional
+        if (stmt->data.return_stmt.expression) {
+            return semantic_validate_constant_time_expression(analyzer,
+                                                              stmt->data.return_stmt.expression);
+        }
+        return true;
+
+    case AST_EXPR_STMT:
+        // Validate the expression
+        return semantic_validate_constant_time_expression(analyzer,
+                                                          stmt->data.expr_stmt.expression);
+
+    case AST_LET_STMT:
+        // Let statements are allowed, but validate the initializer
+        if (stmt->data.let_stmt.initializer) {
+            return semantic_validate_constant_time_expression(analyzer,
+                                                              stmt->data.let_stmt.initializer);
+        }
+        return true;
+
+    case AST_ASSIGNMENT:
+        // Validate both target and value
+        if (!semantic_validate_constant_time_expression(analyzer, stmt->data.assignment.target)) {
+            return false;
+        }
+        return semantic_validate_constant_time_expression(analyzer, stmt->data.assignment.value);
+
+    case AST_BLOCK:
+        // Nested blocks are allowed
+        return semantic_validate_constant_time_block(analyzer, stmt);
+
+    default:
+        // Other statement types are generally allowed
+        return true;
+    }
 }
 
 bool semantic_validate_constant_time_call(SemanticAnalyzer *analyzer, ASTNode *call_expr) {
-    (void)analyzer;
-    (void)call_expr;
-    // TODO: Implement constant-time function call validation
+    if (!analyzer || !call_expr)
+        return false;
+
+    // For function calls in constant-time code:
+    // 1. The called function must also be constant-time
+    // 2. Arguments must be constant-time expressions
+
+    // First, validate all arguments
+    if (call_expr->type == AST_CALL_EXPR) {
+        // Validate function expression
+        if (!semantic_validate_constant_time_expression(analyzer,
+                                                        call_expr->data.call_expr.function)) {
+            return false;
+        }
+
+        // Validate arguments
+        if (call_expr->data.call_expr.args) {
+            for (size_t i = 0; i < call_expr->data.call_expr.args->count; i++) {
+                ASTNode *arg = call_expr->data.call_expr.args->nodes[i];
+                if (arg && !semantic_validate_constant_time_expression(analyzer, arg)) {
+                    return false;
+                }
+            }
+        }
+
+        // TODO: Check if the called function is marked as constant-time
+        // This requires resolving the function and checking its annotations
+        // For now, we'll just validate the arguments
+        return true;
+    }
+
+    // Similar checks for method calls and associated function calls
+    else if (call_expr->type == AST_ASSOCIATED_FUNC_CALL) {
+        // Validate arguments for associated function calls
+        if (call_expr->data.associated_func_call.args) {
+            for (size_t i = 0; i < call_expr->data.associated_func_call.args->count; i++) {
+                ASTNode *arg = call_expr->data.associated_func_call.args->nodes[i];
+                if (arg && !semantic_validate_constant_time_expression(analyzer, arg)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     return true;
 }
 
 bool semantic_validate_constant_time_expression(SemanticAnalyzer *analyzer, ASTNode *expr) {
-    (void)analyzer;
-    (void)expr;
-    // TODO: Implement constant-time expression validation
-    return true;
+    if (!analyzer || !expr)
+        return false;
+
+    switch (expr->type) {
+    // Literals are always constant-time
+    case AST_INTEGER_LITERAL:
+    case AST_FLOAT_LITERAL:
+    case AST_STRING_LITERAL:
+    case AST_BOOL_LITERAL:
+    case AST_CHAR_LITERAL:
+    case AST_UNIT_LITERAL:
+        return true;
+
+    // Identifiers are allowed
+    case AST_IDENTIFIER:
+        return true;
+
+    // Binary operations
+    case AST_BINARY_EXPR: {
+        // First check operands
+        if (!semantic_validate_constant_time_expression(analyzer, expr->data.binary_expr.left) ||
+            !semantic_validate_constant_time_expression(analyzer, expr->data.binary_expr.right)) {
+            return false;
+        }
+
+        // Division and modulo by non-constants are not constant-time
+        if (expr->data.binary_expr.operator== BINOP_DIV ||
+            expr->data.binary_expr.operator== BINOP_MOD) {
+            // Check if right operand is a constant
+            ASTNode *right = expr->data.binary_expr.right;
+            if (right->type != AST_INTEGER_LITERAL && right->type != AST_FLOAT_LITERAL) {
+                semantic_report_error(
+                    analyzer, SEMANTIC_ERROR_SECURITY_VIOLATION, expr->location,
+                    "Division/modulo by non-constant value is not allowed in constant-time code");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Unary operations
+    case AST_UNARY_EXPR:
+        return semantic_validate_constant_time_expression(analyzer, expr->data.unary_expr.operand);
+
+    // Array/slice indexing with data-dependent indices is not allowed
+    case AST_INDEX_ACCESS: {
+        // Validate array expression
+        if (!semantic_validate_constant_time_expression(analyzer, expr->data.index_access.array)) {
+            return false;
+        }
+
+        // Index must be a compile-time constant
+        ASTNode *index = expr->data.index_access.index;
+        if (index->type != AST_INTEGER_LITERAL) {
+            semantic_report_error(
+                analyzer, SEMANTIC_ERROR_SECURITY_VIOLATION, expr->location,
+                "Array indexing with non-constant index is not allowed in constant-time code");
+            return false;
+        }
+        return true;
+    }
+
+    // Field access is allowed
+    case AST_FIELD_ACCESS:
+        return semantic_validate_constant_time_expression(analyzer, expr->data.field_access.object);
+
+    // Function calls
+    case AST_CALL_EXPR:
+    case AST_ASSOCIATED_FUNC_CALL:
+        return semantic_validate_constant_time_call(analyzer, expr);
+
+    // Cast expressions
+    case AST_CAST_EXPR:
+        return semantic_validate_constant_time_expression(analyzer,
+                                                          expr->data.cast_expr.expression);
+
+    // Tuple and array literals
+    case AST_TUPLE_LITERAL:
+        if (expr->data.tuple_literal.elements) {
+            for (size_t i = 0; i < expr->data.tuple_literal.elements->count; i++) {
+                ASTNode *elem = expr->data.tuple_literal.elements->nodes[i];
+                if (elem && !semantic_validate_constant_time_expression(analyzer, elem)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+
+    case AST_ARRAY_LITERAL:
+        if (expr->data.array_literal.elements) {
+            for (size_t i = 0; i < expr->data.array_literal.elements->count; i++) {
+                ASTNode *elem = expr->data.array_literal.elements->nodes[i];
+                if (elem && !semantic_validate_constant_time_expression(analyzer, elem)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+
+    // Struct literals
+    case AST_STRUCT_LITERAL:
+        if (expr->data.struct_literal.field_inits) {
+            for (size_t i = 0; i < expr->data.struct_literal.field_inits->count; i++) {
+                ASTNode *field_init = expr->data.struct_literal.field_inits->nodes[i];
+                if (field_init && field_init->type == AST_ASSIGNMENT) {
+                    // Field initialization is stored as assignment: field_name = value
+                    ASTNode *field_value = field_init->data.assignment.value;
+                    if (field_value &&
+                        !semantic_validate_constant_time_expression(analyzer, field_value)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+
+    default:
+        // Conservative: disallow unknown expression types
+        semantic_report_error(analyzer, SEMANTIC_ERROR_SECURITY_VIOLATION, expr->location,
+                              "Expression type %s is not allowed in constant-time code",
+                              ast_node_type_name(expr->type));
+        return false;
+    }
 }
 
 // =============================================================================

@@ -101,6 +101,9 @@ void parser_destroy(Parser *parser) {
 
     ExtendedParser *ext_parser = (ExtendedParser *)parser;
 
+    // Free the current token to prevent memory leaks
+    token_free(&parser->current_token);
+
     // Free errors
     ParseError *error = parser->errors;
     while (error) {
@@ -200,6 +203,8 @@ Token advance_token(Parser *parser) {
 
     if (!at_end(parser)) {
         do {
+            // Free the current token before overwriting it to prevent memory leaks
+            token_free(&parser->current_token);
             parser->current_token = lexer_next_token(parser->lexer);
         } while (parser->current_token.type == TOKEN_NEWLINE && !at_end(parser));
     }
@@ -215,6 +220,37 @@ Token peek_token(Parser *parser) {
     }
 
     return lexer_peek_token(parser->lexer);
+}
+
+Token peek_token_ahead(Parser *parser, size_t offset) {
+    if (!parser) {
+        Token error = {0};
+        error.type = TOKEN_ERROR;
+        return error;
+    }
+
+    // For simplicity, if offset is 0, just return current token
+    if (offset == 0) {
+        return parser->current_token;
+    }
+
+    // For offset of 1, return the peek token
+    if (offset == 1) {
+        return lexer_peek_token(parser->lexer);
+    }
+
+    // For offset of 2, return EOF for now (not supported yet)
+    if (offset == 2) {
+        Token eof_token = {0};
+        eof_token.type = TOKEN_EOF;
+        return eof_token;
+    }
+
+    // For larger offsets, we'd need more complex multi-token lookahead
+    // For now, just return an EOF token to indicate we can't look that far ahead
+    Token eof_token = {0};
+    eof_token.type = TOKEN_EOF;
+    return eof_token;
 }
 
 bool check_token(Parser *parser, TokenType expected) {

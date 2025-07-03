@@ -29,7 +29,7 @@ static bool collect_field_names(const char *name, SymbolEntry *entry, void *user
     if (!entry || entry->kind != SYMBOL_FIELD) {
         return true; // Continue iteration
     }
-    
+
     FieldCollector *collector = (FieldCollector *)user_data;
     if (collector->index < collector->capacity) {
         collector->names[collector->index++] = (char *)name;
@@ -238,10 +238,10 @@ bool analyze_struct_literal_expression(SemanticAnalyzer *analyzer, ASTNode *stru
     size_t field_count = field_lookup_type->data.struct_type.field_count;
     bool *fields_initialized = NULL;
     char **field_names = NULL;
-    
+
     if (field_count > 0) {
         fields_initialized = calloc(field_count, sizeof(bool));
-        field_names = calloc(field_count, sizeof(char*));
+        field_names = calloc(field_count, sizeof(char *));
         if (!fields_initialized || !field_names) {
             free(fields_initialized);
             free(field_names);
@@ -252,11 +252,7 @@ bool analyze_struct_literal_expression(SemanticAnalyzer *analyzer, ASTNode *stru
         }
 
         // Collect all field names from the struct definition
-        FieldCollector collector = {
-            .names = field_names,
-            .index = 0,
-            .capacity = field_count
-        };
+        FieldCollector collector = {.names = field_names, .index = 0, .capacity = field_count};
 
         symbol_table_iterate(fields_table, collect_field_names, &collector);
     }
@@ -290,8 +286,7 @@ bool analyze_struct_literal_expression(SemanticAnalyzer *analyzer, ASTNode *stru
                 continue;
             }
 
-            SymbolEntry *field_symbol =
-                symbol_table_lookup_local(fields_table, field_name);
+            SymbolEntry *field_symbol = symbol_table_lookup_local(fields_table, field_name);
             if (!field_symbol) {
                 semantic_report_error(analyzer, SEMANTIC_ERROR_UNDEFINED_SYMBOL,
                                       field_init->location, "Struct '%s' has no field '%s'",

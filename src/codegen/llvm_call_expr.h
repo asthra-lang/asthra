@@ -30,6 +30,9 @@ LLVMValueRef generate_result_function_call(LLVMBackendData *data, const ASTNode 
 // Helper for len() predeclared function calls
 LLVMValueRef generate_len_function_call(LLVMBackendData *data, const ASTNode *node);
 
+// Helper for log() predeclared function calls
+LLVMValueRef generate_log_function_call(LLVMBackendData *data, const ASTNode *node);
+
 #ifdef __cplusplus
 }
 #endif

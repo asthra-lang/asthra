@@ -66,7 +66,7 @@ typedef struct SymbolEntry {
         bool is_mutable : 1;
         bool is_initialized : 1;
         bool is_predeclared : 1;
-        uint8_t reserved : 3;  // Increased reserved bits after removing is_task_handle
+        uint8_t reserved : 3; // Increased reserved bits after removing is_task_handle
     } flags;
 
     // Visibility and method-specific information (NEW)

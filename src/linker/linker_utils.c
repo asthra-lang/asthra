@@ -137,7 +137,8 @@ bool asthra_linker_generate_executable(Asthra_Linker *linker, const char **objec
 bool asthra_linker_set_executable_permissions(Asthra_Linker *linker, const char *executable_path,
                                               uint32_t permissions) {
     if (linker) {
-        linker_set_error(linker, "Executable permissions not implemented - use LLVM tools directly");
+        linker_set_error(linker,
+                         "Executable permissions not implemented - use LLVM tools directly");
     }
     return false;
 }

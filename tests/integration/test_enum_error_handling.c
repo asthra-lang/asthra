@@ -3,8 +3,8 @@
  * Tests enum variants with error handling patterns
  */
 
-#include "test_enum_integration_common.h"
 #include "../framework/backend_stubs.h"
+#include "test_enum_integration_common.h"
 
 // Test enum variant construction with error handling
 static void test_enum_variant_error_handling(void) {

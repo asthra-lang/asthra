@@ -25,46 +25,12 @@ ASTNode *parse_statement(Parser *parser) {
     if (!parser)
         return NULL;
 
-    // Try to parse assignment first by looking ahead
-    if (check_token(parser, TOKEN_IDENTIFIER)) {
-        // Look ahead to see if this might be an assignment
-        Token next = peek_token(parser);
-        if (next.type == TOKEN_ASSIGN) {
-            // Parse as assignment - use parse_lvalue for left side according to grammar
-            ASTNode *lvalue = parse_lvalue(parser);
-            if (!lvalue)
-                return NULL;
+    // Note: Assignment parsing is handled by parse_expr_stmt which calls parse_expr
+    // The expression parser will handle assignments properly
 
-            SourceLocation assign_loc = parser->current_token.location;
-            if (!expect_token(parser, TOKEN_ASSIGN)) {
-                ast_free_node(lvalue);
-                return NULL;
-            }
-
-            ASTNode *rvalue = parse_expr(parser);
-            if (!rvalue) {
-                ast_free_node(lvalue);
-                return NULL;
-            }
-
-            if (!expect_token(parser, TOKEN_SEMICOLON)) {
-                ast_free_node(lvalue);
-                ast_free_node(rvalue);
-                return NULL;
-            }
-
-            ASTNode *assign = ast_create_node(AST_ASSIGNMENT, assign_loc);
-            if (!assign) {
-                ast_free_node(lvalue);
-                ast_free_node(rvalue);
-                return NULL;
-            }
-
-            assign->data.assignment.target = lvalue;
-            assign->data.assignment.value = rvalue;
-
-            return assign;
-        }
+    // Try identifier-based statements first (assignments, function calls, etc.)
+    if (match_token(parser, TOKEN_IDENTIFIER)) {
+        return parse_expr_stmt(parser);
     }
 
     // Try other statement types

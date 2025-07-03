@@ -17,7 +17,8 @@
 #include <string.h>
 
 // Forward declaration for internal function
-static void generate_function_internal(LLVMBackendData *data, const ASTNode *node, const char *struct_name);
+static void generate_function_internal(LLVMBackendData *data, const ASTNode *node,
+                                       const char *struct_name);
 
 // Generate code for functions
 void generate_function(LLVMBackendData *data, const ASTNode *node) {
@@ -25,7 +26,8 @@ void generate_function(LLVMBackendData *data, const ASTNode *node) {
 }
 
 // Internal function that can handle struct context for methods
-static void generate_function_internal(LLVMBackendData *data, const ASTNode *node, const char *struct_name) {
+static void generate_function_internal(LLVMBackendData *data, const ASTNode *node,
+                                       const char *struct_name) {
     if (!node || (node->type != AST_FUNCTION_DECL && node->type != AST_METHOD_DECL)) {
         return;
     }
@@ -53,7 +55,6 @@ static void generate_function_internal(LLVMBackendData *data, const ASTNode *nod
     LLVMTypeRef ret_type = data->void_type;
     int param_count = 0;
 
-
     if (func_type && func_type->category == TYPE_INFO_FUNCTION) {
         if (func_type->data.function.return_type) {
             ret_type = asthra_type_to_llvm(data, func_type->data.function.return_type);
@@ -62,7 +63,7 @@ static void generate_function_internal(LLVMBackendData *data, const ASTNode *nod
     } else {
         // Try to get param count from AST
         param_count = params ? params->count : 0;
-        
+
         // For methods, try to get return type from AST
         if (node->type == AST_METHOD_DECL && node->data.method_decl.return_type) {
             // Try to determine return type from AST
@@ -85,7 +86,7 @@ static void generate_function_internal(LLVMBackendData *data, const ASTNode *nod
                         const char *type_name = ret_type_node->data.struct_type.name;
                         if (type_name && strcmp(type_name, "Counter") == 0) {
                             // For Counter struct, we know it has one i32 field
-                            LLVMTypeRef field_types[] = { data->i32_type };
+                            LLVMTypeRef field_types[] = {data->i32_type};
                             ret_type = LLVMStructTypeInContext(data->context, field_types, 1, 0);
                         }
                     }
@@ -149,8 +150,9 @@ static void generate_function_internal(LLVMBackendData *data, const ASTNode *nod
                         param_types[i] = LLVMPointerType(struct_type, 0);
                     } else if (struct_name && strcmp(struct_name, "Counter") == 0) {
                         // Fallback for Counter struct
-                        LLVMTypeRef field_types[] = { data->i32_type };
-                        LLVMTypeRef struct_type = LLVMStructTypeInContext(data->context, field_types, 1, 0);
+                        LLVMTypeRef field_types[] = {data->i32_type};
+                        LLVMTypeRef struct_type =
+                            LLVMStructTypeInContext(data->context, field_types, 1, 0);
                         param_types[i] = LLVMPointerType(struct_type, 0);
                     } else {
                         // Default to opaque pointer
@@ -173,7 +175,7 @@ static void generate_function_internal(LLVMBackendData *data, const ASTNode *nod
 
     // Create function
     LLVMValueRef function = NULL;
-    
+
     // Mangle method names to include struct name
     char mangled_name[256];
     if (is_method && struct_name) {
@@ -214,7 +216,8 @@ static void generate_function_internal(LLVMBackendData *data, const ASTNode *nod
         LLVMValueRef argv = LLVMGetParam(c_main, 1);
 
         // Declare asthra_runtime_init_with_args function
-        LLVMValueRef runtime_init_fn = LLVMGetNamedFunction(data->module, "asthra_runtime_init_with_args");
+        LLVMValueRef runtime_init_fn =
+            LLVMGetNamedFunction(data->module, "asthra_runtime_init_with_args");
         if (!runtime_init_fn) {
             // int asthra_runtime_init_with_args(AsthraGCConfig *gc_config, int argc, char **argv)
             LLVMTypeRef init_param_types[] = {
@@ -223,18 +226,17 @@ static void generate_function_internal(LLVMBackendData *data, const ASTNode *nod
                 LLVMPointerType(data->ptr_type, 0) // char **argv
             };
             LLVMTypeRef init_fn_type = LLVMFunctionType(data->i32_type, init_param_types, 3, false);
-            runtime_init_fn = LLVMAddFunction(data->module, "asthra_runtime_init_with_args", init_fn_type);
+            runtime_init_fn =
+                LLVMAddFunction(data->module, "asthra_runtime_init_with_args", init_fn_type);
             LLVMSetLinkage(runtime_init_fn, LLVMExternalLinkage);
         }
 
         // Call asthra_runtime_init_with_args(NULL, argc, argv)
         LLVMValueRef init_args[] = {
             LLVMConstPointerNull(data->ptr_type), // NULL for default GC config
-            argc,
-            argv
-        };
-        LLVMBuildCall2(data->builder, LLVMGlobalGetValueType(runtime_init_fn), 
-                       runtime_init_fn, init_args, 3, "");
+            argc, argv};
+        LLVMBuildCall2(data->builder, LLVMGlobalGetValueType(runtime_init_fn), runtime_init_fn,
+                       init_args, 3, "");
 
         // Call the Asthra main function
         LLVMValueRef asthra_result;
@@ -244,15 +246,18 @@ static void generate_function_internal(LLVMBackendData *data, const ASTNode *nod
             asthra_result = LLVMConstInt(data->i32_type, 0, 0);
         } else {
             // Otherwise, get the result from asthra_main
-            asthra_result = LLVMBuildCall2(data->builder, fn_type, function, NULL, 0, "asthra_main_result");
+            asthra_result =
+                LLVMBuildCall2(data->builder, fn_type, function, NULL, 0, "asthra_main_result");
         }
 
         // Declare asthra_runtime_cleanup function
-        LLVMValueRef runtime_cleanup_fn = LLVMGetNamedFunction(data->module, "asthra_runtime_cleanup");
+        LLVMValueRef runtime_cleanup_fn =
+            LLVMGetNamedFunction(data->module, "asthra_runtime_cleanup");
         if (!runtime_cleanup_fn) {
             // void asthra_runtime_cleanup(void)
             LLVMTypeRef cleanup_fn_type = LLVMFunctionType(data->void_type, NULL, 0, false);
-            runtime_cleanup_fn = LLVMAddFunction(data->module, "asthra_runtime_cleanup", cleanup_fn_type);
+            runtime_cleanup_fn =
+                LLVMAddFunction(data->module, "asthra_runtime_cleanup", cleanup_fn_type);
             LLVMSetLinkage(runtime_cleanup_fn, LLVMExternalLinkage);
         }
 
@@ -264,7 +269,8 @@ static void generate_function_internal(LLVMBackendData *data, const ASTNode *nod
         LLVMTypeRef asthra_result_type = LLVMTypeOf(asthra_result);
         if (asthra_result_type != data->i32_type) {
             // Cast to i32 for C main function compatibility
-            asthra_result = LLVMBuildIntCast2(data->builder, asthra_result, data->i32_type, false, "main_result_cast");
+            asthra_result = LLVMBuildIntCast2(data->builder, asthra_result, data->i32_type, false,
+                                              "main_result_cast");
         }
         LLVMBuildRet(data->builder, asthra_result);
 
@@ -343,7 +349,8 @@ static void generate_function_internal(LLVMBackendData *data, const ASTNode *nod
             for (size_t i = 0; statements && i < statements->count; i++) {
                 ASTNode *stmt = statements->nodes[i];
 
-                // Check if this is the last statement and it's an expression statement or unsafe block
+                // Check if this is the last statement and it's an expression statement or unsafe
+                // block
                 if (i == statements->count - 1) {
                     if (stmt->type == AST_EXPR_STMT) {
                         // For the last expression, generate it as a value (potential return)
@@ -366,7 +373,19 @@ static void generate_function_internal(LLVMBackendData *data, const ASTNode *nod
         LLVMBasicBlockRef current_block = LLVMGetInsertBlock(data->builder);
 
         if (!LLVMGetBasicBlockTerminator(current_block)) {
-            if (ret_type == data->void_type) {
+            // Check if this is a Never type function
+            bool is_never_function = false;
+            if (func_type && func_type->category == TYPE_INFO_FUNCTION &&
+                func_type->data.function.return_type &&
+                func_type->data.function.return_type->category == TYPE_INFO_PRIMITIVE &&
+                func_type->data.function.return_type->data.primitive.kind == PRIMITIVE_INFO_NEVER) {
+                is_never_function = true;
+            }
+
+            if (is_never_function) {
+                // Never type functions should end with unreachable, not return
+                LLVMBuildUnreachable(data->builder);
+            } else if (ret_type == data->void_type) {
                 LLVMBuildRetVoid(data->builder);
             } else if (ret_type == data->unit_type) {
                 LLVMValueRef unit = LLVMConstNamedStruct(data->unit_type, NULL, 0);

@@ -162,14 +162,14 @@ static bool test_tagged_union_exhaustiveness(void) {
                          "\n"
                          "fn handle_option_complete(opt: Option<i32>) -> String {\n"
                          "    match opt {\n"
-                         "        Option::Some(value) => \"Value: \" + value.to_string(),\n"
-                         "        Option::None => \"No value\"\n"
+                         "        Option.Some(value) => \"Value: \" + value.to_string(),\n"
+                         "        Option.None => \"No value\"\n"
                          "    }\n"
                          "}\n"
                          "\n"
                          "fn handle_option_incomplete(opt: Option<i32>) -> String {\n"
                          "    match opt {\n"
-                         "        Option::Some(value) => \"Value: \" + value.to_string()\n"
+                         "        Option.Some(value) => \"Value: \" + value.to_string()\n"
                          "        // Missing None case\n"
                          "    }\n"
                          "}\n";
@@ -211,17 +211,17 @@ static bool test_nested_enum_exhaustiveness(void) {
         "\n"
         "fn handle_nested_complete(nested: Option<Result<i32, String>>) -> String {\n"
         "    match nested {\n"
-        "        Option::Some(Result::Ok(value)) => \"Success: \" + value.to_string(),\n"
-        "        Option::Some(Result::Err(error)) => \"Error: \" + error,\n"
-        "        Option::None => \"No value\"\n"
+        "        Option.Some(Result.Ok(value)) => \"Success: \" + value.to_string(),\n"
+        "        Option.Some(Result.Err(error)) => \"Error: \" + error,\n"
+        "        Option.None => \"No value\"\n"
         "    }\n"
         "}\n"
         "\n"
         "fn handle_nested_incomplete(nested: Option<Result<i32, String>>) -> String {\n"
         "    match nested {\n"
-        "        Option::Some(Result::Ok(value)) => \"Success: \" + value.to_string(),\n"
-        "        Option::None => \"No value\"\n"
-        "        // Missing Option::Some(Result::Err(_))\n"
+        "        Option.Some(Result.Ok(value)) => \"Success: \" + value.to_string(),\n"
+        "        Option.None => \"No value\"\n"
+        "        // Missing Option.Some(Result.Err(_))\n"
         "    }\n"
         "}\n";
 
@@ -236,7 +236,7 @@ static bool test_nested_enum_exhaustiveness(void) {
     // Should detect missing patterns in nested structure
     ASSERT_FALSE(pattern_result->is_exhaustive);
     ASSERT_EQ(pattern_result->missing_patterns, 1);
-    ASSERT_STRING_EQ(pattern_result->missing_pattern_names[0], "Option::Some(Result::Err(_))");
+    ASSERT_STRING_EQ(pattern_result->missing_pattern_names[0], "Option.Some(Result.Err(_))");
 
     cleanup_pattern_compilation_result(pattern_result);
     cleanup_semantic_result(result);

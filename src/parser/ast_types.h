@@ -97,6 +97,7 @@ typedef enum {
     AST_ARRAY_LITERAL,
     AST_CONST_EXPR, // Compile-time constant expressions
     AST_CAST_EXPR,  // Type cast expressions: expr as Type
+    AST_MATCH_EXPR, // Match expressions that return values
 
     // Literals
     AST_INTEGER_LITERAL,
@@ -118,17 +119,15 @@ typedef enum {
     AST_ENUM_TYPE, // New: enum type with optional type arguments
     AST_PTR_TYPE,
     AST_RESULT_TYPE,
-    AST_OPTION_TYPE, // Option<T> type
+    AST_OPTION_TYPE,     // Option<T> type
     AST_TASKHANDLE_TYPE, // TaskHandle<T> type
-    AST_TUPLE_TYPE,  // Tuple types: (T1, T2, ...)
+    AST_TUPLE_TYPE,      // Tuple types: (T1, T2, ...)
 
     // Pattern matching
     AST_MATCH_ARM,
     AST_PATTERN,
     AST_ENUM_PATTERN,
-    AST_STRUCT_PATTERN,   // New: for struct destructuring patterns
     AST_TUPLE_PATTERN,    // Tuple patterns: (pattern1, pattern2, ...)
-    AST_FIELD_PATTERN,    // New: for individual field patterns in struct destructuring
     AST_WILDCARD_PATTERN, // New: for wildcard patterns (_)
 
     // Enum variants

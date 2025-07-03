@@ -9,8 +9,8 @@
 #include "llvm_types.h"
 #include "../analysis/type_info_lifecycle.h"
 #include <assert.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 // DWARF type encoding constants from DWARF standard

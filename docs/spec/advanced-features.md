@@ -347,6 +347,91 @@ pub fn simplified_match(color: Color) -> string {
 // }
 ```
 
+### Match Statement Limitations
+
+**Important**: In Asthra, `match` is a **statement**, not an expression. This design decision enforces clear control flow and simplifies AI code generation.
+
+#### ❌ Cannot Use Match as Expression
+
+```asthra
+// ❌ INVALID: Match cannot be used as a return expression
+pub fn bad_example(result: Result<i32, string>) -> i32 {
+    return match result {
+        Result.Ok(val) => val
+        Result.Err(_) => 0
+    };  // ERROR: Expected expression after 'return'
+}
+
+// ✅ CORRECT: Use intermediate variable
+pub fn good_example(result: Result<i32, string>) -> i32 {
+    let value: i32 = match result {
+        Result.Ok(val) => val
+        Result.Err(_) => 0
+    };
+    return value;
+}
+```
+
+#### ❌ Cannot Use Nested Match Expressions
+
+```asthra
+// ❌ INVALID: Nested match expressions are not supported
+pub fn bad_nested(outer: Option<Result<i32, string>>) -> i32 {
+    let value: i32 = match outer {
+        Option.Some(result) => match result {  // ERROR: Expected expression
+            Result.Ok(val) => val
+            Result.Err(_) => 0
+        }
+        Option.None => -1
+    };
+    return value;
+}
+
+// ✅ CORRECT: Use blocks with nested match statements
+pub fn good_nested(outer: Option<Result<i32, string>>) -> i32 {
+    let value: i32 = match outer {
+        Option.Some(result) => {
+            match result {
+                Result.Ok(val) => val;
+                Result.Err(_) => 0;
+            }
+        }
+        Option.None => -1;
+    };
+    return value;
+}
+```
+
+#### ❌ Cannot Assign Match Result Directly
+
+```asthra
+// ❌ INVALID: Match cannot be assigned to variable
+pub fn bad_assignment() -> string {
+    let msg: string = match get_status() {  // ERROR: Expected expression
+        Status.Ok => "success"
+        Status.Error => "failure"
+    };
+    return msg;
+}
+
+// ✅ CORRECT: Use match as statement with explicit assignments
+pub fn good_assignment() -> string {
+    let msg: string;
+    match get_status() {
+        Status.Ok => msg = "success";
+        Status.Error => msg = "failure";
+    }
+    return msg;
+}
+```
+
+#### Design Rationale for Match as Statement
+
+1. **Simplicity**: One clear way to use pattern matching reduces AI confusion
+2. **Clarity**: Explicit control flow is easier to understand and generate
+3. **Safety**: Prevents complex nested expressions that can hide logic
+4. **Consistency**: Aligns with Asthra's principle of minimal syntax variants
+
 ### Implementation Status
 
 | Component | Status | Notes |
@@ -936,7 +1021,7 @@ let maybe_text: Option<string> = Option.Some("hello");
 
 // ✅ Associated functions on generic types
 let empty_vec: Vec<i32> = Vec::new();
-let success: Result<string, Error> = Result::Ok("success");
+let success: Result<string, Error> = Result.Ok("success");
 ```
 
 ### Implementation Features

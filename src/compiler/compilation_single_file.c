@@ -148,8 +148,7 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file,
         backend_output_file = strdup(temp_name);
     } else {
         // No output file specified, use default
-        backend_output_file =
-            asthra_backend_get_output_filename(0, input_file, NULL);
+        backend_output_file = asthra_backend_get_output_filename(0, input_file, NULL);
     }
 
     printf("Debug: backend_output_file = '%s', output_file = '%s'\n", backend_output_file,
@@ -207,8 +206,7 @@ int asthra_compile_file(AsthraCompilerContext *ctx, const char *input_file,
     // 1. The desired format is not LLVM IR, OR
     // 2. The backend output file is different from the final output file
     bool needs_llvm_tools = false;
-    if (final_format != ASTHRA_FORMAT_LLVM_IR ||
-        strcmp(backend_output_file, output_file) != 0) {
+    if (final_format != ASTHRA_FORMAT_LLVM_IR || strcmp(backend_output_file, output_file) != 0) {
         needs_llvm_tools = true;
     }
 

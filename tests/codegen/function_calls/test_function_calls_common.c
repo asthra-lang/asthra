@@ -1,6 +1,6 @@
 #include "test_function_calls_common.h"
-#include "../codegen_backend_wrapper.h"
 #include "../../framework/backend_stubs.h"
+#include "../codegen_backend_wrapper.h"
 #include <stdlib.h>
 
 // =============================================================================
