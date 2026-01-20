@@ -646,33 +646,33 @@ BDD_DECLARE_TEST_CASES(arithmetic_operators)
     // Addition tests
     BDD_TEST_CASE(basic_integer_addition, test_basic_integer_addition),
     BDD_TEST_CASE(addition_with_negative_numbers, test_addition_with_negative_numbers),
-    BDD_WIP_TEST_CASE(floating_point_addition, test_floating_point_addition), // Parser issue with float comparisons
-    BDD_WIP_TEST_CASE(addition_different_integer_types, test_addition_different_integer_types), // Type cast issue
+    BDD_TEST_CASE(floating_point_addition, test_floating_point_addition),
+    BDD_WIP_TEST_CASE(addition_different_integer_types, test_addition_different_integer_types), // 'as' type cast not implemented
     
     // Subtraction tests
     BDD_TEST_CASE(basic_integer_subtraction, test_basic_integer_subtraction),
     BDD_TEST_CASE(subtraction_resulting_negative, test_subtraction_resulting_negative),
-    BDD_WIP_TEST_CASE(subtraction_unsigned_integers, test_subtraction_unsigned_integers), // Type cast issue
-    BDD_WIP_TEST_CASE(floating_point_subtraction, test_floating_point_subtraction), // Parser issue with float comparisons
+    BDD_WIP_TEST_CASE(subtraction_unsigned_integers, test_subtraction_unsigned_integers), // 'as' type cast not implemented
+    BDD_TEST_CASE(floating_point_subtraction, test_floating_point_subtraction),
     
     // Multiplication tests
     BDD_TEST_CASE(basic_integer_multiplication, test_basic_integer_multiplication),
     BDD_TEST_CASE(multiplication_with_zero, test_multiplication_with_zero),
     BDD_TEST_CASE(multiplication_negative_numbers, test_multiplication_negative_numbers),
-    BDD_WIP_TEST_CASE(floating_point_multiplication, test_floating_point_multiplication), // Parser issue with float comparisons
+    BDD_TEST_CASE(floating_point_multiplication, test_floating_point_multiplication),
     
     // Division tests
     BDD_TEST_CASE(basic_integer_division, test_basic_integer_division),
     BDD_TEST_CASE(integer_division_truncation, test_integer_division_truncation),
     BDD_TEST_CASE(division_negative_numbers, test_division_negative_numbers),
-    BDD_WIP_TEST_CASE(floating_point_division, test_floating_point_division), // Parser issue with float comparisons
+    BDD_TEST_CASE(floating_point_division, test_floating_point_division),
     BDD_TEST_CASE(division_by_zero, test_division_by_zero),
     
     // Modulo tests
     BDD_TEST_CASE(basic_modulo_operation, test_basic_modulo_operation),
     BDD_TEST_CASE(modulo_even_division, test_modulo_even_division),
     BDD_TEST_CASE(modulo_negative_dividend, test_modulo_negative_dividend),
-    BDD_WIP_TEST_CASE(modulo_unsigned_integers, test_modulo_unsigned_integers), // Type cast issue
+    BDD_WIP_TEST_CASE(modulo_unsigned_integers, test_modulo_unsigned_integers), // 'as' type cast not implemented
     
     // Mixed operations
     BDD_TEST_CASE(multiple_additions, test_multiple_additions),
@@ -681,9 +681,9 @@ BDD_DECLARE_TEST_CASES(arithmetic_operators)
     BDD_TEST_CASE(arithmetic_mutable_variables, test_arithmetic_mutable_variables),
     BDD_TEST_CASE(compound_arithmetic_expressions, test_compound_arithmetic_expressions),
     BDD_WIP_TEST_CASE(arithmetic_with_type_casting, test_arithmetic_with_type_casting),
-    BDD_WIP_TEST_CASE(arithmetic_with_constants, test_arithmetic_with_constants), // Type cast issue
+    BDD_WIP_TEST_CASE(arithmetic_with_constants, test_arithmetic_with_constants), // 'as' type cast not implemented
     BDD_TEST_CASE(large_number_arithmetic, test_large_number_arithmetic),
-    BDD_WIP_TEST_CASE(i8_boundary_arithmetic, test_i8_boundary_arithmetic), // Type cast issue
+    BDD_WIP_TEST_CASE(i8_boundary_arithmetic, test_i8_boundary_arithmetic), // 'as' type cast not implemented
     
     // Unary minus
     BDD_TEST_CASE(unary_minus_positive, test_unary_minus_positive),
