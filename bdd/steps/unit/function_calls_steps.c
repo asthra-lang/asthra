@@ -276,16 +276,16 @@ void test_type_mismatch_error(void) {
                                  "type mismatch");
 }
 
-// Define test cases using the new framework - all marked @wip based on original file
+// Define test cases using the new framework
 BDD_DECLARE_TEST_CASES(function_calls)
-    BDD_WIP_TEST_CASE(simple_function, test_simple_function),
-    BDD_WIP_TEST_CASE(multiple_functions, test_multiple_functions),
-    BDD_WIP_TEST_CASE(function_with_params, test_function_with_params),
-    BDD_WIP_TEST_CASE(function_return, test_function_return),
+    BDD_TEST_CASE(simple_function, test_simple_function),
+    BDD_TEST_CASE(multiple_functions, test_multiple_functions),
+    BDD_TEST_CASE(function_with_params, test_function_with_params),
+    BDD_TEST_CASE(function_return, test_function_return),
     BDD_TEST_CASE(nested_calls, test_nested_calls),
-    BDD_WIP_TEST_CASE(undefined_function_error, test_undefined_function_error),
-    BDD_WIP_TEST_CASE(wrong_arg_count_error, test_wrong_arg_count_error),
-    BDD_WIP_TEST_CASE(type_mismatch_error, test_type_mismatch_error),
+    BDD_TEST_CASE(undefined_function_error, test_undefined_function_error),
+    BDD_TEST_CASE(wrong_arg_count_error, test_wrong_arg_count_error),
+    BDD_TEST_CASE(type_mismatch_error, test_type_mismatch_error),
 BDD_END_TEST_CASES()
 
 // Main test runner using the new framework

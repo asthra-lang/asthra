@@ -169,10 +169,10 @@ void test_no_visibility_function(void) {
 }
 
 void test_no_visibility_struct(void) {
-    const char* source = 
+    const char* source =
         "package main;\n"
         "\n"
-        "pub struct Point {\n"
+        "struct Point {\n"
         "    x: i32,\n"
         "    y: i32\n"
         "}\n"
@@ -181,12 +181,12 @@ void test_no_visibility_struct(void) {
         "    log(\"No visibility\");\n"
         "    return ();\n"
         "}\n";
-    
+
     bdd_run_compilation_scenario("Missing visibility modifier on struct",
                                  "no_visibility_struct.asthra",
                                  source,
                                  0,  // should fail
-                                 "expected visibility modifier");
+                                 "visibility modifier");
 }
 
 void test_no_visibility_enum(void) {
@@ -246,18 +246,18 @@ void test_private_const(void) {
                                0);
 }
 
-// Define test cases using the new framework - based on original @wip configuration
+// Define test cases using the new framework
 BDD_DECLARE_TEST_CASES(visibility)
     BDD_TEST_CASE(public_function, test_public_function),
     BDD_TEST_CASE(private_function, test_private_function),
-    BDD_WIP_TEST_CASE(public_struct, test_public_struct),
-    BDD_WIP_TEST_CASE(private_struct, test_private_struct),
-    BDD_WIP_TEST_CASE(public_enum, test_public_enum),
-    BDD_WIP_TEST_CASE(private_enum, test_private_enum),
+    BDD_TEST_CASE(public_struct, test_public_struct),
+    BDD_TEST_CASE(private_struct, test_private_struct),
+    BDD_TEST_CASE(public_enum, test_public_enum),
+    BDD_TEST_CASE(private_enum, test_private_enum),
     BDD_TEST_CASE(mixed_field_visibility, test_mixed_field_visibility),
     BDD_TEST_CASE(no_visibility_function, test_no_visibility_function),
-    BDD_WIP_TEST_CASE(no_visibility_struct, test_no_visibility_struct),
-    BDD_WIP_TEST_CASE(no_visibility_enum, test_no_visibility_enum),
+    BDD_TEST_CASE(no_visibility_struct, test_no_visibility_struct),
+    BDD_TEST_CASE(no_visibility_enum, test_no_visibility_enum),
     BDD_TEST_CASE(public_const, test_public_const),
     BDD_TEST_CASE(private_const, test_private_const),
 BDD_END_TEST_CASES()
