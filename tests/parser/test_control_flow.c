@@ -114,10 +114,8 @@ static AsthraTestResult test_parse_match_statements(AsthraTestContext *context) 
     // TODO: Parser crashes with enum patterns using dot notation in match expressions
     // Second test case temporarily simplified until the parser issue is fixed
     // Simplified match statements to avoid parser state issues
-    const char *match_statements[] = {
-        "match value { 1 => { } 2 => { } _ => { } }",
-        "match x { _ => { } }"
-    };
+    const char *match_statements[] = {"match value { 1 => { } 2 => { } _ => { } }",
+                                      "match x { _ => { } }"};
 
     size_t match_count = sizeof(match_statements) / sizeof(match_statements[0]);
 

@@ -281,14 +281,14 @@ void test_complex_boolean_expression(void) {
     free(executable);
 }
 
-// Define test cases using the new framework - all marked @wip based on original file
+// Define test cases using the new framework
 BddTestCase if_conditions_test_cases[] = {
-    BDD_WIP_TEST_CASE(simple_if_true, test_simple_if_true),
-    BDD_WIP_TEST_CASE(simple_if_false, test_simple_if_false),
-    BDD_WIP_TEST_CASE(if_else_condition, test_if_else_condition),
-    BDD_WIP_TEST_CASE(nested_if_conditions, test_nested_if_conditions),
-    BDD_WIP_TEST_CASE(if_expression_result, test_if_expression_result),
-    BDD_WIP_TEST_CASE(complex_boolean_expression, test_complex_boolean_expression),
+    BDD_TEST_CASE(simple_if_true, test_simple_if_true),
+    BDD_TEST_CASE(simple_if_false, test_simple_if_false),
+    BDD_TEST_CASE(if_else_condition, test_if_else_condition),
+    BDD_TEST_CASE(nested_if_conditions, test_nested_if_conditions),
+    BDD_WIP_TEST_CASE(if_expression_result, test_if_expression_result),  // if-as-expression not implemented
+    BDD_TEST_CASE(complex_boolean_expression, test_complex_boolean_expression),
 };
 
 // Main test runner using the new framework

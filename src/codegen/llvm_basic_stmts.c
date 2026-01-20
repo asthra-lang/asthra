@@ -511,7 +511,8 @@ void generate_match_statement(LLVMBackendData *data, const ASTNode *node) {
             // Create a block for checking the next pattern
             char next_check_name[64];
             snprintf(next_check_name, sizeof(next_check_name), "match_check_%zu", i + 1);
-            next_check_block = LLVMAppendBasicBlockInContext(data->context, function, next_check_name);
+            next_check_block =
+                LLVMAppendBasicBlockInContext(data->context, function, next_check_name);
         }
 
         // Generate pattern check from current position

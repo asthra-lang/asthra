@@ -443,6 +443,250 @@ static void generate_function_internal(LLVMBackendData *data, const ASTNode *nod
         free(param_types);
 }
 
+// Helper function to generate constant initializer values
+// Returns an LLVM constant value suitable for global variable initialization
+static LLVMValueRef generate_const_initializer(LLVMBackendData *data, const ASTNode *value_node,
+                                               LLVMTypeRef expected_type) {
+    if (!data || !value_node) {
+        return NULL;
+    }
+
+    switch (value_node->type) {
+    case AST_CONST_EXPR: {
+        // Unwrap the const expression and process the inner expression
+        // Check const expression type
+        switch (value_node->data.const_expr.expr_type) {
+        case CONST_EXPR_LITERAL:
+            // Recursively process the literal
+            return generate_const_initializer(data, value_node->data.const_expr.data.literal,
+                                              expected_type);
+        case CONST_EXPR_BINARY_OP: {
+            LLVMValueRef left = generate_const_initializer(
+                data, value_node->data.const_expr.data.binary.left, expected_type);
+            LLVMValueRef right = generate_const_initializer(
+                data, value_node->data.const_expr.data.binary.right, expected_type);
+            if (!left || !right)
+                return NULL;
+
+            switch (value_node->data.const_expr.data.binary.op) {
+            case BINOP_ADD:
+                return LLVMConstAdd(left, right);
+            case BINOP_SUB:
+                return LLVMConstSub(left, right);
+            case BINOP_MUL:
+                return LLVMConstMul(left, right);
+            default:
+                return NULL;
+            }
+        }
+        case CONST_EXPR_UNARY_OP: {
+            LLVMValueRef operand = generate_const_initializer(
+                data, value_node->data.const_expr.data.unary.operand, expected_type);
+            if (!operand)
+                return NULL;
+
+            switch (value_node->data.const_expr.data.unary.op) {
+            case UNOP_MINUS:
+                return LLVMConstNeg(operand);
+            case UNOP_NOT:
+            case UNOP_BITWISE_NOT:
+                return LLVMConstNot(operand);
+            default:
+                return NULL;
+            }
+        }
+        case CONST_EXPR_SIZEOF:
+            // TODO: Handle sizeof
+            return NULL;
+        case CONST_EXPR_IDENTIFIER: {
+            // Look up the const value from another global constant
+            const char *name = value_node->data.const_expr.data.identifier;
+            LLVMValueRef global = LLVMGetNamedGlobal(data->module, name);
+            if (global) {
+                LLVMValueRef init = LLVMGetInitializer(global);
+                if (init) {
+                    return init;
+                }
+            }
+            return NULL;
+        }
+        default:
+            return NULL;
+        }
+    }
+
+    case AST_INTEGER_LITERAL: {
+        int64_t value = value_node->data.integer_literal.value;
+        return LLVMConstInt(expected_type, value, true);
+    }
+
+    case AST_FLOAT_LITERAL: {
+        double value = value_node->data.float_literal.value;
+        return LLVMConstReal(expected_type, value);
+    }
+
+    case AST_BOOL_LITERAL: {
+        bool value = value_node->data.bool_literal.value;
+        return LLVMConstInt(expected_type, value ? 1 : 0, false);
+    }
+
+    case AST_STRING_LITERAL: {
+        const char *value = value_node->data.string_literal.value;
+        // Create a global string constant
+        LLVMValueRef str_const =
+            LLVMConstStringInContext(data->context, value, (unsigned)strlen(value), false);
+        LLVMValueRef global_str = LLVMAddGlobal(data->module, LLVMTypeOf(str_const), ".str");
+        LLVMSetInitializer(global_str, str_const);
+        LLVMSetGlobalConstant(global_str, true);
+        LLVMSetLinkage(global_str, LLVMPrivateLinkage);
+        LLVMSetUnnamedAddress(global_str, LLVMGlobalUnnamedAddr);
+        // Return pointer to the string
+        return LLVMConstBitCast(global_str, data->ptr_type);
+    }
+
+    case AST_CHAR_LITERAL: {
+        char value = value_node->data.char_literal.value;
+        return LLVMConstInt(expected_type, value, false);
+    }
+
+    case AST_BINARY_EXPR: {
+        // Handle binary expressions by recursively evaluating operands
+        LLVMValueRef left =
+            generate_const_initializer(data, value_node->data.binary_expr.left, expected_type);
+        LLVMValueRef right =
+            generate_const_initializer(data, value_node->data.binary_expr.right, expected_type);
+
+        if (!left || !right) {
+            return NULL;
+        }
+
+        switch (value_node->data.binary_expr.operator) {
+        case BINOP_ADD:
+            return LLVMConstAdd(left, right);
+        case BINOP_SUB:
+            return LLVMConstSub(left, right);
+        case BINOP_MUL:
+            return LLVMConstMul(left, right);
+        // Note: Division, modulo, bitwise, and shift operations on constants
+        // have been deprecated in newer LLVM versions. For these operations,
+        // the semantic analyzer should compute the value at compile time.
+        default:
+            return NULL;
+        }
+    }
+
+    case AST_UNARY_EXPR: {
+        LLVMValueRef operand =
+            generate_const_initializer(data, value_node->data.unary_expr.operand, expected_type);
+        if (!operand) {
+            return NULL;
+        }
+
+        switch (value_node->data.unary_expr.operator) {
+        case UNOP_MINUS:
+            return LLVMConstNeg(operand);
+        case UNOP_NOT:
+            return LLVMConstNot(operand);
+        case UNOP_BITWISE_NOT:
+            return LLVMConstNot(operand);
+        default:
+            return NULL;
+        }
+    }
+
+    case AST_IDENTIFIER: {
+        // Look up the const value from another global constant
+        const char *name = value_node->data.identifier.name;
+        LLVMValueRef global = LLVMGetNamedGlobal(data->module, name);
+        if (global) {
+            LLVMValueRef init = LLVMGetInitializer(global);
+            if (init) {
+                return init;
+            }
+        }
+        return NULL;
+    }
+
+    default:
+        return NULL;
+    }
+}
+
+// Generate code for const declarations
+static void generate_const_declaration(LLVMBackendData *data, const ASTNode *node) {
+    if (!node || node->type != AST_CONST_DECL) {
+        return;
+    }
+
+    const char *name = node->data.const_decl.name;
+    ASTNode *type_node = node->data.const_decl.type;
+    ASTNode *value_node = node->data.const_decl.value;
+
+    if (!name || !value_node) {
+        return;
+    }
+
+    // Get the LLVM type for the const
+    LLVMTypeRef const_type = NULL;
+    if (type_node && type_node->type_info) {
+        const_type = asthra_type_to_llvm(data, type_node->type_info);
+    }
+    // Fallback: if type_info is not set, try to determine type from AST node directly
+    if (!const_type && type_node && type_node->type == AST_BASE_TYPE) {
+        const char *type_name = type_node->data.base_type.name;
+        if (type_name) {
+            if (strcmp(type_name, "string") == 0) {
+                const_type = data->ptr_type;
+            } else if (strcmp(type_name, "i32") == 0) {
+                const_type = data->i32_type;
+            } else if (strcmp(type_name, "i64") == 0) {
+                const_type = data->i64_type;
+            } else if (strcmp(type_name, "f32") == 0) {
+                const_type = data->f32_type;
+            } else if (strcmp(type_name, "f64") == 0) {
+                const_type = data->f64_type;
+            } else if (strcmp(type_name, "bool") == 0) {
+                const_type = data->bool_type;
+            } else if (strcmp(type_name, "u8") == 0 || strcmp(type_name, "i8") == 0) {
+                const_type = LLVMInt8TypeInContext(data->context);
+            } else if (strcmp(type_name, "u16") == 0 || strcmp(type_name, "i16") == 0) {
+                const_type = LLVMInt16TypeInContext(data->context);
+            } else if (strcmp(type_name, "u32") == 0) {
+                const_type = LLVMInt32TypeInContext(data->context);
+            } else if (strcmp(type_name, "u64") == 0) {
+                const_type = LLVMInt64TypeInContext(data->context);
+            } else if (strcmp(type_name, "usize") == 0 || strcmp(type_name, "isize") == 0) {
+                const_type = data->i64_type;
+            } else if (strcmp(type_name, "char") == 0) {
+                const_type = LLVMInt8TypeInContext(data->context);
+            }
+        }
+    }
+    if (!const_type) {
+        const_type = data->i32_type; // Default to i32
+    }
+
+    // Generate the constant initializer value
+    LLVMValueRef init_value = generate_const_initializer(data, value_node, const_type);
+    if (!init_value) {
+        // Fallback: for string types, try with ptr type
+        if (value_node->type == AST_STRING_LITERAL) {
+            const_type = data->ptr_type;
+            init_value = generate_const_initializer(data, value_node, const_type);
+        }
+        if (!init_value) {
+            return;
+        }
+    }
+
+    // Create the global constant
+    LLVMValueRef global = LLVMAddGlobal(data->module, const_type, name);
+    LLVMSetInitializer(global, init_value);
+    LLVMSetGlobalConstant(global, true);
+    // Use internal linkage so the global can be found by name within the module
+    LLVMSetLinkage(global, LLVMInternalLinkage);
+}
+
 // Generate code for top-level declarations
 void generate_top_level(LLVMBackendData *data, const ASTNode *node) {
     if (!node) {
@@ -455,10 +699,13 @@ void generate_top_level(LLVMBackendData *data, const ASTNode *node) {
         // TODO: Update statistics when backend pointer is available
         break;
 
+    case AST_CONST_DECL:
+        generate_const_declaration(data, node);
+        break;
+
     // TODO: Implement other top-level declarations
     case AST_STRUCT_DECL:
     case AST_ENUM_DECL:
-    case AST_CONST_DECL:
         // Not yet implemented
         break;
 

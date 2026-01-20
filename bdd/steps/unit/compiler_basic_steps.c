@@ -174,7 +174,7 @@ void test_function_calls(void) {
     const char* source = 
         "package main;\n"
         "\n"
-        "fn greet(none) -> void {\n"
+        "priv fn greet(none) -> void {\n"
         "    log(\"Hello from greet function!\");\n"
         "    return ();\n"
         "}\n"
@@ -310,8 +310,8 @@ BDD_DECLARE_TEST_CASES(compiler_basic)
     BDD_TEST_CASE(arithmetic, test_arithmetic),
     BDD_TEST_CASE(syntax_error, test_syntax_error),
     BDD_TEST_CASE(return_one, test_return_one),
-    BDD_WIP_TEST_CASE(function_calls, test_function_calls),  // marked @wip in feature file
-    BDD_WIP_TEST_CASE(boolean_operations, test_boolean_operations),  // marked @wip in feature file
+    BDD_TEST_CASE(function_calls, test_function_calls),
+    BDD_TEST_CASE(boolean_operations, test_boolean_operations),
 };
 
 // Main test runner using the new framework

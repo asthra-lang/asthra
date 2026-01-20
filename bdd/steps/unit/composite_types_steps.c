@@ -90,7 +90,7 @@ void test_array_size_mismatch(void) {
                                  "array_size_mismatch.asthra",
                                  source,
                                  0,  // should fail
-                                 "array size mismatch");
+                                 "cannot assign [5]i32 to [3]i32");
 }
 
 void test_invalid_single_tuple(void) {
@@ -158,8 +158,8 @@ BDD_DECLARE_TEST_CASES(composite_types)
     BDD_TEST_CASE(tuple_two_elements, test_tuple_two_elements),
     BDD_TEST_CASE(dynamic_slice_type, test_dynamic_slice_type),  // This one passes
     BDD_TEST_CASE(slice_of_slices, test_slice_of_slices),  // New test case for slice of slices
-    BDD_WIP_TEST_CASE(array_size_mismatch, test_array_size_mismatch),
-    BDD_WIP_TEST_CASE(invalid_single_tuple, test_invalid_single_tuple),
+    BDD_TEST_CASE(array_size_mismatch, test_array_size_mismatch),
+    BDD_WIP_TEST_CASE(invalid_single_tuple, test_invalid_single_tuple),  // language allows single-element tuples
     BDD_TEST_CASE(mutable_pointer_type, test_mutable_pointer_type),
 BDD_END_TEST_CASES()
 

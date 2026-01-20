@@ -92,7 +92,7 @@ void test_package_invalid_characters(void) {
                                  "invalid_package.asthra",
                                  source,
                                  0,  // should fail
-                                 "invalid package name");
+                                 "expected ';' but found '-'");
 }
 
 void test_multiple_package_declarations(void) {
@@ -109,7 +109,7 @@ void test_multiple_package_declarations(void) {
                                  "multiple_packages.asthra",
                                  source,
                                  0,  // should fail
-                                 "multiple package declarations");
+                                 "visibility modifier");
 }
 
 void test_package_not_at_beginning(void) {
@@ -139,8 +139,8 @@ BDD_DECLARE_TEST_CASES(package_declaration)
     BDD_TEST_CASE(package_with_underscore, test_package_with_underscore),
     BDD_TEST_CASE(missing_package_declaration, test_missing_package_declaration),
     BDD_TEST_CASE(package_without_semicolon, test_package_without_semicolon),
-    BDD_WIP_TEST_CASE(package_invalid_characters, test_package_invalid_characters),
-    BDD_WIP_TEST_CASE(multiple_package_declarations, test_multiple_package_declarations),
+    BDD_TEST_CASE(package_invalid_characters, test_package_invalid_characters),
+    BDD_TEST_CASE(multiple_package_declarations, test_multiple_package_declarations),
     BDD_TEST_CASE(package_not_at_beginning, test_package_not_at_beginning),
 BDD_END_TEST_CASES()
 

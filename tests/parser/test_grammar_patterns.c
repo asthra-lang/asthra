@@ -274,8 +274,7 @@ static AsthraTestResult test_parse_range_patterns(AsthraTestContext *context) {
 static AsthraTestResult test_parse_complex_nested_patterns(AsthraTestContext *context) {
     // TODO: Parser crashes with enum patterns using dot notation in match expressions
     // This test is temporarily simplified until the parser issue is fixed
-    const char *test_source =
-        "match data { Result.Ok(Result.Ok(v)) => { } _ => { } }";
+    const char *test_source = "match data { Result.Ok(Result.Ok(v)) => { } _ => { } }";
     Parser *parser = create_test_parser(test_source);
 
     if (!asthra_test_assert_not_null(context, parser, "Failed to create test parser")) {

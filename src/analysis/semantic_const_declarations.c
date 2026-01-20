@@ -228,6 +228,15 @@ static bool validate_integer_range(SemanticAnalyzer *analyzer, PrimitiveKind int
         // Can hold any int64_t value
         break;
 
+    case PRIMITIVE_CHAR:
+        // char is typically 0-255 (unsigned on most platforms)
+        if (value < 0 || value > 255) {
+            semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, location,
+                                  "Value %lld out of range for char (0 to 255)", (long long)value);
+            return false;
+        }
+        break;
+
     default:
         return false;
     }
@@ -260,6 +269,7 @@ bool validate_const_type_compatibility(SemanticAnalyzer *analyzer, TypeDescripto
         case PRIMITIVE_U64:
         case PRIMITIVE_USIZE:
         case PRIMITIVE_ISIZE:
+        case PRIMITIVE_CHAR:
             if (const_value->type != CONST_VALUE_INTEGER) {
                 semantic_report_error(analyzer, SEMANTIC_ERROR_TYPE_MISMATCH, location,
                                       "Integer type expected, but got %s",

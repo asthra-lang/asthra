@@ -488,11 +488,10 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                     if (symbol &&
                         (symbol->type == AST_STRUCT_DECL || symbol->type == AST_ENUM_DECL)) {
                         is_struct_literal = true;
-                    } else if (struct_name[0] >= 'A' && struct_name[0] <= 'Z') {
-                        // Fallback: assume uppercase identifiers are struct types
-                        // This helps with built-in types or forward references
-                        is_struct_literal = true;
                     } else {
+                        // Don't use uppercase heuristic - it incorrectly treats
+                        // uppercase constants like DEBUG_MODE followed by { as struct literals
+                        // Only parse as struct literal if we have a registered type
                         // For lowercase identifiers that aren't registered types,
                         // be more conservative to avoid false positives with for-loops
 
@@ -505,7 +504,8 @@ ASTNode *parse_postfix_expr(Parser *parser) {
                              strcmp(field_name, "count") == 0 || strcmp(field_name, "id") == 0 ||
                              strcmp(field_name, "key") == 0 || strcmp(field_name, "message") == 0 ||
                              strcmp(field_name, "error") == 0 || strcmp(field_name, "field") == 0 ||
-                             strcmp(field_name, "fields") == 0 || strcmp(field_name, "level") == 0)) {
+                             strcmp(field_name, "fields") == 0 ||
+                             strcmp(field_name, "level") == 0)) {
                             is_struct_literal = true;
                         }
                         // If no common field patterns, assume it's not a struct literal

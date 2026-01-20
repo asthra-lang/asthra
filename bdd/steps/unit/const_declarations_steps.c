@@ -360,8 +360,8 @@ void test_const_char_literal(void) {
 BDD_DECLARE_TEST_CASES(const_declarations)
     BDD_TEST_CASE(const_basic_integer, test_const_basic_integer),
     BDD_TEST_CASE(const_float, test_const_float),
-    BDD_WIP_TEST_CASE(const_string, test_const_string),
-    BDD_WIP_TEST_CASE(const_boolean, test_const_boolean),
+    BDD_TEST_CASE(const_string, test_const_string),
+    BDD_TEST_CASE(const_boolean, test_const_boolean),
     BDD_TEST_CASE(const_binary_expr, test_const_binary_expr),
     BDD_TEST_CASE(const_unary_expr, test_const_unary_expr),
     BDD_TEST_CASE(const_sizeof, test_const_sizeof),
@@ -375,7 +375,7 @@ BDD_DECLARE_TEST_CASES(const_declarations)
     BDD_TEST_CASE(const_duplicate, test_const_duplicate),
     BDD_TEST_CASE(const_reassignment, test_const_reassignment),
     BDD_TEST_CASE(const_complex_arithmetic, test_const_complex_arithmetic),
-    BDD_WIP_TEST_CASE(const_char_literal, test_const_char_literal),
+    BDD_TEST_CASE(const_char_literal, test_const_char_literal),
 BDD_END_TEST_CASES()
 
 // Main test runner

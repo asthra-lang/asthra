@@ -257,7 +257,7 @@ bool generate_identifier_pattern_binding(LLVMBackendData *data, const ASTNode *p
         }
         break;
     }
-    
+
     case AST_ENUM_PATTERN: {
         // For enum patterns with payloads, extract and bind the payload
         if (pattern->data.enum_pattern.pattern) {
@@ -265,10 +265,10 @@ bool generate_identifier_pattern_binding(LLVMBackendData *data, const ASTNode *p
             // For now, assume enums with data are represented as structs where:
             // - Field 0 is the tag (i32)
             // - Field 1+ are the payload data
-            
+
             // Since current enums are just i32 tags, we can't extract payloads yet
             // This needs to be implemented when enums are properly represented as tagged unions
-            
+
             // For now, create a dummy value for the binding
             ASTNode *payload_pattern = pattern->data.enum_pattern.pattern;
             if (payload_pattern && payload_pattern->type == AST_IDENTIFIER) {
@@ -276,9 +276,8 @@ bool generate_identifier_pattern_binding(LLVMBackendData *data, const ASTNode *p
                 if (var_name) {
                     // TEMPORARY: Create a dummy string value for string payloads
                     // This is a hack until proper enum payload extraction is implemented
-                    LLVMValueRef dummy_value = LLVMBuildGlobalStringPtr(data->builder, 
-                                                                        "<enum payload>", 
-                                                                        "dummy_payload");
+                    LLVMValueRef dummy_value =
+                        LLVMBuildGlobalStringPtr(data->builder, "<enum payload>", "dummy_payload");
                     LLVMTypeRef string_type = data->ptr_type;
                     LLVMValueRef alloca = LLVMBuildAlloca(data->builder, string_type, var_name);
                     LLVMBuildStore(data->builder, dummy_value, alloca);
@@ -290,9 +289,8 @@ bool generate_identifier_pattern_binding(LLVMBackendData *data, const ASTNode *p
         else if (pattern->data.enum_pattern.binding) {
             const char *var_name = pattern->data.enum_pattern.binding;
             // Same temporary hack as above
-            LLVMValueRef dummy_value = LLVMBuildGlobalStringPtr(data->builder, 
-                                                                "<enum payload>", 
-                                                                "dummy_payload");
+            LLVMValueRef dummy_value =
+                LLVMBuildGlobalStringPtr(data->builder, "<enum payload>", "dummy_payload");
             LLVMTypeRef string_type = data->ptr_type;
             LLVMValueRef alloca = LLVMBuildAlloca(data->builder, string_type, var_name);
             LLVMBuildStore(data->builder, dummy_value, alloca);
@@ -300,11 +298,11 @@ bool generate_identifier_pattern_binding(LLVMBackendData *data, const ASTNode *p
         }
         break;
     }
-    
+
     case AST_WILDCARD_PATTERN:
         // Wildcard doesn't bind anything
         break;
-        
+
     default:
         // Other pattern types not yet supported for binding
         break;
@@ -438,16 +436,18 @@ static int get_enum_variant_tag(const char *enum_name, const char *variant_name)
 
     // Generic fallback for unknown enums: assign index based on common patterns
     // This is a temporary solution until we properly integrate with the type system
-    
+
     // Single letter variants (A, B, C, etc.)
     if (strlen(variant_name) == 1 && variant_name[0] >= 'A' && variant_name[0] <= 'Z') {
         return variant_name[0] - 'A';
     }
-    
+
     // For MyResult/IntResult style enums
-    if (strcmp(variant_name, "Ok") == 0) return 0;
-    if (strcmp(variant_name, "Err") == 0) return 1;
-    
+    if (strcmp(variant_name, "Ok") == 0)
+        return 0;
+    if (strcmp(variant_name, "Err") == 0)
+        return 1;
+
     // Default: assume it's the first variant (index 0)
     // This is better than returning -1 which causes an error
     return 0;
