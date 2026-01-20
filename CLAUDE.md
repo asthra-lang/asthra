@@ -66,6 +66,7 @@ ctest --test-dir build -R "parser.*expr"       # Test parser expressions
 | **Gitignore Compliance** | Check files with `git check-ignore -v`. Use `test_*.c` pattern | `docs/contributor/guides/gitignore-compliance.md` |
 | **Temporary Test Files** | ALL temporary test files (source and executables) MUST be saved in a temporary directory (e.g., `/tmp/asthra-tests/` or `mktemp -d`). NEVER create temporary test files in the project directory | N/A |
 | **GitHub Access** | Always use the `gh` command when accessing GitHub issues, pull requests, or any GitHub-related information. Never guess or assume issue content - always fetch the actual data using commands like `gh issue view`, `gh pr view`, etc. | N/A |
+| **Visibility Modifiers** | All functions require explicit `pub` or `priv` visibility modifiers. Use `pub fn` for public functions and `priv fn` for private/internal functions | `grammar.txt` |
 
 ### C23 Standards
 - **Must use** modern C23 features appropriately: `typeof`, `_BitInt`, `#embed`, `_Bool` as `bool`, improved type inference
@@ -111,8 +112,9 @@ ctest --test-dir build -R "parser.*expr"       # Test parser expressions
 - **No trailing `_test` suffix needed** - use `test_semantic.c` instead of `semantic_test.c`
 
 ### BDD Testing
-- **📚 Full Guide**: See `bdd/BDD_BEST_PRACTICES.md` and `docs/contributor/guides/bdd-testing-guide.md`
+- **📚 Full Guide**: See `docs/contributor/reference/bdd-best-practices.md` and `docs/contributor/guides/bdd-testing-guide.md`
 - Use Given-When-Then pattern, handle @wip scenarios, register tests in CMakeLists.txt
+- Use `BDD_TEST_CASE` for enabled tests, `BDD_WIP_TEST_CASE` for work-in-progress tests
 
 ## Performance Targets
 - **Compilation speed**: 15-25% faster than baseline with C23 optimizations
@@ -172,7 +174,9 @@ TEST_CASE("descriptive_test_name") {
 
 ### Key Headers
 - **`runtime/asthra_runtime.h`** - Core runtime API
-- **`src/parser/ast_types.h`** - AST node definitions
+- **`src/parser/ast_types.h`** - AST type enumerations
+- **`src/parser/ast_node.h`** - AST node structure definitions
+- **`src/codegen/llvm_backend.h`** - LLVM code generation API
 - **`tests/framework/test_framework.h`** - Testing infrastructure
 
 ## Linting and Formatting
@@ -189,7 +193,7 @@ cmake --build build --target analyze   # Static analysis with Clang Static Analy
 - **Check** `grammar.txt` before implementing features  
 - **Update** Master Implementation Status in `docs/spec/`
 - **Test** thoroughly - run full test suite before commits
-- **Use** C17 features with fallbacks
+- **Use** C23 features appropriately (requires Clang/LLVM 18.0+)
 - **Prioritize** AI-friendly patterns and local reasoning
 
 ## Commit Message Standards
