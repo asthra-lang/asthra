@@ -364,8 +364,8 @@ void test_return_from_loop(void) {
 // Define test cases
 BDD_DECLARE_TEST_CASES(control_flow_loops)
     BDD_TEST_CASE(simple_for_range, test_simple_for_range),
-    BDD_WIP_TEST_CASE(range_start_end, test_range_start_end),
-    BDD_WIP_TEST_CASE(array_iteration, test_array_iteration),
+    BDD_TEST_CASE(range_start_end, test_range_start_end),
+    BDD_WIP_TEST_CASE(array_iteration, test_array_iteration),  // Codegen bug: slice GEP uses value instead of pointer
     BDD_TEST_CASE(for_with_break, test_for_with_break),
     BDD_TEST_CASE(nested_break, test_nested_break),
     BDD_TEST_CASE(for_with_continue, test_for_with_continue),
@@ -377,7 +377,7 @@ BDD_DECLARE_TEST_CASES(control_flow_loops)
     BDD_TEST_CASE(break_outside_loop, test_break_outside_loop),
     BDD_TEST_CASE(continue_outside_loop, test_continue_outside_loop),
     BDD_TEST_CASE(mutable_accumulator, test_mutable_accumulator),
-    BDD_WIP_TEST_CASE(string_iteration, test_string_iteration),
+    BDD_WIP_TEST_CASE(string_iteration, test_string_iteration),  // String iteration not implemented in semantic analyzer
     BDD_TEST_CASE(multiple_breaks, test_multiple_breaks),
     BDD_TEST_CASE(return_from_loop, test_return_from_loop),
 BDD_END_TEST_CASES()
