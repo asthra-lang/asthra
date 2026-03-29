@@ -1,0 +1,35 @@
+package main;
+
+pub fn divide(a: i32, b: i32) -> Result<i32, string> {
+    if b == 0 {
+        return Result.Err("division by zero");
+    }
+    return Result.Ok(a / b);
+}
+
+pub fn main() -> void {
+    let r1: Result<i32, string> = divide(10, 2);
+    match r1 {
+        Result.Ok(val) => {
+            log("Result:");
+            log(val);
+        }
+        Result.Err(msg) => {
+            log("Error:");
+            log(msg);
+        }
+    }
+
+    let r2: Result<i32, string> = divide(10, 0);
+    match r2 {
+        Result.Ok(val) => {
+            log(val);
+        }
+        Result.Err(msg) => {
+            log("Error:");
+            log(msg);
+        }
+    }
+
+    return;
+}

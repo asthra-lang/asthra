@@ -329,6 +329,21 @@ pub const Parser = struct {
             return .{ .option_type = .{ .inner_type = inner_ptr } };
         }
 
+        // Handle Result<T, E> type
+        if (tag == .keyword_Result) {
+            self.advance(); // consume 'Result'
+            try self.expect(.less); // consume '<'
+            const ok_type = try self.parseType();
+            try self.expect(.comma); // consume ','
+            const err_type = try self.parseType();
+            try self.expect(.greater); // consume '>'
+            const ok_ptr = self.ast.allocator.create(Ast.TypeExpr) catch return error.ParseError;
+            ok_ptr.* = ok_type;
+            const err_ptr = self.ast.allocator.create(Ast.TypeExpr) catch return error.ParseError;
+            err_ptr.* = err_type;
+            return .{ .result_type = .{ .ok_type = ok_ptr, .err_type = err_ptr } };
+        }
+
         if (tag.isTypeKeyword()) {
             const builtin = switch (tag) {
                 .keyword_void => Ast.BuiltinType.void,
@@ -615,10 +630,13 @@ pub const Parser = struct {
     }
 
     fn parsePattern(self: *Parser) ParseError!Ast.Pattern {
-        // Handle Option keyword as a pattern name
+        // Handle Option/Result keyword as a pattern name
         const first_name = if (self.current.tag == .keyword_Option) blk: {
             self.advance();
             break :blk "Option";
+        } else if (self.current.tag == .keyword_Result) blk: {
+            self.advance();
+            break :blk "Result";
         } else blk: {
             const first_token = self.current;
             try self.expect(.identifier);
@@ -936,6 +954,11 @@ pub const Parser = struct {
             .keyword_Option => {
                 self.advance();
                 return self.ast.addExpr(.{ .identifier = "Option" });
+            },
+            // Result used as expression (e.g., Result.Ok(42), Result.Err("error"))
+            .keyword_Result => {
+                self.advance();
+                return self.ast.addExpr(.{ .identifier = "Result" });
             },
             // Type conversion calls: i32(expr), f64(expr), etc.
             .keyword_i8, .keyword_i16, .keyword_i32, .keyword_i64, .keyword_i128, .keyword_u8, .keyword_u16, .keyword_u32, .keyword_u64, .keyword_u128, .keyword_f32, .keyword_f64, .keyword_usize, .keyword_isize, .keyword_bool => {
@@ -1416,6 +1439,51 @@ test "parse Option type and constructors" {
                         },
                         else => return error.TestUnexpectedResult,
                     }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse Result type and constructors" {
+    var result = try testParse("package main;\npub fn main() -> void { let a: Result<i32, string> = Result.Ok(42); return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("a", vd.name);
+                    switch (vd.type_expr) {
+                        .result_type => |res| {
+                            try testing.expectEqual(Ast.BuiltinType.i32_type, res.ok_type.builtin);
+                            try testing.expectEqual(Ast.BuiltinType.string_type, res.err_type.builtin);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse Result return type" {
+    var result = try testParse("package main;\npub fn divide(a: i32, b: i32) -> Result<i32, string> { return Result.Ok(a); }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            try testing.expectEqualStrings("divide", f.name);
+            switch (f.return_type) {
+                .result_type => |res| {
+                    try testing.expectEqual(Ast.BuiltinType.i32_type, res.ok_type.builtin);
+                    try testing.expectEqual(Ast.BuiltinType.string_type, res.err_type.builtin);
                 },
                 else => return error.TestUnexpectedResult,
             }

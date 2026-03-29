@@ -354,6 +354,43 @@ pub const CodeGen = struct {
         }) catch {};
     }
 
+    fn ensureResultType(self: *CodeGen, ok_tag: TypeTag, err_tag: TypeTag) void {
+        if (self.enum_types.contains("Result")) return;
+
+        // Result has two variants: Ok(T) and Err(E)
+        var variant_names = self.allocator.alloc([]const u8, 2) catch return;
+        variant_names[0] = "Ok";
+        variant_names[1] = "Err";
+
+        var variant_data_types = self.allocator.alloc([]const TypeTag, 2) catch return;
+
+        // Ok variant has one data field of the ok type
+        var ok_types = self.allocator.alloc(TypeTag, 1) catch return;
+        ok_types[0] = ok_tag;
+        variant_data_types[0] = ok_types;
+
+        // Err variant has one data field of the err type
+        var err_types = self.allocator.alloc(TypeTag, 1) catch return;
+        err_types[0] = err_tag;
+        variant_data_types[1] = err_types;
+
+        // Max payload: max(8, 8) = 8 bytes (each field takes 8 bytes)
+        const max_payload_size: u32 = 8;
+
+        var field_types: [2]c.LLVMTypeRef = undefined;
+        field_types[0] = c.LLVMInt32TypeInContext(self.context); // tag
+        field_types[1] = c.LLVMArrayType(c.LLVMInt8TypeInContext(self.context), max_payload_size);
+
+        const enum_type = c.LLVMStructCreateNamed(self.context, "Result");
+        c.LLVMStructSetBody(enum_type, &field_types, 2, 0);
+
+        self.enum_types.put("Result", .{
+            .llvm_type = enum_type,
+            .variant_names = variant_names,
+            .variant_data_types = variant_data_types,
+        }) catch {};
+    }
+
     fn genEnumConstructor(self: *CodeGen, enum_name: []const u8, variant_name: []const u8, args: *const std.ArrayList(Ast.ExprIndex)) GenError!ExprResult {
         const info = self.enum_types.get(enum_name) orelse {
             self.diagnostics.report(.@"error", 0, "undefined enum '{s}'", .{enum_name});
@@ -442,6 +479,13 @@ pub const CodeGen = struct {
                 const inner_tag = self.resolveTypeExpr(opt.inner_type.*);
                 self.ensureOptionType(inner_tag);
                 return .{ .enum_type = "Option" };
+            },
+            .result_type => |res| {
+                // Auto-register Result as an enum type for these inner types
+                const ok_tag = self.resolveTypeExpr(res.ok_type.*);
+                const err_tag = self.resolveTypeExpr(res.err_type.*);
+                self.ensureResultType(ok_tag, err_tag);
+                return .{ .enum_type = "Result" };
             },
         };
     }
@@ -1509,5 +1553,6 @@ fn builtinToTypeTag(type_expr: Ast.TypeExpr) CodeGen.TypeTag {
         .named => .i32_type,
         .array_type => .i32_type, // fallback - real resolution happens in CodeGen
         .option_type => .{ .enum_type = "Option" }, // resolved properly in CodeGen
+        .result_type => .{ .enum_type = "Result" }, // resolved properly in CodeGen
     };
 }

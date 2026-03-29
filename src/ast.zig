@@ -253,10 +253,16 @@ pub const Ast = struct {
         named: []const u8,
         array_type: ArrayTypeExpr,
         option_type: OptionTypeExpr,
+        result_type: ResultTypeExpr,
     };
 
     pub const OptionTypeExpr = struct {
         inner_type: *const TypeExpr,
+    };
+
+    pub const ResultTypeExpr = struct {
+        ok_type: *const TypeExpr,
+        err_type: *const TypeExpr,
     };
 
     pub const ArrayTypeExpr = struct {
