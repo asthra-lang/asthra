@@ -10,7 +10,13 @@ pub const Ast = struct {
 
     pub const Program = struct {
         package_name: []const u8 = "",
+        imports: std.ArrayList(ImportDecl) = .{},
         decls: std.ArrayList(TopLevelDecl) = .{},
+    };
+
+    pub const ImportDecl = struct {
+        path: []const u8,
+        alias: ?[]const u8,
     };
 
     pub const Visibility = enum {

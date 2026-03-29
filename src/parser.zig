@@ -32,6 +32,12 @@ pub const Parser = struct {
         // Parse package declaration
         self.ast.program.package_name = try self.parsePackageDecl();
 
+        // Parse import declarations
+        while (self.current.tag == .keyword_import) {
+            const import_decl = try self.parseImportDecl();
+            try self.ast.program.imports.append(self.ast.allocator, import_decl);
+        }
+
         // Parse top-level declarations
         while (self.current.tag != .eof) {
             const decl = self.parseTopLevelDecl() catch {
@@ -49,6 +55,32 @@ pub const Parser = struct {
         const name = name_token.slice(self.source);
         try self.expect(.semicolon);
         return name;
+    }
+
+    fn parseImportDecl(self: *Parser) ParseError!Ast.ImportDecl {
+        try self.expect(.keyword_import);
+
+        // Expect string literal for the import path
+        if (self.current.tag != .string_literal) {
+            self.reportError("expected string literal for import path");
+            return error.ParseError;
+        }
+        const raw_path = self.current.slice(self.source);
+        // Strip quotes
+        const path = if (raw_path.len >= 2) raw_path[1 .. raw_path.len - 1] else raw_path;
+        self.advance();
+
+        // Optional alias: 'as' identifier
+        var alias: ?[]const u8 = null;
+        if (self.current.tag == .keyword_as) {
+            self.advance(); // consume 'as'
+            const alias_token = self.current;
+            try self.expect(.identifier);
+            alias = alias_token.slice(self.source);
+        }
+
+        try self.expect(.semicolon);
+        return .{ .path = path, .alias = alias };
     }
 
     fn parseTopLevelDecl(self: *Parser) ParseError!Ast.TopLevelDecl {
@@ -1940,4 +1972,44 @@ test "parse sizeof f64" {
         },
         else => return error.TestUnexpectedResult,
     }
+}
+
+test "parse import with alias" {
+    var result = try testParse("package main;\nimport \"std/math\" as math;\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    try testing.expectEqual(@as(usize, 1), result.ast.program.imports.items.len);
+    const imp = result.ast.program.imports.items[0];
+    try testing.expectEqualStrings("std/math", imp.path);
+    try testing.expectEqualStrings("math", imp.alias.?);
+    try testing.expectEqual(@as(usize, 1), result.ast.program.decls.items.len);
+}
+
+test "parse import without alias" {
+    var result = try testParse("package main;\nimport \"std/io\";\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    try testing.expectEqual(@as(usize, 1), result.ast.program.imports.items.len);
+    const imp = result.ast.program.imports.items[0];
+    try testing.expectEqualStrings("std/io", imp.path);
+    try testing.expect(imp.alias == null);
+}
+
+test "parse multiple imports" {
+    var result = try testParse("package main;\nimport \"std/math\" as math;\nimport \"std/io\" as io;\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    try testing.expectEqual(@as(usize, 2), result.ast.program.imports.items.len);
+    try testing.expectEqualStrings("std/math", result.ast.program.imports.items[0].path);
+    try testing.expectEqualStrings("math", result.ast.program.imports.items[0].alias.?);
+    try testing.expectEqualStrings("std/io", result.ast.program.imports.items[1].path);
+    try testing.expectEqualStrings("io", result.ast.program.imports.items[1].alias.?);
+}
+
+test "parse no imports" {
+    var result = try testParse("package main;\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    try testing.expectEqual(@as(usize, 0), result.ast.program.imports.items.len);
+    try testing.expectEqual(@as(usize, 1), result.ast.program.decls.items.len);
 }

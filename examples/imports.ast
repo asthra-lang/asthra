@@ -1,0 +1,10 @@
+package main;
+
+import "std/math" as math;
+
+pub fn main() -> void {
+    log("Import declarations parsed successfully");
+    let x: i32 = 42;
+    log(x);
+    return;
+}
