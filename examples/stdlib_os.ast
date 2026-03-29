@@ -13,6 +13,10 @@ pub fn main() -> void {
     let t: f64 = os.clock();
     log(t >= 0.0);
 
+    // os.args - returns command-line arguments as []string
+    let args: []string = os.args();
+    log(len(args) >= 1);
+
     log("stdlib_os: all tests passed");
     return;
 }

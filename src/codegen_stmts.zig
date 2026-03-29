@@ -18,6 +18,14 @@ pub fn genFunctionWithName(self: *CodeGen, fn_decl: *const Ast.FnDecl, llvm_name
 
     var param_types = std.ArrayList(c.LLVMTypeRef){};
     defer param_types.deinit(self.allocator);
+
+    // Main gets argc/argv params for C ABI
+    if (is_main) {
+        try param_types.append(self.allocator, c.LLVMInt32TypeInContext(self.context)); // argc
+        const i8ptr = c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0);
+        try param_types.append(self.allocator, c.LLVMPointerType(i8ptr, 0)); // argv: char**
+    }
+
     for (fn_decl.params.items) |param| {
         const pt = self.resolveTypeExpr(param.type_expr);
         try param_types.append(self.allocator, self.typeTagToLLVM(pt));
@@ -32,6 +40,12 @@ pub fn genFunctionWithName(self: *CodeGen, fn_decl: *const Ast.FnDecl, llvm_name
     const function = c.LLVMAddFunction(self.module, name_z.ptr, fn_type);
     const entry = c.LLVMAppendBasicBlockInContext(self.context, function, "entry");
     c.LLVMPositionBuilderAtEnd(self.builder, entry);
+
+    // Store argc/argv to globals for os.args()
+    if (is_main) {
+        _ = c.LLVMBuildStore(self.builder, c.LLVMGetParam(function, 0), self.argc_global);
+        _ = c.LLVMBuildStore(self.builder, c.LLVMGetParam(function, 1), self.argv_global);
+    }
 
     self.named_values.clearRetainingCapacity();
 

@@ -94,7 +94,7 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
   - `math`: `sqrt`, `pow`, `abs`, `min`, `max`, `floor`, `ceil`, `PI`, `E`
   - `str`: `upper`, `lower`, `contains`, `starts_with`, `ends_with`, `trim`, `to_int`, `to_float`, `from_int`, `from_float`
   - `io`: `print` (no newline), `println` (with newline), `read_line`
-  - `os`: `getenv`, `clock`
+  - `os`: `getenv`, `clock`, `args`
 - Package management:
   - `asthra init` / `asthra add` / `asthra install` CLI commands
   - `asthra.toml` manifest with `[package]` and `[dependencies]` sections

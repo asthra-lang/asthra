@@ -46,6 +46,9 @@ pub const CodeGen = struct {
     imported_fn_return_types: std.StringHashMap(TypeTag),
     type_aliases: std.StringHashMap(Ast.TypeExpr),
     closure_counter: u32 = 0,
+    // Global variables for argc/argv (set in main entry)
+    argc_global: c.LLVMValueRef,
+    argv_global: c.LLVMValueRef,
     // Stdlib C function refs
     sqrt_fn: c.LLVMValueRef,
     pow_fn: c.LLVMValueRef,
@@ -251,6 +254,13 @@ pub const CodeGen = struct {
         const clock_type = c.LLVMFunctionType(i64_type_llvm, null, 0, 0);
         const clock_fn = c.LLVMAddFunction(module, "clock", clock_type);
 
+        // Global variables for argc/argv
+        const argc_global = c.LLVMAddGlobal(module, i32_type_llvm, "__asthra_argc");
+        c.LLVMSetInitializer(argc_global, c.LLVMConstInt(i32_type_llvm, 0, 0));
+        const i8ptr_ptr_type = c.LLVMPointerType(i8ptr_type, 0);
+        const argv_global = c.LLVMAddGlobal(module, i8ptr_ptr_type, "__asthra_argv");
+        c.LLVMSetInitializer(argv_global, c.LLVMConstNull(i8ptr_ptr_type));
+
         // Create format strings — need a temp function to position the builder
         const init_fn_type = c.LLVMFunctionType(c.LLVMVoidTypeInContext(context), null, 0, 0);
         const init_fn = c.LLVMAddFunction(module, "__asthra_init_strings", init_fn_type);
@@ -324,6 +334,8 @@ pub const CodeGen = struct {
             .fmt_str_raw = fmt_str_raw,
             .fmt_float_raw = fmt_float_raw,
             .fmt_char_raw = fmt_char_raw,
+            .argc_global = argc_global,
+            .argv_global = argv_global,
         };
     }
 

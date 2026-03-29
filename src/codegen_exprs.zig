@@ -1529,6 +1529,24 @@ fn genOsCall(self: *CodeGen, func: []const u8, args: *const std.ArrayList(Ast.Ex
         const divisor = c.LLVMConstReal(c.LLVMDoubleTypeInContext(self.context), 1000000.0);
         const seconds = c.LLVMBuildFDiv(self.builder, f64_val, divisor, "seconds");
         return .{ .value = seconds, .type_tag = .f64_type };
+    } else if (std.mem.eql(u8, func, "args")) {
+        if (args.items.len != 0) { self.diagnostics.report(.@"error", 0, "os.args() expects 0 arguments", .{}); return error.CodeGenError; }
+        const i8ptr_ty = c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0);
+        const i8ptr_ptr_ty = c.LLVMPointerType(i8ptr_ty, 0);
+        // Load argc and argv from globals
+        const argc = c.LLVMBuildLoad2(self.builder, c.LLVMInt32TypeInContext(self.context), self.argc_global, "argc");
+        const argv = c.LLVMBuildLoad2(self.builder, i8ptr_ptr_ty, self.argv_global, "argv");
+        // Build slice struct { ptr, len }
+        const slice_llvm = self.sliceLLVMType();
+        const slice_alloca = c.LLVMBuildAlloca(self.builder, slice_llvm, "args_slice");
+        const ptr_field = c.LLVMBuildStructGEP2(self.builder, slice_llvm, slice_alloca, 0, "args_ptr_f");
+        _ = c.LLVMBuildStore(self.builder, c.LLVMBuildBitCast(self.builder, argv, i8ptr_ty, "argv_cast"), ptr_field);
+        const len_field = c.LLVMBuildStructGEP2(self.builder, slice_llvm, slice_alloca, 1, "args_len_f");
+        _ = c.LLVMBuildStore(self.builder, argc, len_field);
+        const slice_val = c.LLVMBuildLoad2(self.builder, slice_llvm, slice_alloca, "args_val");
+        const elem_ptr = self.allocator.create(CodeGen.TypeTag) catch return error.CodeGenError;
+        elem_ptr.* = .string_type;
+        return .{ .value = slice_val, .type_tag = .{ .slice_type = .{ .element_type = elem_ptr } } };
     }
     self.diagnostics.report(.@"error", 0, "unknown os function '{s}'", .{func});
     return error.CodeGenError;

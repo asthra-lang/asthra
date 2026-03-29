@@ -78,7 +78,7 @@ Built-in namespaced modules (`math`, `str`, `io`, `os`) available without import
 | 49 | `stdlib_math.ast` | `math.sqrt`, `pow`, `abs`, `min`, `max`, `floor`, `ceil`, `PI`, `E` | Done |
 | 50 | `stdlib_strings.ast` | `str.upper`, `lower`, `contains`, `starts_with`, `ends_with`, `trim`, `to_int`, `to_float`, `from_int`, `from_float` | Done |
 | 51 | `stdlib_io.ast` | `io.print` (no newline), `io.println` (with newline), `io.read_line` | Done |
-| 52 | `stdlib_os.ast` | `os.getenv`, `os.clock` | Done |
+| 52 | `stdlib_os.ast` | `os.getenv`, `os.clock`, `os.args` | Done |
 
 ## Phase 5: Package Management
 
