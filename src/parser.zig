@@ -798,3 +798,37 @@ test "parseIntLiteral binary" {
 test "parseIntLiteral octal" {
     try testing.expectEqual(@as(i64, 63), parseIntLiteral("0o77"));
 }
+
+test "parse break statement" {
+    var result = try testParse("package main;\npub fn main() -> void { for i in range(10) { break; } return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .for_stmt => |for_s| {
+                    try testing.expectEqual(Ast.Stmt.break_stmt, for_s.body.stmts.items[0]);
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse continue statement" {
+    var result = try testParse("package main;\npub fn main() -> void { for i in range(10) { continue; } return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .for_stmt => |for_s| {
+                    try testing.expectEqual(Ast.Stmt.continue_stmt, for_s.body.stmts.items[0]);
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}

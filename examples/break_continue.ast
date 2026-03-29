@@ -1,0 +1,32 @@
+package main;
+
+pub fn main() -> void {
+    // break: print 0, 1, 2 then stop
+    for i in range(10) {
+        if i == 3 {
+            break;
+        }
+        log(i);
+    }
+
+    // continue: print even numbers 0, 2, 4, 6, 8
+    for i in range(10) {
+        if i % 2 != 0 {
+            continue;
+        }
+        log(i);
+    }
+
+    // nested: break inner loop at j==1
+    for i in range(3) {
+        for j in range(3) {
+            if j == 1 {
+                break;
+            }
+            log(j);
+        }
+        log(i);
+    }
+
+    return;
+}

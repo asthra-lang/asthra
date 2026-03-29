@@ -25,6 +25,12 @@ pub const CodeGen = struct {
     fmt_float: c.LLVMValueRef,
     fmt_bool_true: c.LLVMValueRef,
     fmt_bool_false: c.LLVMValueRef,
+    loop_stack: std.ArrayList(LoopContext) = .{},
+
+    const LoopContext = struct {
+        continue_bb: c.LLVMBasicBlockRef,
+        break_bb: c.LLVMBasicBlockRef,
+    };
 
     const NamedValue = struct {
         alloca: c.LLVMValueRef,
@@ -89,6 +95,7 @@ pub const CodeGen = struct {
         c.LLVMDisposeModule(self.module);
         c.LLVMContextDispose(self.context);
         self.named_values.deinit();
+        self.loop_stack.deinit(self.allocator);
     }
 
     pub fn generate(self: *CodeGen) GenError!void {
@@ -166,6 +173,9 @@ pub const CodeGen = struct {
 
     fn genBlock(self: *CodeGen, block: *const Ast.Block, is_main: bool) GenError!void {
         for (block.stmts.items) |stmt| {
+            if (c.LLVMGetBasicBlockTerminator(c.LLVMGetInsertBlock(self.builder)) != null) {
+                break;
+            }
             try self.genStmt(stmt, is_main);
         }
     }
@@ -210,7 +220,22 @@ pub const CodeGen = struct {
             .expr_stmt => |expr_idx| {
                 _ = try self.genExpr(expr_idx);
             },
-            .break_stmt, .continue_stmt => {},
+            .break_stmt => {
+                if (self.loop_stack.items.len == 0) {
+                    self.diagnostics.report(.@"error", 0, "'break' used outside of a loop", .{});
+                    return error.CodeGenError;
+                }
+                const loop_ctx = self.loop_stack.items[self.loop_stack.items.len - 1];
+                _ = c.LLVMBuildBr(self.builder, loop_ctx.break_bb);
+            },
+            .continue_stmt => {
+                if (self.loop_stack.items.len == 0) {
+                    self.diagnostics.report(.@"error", 0, "'continue' used outside of a loop", .{});
+                    return error.CodeGenError;
+                }
+                const loop_ctx = self.loop_stack.items[self.loop_stack.items.len - 1];
+                _ = c.LLVMBuildBr(self.builder, loop_ctx.continue_bb);
+            },
         }
     }
 
@@ -275,6 +300,12 @@ pub const CodeGen = struct {
         const current_val = c.LLVMBuildLoad2(self.builder, c.LLVMInt32TypeInContext(self.context), counter_alloca, "i");
         const cond = c.LLVMBuildICmp(self.builder, c.LLVMIntSLT, current_val, range_info.end, "cmp");
         _ = c.LLVMBuildCondBr(self.builder, cond, body_bb, exit_bb);
+
+        try self.loop_stack.append(self.allocator, .{
+            .continue_bb = inc_bb,
+            .break_bb = exit_bb,
+        });
+        defer _ = self.loop_stack.pop();
 
         c.LLVMPositionBuilderAtEnd(self.builder, body_bb);
         try self.genBlock(for_stmt.body, is_main);
