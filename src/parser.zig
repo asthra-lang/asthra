@@ -688,7 +688,13 @@ pub const Parser = struct {
         switch (self.current.tag) {
             .keyword_return => return self.parseReturnStmt(),
             .keyword_let => return self.parseVarDecl(),
-            .keyword_if => return self.parseIfStmt(),
+            .keyword_if => {
+                // Peek ahead to distinguish 'if let' from regular 'if'
+                if (self.peekIsIfLet()) {
+                    return self.parseIfLetStmt();
+                }
+                return self.parseIfStmt();
+            },
             .keyword_for => return self.parseForStmt(),
             .keyword_break => {
                 self.advance();
@@ -900,6 +906,47 @@ pub const Parser = struct {
 
         return .{ .if_stmt = .{
             .condition = condition,
+            .then_block = then_block,
+            .else_block = else_block,
+        } };
+    }
+
+    fn peekIsIfLet(self: *Parser) bool {
+        // Save state
+        const saved_lexer = self.lexer;
+        const saved_current = self.current;
+        // Advance past 'if'
+        self.advance();
+        const is_let = self.current.tag == .keyword_let;
+        // Restore state
+        self.lexer = saved_lexer;
+        self.current = saved_current;
+        return is_let;
+    }
+
+    fn parseIfLetStmt(self: *Parser) ParseError!Ast.Stmt {
+        self.advance(); // consume 'if'
+        self.advance(); // consume 'let'
+
+        const pattern = try self.parsePattern();
+
+        try self.expect(.equal);
+        const expr = try self.parseExpr();
+
+        const then_block = try self.ast.allocator.create(Ast.Block);
+        then_block.* = try self.parseBlock();
+
+        var else_block: ?*Ast.Block = null;
+        if (self.current.tag == .keyword_else) {
+            self.advance();
+            const eb = try self.ast.allocator.create(Ast.Block);
+            eb.* = try self.parseBlock();
+            else_block = eb;
+        }
+
+        return .{ .if_let_stmt = .{
+            .pattern = pattern,
+            .expr = expr,
             .then_block = then_block,
             .else_block = else_block,
         } };
@@ -2835,6 +2882,80 @@ test "parse deref assignment" {
                                 .int_literal => |v| try testing.expectEqual(@as(i64, 42), v),
                                 else => return error.TestUnexpectedResult,
                             }
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse if let with Option.Some" {
+    var result = try testParse("package main;\npub fn main() -> void { let a: Option<i32> = Option.Some(42); if let Option.Some(val) = a { log(val); } else { log(0); } return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            // Second statement should be if_let_stmt
+            switch (f.body.stmts.items[1]) {
+                .if_let_stmt => |il| {
+                    // Pattern should be enum_pattern with Option.Some
+                    switch (il.pattern) {
+                        .enum_pattern => |ep| {
+                            try testing.expectEqualStrings("Option", ep.enum_name);
+                            try testing.expectEqualStrings("Some", ep.variant_name);
+                            try testing.expectEqual(@as(usize, 1), ep.bindings.items.len);
+                            try testing.expectEqualStrings("val", ep.bindings.items[0]);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                    // Should have then and else blocks
+                    try testing.expect(il.then_block.stmts.items.len > 0);
+                    try testing.expect(il.else_block != null);
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse if let without else block" {
+    var result = try testParse("package main;\npub fn main() -> void { let a: Option<i32> = Option.Some(42); if let Option.Some(val) = a { log(val); } return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[1]) {
+                .if_let_stmt => |il| {
+                    // Should have then block but no else block
+                    try testing.expect(il.then_block.stmts.items.len > 0);
+                    try testing.expect(il.else_block == null);
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse if let with Result.Ok" {
+    var result = try testParse("package main;\npub fn main() -> void { let r: Result<i32, string> = Result.Ok(100); if let Result.Ok(v) = r { log(v); } else { log(0); } return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[1]) {
+                .if_let_stmt => |il| {
+                    switch (il.pattern) {
+                        .enum_pattern => |ep| {
+                            try testing.expectEqualStrings("Result", ep.enum_name);
+                            try testing.expectEqualStrings("Ok", ep.variant_name);
+                            try testing.expectEqual(@as(usize, 1), ep.bindings.items.len);
+                            try testing.expectEqualStrings("v", ep.bindings.items[0]);
                         },
                         else => return error.TestUnexpectedResult,
                     }

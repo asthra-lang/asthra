@@ -116,6 +116,7 @@ pub const Ast = struct {
         var_decl: VarDecl,
         assign: AssignStmt,
         if_stmt: IfStmt,
+        if_let_stmt: IfLetStmt,
         for_stmt: ForStmt,
         break_stmt,
         continue_stmt,
@@ -172,6 +173,13 @@ pub const Ast = struct {
 
     pub const IfStmt = struct {
         condition: ExprIndex,
+        then_block: *Block,
+        else_block: ?*Block,
+    };
+
+    pub const IfLetStmt = struct {
+        pattern: Pattern,
+        expr: ExprIndex,
         then_block: *Block,
         else_block: ?*Block,
     };

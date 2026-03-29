@@ -1,0 +1,29 @@
+package main;
+
+pub fn main() -> void {
+    let a: Option<i32> = Option.Some(42);
+    let b: Option<i32> = Option.None();
+
+    if let Option.Some(val) = a {
+        log("Got value:");
+        log(val);
+    } else {
+        log("No value");
+    }
+
+    if let Option.Some(val) = b {
+        log(val);
+    } else {
+        log("b is None");
+    }
+
+    let r: Result<i32, string> = Result.Ok(100);
+    if let Result.Ok(v) = r {
+        log("Success:");
+        log(v);
+    } else {
+        log("Error");
+    }
+
+    return;
+}

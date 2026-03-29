@@ -920,6 +920,7 @@ pub const CodeGen = struct {
                 }
             },
             .if_stmt => |if_s| try self.genIfStmt(if_s, is_main),
+            .if_let_stmt => |il_s| try self.genIfLetStmt(il_s, is_main),
             .for_stmt => |for_s| try self.genForStmt(for_s, is_main),
             .expr_stmt => |expr_idx| {
                 _ = try self.genExpr(expr_idx);
@@ -1001,6 +1002,125 @@ pub const CodeGen = struct {
         // If merge block has no predecessors (both branches terminated), add unreachable
         if (c.LLVMGetFirstUse(c.LLVMBasicBlockAsValue(merge_bb)) == null) {
             _ = c.LLVMBuildUnreachable(self.builder);
+        }
+    }
+
+    fn genIfLetStmt(self: *CodeGen, il_stmt: Ast.IfLetStmt, is_main: bool) GenError!void {
+        // Evaluate the expression (should be an enum type like Option or Result)
+        const match_val = try self.genExpr(il_stmt.expr);
+        const function = c.LLVMGetBasicBlockParent(c.LLVMGetInsertBlock(self.builder));
+
+        // Get enum info
+        const enum_name = switch (match_val.type_tag) {
+            .enum_type => |name| name,
+            else => {
+                self.diagnostics.report(.@"error", 0, "if let requires enum type", .{});
+                return error.CodeGenError;
+            },
+        };
+
+        const info = self.enum_types.get(enum_name) orelse {
+            self.diagnostics.report(.@"error", 0, "undefined enum type", .{});
+            return error.CodeGenError;
+        };
+
+        // Store the enum value to access tag and data
+        const alloca = c.LLVMBuildAlloca(self.builder, info.llvm_type, "if_let_val");
+        _ = c.LLVMBuildStore(self.builder, match_val.value, alloca);
+
+        // Load the tag
+        const tag_ptr = c.LLVMBuildStructGEP2(self.builder, info.llvm_type, alloca, 0, "tag_ptr");
+        const tag_val = c.LLVMBuildLoad2(self.builder, c.LLVMInt32TypeInContext(self.context), tag_ptr, "tag");
+
+        // The pattern must be an enum_pattern
+        switch (il_stmt.pattern) {
+            .enum_pattern => |ep| {
+                // Find variant index
+                var found_idx: ?usize = null;
+                for (info.variant_names, 0..) |vn, i| {
+                    if (std.mem.eql(u8, vn, ep.variant_name)) {
+                        found_idx = i;
+                        break;
+                    }
+                }
+                const vidx = found_idx orelse {
+                    self.diagnostics.report(.@"error", 0, "undefined variant '{s}'", .{ep.variant_name});
+                    return error.CodeGenError;
+                };
+
+                // Compare tag with variant index
+                const cmp = c.LLVMBuildICmp(self.builder, c.LLVMIntEQ, tag_val, c.LLVMConstInt(c.LLVMInt32TypeInContext(self.context), @intCast(vidx), 0), "if_let_cmp");
+
+                const then_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "if_let.then");
+                const else_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "if_let.else");
+                const merge_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "if_let.merge");
+
+                _ = c.LLVMBuildCondBr(self.builder, cmp, then_bb, if (il_stmt.else_block != null) else_bb else merge_bb);
+
+                // Then block: extract bindings and execute body
+                c.LLVMPositionBuilderAtEnd(self.builder, then_bb);
+
+                const data_types = info.variant_data_types[vidx];
+                if (ep.bindings.items.len > 0 and data_types.len > 0) {
+                    const data_ptr = c.LLVMBuildStructGEP2(self.builder, info.llvm_type, alloca, 1, "data_ptr");
+                    const data_byte_ptr = c.LLVMBuildBitCast(self.builder, data_ptr, c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0), "data_bytes");
+
+                    var offset: u64 = 0;
+                    for (ep.bindings.items, 0..) |binding_name, bi| {
+                        if (bi >= data_types.len) break;
+                        const field_type = self.typeTagToLLVM(data_types[bi]);
+                        var gep_idx = [_]c.LLVMValueRef{c.LLVMConstInt(c.LLVMInt64TypeInContext(self.context), offset, 0)};
+                        const field_ptr = c.LLVMBuildGEP2(
+                            self.builder,
+                            c.LLVMInt8TypeInContext(self.context),
+                            data_byte_ptr,
+                            &gep_idx,
+                            1,
+                            "bind_byte_ptr",
+                        );
+                        const typed_ptr = c.LLVMBuildBitCast(self.builder, field_ptr, c.LLVMPointerType(field_type, 0), "bind_typed_ptr");
+                        const loaded = c.LLVMBuildLoad2(self.builder, field_type, typed_ptr, "bind_val");
+
+                        const bind_name_z = self.allocator.dupeZ(u8, binding_name) catch return error.CodeGenError;
+                        defer self.allocator.free(bind_name_z);
+
+                        const bind_alloca = c.LLVMBuildAlloca(self.builder, field_type, bind_name_z.ptr);
+                        _ = c.LLVMBuildStore(self.builder, loaded, bind_alloca);
+                        self.named_values.put(binding_name, .{
+                            .alloca = bind_alloca,
+                            .is_mutable = false,
+                            .type_tag = data_types[bi],
+                        }) catch {};
+
+                        offset += 8;
+                    }
+                }
+
+                try self.genBlock(il_stmt.then_block, is_main);
+                if (c.LLVMGetBasicBlockTerminator(c.LLVMGetInsertBlock(self.builder)) == null) {
+                    _ = c.LLVMBuildBr(self.builder, merge_bb);
+                }
+
+                // Else block
+                c.LLVMPositionBuilderAtEnd(self.builder, else_bb);
+                if (il_stmt.else_block) |eb| {
+                    try self.genBlock(eb, is_main);
+                }
+                if (c.LLVMGetBasicBlockTerminator(c.LLVMGetInsertBlock(self.builder)) == null) {
+                    _ = c.LLVMBuildBr(self.builder, merge_bb);
+                }
+
+                c.LLVMPositionBuilderAtEnd(self.builder, merge_bb);
+
+                // If merge block has no predecessors, add unreachable
+                if (c.LLVMGetFirstUse(c.LLVMBasicBlockAsValue(merge_bb)) == null) {
+                    _ = c.LLVMBuildUnreachable(self.builder);
+                }
+            },
+            .identifier => {
+                self.diagnostics.report(.@"error", 0, "if let requires enum pattern", .{});
+                return error.CodeGenError;
+            },
         }
     }
 
