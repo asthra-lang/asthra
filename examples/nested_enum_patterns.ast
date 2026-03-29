@@ -1,0 +1,51 @@
+package main;
+
+pub enum Outer {
+    pub First(i32),
+    pub Second(i32),
+    pub Empty
+}
+
+pub fn process(o: Outer) -> void {
+    match o {
+        Outer.First(x) => {
+            log("First:");
+            log(x);
+        }
+        Outer.Second(x) => {
+            log("Second:");
+            log(x);
+        }
+        Outer.Empty => {
+            log("Empty");
+        }
+    }
+    return;
+}
+
+pub fn main() -> void {
+    let a: Outer = Outer.First(10);
+    let b: Outer = Outer.Second(20);
+    let c: Outer = Outer.Empty;
+
+    process(a);
+    process(b);
+    process(c);
+
+    // Nested Option usage
+    let opt: Option<i32> = Option.Some(42);
+    if let Option.Some(val) = opt {
+        let inner: Result<i32, string> = Result.Ok(val);
+        match inner {
+            Result.Ok(v) => {
+                log("Nested OK:");
+                log(v);
+            }
+            Result.Err(e) => {
+                log(e);
+            }
+        }
+    }
+
+    return;
+}

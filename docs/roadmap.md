@@ -54,7 +54,7 @@ Closing remaining gaps between the grammar spec and implementation, plus compile
 |---|---------|-------------------|
 | 33 | `generic_impl.ast` | generic impl blocks: `impl Pair<T> { ... }` with monomorphized methods | Done |
 | 34 | `tuple_patterns.ast` | tuple patterns in match: `(a, b) => { ... }`, nested destructuring | Done |
-| 35 | `nested_enum_patterns.ast` | nested enum patterns: `Option.Some(Result.Ok(val)) => { ... }` |
+| 35 | `nested_enum_patterns.ast` | nested enum patterns: `Option.Some(Result.Ok(val)) => { ... }` | Done |
 | 36 | `string_escapes.ast` | escape sequence processing in string literals (`\n`, `\t`, `\\`, `\0`) |
 | 37 | `else_if_chains.ast` | `else if` chains in if-let, match exhaustiveness warnings |
 | 38 | `multi_return.ast` | returning tuples and structs from functions, multi-value return patterns |
