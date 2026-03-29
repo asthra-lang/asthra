@@ -82,10 +82,11 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 - Impl blocks, methods with `self`, method calls
 
 - Enum declarations, enum constructors, match statements
+- Fixed-size arrays (`[N]T`), array literals, indexing, `len()` builtin, element assignment
 
 ## Not Yet Implemented
 
--
+- Slices (`[]T`)
 - Generics and type parameters
 - Pattern matching (`match`)
 - `Result<T,E>` / `Option<T>`

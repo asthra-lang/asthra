@@ -130,6 +130,7 @@ pub const Ast = struct {
     pub const AssignStmt = struct {
         target: []const u8,
         target_fields: std.ArrayList([]const u8),
+        target_index: ?ExprIndex = null,
         value: ExprIndex,
     };
 
@@ -163,6 +164,17 @@ pub const Ast = struct {
         struct_literal: StructLiteralExpr,
         method_call: MethodCallExpr,
         enum_constructor: EnumConstructorExpr,
+        array_literal: ArrayLiteralExpr,
+        index_access: IndexAccessExpr,
+    };
+
+    pub const ArrayLiteralExpr = struct {
+        elements: std.ArrayList(ExprIndex),
+    };
+
+    pub const IndexAccessExpr = struct {
+        object: ExprIndex,
+        index: ExprIndex,
     };
 
     pub const EnumConstructorExpr = struct {
@@ -239,6 +251,12 @@ pub const Ast = struct {
     pub const TypeExpr = union(enum) {
         builtin: BuiltinType,
         named: []const u8,
+        array_type: ArrayTypeExpr,
+    };
+
+    pub const ArrayTypeExpr = struct {
+        size: u32,
+        element_type: *const TypeExpr,
     };
 
     pub const BuiltinType = enum {

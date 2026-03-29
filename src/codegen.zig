@@ -61,6 +61,12 @@ pub const CodeGen = struct {
         string_type,
         struct_type: []const u8,
         enum_type: []const u8,
+        array_type: ArrayTypeTag,
+    };
+
+    pub const ArrayTypeTag = struct {
+        element_type: *const TypeTag,
+        count: u32,
     };
 
     pub fn init(allocator: std.mem.Allocator, module_name: [*:0]const u8, diagnostics: *Diagnostics, ast: *const Ast) CodeGen {
@@ -388,6 +394,12 @@ pub const CodeGen = struct {
                 }
                 return .i32_type;
             },
+            .array_type => |arr| {
+                const elem_tag = self.resolveTypeExpr(arr.element_type.*);
+                const elem_ptr = self.allocator.create(TypeTag) catch return .i32_type;
+                elem_ptr.* = elem_tag;
+                return .{ .array_type = .{ .element_type = elem_ptr, .count = arr.size } };
+            },
         };
     }
 
@@ -484,7 +496,25 @@ pub const CodeGen = struct {
             .assign => |assign| {
                 const val = try self.genExpr(assign.value);
                 if (self.named_values.get(assign.target)) |nv| {
-                    if (assign.target_fields.items.len > 0) {
+                    if (assign.target_index) |idx_expr| {
+                        // Indexed assignment: arr[i] = value
+                        switch (nv.type_tag) {
+                            .array_type => {
+                                const index_val = try self.genExpr(idx_expr);
+                                const array_llvm = self.typeTagToLLVM(nv.type_tag);
+                                var gep_idx = [_]c.LLVMValueRef{
+                                    c.LLVMConstInt(c.LLVMInt64TypeInContext(self.context), 0, 0),
+                                    index_val.value,
+                                };
+                                const elem_ptr = c.LLVMBuildGEP2(self.builder, array_llvm, nv.alloca, &gep_idx, 2, "idx_assign_ptr");
+                                _ = c.LLVMBuildStore(self.builder, val.value, elem_ptr);
+                            },
+                            else => {
+                                self.diagnostics.report(.@"error", 0, "indexed assignment requires an array", .{});
+                                return error.CodeGenError;
+                            },
+                        }
+                    } else if (assign.target_fields.items.len > 0) {
                         // Field assignment: obj.field = value
                         var current_ptr = nv.alloca;
                         var current_type_tag = nv.type_tag;
@@ -852,7 +882,84 @@ pub const CodeGen = struct {
             .enum_constructor => |ec| {
                 return self.genEnumConstructor(ec.enum_name, ec.variant_name, &ec.args);
             },
+            .array_literal => |al| {
+                return self.genArrayLiteral(al);
+            },
+            .index_access => |ia| {
+                return self.genIndexAccess(ia);
+            },
         }
+    }
+
+    fn genArrayLiteral(self: *CodeGen, al: Ast.ArrayLiteralExpr) GenError!ExprResult {
+        if (al.elements.items.len == 0) {
+            self.diagnostics.report(.@"error", 0, "empty array literal", .{});
+            return error.CodeGenError;
+        }
+
+        // Generate first element to determine type
+        const first = try self.genExpr(al.elements.items[0]);
+        const elem_type_tag = first.type_tag;
+        const elem_llvm = self.typeTagToLLVM(elem_type_tag);
+        const count: u32 = @intCast(al.elements.items.len);
+        const array_llvm = c.LLVMArrayType(elem_llvm, count);
+
+        const alloca = c.LLVMBuildAlloca(self.builder, array_llvm, "arr_lit");
+
+        // Store first element
+        var gep0 = [_]c.LLVMValueRef{
+            c.LLVMConstInt(c.LLVMInt64TypeInContext(self.context), 0, 0),
+            c.LLVMConstInt(c.LLVMInt64TypeInContext(self.context), 0, 0),
+        };
+        const ptr0 = c.LLVMBuildGEP2(self.builder, array_llvm, alloca, &gep0, 2, "elem_ptr");
+        _ = c.LLVMBuildStore(self.builder, first.value, ptr0);
+
+        // Store remaining elements
+        for (al.elements.items[1..], 1..) |elem_idx, i| {
+            const elem_val = try self.genExpr(elem_idx);
+            var gep_idx = [_]c.LLVMValueRef{
+                c.LLVMConstInt(c.LLVMInt64TypeInContext(self.context), 0, 0),
+                c.LLVMConstInt(c.LLVMInt64TypeInContext(self.context), @intCast(i), 0),
+            };
+            const elem_ptr = c.LLVMBuildGEP2(self.builder, array_llvm, alloca, &gep_idx, 2, "elem_ptr");
+            _ = c.LLVMBuildStore(self.builder, elem_val.value, elem_ptr);
+        }
+
+        // Load the full array value
+        const loaded = c.LLVMBuildLoad2(self.builder, array_llvm, alloca, "arr_val");
+
+        const elem_ptr = self.allocator.create(TypeTag) catch return error.CodeGenError;
+        elem_ptr.* = elem_type_tag;
+        return .{ .value = loaded, .type_tag = .{ .array_type = .{ .element_type = elem_ptr, .count = count } } };
+    }
+
+    fn genIndexAccess(self: *CodeGen, ia: Ast.IndexAccessExpr) GenError!ExprResult {
+        // We need the alloca (pointer) of the array, not a loaded value
+        const obj_expr = self.ast.getExpr(ia.object);
+        switch (obj_expr) {
+            .identifier => |name| {
+                if (self.named_values.get(name)) |nv| {
+                    switch (nv.type_tag) {
+                        .array_type => |arr| {
+                            const index_val = try self.genExpr(ia.index);
+                            const array_llvm = self.typeTagToLLVM(nv.type_tag);
+                            var gep_idx = [_]c.LLVMValueRef{
+                                c.LLVMConstInt(c.LLVMInt64TypeInContext(self.context), 0, 0),
+                                index_val.value,
+                            };
+                            const elem_ptr = c.LLVMBuildGEP2(self.builder, array_llvm, nv.alloca, &gep_idx, 2, "idx_ptr");
+                            const elem_llvm = self.typeTagToLLVM(arr.element_type.*);
+                            const loaded = c.LLVMBuildLoad2(self.builder, elem_llvm, elem_ptr, "idx_val");
+                            return .{ .value = loaded, .type_tag = arr.element_type.* };
+                        },
+                        else => {},
+                    }
+                }
+            },
+            else => {},
+        }
+        self.diagnostics.report(.@"error", 0, "index access requires an array", .{});
+        return error.CodeGenError;
     }
 
     fn genFieldAccess(self: *CodeGen, fa: Ast.FieldAccessExpr) GenError!ExprResult {
@@ -1095,6 +1202,10 @@ pub const CodeGen = struct {
             return self.genLogCall(call_expr);
         }
 
+        if (std.mem.eql(u8, name, "len")) {
+            return self.genLenCall(call_expr);
+        }
+
         if (std.mem.eql(u8, name, "range")) {
             self.diagnostics.report(.@"error", 0, "range() can only be used in for loops", .{});
             return error.CodeGenError;
@@ -1172,6 +1283,35 @@ pub const CodeGen = struct {
         }
 
         return .{ .value = c.LLVMGetUndef(c.LLVMVoidTypeInContext(self.context)), .type_tag = .void_type };
+    }
+
+    fn genLenCall(self: *CodeGen, call_expr: Ast.CallExpr) GenError!ExprResult {
+        if (call_expr.args.items.len != 1) {
+            self.diagnostics.report(.@"error", 0, "len() takes exactly 1 argument", .{});
+            return error.CodeGenError;
+        }
+
+        // We need to determine the type of the argument without generating a load
+        const arg_expr = self.ast.getExpr(call_expr.args.items[0]);
+        switch (arg_expr) {
+            .identifier => |arg_name| {
+                if (self.named_values.get(arg_name)) |nv| {
+                    switch (nv.type_tag) {
+                        .array_type => |arr| {
+                            return .{
+                                .value = c.LLVMConstInt(c.LLVMInt32TypeInContext(self.context), arr.count, 0),
+                                .type_tag = .i32_type,
+                            };
+                        },
+                        else => {},
+                    }
+                }
+            },
+            else => {},
+        }
+
+        self.diagnostics.report(.@"error", 0, "len() requires an array argument", .{});
+        return error.CodeGenError;
     }
 
     fn lookupFunctionReturnType(self: *const CodeGen, name: []const u8) TypeTag {
@@ -1264,6 +1404,10 @@ pub const CodeGen = struct {
                 }
                 return c.LLVMInt32TypeInContext(self.context);
             },
+            .array_type => |arr| {
+                const elem_llvm = self.typeTagToLLVM(arr.element_type.*);
+                return c.LLVMArrayType(elem_llvm, arr.count);
+            },
         };
     }
 
@@ -1320,5 +1464,6 @@ fn builtinToTypeTag(type_expr: Ast.TypeExpr) CodeGen.TypeTag {
             else => .i32_type,
         },
         .named => .i32_type,
+        .array_type => .i32_type, // fallback - real resolution happens in CodeGen
     };
 }

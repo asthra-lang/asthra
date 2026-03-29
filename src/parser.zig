@@ -345,6 +345,26 @@ pub const Parser = struct {
             return .{ .builtin = builtin };
         }
 
+        if (tag == .lbracket) {
+            // Array type: [N]T
+            self.advance(); // consume '['
+            if (self.current.tag != .int_literal) {
+                self.reportError("expected array size");
+                return error.ParseError;
+            }
+            const size_text = self.current.slice(self.source);
+            const size = parseIntLiteral(size_text);
+            self.advance(); // consume size
+            try self.expect(.rbracket);
+            const elem_type = try self.parseType();
+            const elem_ptr = self.ast.allocator.create(Ast.TypeExpr) catch return error.ParseError;
+            elem_ptr.* = elem_type;
+            return .{ .array_type = .{
+                .size = @intCast(size),
+                .element_type = elem_ptr,
+            } };
+        }
+
         if (tag == .identifier) {
             const name = self.current.slice(self.source);
             self.advance();
@@ -413,6 +433,17 @@ pub const Parser = struct {
                 break;
             }
         }
+        // Skip index access: ident[expr] = ...
+        if (self.current.tag == .lbracket) {
+            // Skip bracket contents by counting nesting
+            self.advance(); // consume '['
+            var depth: u32 = 1;
+            while (depth > 0 and self.current.tag != .eof) {
+                if (self.current.tag == .lbracket) depth += 1;
+                if (self.current.tag == .rbracket) depth -= 1;
+                self.advance();
+            }
+        }
         const is_assign = self.current.tag == .equal;
         // Restore state
         self.lexer = saved_lexer;
@@ -477,6 +508,14 @@ pub const Parser = struct {
             try target_fields.append(self.ast.allocator, field_token.slice(self.source));
         }
 
+        // Parse index access: ident[expr] = ...
+        var target_index: ?Ast.ExprIndex = null;
+        if (self.current.tag == .lbracket) {
+            self.advance(); // consume '['
+            target_index = try self.parseExpr();
+            try self.expect(.rbracket);
+        }
+
         try self.expect(.equal);
         const value = try self.parseExpr();
         try self.expect(.semicolon);
@@ -484,6 +523,7 @@ pub const Parser = struct {
         return .{ .assign = .{
             .target = name,
             .target_fields = target_fields,
+            .target_index = target_index,
             .value = value,
         } };
     }
@@ -793,6 +833,12 @@ pub const Parser = struct {
                 } else {
                     expr = try self.ast.addExpr(.{ .field_access = .{ .object = expr, .field = field_name } });
                 }
+            } else if (self.current.tag == .lbracket) {
+                // Index access: expr[index]
+                self.advance(); // consume '['
+                const index = try self.parseExpr();
+                try self.expect(.rbracket);
+                expr = try self.ast.addExpr(.{ .index_access = .{ .object = expr, .index = index } });
             } else {
                 break;
             }
@@ -852,6 +898,21 @@ pub const Parser = struct {
                 const inner = try self.parseExpr();
                 try self.expect(.rparen);
                 return self.ast.addExpr(.{ .grouped = inner });
+            },
+            .lbracket => {
+                // Array literal: [expr, expr, ...]
+                self.advance(); // consume '['
+                var elements = std.ArrayList(Ast.ExprIndex){};
+                if (self.current.tag != .rbracket) {
+                    while (true) {
+                        const elem = try self.parseExpr();
+                        try elements.append(self.ast.allocator, elem);
+                        if (self.current.tag != .comma) break;
+                        self.advance(); // consume comma
+                    }
+                }
+                try self.expect(.rbracket);
+                return self.ast.addExpr(.{ .array_literal = .{ .elements = elements } });
             },
             // Type conversion calls: i32(expr), f64(expr), etc.
             .keyword_i8, .keyword_i16, .keyword_i32, .keyword_i64, .keyword_i128, .keyword_u8, .keyword_u16, .keyword_u32, .keyword_u64, .keyword_u128, .keyword_f32, .keyword_f64, .keyword_usize, .keyword_isize, .keyword_bool => {
@@ -1262,5 +1323,56 @@ test "parse type conversion call" {
                 else => return error.TestUnexpectedResult,
             }
         },
+    }
+}
+
+test "parse array type and literal" {
+    var result = try testParse("package main;\npub fn main() -> void { let a: [3]i32 = [1, 2, 3]; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("a", vd.name);
+                    switch (vd.type_expr) {
+                        .array_type => |arr| {
+                            try testing.expectEqual(@as(u32, 3), arr.size);
+                            try testing.expectEqual(Ast.BuiltinType.i32_type, arr.element_type.builtin);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                    const expr = result.ast.getExpr(vd.init_expr);
+                    switch (expr) {
+                        .array_literal => |al| {
+                            try testing.expectEqual(@as(usize, 3), al.elements.items.len);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse indexed assignment" {
+    var result = try testParse("package main;\npub fn main() -> void { let mut a: [2]i32 = [1, 2]; a[0] = 99; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[1]) {
+                .assign => |assign| {
+                    try testing.expectEqualStrings("a", assign.target);
+                    try testing.expect(assign.target_index != null);
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
     }
 }
