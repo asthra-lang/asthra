@@ -31,6 +31,9 @@ pub const CodeGen = struct {
     generic_struct_decls: std.StringHashMap(*const Ast.StructDecl),
     monomorphized_names: std.ArrayList([]const u8) = .{},
     enum_types: std.StringHashMap(EnumTypeInfo),
+    strlen_fn: c.LLVMValueRef,
+    malloc_fn: c.LLVMValueRef,
+    sprintf_fn: c.LLVMValueRef,
 
     const StructTypeInfo = struct {
         llvm_type: c.LLVMTypeRef,
@@ -99,6 +102,21 @@ pub const CodeGen = struct {
         const printf_type = c.LLVMFunctionType(c.LLVMInt32TypeInContext(context), @constCast(&printf_param_types), 1, 1);
         const printf_fn = c.LLVMAddFunction(module, "printf", printf_type);
 
+        // Declare strlen: i64 strlen(i8*)
+        const strlen_param_types = [_]c.LLVMTypeRef{c.LLVMPointerType(c.LLVMInt8TypeInContext(context), 0)};
+        const strlen_type = c.LLVMFunctionType(c.LLVMInt64TypeInContext(context), @constCast(&strlen_param_types), 1, 0);
+        const strlen_fn = c.LLVMAddFunction(module, "strlen", strlen_type);
+
+        // Declare malloc: i8* malloc(i64)
+        const malloc_param_types = [_]c.LLVMTypeRef{c.LLVMInt64TypeInContext(context)};
+        const malloc_type = c.LLVMFunctionType(c.LLVMPointerType(c.LLVMInt8TypeInContext(context), 0), @constCast(&malloc_param_types), 1, 0);
+        const malloc_fn = c.LLVMAddFunction(module, "malloc", malloc_type);
+
+        // Declare sprintf: i32 sprintf(i8*, i8*, ...) — variadic
+        const sprintf_param_types = [_]c.LLVMTypeRef{ c.LLVMPointerType(c.LLVMInt8TypeInContext(context), 0), c.LLVMPointerType(c.LLVMInt8TypeInContext(context), 0) };
+        const sprintf_type = c.LLVMFunctionType(c.LLVMInt32TypeInContext(context), @constCast(&sprintf_param_types), 2, 1);
+        const sprintf_fn = c.LLVMAddFunction(module, "sprintf", sprintf_type);
+
         // Create format strings — need a temp function to position the builder
         const init_fn_type = c.LLVMFunctionType(c.LLVMVoidTypeInContext(context), null, 0, 0);
         const init_fn = c.LLVMAddFunction(module, "__asthra_init_strings", init_fn_type);
@@ -133,6 +151,9 @@ pub const CodeGen = struct {
             .fmt_float = fmt_float,
             .fmt_bool_true = fmt_bool_true,
             .fmt_bool_false = fmt_bool_false,
+            .strlen_fn = strlen_fn,
+            .malloc_fn = malloc_fn,
+            .sprintf_fn = sprintf_fn,
         };
     }
 
@@ -745,6 +766,14 @@ pub const CodeGen = struct {
     }
 
     fn genExternDecl(self: *CodeGen, ed: *const Ast.ExternDecl) GenError!void {
+        const name_z = self.allocator.dupeZ(u8, ed.name) catch return error.CodeGenError;
+        defer self.allocator.free(name_z);
+
+        // Skip if function is already declared (e.g., compiler builtins like strlen, malloc, sprintf)
+        if (c.LLVMGetNamedFunction(self.module, name_z.ptr) != null) {
+            return;
+        }
+
         const return_type_tag = self.resolveTypeExpr(ed.return_type);
         const llvm_return_type = self.typeTagToLLVM(return_type_tag);
 
@@ -756,9 +785,6 @@ pub const CodeGen = struct {
         }
 
         const fn_type = c.LLVMFunctionType(llvm_return_type, param_types.items.ptr, @intCast(param_types.items.len), 0);
-
-        const name_z = self.allocator.dupeZ(u8, ed.name) catch return error.CodeGenError;
-        defer self.allocator.free(name_z);
 
         _ = c.LLVMAddFunction(self.module, name_z.ptr, fn_type);
     }
@@ -1878,6 +1904,11 @@ pub const CodeGen = struct {
     }
 
     fn genBinaryOp(self: *CodeGen, op: Ast.BinaryOp, lhs: ExprResult, rhs: ExprResult) GenError!ExprResult {
+        // String concatenation: string + string
+        if (op == .add and isTypeTag(lhs.type_tag, .string_type) and isTypeTag(rhs.type_tag, .string_type)) {
+            return self.genStringConcat(lhs.value, rhs.value);
+        }
+
         const is_float = isTypeTag(lhs.type_tag, .f64_type);
         const value = switch (op) {
             .add => if (is_float) c.LLVMBuildFAdd(self.builder, lhs.value, rhs.value, "fadd") else c.LLVMBuildAdd(self.builder, lhs.value, rhs.value, "add"),
@@ -2045,15 +2076,63 @@ pub const CodeGen = struct {
                                 .type_tag = .i32_type,
                             };
                         },
+                        .string_type => {
+                            // Load the string pointer, then call strlen
+                            const str_val = c.LLVMBuildLoad2(self.builder, self.typeTagToLLVM(.string_type), nv.alloca, "str_val");
+                            return self.genStrlen(str_val);
+                        },
                         else => {},
                     }
                 }
             },
-            else => {},
+            else => {
+                // For non-identifier expressions (e.g. function calls), generate the expression
+                const arg = try self.genExpr(call_expr.args.items[0]);
+                if (isTypeTag(arg.type_tag, .string_type)) {
+                    return self.genStrlen(arg.value);
+                }
+            },
         }
 
-        self.diagnostics.report(.@"error", 0, "len() requires an array or slice argument", .{});
+        self.diagnostics.report(.@"error", 0, "len() requires an array, slice, or string argument", .{});
         return error.CodeGenError;
+    }
+
+    fn genStrlen(self: *CodeGen, str_val: c.LLVMValueRef) GenError!ExprResult {
+        const strlen_type = c.LLVMGlobalGetValueType(self.strlen_fn);
+        const args_arr = [_]c.LLVMValueRef{str_val};
+        const len_i64 = c.LLVMBuildCall2(self.builder, strlen_type, self.strlen_fn, @constCast(&args_arr), 1, "strlen");
+        // Truncate i64 to i32 (strlen returns size_t which is i64)
+        const len_i32 = c.LLVMBuildTrunc(self.builder, len_i64, c.LLVMInt32TypeInContext(self.context), "len_i32");
+        return .{ .value = len_i32, .type_tag = .i32_type };
+    }
+
+    fn genStringConcat(self: *CodeGen, lhs_val: c.LLVMValueRef, rhs_val: c.LLVMValueRef) GenError!ExprResult {
+        const strlen_type = c.LLVMGlobalGetValueType(self.strlen_fn);
+        const malloc_type = c.LLVMGlobalGetValueType(self.malloc_fn);
+        const sprintf_type = c.LLVMGlobalGetValueType(self.sprintf_fn);
+
+        // Get lengths of both strings
+        const lhs_args = [_]c.LLVMValueRef{lhs_val};
+        const lhs_len = c.LLVMBuildCall2(self.builder, strlen_type, self.strlen_fn, @constCast(&lhs_args), 1, "lhs_len");
+        const rhs_args = [_]c.LLVMValueRef{rhs_val};
+        const rhs_len = c.LLVMBuildCall2(self.builder, strlen_type, self.strlen_fn, @constCast(&rhs_args), 1, "rhs_len");
+
+        // total_len = lhs_len + rhs_len + 1
+        const sum_len = c.LLVMBuildAdd(self.builder, lhs_len, rhs_len, "sum_len");
+        const one = c.LLVMConstInt(c.LLVMInt64TypeInContext(self.context), 1, 0);
+        const total_len = c.LLVMBuildAdd(self.builder, sum_len, one, "total_len");
+
+        // Allocate buffer
+        const malloc_args = [_]c.LLVMValueRef{total_len};
+        const buf = c.LLVMBuildCall2(self.builder, malloc_type, self.malloc_fn, @constCast(&malloc_args), 1, "concat_buf");
+
+        // sprintf(buf, "%s%s", lhs, rhs)
+        const fmt_str = c.LLVMBuildGlobalStringPtr(self.builder, "%s%s", "concat_fmt");
+        const sprintf_args = [_]c.LLVMValueRef{ buf, fmt_str, lhs_val, rhs_val };
+        _ = c.LLVMBuildCall2(self.builder, sprintf_type, self.sprintf_fn, @constCast(&sprintf_args), 4, "");
+
+        return .{ .value = buf, .type_tag = .string_type };
     }
 
     fn genSizeOf(self: *CodeGen, type_expr: Ast.TypeExpr) GenError!ExprResult {

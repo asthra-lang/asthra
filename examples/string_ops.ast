@@ -1,0 +1,15 @@
+package main;
+
+pub fn main() -> void {
+    // String length via len()
+    let greeting: string = "Hello";
+    let name: string = "World";
+    log(len(greeting));
+    log(len(name));
+
+    // String concatenation
+    let message: string = greeting + " " + name;
+    log(message);
+
+    return;
+}

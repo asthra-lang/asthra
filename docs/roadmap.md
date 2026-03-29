@@ -32,7 +32,7 @@ Features defined in `grammar.txt` but not yet fully implemented, plus semantic a
 | 17 | `slices.ast` | `[]T` slice types, slice literals, Go-style slicing (`arr[1:3]`, `arr[:]`) | Done |
 | 18 | `pointers.ast` | `*mut T`, `*const T` pointer types, `&` address-of, `*` dereference | Done |
 | 19 | `if_let.ast` | `if let` pattern matching: `if let Some(x) = opt { ... } else { ... }` | Done |
-| 20 | `string_ops.ast` | string concatenation (`+`), `len()` for strings, escape sequence processing |
+| 20 | `string_ops.ast` | string concatenation (`+`), `len()` for strings, escape sequence processing | Done |
 | 21 | `type_inference.ast` | type inference in `let` declarations (omit type annotation when inferable) |
 | 22 | `semantic_checks.ast` | semantic analysis pass: type checking, mutability enforcement, undefined variable detection |
 | 23 | `generic_enums.ast` | generic enums with type parameters, generic impl blocks |
