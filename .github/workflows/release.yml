@@ -17,6 +17,10 @@ jobs:
             target: x86_64-linux
             llvm-version: "20"
             artifact: asthra-linux-x86_64
+          - os: ubuntu-24.04-arm
+            target: aarch64-linux
+            llvm-version: "20"
+            artifact: asthra-linux-arm64
           - os: macos-latest
             target: aarch64-macos
             llvm-version: "20"
