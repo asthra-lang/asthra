@@ -1588,6 +1588,9 @@ pub const CodeGen = struct {
             .method_call => |mc| {
                 return self.genMethodCall(mc);
             },
+            .associated_call => |ac| {
+                return self.genAssociatedCall(ac);
+            },
             .enum_constructor => |ec| {
                 return self.genEnumConstructor(ec.enum_name, ec.variant_name, &ec.args);
             },
@@ -2044,6 +2047,42 @@ pub const CodeGen = struct {
             const result = c.LLVMBuildCall2(self.builder, fn_type, function, args.items.ptr, @intCast(args.items.len), "mcall");
             // Look up method return type from AST
             const ret_tag = self.lookupMethodReturnType(struct_name, mc.method);
+            return .{ .value = result, .type_tag = ret_tag };
+        }
+    }
+
+    fn genAssociatedCall(self: *CodeGen, ac: Ast.AssociatedCallExpr) GenError!ExprResult {
+        // Look up the mangled function name: TypeName_funcName
+        const mangled_slice = std.fmt.allocPrint(self.allocator, "{s}_{s}", .{ ac.type_name, ac.func_name }) catch return error.CodeGenError;
+        defer self.allocator.free(mangled_slice);
+        const mangled = self.allocator.dupeZ(u8, mangled_slice) catch return error.CodeGenError;
+        defer self.allocator.free(mangled);
+
+        const function = c.LLVMGetNamedFunction(self.module, mangled.ptr);
+        if (function == null) {
+            self.diagnostics.report(.@"error", 0, "undefined associated function '{s}::{s}'", .{ ac.type_name, ac.func_name });
+            return error.CodeGenError;
+        }
+
+        // Build args (no self parameter for associated functions)
+        var args = std.ArrayList(c.LLVMValueRef){};
+        defer args.deinit(self.allocator);
+
+        for (ac.args.items) |arg_idx| {
+            const arg_val = try self.genExpr(arg_idx);
+            try args.append(self.allocator, arg_val.value);
+        }
+
+        const fn_type = c.LLVMGlobalGetValueType(function);
+        const ret_type = c.LLVMGetReturnType(fn_type);
+        const is_void = c.LLVMGetTypeKind(ret_type) == c.LLVMVoidTypeKind;
+
+        if (is_void) {
+            _ = c.LLVMBuildCall2(self.builder, fn_type, function, args.items.ptr, @intCast(args.items.len), "");
+            return .{ .value = c.LLVMGetUndef(c.LLVMVoidTypeInContext(self.context)), .type_tag = .void_type };
+        } else {
+            const result = c.LLVMBuildCall2(self.builder, fn_type, function, args.items.ptr, @intCast(args.items.len), "acall");
+            const ret_tag = self.lookupMethodReturnType(ac.type_name, ac.func_name);
             return .{ .value = result, .type_tag = ret_tag };
         }
     }

@@ -223,9 +223,16 @@ pub const Ast = struct {
         slice_expr: SliceExprNode,
         tuple_literal: TupleLiteralExpr,
         sizeof_expr: TypeExpr,
+        associated_call: AssociatedCallExpr,
         await_expr: ExprIndex,
         address_of: ExprIndex,
         deref: ExprIndex,
+    };
+
+    pub const AssociatedCallExpr = struct {
+        type_name: []const u8,
+        func_name: []const u8,
+        args: std.ArrayList(ExprIndex),
     };
 
     pub const TupleLiteralExpr = struct {

@@ -1,0 +1,29 @@
+package main;
+
+pub struct Circle {
+    pub radius: f64
+}
+
+pub impl Circle {
+    pub fn new(r: f64) -> Circle {
+        return Circle { radius: r };
+    }
+
+    pub fn unit() -> Circle {
+        return Circle { radius: 1.0 };
+    }
+
+    pub fn area(self) -> f64 {
+        return 3.14159 * self.radius * self.radius;
+    }
+}
+
+pub fn main() -> void {
+    let c1: Circle = Circle::new(5.0);
+    log(c1.area());
+
+    let c2: Circle = Circle::unit();
+    log(c2.area());
+
+    return;
+}

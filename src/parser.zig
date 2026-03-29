@@ -1385,6 +1385,27 @@ pub const Parser = struct {
             .identifier => {
                 const name = self.current.slice(self.source);
                 self.advance();
+                // Check for associated function call: Type::func(args)
+                if (self.current.tag == .double_colon) {
+                    self.advance(); // consume '::'
+                    const func_token = self.current;
+                    try self.expect(.identifier);
+                    const func_name = func_token.slice(self.source);
+                    try self.expect(.lparen);
+                    var args = std.ArrayList(Ast.ExprIndex){};
+                    if (self.current.tag == .keyword_none) {
+                        self.advance();
+                    } else if (self.current.tag != .rparen) {
+                        while (true) {
+                            const arg = try self.parseExpr();
+                            try args.append(self.ast.allocator, arg);
+                            if (self.current.tag != .comma) break;
+                            self.advance();
+                        }
+                    }
+                    try self.expect(.rparen);
+                    return self.ast.addExpr(.{ .associated_call = .{ .type_name = name, .func_name = func_name, .args = args } });
+                }
                 // Check for generic struct literal: Name<Type> { field: value, ... }
                 if (self.current.tag == .less) {
                     if (try self.tryParseGenericStructLiteral(name)) |expr_idx| {
@@ -3095,6 +3116,85 @@ test "parse generic enum type in variable declaration" {
                             try testing.expectEqual(@as(usize, 2), gt.type_args.items.len);
                             try testing.expectEqual(Ast.BuiltinType.i32_type, gt.type_args.items[0].builtin);
                             try testing.expectEqual(Ast.BuiltinType.string_type, gt.type_args.items[1].builtin);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse associated function call" {
+    var result = try testParse("package main;\npub fn main() -> void { let c: Circle = Circle::new(5.0); return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("c", vd.name);
+                    const init_expr = result.ast.getExpr(vd.init_expr);
+                    switch (init_expr) {
+                        .associated_call => |ac| {
+                            try testing.expectEqualStrings("Circle", ac.type_name);
+                            try testing.expectEqualStrings("new", ac.func_name);
+                            try testing.expectEqual(@as(usize, 1), ac.args.items.len);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse associated function call with no args" {
+    var result = try testParse("package main;\npub fn main() -> void { let c: Circle = Circle::unit(); return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    const init_expr = result.ast.getExpr(vd.init_expr);
+                    switch (init_expr) {
+                        .associated_call => |ac| {
+                            try testing.expectEqualStrings("Circle", ac.type_name);
+                            try testing.expectEqualStrings("unit", ac.func_name);
+                            try testing.expectEqual(@as(usize, 0), ac.args.items.len);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse associated function call with multiple args" {
+    var result = try testParse("package main;\npub fn main() -> void { let r: Rect = Rect::create(10, 20); return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    const init_expr = result.ast.getExpr(vd.init_expr);
+                    switch (init_expr) {
+                        .associated_call => |ac| {
+                            try testing.expectEqualStrings("Rect", ac.type_name);
+                            try testing.expectEqualStrings("create", ac.func_name);
+                            try testing.expectEqual(@as(usize, 2), ac.args.items.len);
                         },
                         else => return error.TestUnexpectedResult,
                     }
