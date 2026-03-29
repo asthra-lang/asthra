@@ -1,0 +1,33 @@
+package main;
+
+pub fn heavy_computation(n: i32) -> i32 {
+    let mut sum: i32 = 0;
+    for i in range(n) {
+        sum = sum + i;
+    }
+    return sum;
+}
+
+pub fn background_task() -> void {
+    log("Background task completed");
+    return;
+}
+
+pub fn main() -> void {
+    // Spawn tasks (runs synchronously for now - async runtime planned)
+    spawn background_task();
+
+    // Spawn with handle for result capture
+    spawn_with_handle r1 = heavy_computation(100);
+    spawn_with_handle r2 = heavy_computation(50);
+
+    // Await results
+    let sum1: i32 = await r1;
+    let sum2: i32 = await r2;
+
+    log(sum1);
+    log(sum2);
+    log(sum1 + sum2);
+
+    return;
+}
