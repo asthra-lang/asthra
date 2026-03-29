@@ -90,18 +90,18 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 
 ## Not Yet Implemented
 
-- `if let` pattern matching for Option/Result
-- String operations (concatenation, `len()` for strings, escape processing)
-- Type inference (omitting type annotations on `let`)
-- Semantic analysis pass (type checking, mutability enforcement, undefined variable detection)
-- Generic enums and generic impl blocks
-- Associated functions (`Type::new()`)
-- Nested/wildcard match patterns (`_`)
-- Predeclared builtins (`panic()`, `exit()`, `args()`, `infinite()`)
-- Multi-file compilation and import resolution
-- Real async concurrency runtime (currently synchronous)
-- Repeated array initializers (`[value; count]`)
-- Ownership annotations with runtime effect
+- Generic impl blocks (`impl Pair<T> { ... }`)
+- Tuple patterns in match (`(a, b) => { ... }`)
+- Nested enum patterns (`Option.Some(Result.Ok(val))`)
+- String escape processing (`\n` → actual newline in output)
+- `for` loops over arrays/slices (currently only `range()`)
+- Method chaining on return values (`obj.a().b()`)
+- Const binary expressions (`const X = 2 + 3;`)
+- DWARF debug info for lldb/gdb
+- Real pthread-based async runtime
+- Type aliases (`type Name = Type;`)
+- While loops (`while cond { ... }`)
+- Closures / anonymous functions
 
 ## Development Strategy: Example-Driven
 
