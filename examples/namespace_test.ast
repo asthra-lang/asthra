@@ -1,0 +1,19 @@
+package main;
+
+import "./math_lib" as math;
+import "./string_lib" as strings;
+
+pub fn main() -> void {
+    // Both modules are imported without name collision
+    let a: i32 = math.square(5);
+    log(a);
+
+    let b: i32 = math.cube(3);
+    log(b);
+
+    let c: i32 = strings.transform(7);
+    log(c);
+
+    log("namespace_test: all tests passed");
+    return;
+}

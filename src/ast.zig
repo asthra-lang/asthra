@@ -12,7 +12,7 @@ pub const Ast = struct {
         package_name: []const u8 = "",
         imports: std.ArrayList(ImportDecl) = .{},
         decls: std.ArrayList(TopLevelDecl) = .{},
-        import_aliases: std.ArrayList([]const u8) = .{},
+        import_aliases: std.StringHashMap([]const u8),
     };
 
     pub const ImportDecl = struct {
@@ -426,7 +426,9 @@ pub const Ast = struct {
     pub fn init(allocator: std.mem.Allocator) Ast {
         return .{
             .allocator = allocator,
-            .program = .{},
+            .program = .{
+                .import_aliases = std.StringHashMap([]const u8).init(allocator),
+            },
         };
     }
 

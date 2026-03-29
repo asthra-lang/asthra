@@ -521,8 +521,10 @@ pub fn genMethodCall(self: *CodeGen, mc: Ast.MethodCallExpr) CodeGen.GenError!Co
                 return self.genEnumConstructor(name, mc.method, &mc.args);
             }
             // Check if this is an import alias call: alias.function(args)
-            if (self.isImportAlias(name)) {
-                return genImportCall(self, mc.method, &mc.args);
+            if (self.getImportPackageName(name)) |pkg_name| {
+                const mangled_slice = std.fmt.allocPrint(self.allocator, "__pkg_{s}_{s}", .{ pkg_name, mc.method }) catch return error.CodeGenError;
+                defer self.allocator.free(mangled_slice);
+                return genImportCall(self, mangled_slice, &mc.args);
             }
             // Check stdlib namespace calls: math.sqrt(), str.upper(), etc.
             if (CodeGen.isStdlibNamespace(name)) {

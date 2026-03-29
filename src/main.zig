@@ -5,6 +5,9 @@ const Parser = @import("parser.zig").Parser;
 const CodeGen = @import("codegen.zig").CodeGen;
 const Diagnostics = @import("diagnostics.zig").Diagnostics;
 const SemanticAnalyzer = @import("sema.zig").SemanticAnalyzer;
+const commands = @import("commands.zig");
+const pkg = @import("package.zig");
+const fetcher = @import("fetcher.zig");
 
 fn writeAll(comptime fmt: []const u8, args: anytype) void {
     const file = std.fs.File.stderr();
@@ -29,10 +32,27 @@ pub fn main() !void {
 
     if (args.len < 2) {
         writeAll("Usage: asthra <source.ast> [-o output] [--emit-ir]\n", .{});
+        writeAll("       asthra init          Create asthra.toml\n", .{});
+        writeAll("       asthra add <pkg>     Add a dependency\n", .{});
+        writeAll("       asthra install       Fetch all dependencies\n", .{});
         std.process.exit(1);
     }
 
-    const source_path = args[1];
+    // Subcommand routing
+    const first_arg = args[1];
+    if (std.mem.eql(u8, first_arg, "init")) {
+        commands.init(allocator);
+        return;
+    } else if (std.mem.eql(u8, first_arg, "add")) {
+        commands.add(allocator, args[2..]);
+        return;
+    } else if (std.mem.eql(u8, first_arg, "install")) {
+        commands.install(allocator);
+        return;
+    }
+
+    // Legacy/default: compile a source file
+    const source_path = first_arg;
     var output_path: []const u8 = "output";
     var emit_ir = false;
 
@@ -74,11 +94,18 @@ pub fn main() !void {
         std.process.exit(1);
     }
 
+    // Read package manifest and lockfile (if they exist)
+    var manifest: ?pkg.PackageManifest = pkg.PackageManifest.parseFromFile(allocator, "asthra.toml") catch null;
+    defer if (manifest) |*m| m.deinit();
+
+    var lockfile: ?pkg.Lockfile = (pkg.Lockfile.parseFromFile(allocator, "asthra.lock") catch null) orelse null;
+    defer if (lockfile) |*lf| lf.deinit();
+
     // Resolve imports: parse imported files into separate ASTs
     var imported_modules = std.ArrayList(ImportedModule){};
     defer imported_modules.deinit(allocator);
 
-    resolveImports(allocator, ast_allocator, &ast, &diagnostics, source_path, &imported_modules) catch |err| {
+    resolveImports(allocator, ast_allocator, &ast, &diagnostics, source_path, &imported_modules, manifest, lockfile) catch |err| {
         writeAll("error: import resolution failed: {}\n", .{err});
         std.process.exit(1);
     };
@@ -104,7 +131,7 @@ pub fn main() !void {
 
     // Generate code for imported modules first
     for (imported_modules.items) |mod| {
-        codegen.generateImportedModule(mod.ast) catch {
+        codegen.generateImportedModule(mod.ast, mod.package_name) catch {
             diagnostics.printAll();
             std.process.exit(1);
         };
@@ -152,55 +179,84 @@ pub fn main() !void {
 
 const ImportedModule = struct {
     alias: []const u8,
+    package_name: []const u8,
     ast: *Ast,
     source: []const u8,
 };
 
-fn resolveImports(gpa: std.mem.Allocator, ast_allocator: std.mem.Allocator, ast: *Ast, diagnostics: *Diagnostics, source_path: []const u8, imported_modules: *std.ArrayList(ImportedModule)) !void {
+fn resolveImports(gpa: std.mem.Allocator, ast_allocator: std.mem.Allocator, ast: *Ast, diagnostics: *Diagnostics, source_path: []const u8, imported_modules: *std.ArrayList(ImportedModule), manifest: ?pkg.PackageManifest, lockfile: ?pkg.Lockfile) !void {
     // Get the directory of the source file
     const source_dir = std.fs.path.dirname(source_path) orelse ".";
 
     for (ast.program.imports.items) |import_decl| {
         const path = import_decl.path;
 
-        // Only handle relative imports (starting with ./)
-        if (!std.mem.startsWith(u8, path, "./")) {
+        if (std.mem.startsWith(u8, path, "./")) {
+            // Relative import
+            const import_path = try std.fmt.allocPrint(gpa, "{s}/{s}.ast", .{ source_dir, path });
+            defer gpa.free(import_path);
+            const alias = import_decl.alias orelse std.fs.path.stem(path[2..]);
+            try resolveAndRegisterImport(gpa, ast_allocator, ast, diagnostics, import_path, alias, imported_modules);
+        } else if (std.mem.startsWith(u8, path, "github.com/") or std.mem.startsWith(u8, path, "gitlab.com/")) {
+            // Remote package import
+            const mfst = manifest orelse {
+                diagnostics.report(.@"error", 0, "no asthra.toml found; cannot resolve '{s}'", .{path});
+                return;
+            };
+            _ = mfst.findByGitUrl(path) orelse {
+                diagnostics.report(.@"error", 0, "'{s}' not in asthra.toml [dependencies]", .{path});
+                return;
+            };
+            const lf = lockfile orelse {
+                diagnostics.report(.@"error", 0, "no asthra.lock found; run 'asthra install'", .{});
+                return;
+            };
+            const resolved = lf.findByGitUrl(path) orelse {
+                diagnostics.report(.@"error", 0, "'{s}' not in lockfile; run 'asthra install'", .{path});
+                return;
+            };
+            const cache_path = try fetcher.getCachePath(gpa, path, resolved.commit);
+            defer gpa.free(cache_path);
+            const entry_file = try std.fmt.allocPrint(gpa, "{s}/src/lib.ast", .{cache_path});
+            defer gpa.free(entry_file);
+            const alias = import_decl.alias orelse commands.extractRepoName(path);
+            try resolveAndRegisterImport(gpa, ast_allocator, ast, diagnostics, entry_file, alias, imported_modules);
+        } else if (std.mem.startsWith(u8, path, "std/")) {
+            // Stdlib: handled by codegen namespace system, skip
             continue;
+        } else {
+            diagnostics.report(.@"error", 0, "unknown import path format: '{s}'", .{path});
         }
-
-        // Build the full file path: source_dir + relative_path + .ast
-        const import_path = try std.fmt.allocPrint(gpa, "{s}/{s}.ast", .{ source_dir, path });
-        defer gpa.free(import_path);
-
-        // Read the imported file — keep source alive for the AST (arena allocated)
-        const import_source = std.fs.cwd().readFileAlloc(ast_allocator, import_path, 1024 * 1024) catch |err| {
-            diagnostics.report(.@"error", 0, "cannot read imported file '{s}': {}", .{ import_path, err });
-            return;
-        };
-
-        // Parse the imported file
-        var import_diagnostics = Diagnostics.init(gpa, import_source, import_path);
-        defer import_diagnostics.deinit();
-
-        const import_ast = try ast_allocator.create(Ast);
-        import_ast.* = Ast.init(ast_allocator);
-        var import_parser = Parser.init(import_source, import_ast, &import_diagnostics);
-        import_parser.parse() catch {};
-
-        if (import_diagnostics.hasErrors()) {
-            import_diagnostics.printAll();
-            diagnostics.report(.@"error", 0, "errors in imported file '{s}'", .{import_path});
-            return;
-        }
-
-        // Register the import alias
-        const alias = import_decl.alias orelse std.fs.path.stem(path[2..]); // strip "./" prefix for stem
-        try ast.program.import_aliases.append(ast_allocator, alias);
-
-        try imported_modules.append(gpa, .{
-            .alias = alias,
-            .ast = import_ast,
-            .source = import_source,
-        });
     }
+}
+
+fn resolveAndRegisterImport(gpa: std.mem.Allocator, ast_allocator: std.mem.Allocator, ast: *Ast, diagnostics: *Diagnostics, file_path: []const u8, alias: []const u8, imported_modules: *std.ArrayList(ImportedModule)) !void {
+    const import_source = std.fs.cwd().readFileAlloc(ast_allocator, file_path, 1024 * 1024) catch |err| {
+        diagnostics.report(.@"error", 0, "cannot read imported file '{s}': {}", .{ file_path, err });
+        return;
+    };
+
+    var import_diagnostics = Diagnostics.init(gpa, import_source, file_path);
+    defer import_diagnostics.deinit();
+
+    const import_ast = try ast_allocator.create(Ast);
+    import_ast.* = Ast.init(ast_allocator);
+    var import_parser = Parser.init(import_source, import_ast, &import_diagnostics);
+    import_parser.parse() catch {};
+
+    if (import_diagnostics.hasErrors()) {
+        import_diagnostics.printAll();
+        diagnostics.report(.@"error", 0, "errors in imported file '{s}'", .{file_path});
+        return;
+    }
+
+    const package_name = import_ast.program.package_name;
+    try ast.program.import_aliases.put(alias, package_name);
+
+    try imported_modules.append(gpa, .{
+        .alias = alias,
+        .package_name = package_name,
+        .ast = import_ast,
+        .source = import_source,
+    });
 }

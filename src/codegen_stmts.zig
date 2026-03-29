@@ -5,7 +5,11 @@ const CodeGen = codegen_mod.CodeGen;
 const c = codegen_mod.c;
 
 pub fn genFunction(self: *CodeGen, fn_decl: *const Ast.FnDecl) CodeGen.GenError!void {
-    const is_main = std.mem.eql(u8, fn_decl.name, "main");
+    return genFunctionWithName(self, fn_decl, fn_decl.name);
+}
+
+pub fn genFunctionWithName(self: *CodeGen, fn_decl: *const Ast.FnDecl, llvm_name: []const u8) CodeGen.GenError!void {
+    const is_main = std.mem.eql(u8, llvm_name, "main");
     const return_type_tag = self.resolveTypeExpr(fn_decl.return_type);
     const llvm_return_type = if (is_main)
         c.LLVMInt32TypeInContext(self.context)
@@ -22,7 +26,7 @@ pub fn genFunction(self: *CodeGen, fn_decl: *const Ast.FnDecl) CodeGen.GenError!
     const fn_type = c.LLVMFunctionType(llvm_return_type, param_types.items.ptr, @intCast(param_types.items.len), 0);
 
     // Null-terminate function name
-    const name_z = self.allocator.dupeZ(u8, fn_decl.name) catch return error.CodeGenError;
+    const name_z = self.allocator.dupeZ(u8, llvm_name) catch return error.CodeGenError;
     defer self.allocator.free(name_z);
 
     const function = c.LLVMAddFunction(self.module, name_z.ptr, fn_type);

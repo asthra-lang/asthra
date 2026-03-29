@@ -120,8 +120,9 @@ pub const SemanticAnalyzer = struct {
         }
 
         // Register import aliases
-        for (self.ast.program.import_aliases.items) |alias| {
-            self.import_aliases.put(alias, {}) catch {};
+        var alias_iter = self.ast.program.import_aliases.keyIterator();
+        while (alias_iter.next()) |alias| {
+            self.import_aliases.put(alias.*, {}) catch {};
         }
 
         // Pass 2: Check each function body
@@ -608,7 +609,7 @@ fn cleanupTest(result: *@TypeOf(testAnalyze("") catch unreachable)) void {
     // Free the AST program fields
     ast_ptr.program.imports.deinit(ast_ptr.allocator);
     ast_ptr.program.decls.deinit(ast_ptr.allocator);
-    ast_ptr.program.import_aliases.deinit(ast_ptr.allocator);
+    ast_ptr.program.import_aliases.deinit();
     testing.allocator.destroy(ast_ptr);
     result.diagnostics.deinit();
 }

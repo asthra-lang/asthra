@@ -22,6 +22,9 @@ zig build test                                 # Run unit tests
 bash tests/run_examples.sh                     # Run integration tests (all examples)
 ./zig-out/bin/asthra <file.ast> -o <output>    # Compile an Asthra source file
 ./zig-out/bin/asthra <file.ast> --emit-ir      # Print LLVM IR
+./zig-out/bin/asthra init                      # Create asthra.toml
+./zig-out/bin/asthra add <pkg> --tag=v1.0.0    # Add a dependency
+./zig-out/bin/asthra install                   # Fetch all dependencies
 ```
 
 ## Architecture
@@ -92,6 +95,14 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
   - `str`: `upper`, `lower`, `contains`, `starts_with`, `ends_with`, `trim`, `to_int`, `to_float`, `from_int`, `from_float`
   - `io`: `print` (no newline), `println` (with newline), `read_line`
   - `os`: `getenv`, `clock`
+- Package management:
+  - `asthra init` / `asthra add` / `asthra install` CLI commands
+  - `asthra.toml` manifest with `[package]` and `[dependencies]` sections
+  - `asthra.lock` lockfile for reproducible builds
+  - Git-based dependency fetching from GitHub/GitLab
+  - Global cache at `~/.asthra/cache/`
+  - Namespace isolation via function name mangling (`__pkg_{pkg}_{fn}`)
+  - Import paths: `./relative`, `github.com/user/repo`, `gitlab.com/user/repo`
 
 ## Not Yet Implemented
 

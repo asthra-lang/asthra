@@ -409,7 +409,8 @@ pub const CodeGen = struct {
 
     /// Generate code for an imported module's public functions.
     /// Temporarily swaps the AST pointer so genFunction can resolve expressions.
-    pub fn generateImportedModule(self: *CodeGen, imported_ast: *const Ast) GenError!void {
+    /// Functions are mangled as __pkg_{package_name}_{fn_name} for namespace isolation.
+    pub fn generateImportedModule(self: *CodeGen, imported_ast: *const Ast, package_name: []const u8) GenError!void {
         const saved_ast = self.ast;
         self.ast = imported_ast;
         defer self.ast = saved_ast;
@@ -421,14 +422,22 @@ pub const CodeGen = struct {
                 .function => |fn_decl| {
                     // Skip main functions from imported modules
                     if (std.mem.eql(u8, fn_decl.name, "main")) continue;
-                    // Record the return type for lookups
+                    // Mangle function name for namespace isolation
+                    const mangled = std.fmt.allocPrint(self.allocator, "__pkg_{s}_{s}", .{ package_name, fn_decl.name }) catch return error.CodeGenError;
+                    self.monomorphized_names.append(self.allocator, mangled) catch {};
+                    // Record the return type with mangled name
                     const ret_tag = self.resolveTypeExpr(fn_decl.return_type);
-                    self.imported_fn_return_types.put(fn_decl.name, ret_tag) catch {};
-                    try self.genFunction(&fn_decl);
+                    self.imported_fn_return_types.put(mangled, ret_tag) catch {};
+                    try self.genFunctionWithName(&fn_decl, mangled);
                 },
                 else => {},
             }
         }
+    }
+
+    /// Generate a function with an explicit LLVM name (for name mangling of imported functions).
+    pub fn genFunctionWithName(self: *CodeGen, fn_decl: *const Ast.FnDecl, llvm_name: []const u8) GenError!void {
+        return codegen_stmts.genFunctionWithName(self, fn_decl, llvm_name);
     }
 
     // -----------------------------------------------------------------------
@@ -745,11 +754,8 @@ pub const CodeGen = struct {
         return c.LLVMStructTypeInContext(self.context, &field_types_arr, 2, 0);
     }
 
-    pub fn isImportAlias(self: *const CodeGen, name: []const u8) bool {
-        for (self.ast.program.import_aliases.items) |alias| {
-            if (std.mem.eql(u8, alias, name)) return true;
-        }
-        return false;
+    pub fn getImportPackageName(self: *const CodeGen, name: []const u8) ?[]const u8 {
+        return self.ast.program.import_aliases.get(name);
     }
 
     pub fn emitObjectFile(self: *CodeGen, path: []const u8) GenError!void {

@@ -79,3 +79,14 @@ Built-in namespaced modules (`math`, `str`, `io`, `os`) available without import
 | 50 | `stdlib_strings.ast` | `str.upper`, `lower`, `contains`, `starts_with`, `ends_with`, `trim`, `to_int`, `to_float`, `from_int`, `from_float` | Done |
 | 51 | `stdlib_io.ast` | `io.print` (no newline), `io.println` (with newline), `io.read_line` | Done |
 | 52 | `stdlib_os.ast` | `os.getenv`, `os.clock` | Done |
+
+## Phase 5: Package Management
+
+`asthra.toml` manifest, git-based dependency fetching, lockfile, CLI commands, namespace isolation.
+
+| # | Example | Features Unlocked | Status |
+|---|---------|-------------------|--------|
+| 53 | `namespace_test.ast` | function name mangling for namespace isolation across imported modules | Done |
+| 54 | — | `asthra init`, `asthra add`, `asthra install` CLI commands | Done |
+| 55 | — | `asthra.toml` manifest, `asthra.lock` lockfile, TOML parser | Done |
+| 56 | — | remote import resolution for `github.com/*` and `gitlab.com/*` packages | Done |
