@@ -1191,8 +1191,20 @@ pub const Parser = struct {
             },
             .string_literal => {
                 const raw = self.current.slice(self.source);
-                // Strip quotes
-                const value = if (raw.len >= 2) raw[1 .. raw.len - 1] else raw;
+                // Strip quotes: triple-quoted """...""" or single-quoted "..."
+                const value = if (raw.len >= 6 and std.mem.startsWith(u8, raw, "\"\"\""))
+                    raw[3 .. raw.len - 3]
+                else if (raw.len >= 2)
+                    raw[1 .. raw.len - 1]
+                else
+                    raw;
+                self.advance();
+                return self.ast.addExpr(.{ .string_literal = value });
+            },
+            .raw_string_literal => {
+                const raw = self.current.slice(self.source);
+                // Strip r""" prefix (4 chars) and """ suffix (3 chars)
+                const value = if (raw.len >= 7) raw[4 .. raw.len - 3] else raw;
                 self.advance();
                 return self.ast.addExpr(.{ .string_literal = value });
             },
@@ -2455,5 +2467,49 @@ test "parse await expression" {
             }
         },
         else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse triple-quoted string literal" {
+    var result = try testParse("package main;\npub fn main() -> void { let s: string = \"\"\"hello\nworld\"\"\"; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("s", vd.name);
+                    const expr = result.ast.getExpr(vd.init_expr);
+                    switch (expr) {
+                        .string_literal => |val| try testing.expectEqualStrings("hello\nworld", val),
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse raw triple-quoted string literal" {
+    var result = try testParse("package main;\npub fn main() -> void { let s: string = r\"\"\"raw\\ncontent\"\"\"; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("s", vd.name);
+                    const expr = result.ast.getExpr(vd.init_expr);
+                    switch (expr) {
+                        .string_literal => |val| try testing.expectEqualStrings("raw\\ncontent", val),
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
     }
 }

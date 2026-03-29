@@ -1,0 +1,18 @@
+package main;
+
+pub fn main() -> void {
+    let greeting: string = """Hello, World!
+This is a multiline string.
+It spans multiple lines.""";
+    log(greeting);
+
+    let single: string = "Normal single-line string";
+    log(single);
+
+    let raw: string = r"""This is a raw string.
+Backslash n is literal: \n
+No escape processing here.""";
+    log(raw);
+
+    return;
+}

@@ -55,6 +55,15 @@ pub const Lexer = struct {
             self.advance();
         }
         const text = self.source[start..self.index];
+
+        // Check for raw string prefix: r"""..."""
+        if (std.mem.eql(u8, text, "r") and !self.isAtEnd() and self.peek() == '"' and
+            !self.isAtEndOffset(1) and self.peekOffset(1) == '"' and
+            !self.isAtEndOffset(2) and self.peekOffset(2) == '"')
+        {
+            return self.readRawString(start);
+        }
+
         const tag = getKeyword(text) orelse .identifier;
         return .{ .tag = tag, .loc = .{ .start = start, .end = self.index } };
     }
@@ -149,6 +158,25 @@ pub const Lexer = struct {
 
         self.advance(); // closing "
         return .{ .tag = .string_literal, .loc = .{ .start = start, .end = self.index } };
+    }
+
+    fn readRawString(self: *Lexer, start: u32) Token {
+        // We already consumed 'r', now consume the opening """
+        self.advance(); // first "
+        self.advance(); // second "
+        self.advance(); // third "
+        // Read until closing """
+        while (!self.isAtEnd()) {
+            if (self.peek() == '"' and !self.isAtEndOffset(1) and self.peekOffset(1) == '"' and !self.isAtEndOffset(2) and self.peekOffset(2) == '"') {
+                self.advance(); // "
+                self.advance(); // "
+                self.advance(); // "
+                return .{ .tag = .raw_string_literal, .loc = .{ .start = start, .end = self.index } };
+            }
+            self.advance();
+        }
+        // Unterminated raw string
+        return .{ .tag = .invalid, .loc = .{ .start = start, .end = self.index } };
     }
 
     fn readChar(self: *Lexer) Token {
@@ -535,4 +563,27 @@ test "lex variable declaration with arithmetic" {
 test "lex invalid character produces invalid token" {
     var lexer = Lexer.init("@");
     try testing.expectEqual(Tag.invalid, lexer.next().tag);
+}
+
+test "lex triple-quoted string" {
+    const source =
+        \\"""hello
+        \\world"""
+    ;
+    var lexer = Lexer.init(source);
+    const tok = lexer.next();
+    try testing.expectEqual(Tag.string_literal, tok.tag);
+    try testing.expectEqualStrings(source, tok.slice(source));
+    try testing.expectEqual(Tag.eof, lexer.next().tag);
+}
+
+test "lex raw triple-quoted string" {
+    const source =
+        \\r"""raw\ncontent"""
+    ;
+    var lexer = Lexer.init(source);
+    const tok = lexer.next();
+    try testing.expectEqual(Tag.raw_string_literal, tok.tag);
+    try testing.expectEqualStrings(source, tok.slice(source));
+    try testing.expectEqual(Tag.eof, lexer.next().tag);
 }

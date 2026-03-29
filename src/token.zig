@@ -19,6 +19,7 @@ pub const Tag = enum {
     int_literal,
     float_literal,
     string_literal,
+    raw_string_literal,
     char_literal,
     identifier,
 
