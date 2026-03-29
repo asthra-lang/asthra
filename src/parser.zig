@@ -100,6 +100,15 @@ pub const Parser = struct {
             };
         }
 
+        if (self.current.tag == .keyword_const) {
+            const const_decl = try self.parseConstDecl();
+            return .{
+                .visibility = visibility,
+                .decl = .{ .const_decl = const_decl },
+                .start = start,
+            };
+        }
+
         self.reportError("expected declaration");
         return error.ParseError;
     }
@@ -290,6 +299,27 @@ pub const Parser = struct {
 
         try self.expect(.rbrace);
         return .{ .name = name, .variants = variants };
+    }
+
+    fn parseConstDecl(self: *Parser) ParseError!Ast.ConstDecl {
+        self.advance(); // consume 'const'
+
+        const name_token = self.current;
+        try self.expect(.identifier);
+        const name = name_token.slice(self.source);
+
+        try self.expect(.colon);
+        const type_expr = try self.parseType();
+
+        try self.expect(.equal);
+        const init_expr = try self.parseExpr();
+
+        try self.expect(.semicolon);
+        return .{
+            .name = name,
+            .type_expr = type_expr,
+            .init_expr = init_expr,
+        };
     }
 
     fn parseImplDecl(self: *Parser) ParseError!Ast.ImplDecl {
@@ -1061,6 +1091,13 @@ pub const Parser = struct {
                 self.advance();
                 return self.ast.addExpr(.{ .identifier = "Result" });
             },
+            .keyword_sizeof => {
+                self.advance(); // consume 'sizeof'
+                try self.expect(.lparen);
+                const type_expr = try self.parseType();
+                try self.expect(.rparen);
+                return self.ast.addExpr(.{ .sizeof_expr = type_expr });
+            },
             // Type conversion calls: i32(expr), f64(expr), etc.
             .keyword_i8, .keyword_i16, .keyword_i32, .keyword_i64, .keyword_i128, .keyword_u8, .keyword_u16, .keyword_u32, .keyword_u64, .keyword_u128, .keyword_f32, .keyword_f64, .keyword_usize, .keyword_isize, .keyword_bool => {
                 // Treat as an identifier for now (type conversion is a call)
@@ -1783,6 +1820,123 @@ test "parse extern with link name" {
     switch (decl.decl) {
         .extern_decl => |ed| {
             try testing.expectEqualStrings("puts", ed.name);
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse const declaration" {
+    var result = try testParse("package main;\npub const MAX: i32 = 100;\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    try testing.expectEqual(@as(usize, 2), result.ast.program.decls.items.len);
+    const decl = result.ast.program.decls.items[0];
+    try testing.expectEqual(Ast.Visibility.public, decl.visibility);
+    switch (decl.decl) {
+        .const_decl => |cd| {
+            try testing.expectEqualStrings("MAX", cd.name);
+            try testing.expectEqual(Ast.BuiltinType.i32_type, cd.type_expr.builtin);
+            const expr = result.ast.getExpr(cd.init_expr);
+            switch (expr) {
+                .int_literal => |val| try testing.expectEqual(@as(i64, 100), val),
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse const string declaration" {
+    var result = try testParse("package main;\npub const MSG: string = \"hello\";\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .const_decl => |cd| {
+            try testing.expectEqualStrings("MSG", cd.name);
+            try testing.expectEqual(Ast.BuiltinType.string_type, cd.type_expr.builtin);
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse const float declaration" {
+    var result = try testParse("package main;\npub const PI: f64 = 3.14;\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .const_decl => |cd| {
+            try testing.expectEqualStrings("PI", cd.name);
+            try testing.expectEqual(Ast.BuiltinType.f64_type, cd.type_expr.builtin);
+            const expr = result.ast.getExpr(cd.init_expr);
+            switch (expr) {
+                .float_literal => |val| try testing.expectApproxEqAbs(3.14, val, 0.001),
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse const bool declaration" {
+    var result = try testParse("package main;\npub const DEBUG: bool = true;\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .const_decl => |cd| {
+            try testing.expectEqualStrings("DEBUG", cd.name);
+            try testing.expectEqual(Ast.BuiltinType.bool_type, cd.type_expr.builtin);
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse sizeof expression" {
+    var result = try testParse("package main;\npub fn main() -> void { let x: i32 = sizeof(i32); return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("x", vd.name);
+                    const expr = result.ast.getExpr(vd.init_expr);
+                    switch (expr) {
+                        .sizeof_expr => |te| {
+                            try testing.expectEqual(Ast.BuiltinType.i32_type, te.builtin);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse sizeof f64" {
+    var result = try testParse("package main;\npub fn main() -> void { let x: i32 = sizeof(f64); return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    const expr = result.ast.getExpr(vd.init_expr);
+                    switch (expr) {
+                        .sizeof_expr => |te| {
+                            try testing.expectEqual(Ast.BuiltinType.f64_type, te.builtin);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
         },
         else => return error.TestUnexpectedResult,
     }

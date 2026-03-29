@@ -1,0 +1,26 @@
+package main;
+
+pub const MAX_SIZE: i32 = 100;
+pub const PI: f64 = 3.14159;
+pub const GREETING: string = "Hello, Constants!";
+pub const IS_DEBUG: bool = true;
+
+pub fn main() -> void {
+    log(MAX_SIZE);
+    log(PI);
+    log(GREETING);
+    log(IS_DEBUG);
+
+    // sizeof returns the size in bytes
+    let int_size: i32 = sizeof(i32);
+    log(int_size);
+
+    let float_size: i32 = sizeof(f64);
+    log(float_size);
+
+    // Use constant in expressions
+    let half_max: i32 = MAX_SIZE / 2;
+    log(half_max);
+
+    return;
+}

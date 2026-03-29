@@ -16,6 +16,7 @@ pub const CodeGen = struct {
     module: c.LLVMModuleRef,
     builder: c.LLVMBuilderRef,
     named_values: std.StringHashMap(NamedValue),
+    const_values: std.StringHashMap(NamedValue),
     diagnostics: *Diagnostics,
     allocator: std.mem.Allocator,
     ast: *const Ast,
@@ -106,6 +107,7 @@ pub const CodeGen = struct {
             .module = module,
             .builder = builder,
             .named_values = std.StringHashMap(NamedValue).init(allocator),
+            .const_values = std.StringHashMap(NamedValue).init(allocator),
             .struct_types = std.StringHashMap(StructTypeInfo).init(allocator),
             .enum_types = std.StringHashMap(EnumTypeInfo).init(allocator),
             .diagnostics = diagnostics,
@@ -125,6 +127,7 @@ pub const CodeGen = struct {
         c.LLVMDisposeModule(self.module);
         c.LLVMContextDispose(self.context);
         self.named_values.deinit();
+        self.const_values.deinit();
         self.loop_stack.deinit(self.allocator);
         var it = self.struct_types.iterator();
         while (it.next()) |entry| {
@@ -153,10 +156,11 @@ pub const CodeGen = struct {
             }
         }
 
-        // Second pass: declare extern functions
+        // Second pass: declare extern functions and generate constants
         for (self.ast.program.decls.items) |decl| {
             switch (decl.decl) {
                 .extern_decl => |ed| try self.genExternDecl(&ed),
+                .const_decl => |cd| try self.genConstDecl(&cd),
                 else => {},
             }
         }
@@ -169,6 +173,7 @@ pub const CodeGen = struct {
                 .impl_decl => |impl_decl| try self.genImplDecl(&impl_decl),
                 .enum_decl => {},
                 .extern_decl => {},
+                .const_decl => {},
             }
         }
 
@@ -517,6 +522,78 @@ pub const CodeGen = struct {
                 return .{ .tuple_type = .{ .element_types = elem_tags, .llvm_type = llvm_type } };
             },
         };
+    }
+
+    fn genConstDecl(self: *CodeGen, cd: *const Ast.ConstDecl) GenError!void {
+        const type_tag = self.resolveTypeExpr(cd.type_expr);
+        const llvm_type = self.typeTagToLLVM(type_tag);
+
+        const name_z = self.allocator.dupeZ(u8, cd.name) catch return error.CodeGenError;
+        defer self.allocator.free(name_z);
+
+        // Evaluate the constant initializer to an LLVM constant
+        const const_val = self.evalConstExpr(cd.init_expr, type_tag) orelse {
+            self.diagnostics.report(.@"error", 0, "constant '{s}' requires a compile-time constant expression", .{cd.name});
+            return error.CodeGenError;
+        };
+
+        // Create a global constant
+        const global = c.LLVMAddGlobal(self.module, llvm_type, name_z.ptr);
+        c.LLVMSetInitializer(global, const_val);
+        c.LLVMSetGlobalConstant(global, 1);
+        c.LLVMSetLinkage(global, c.LLVMPrivateLinkage);
+
+        // Register it in const_values so functions can access it
+        self.const_values.put(cd.name, .{
+            .alloca = global,
+            .is_mutable = false,
+            .type_tag = type_tag,
+        }) catch {};
+    }
+
+    fn evalConstExpr(self: *CodeGen, expr_idx: Ast.ExprIndex, type_tag: TypeTag) ?c.LLVMValueRef {
+        const expr = self.ast.getExpr(expr_idx);
+        switch (expr) {
+            .int_literal => |val| {
+                return c.LLVMConstInt(self.typeTagToLLVM(type_tag), @bitCast(val), 0);
+            },
+            .float_literal => |val| {
+                return c.LLVMConstReal(c.LLVMDoubleTypeInContext(self.context), val);
+            },
+            .bool_literal => |val| {
+                return c.LLVMConstInt(c.LLVMInt1TypeInContext(self.context), if (val) 1 else 0, 0);
+            },
+            .string_literal => |val| {
+                // Create a global string constant (doesn't need builder positioned)
+                const str_val = c.LLVMConstStringInContext(self.context, val.ptr, @intCast(val.len), 0);
+                const str_global = c.LLVMAddGlobal(self.module, c.LLVMTypeOf(str_val), "const_str_data");
+                c.LLVMSetInitializer(str_global, str_val);
+                c.LLVMSetGlobalConstant(str_global, 1);
+                c.LLVMSetLinkage(str_global, c.LLVMPrivateLinkage);
+                // GEP to get i8* from [N x i8]*
+                var indices = [_]c.LLVMValueRef{
+                    c.LLVMConstInt(c.LLVMInt32TypeInContext(self.context), 0, 0),
+                    c.LLVMConstInt(c.LLVMInt32TypeInContext(self.context), 0, 0),
+                };
+                return c.LLVMConstGEP2(c.LLVMTypeOf(str_val), str_global, &indices, 2);
+            },
+            .unary => |un| {
+                if (un.op == .negate) {
+                    const inner_expr = self.ast.getExpr(un.operand);
+                    switch (inner_expr) {
+                        .int_literal => |val| {
+                            return c.LLVMConstInt(self.typeTagToLLVM(type_tag), @bitCast(-val), 0);
+                        },
+                        .float_literal => |val| {
+                            return c.LLVMConstReal(c.LLVMDoubleTypeInContext(self.context), -val);
+                        },
+                        else => return null,
+                    }
+                }
+                return null;
+            },
+            else => return null,
+        }
     }
 
     fn genExternDecl(self: *CodeGen, ed: *const Ast.ExternDecl) GenError!void {
@@ -986,11 +1063,12 @@ pub const CodeGen = struct {
                 };
             },
             .identifier => |name| {
-                if (self.named_values.get(name)) |nv| {
+                const nv = self.named_values.get(name) orelse self.const_values.get(name);
+                if (nv) |v| {
                     const name_z = self.allocator.dupeZ(u8, name) catch return error.CodeGenError;
                     defer self.allocator.free(name_z);
-                    const loaded = c.LLVMBuildLoad2(self.builder, self.typeTagToLLVM(nv.type_tag), nv.alloca, name_z.ptr);
-                    return .{ .value = loaded, .type_tag = nv.type_tag };
+                    const loaded = c.LLVMBuildLoad2(self.builder, self.typeTagToLLVM(v.type_tag), v.alloca, name_z.ptr);
+                    return .{ .value = loaded, .type_tag = v.type_tag };
                 }
                 self.diagnostics.report(.@"error", 0, "undefined variable '{s}'", .{name});
                 return error.CodeGenError;
@@ -1030,6 +1108,9 @@ pub const CodeGen = struct {
             },
             .tuple_literal => |tl| {
                 return self.genTupleLiteral(tl);
+            },
+            .sizeof_expr => |type_expr| {
+                return self.genSizeOf(type_expr);
             },
         }
     }
@@ -1505,6 +1586,16 @@ pub const CodeGen = struct {
 
         self.diagnostics.report(.@"error", 0, "len() requires an array argument", .{});
         return error.CodeGenError;
+    }
+
+    fn genSizeOf(self: *CodeGen, type_expr: Ast.TypeExpr) GenError!ExprResult {
+        const type_tag = self.resolveTypeExpr(type_expr);
+        const llvm_type = self.typeTagToLLVM(type_tag);
+
+        // Use LLVMSizeOf which returns a constant i64, then truncate to i32
+        const size_val = c.LLVMSizeOf(llvm_type);
+        const truncated = c.LLVMConstTrunc(size_val, c.LLVMInt32TypeInContext(self.context));
+        return .{ .value = truncated, .type_tag = .i32_type };
     }
 
     fn lookupFunctionReturnType(self: *CodeGen, name: []const u8) TypeTag {

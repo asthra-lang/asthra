@@ -30,6 +30,13 @@ pub const Ast = struct {
         impl_decl: ImplDecl,
         enum_decl: EnumDecl,
         extern_decl: ExternDecl,
+        const_decl: ConstDecl,
+    };
+
+    pub const ConstDecl = struct {
+        name: []const u8,
+        type_expr: TypeExpr,
+        init_expr: ExprIndex,
     };
 
     pub const ExternDecl = struct {
@@ -175,6 +182,7 @@ pub const Ast = struct {
         array_literal: ArrayLiteralExpr,
         index_access: IndexAccessExpr,
         tuple_literal: TupleLiteralExpr,
+        sizeof_expr: TypeExpr,
     };
 
     pub const TupleLiteralExpr = struct {
