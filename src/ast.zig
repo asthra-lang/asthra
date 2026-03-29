@@ -182,6 +182,7 @@ pub const Ast = struct {
         is_mutable: bool,
         type_expr: TypeExpr,
         init_expr: ExprIndex,
+        start: u32 = 0,
     };
 
     pub const AssignStmt = struct {
@@ -189,6 +190,7 @@ pub const Ast = struct {
         target_fields: std.ArrayList([]const u8),
         target_index: ?ExprIndex = null,
         value: ExprIndex,
+        start: u32 = 0,
     };
 
     pub const IfStmt = struct {

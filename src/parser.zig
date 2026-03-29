@@ -823,6 +823,7 @@ pub const Parser = struct {
     }
 
     fn parseVarDecl(self: *Parser) ParseError!Ast.Stmt {
+        const start = self.current.loc.start;
         self.advance(); // consume 'let'
 
         var is_mutable = false;
@@ -850,10 +851,12 @@ pub const Parser = struct {
             .is_mutable = is_mutable,
             .type_expr = type_expr,
             .init_expr = init_expr,
+            .start = start,
         } };
     }
 
     fn parseAssignStmt(self: *Parser) ParseError!Ast.Stmt {
+        const start = self.current.loc.start;
         const name_token = self.current;
         try self.expect(.identifier);
         const name = name_token.slice(self.source);
@@ -884,6 +887,7 @@ pub const Parser = struct {
             .target_fields = target_fields,
             .target_index = target_index,
             .value = value,
+            .start = start,
         } };
     }
 

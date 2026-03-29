@@ -4,6 +4,7 @@ const Ast = @import("ast.zig").Ast;
 const Parser = @import("parser.zig").Parser;
 const CodeGen = @import("codegen.zig").CodeGen;
 const Diagnostics = @import("diagnostics.zig").Diagnostics;
+const SemanticAnalyzer = @import("sema.zig").SemanticAnalyzer;
 
 fn writeAll(comptime fmt: []const u8, args: anytype) void {
     const file = std.fs.File.stderr();
@@ -81,6 +82,16 @@ pub fn main() !void {
         writeAll("error: import resolution failed: {}\n", .{err});
         std.process.exit(1);
     };
+
+    if (diagnostics.hasErrors()) {
+        diagnostics.printAll();
+        std.process.exit(1);
+    }
+
+    // Semantic analysis
+    var sema = SemanticAnalyzer.init(allocator, &ast, &diagnostics);
+    defer sema.deinit();
+    sema.analyze();
 
     if (diagnostics.hasErrors()) {
         diagnostics.printAll();
