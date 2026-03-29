@@ -44,4 +44,4 @@ Features defined in `grammar.txt` but not yet fully implemented, plus semantic a
 | 29 | `module_resolution.ast` | multi-file compilation, import path resolution, symbol linking |
 | 30 | `async_runtime.ast` | real async concurrency runtime for `spawn`/`await` (currently synchronous) | Done |
 | 31 | `repeated_arrays.ast` | repeated array initializer `[value; count]`, empty arrays `[none]` | Done |
-| 32 | `ownership.ast` | ownership annotations (`#[ownership(gc\|c\|pinned)]`) with runtime effect |
+| 32 | `ownership.ast` | ownership annotations (`#[ownership(gc\|c\|pinned)]`) with runtime effect | Done |

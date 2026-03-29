@@ -1,0 +1,28 @@
+package main;
+
+#[ownership(gc)]
+pub struct ManagedBuffer {
+    pub data: i32,
+    pub size: i32
+}
+
+#[ownership(c)]
+pub struct RawBuffer {
+    pub ptr: i32,
+    pub len: i32
+}
+
+pub fn main() -> void {
+    // GC-managed struct
+    let buf: ManagedBuffer = ManagedBuffer { data: 42, size: 100 };
+    log(buf.data);
+    log(buf.size);
+
+    // C-managed struct (manual memory)
+    let raw: RawBuffer = RawBuffer { ptr: 0, len: 256 };
+    log(raw.ptr);
+    log(raw.len);
+
+    log("Ownership annotations parsed successfully");
+    return;
+}
