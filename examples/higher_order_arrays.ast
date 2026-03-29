@@ -21,6 +21,10 @@ pub fn main() -> void {
     let scaled: [5]i32 = map(nums, fn(x: i32) -> i32 { return x * factor; });
     log(scaled[2]);
 
+    // forEach
+    forEach(nums, fn(x: i32) -> void { io.print(str.from_int(x)); io.print(" "); return; });
+    io.println("");
+
     log("higher_order_arrays: all tests passed");
     return;
 }

@@ -106,7 +106,7 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 
 - Closures / anonymous functions with variable capture: `fn(x: i32) -> i32 { return x * captured; }`
 - Higher-order functions: `fn(i32) -> i32` as parameter types, indirect calls through closure descriptors
-- `map(arr, fn)`, `filter(arr, fn)`, `reduce(arr, init, fn)` builtin functions on arrays
+- `map(arr, fn)`, `filter(arr, fn)`, `reduce(arr, init, fn)`, `forEach(arr, fn)` builtin functions on arrays
 - `try` expression for error handling: unwraps `Result.Ok`/`Option.Some`, early-returns on error
 - Traits: `trait Shape { fn area(self) -> f64; }` with `impl Shape for Circle { ... }` (compile-time validation, static dispatch)
 

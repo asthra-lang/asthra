@@ -788,6 +788,7 @@ pub fn genCallExpr(self: *CodeGen, call_expr: Ast.CallExpr) CodeGen.GenError!Cod
     if (std.mem.eql(u8, name, "map")) return genMapCall(self, call_expr);
     if (std.mem.eql(u8, name, "filter")) return genFilterCall(self, call_expr);
     if (std.mem.eql(u8, name, "reduce")) return genReduceCall(self, call_expr);
+    if (std.mem.eql(u8, name, "forEach")) return genForEachCall(self, call_expr);
 
     // Type conversion calls: i32(expr), f64(expr), etc.
     if (self.getTypeConversion(name)) |target_type| {
@@ -1718,6 +1719,65 @@ fn genStrSplit(self: *CodeGen, text: c.LLVMValueRef, delimiter: c.LLVMValueRef) 
     return .{ .value = slice_val, .type_tag = .{ .slice_type = .{ .element_type = elem_ptr } } };
 }
 
+fn genForEachCall(self: *CodeGen, call_expr: Ast.CallExpr) CodeGen.GenError!CodeGen.ExprResult {
+    if (call_expr.args.items.len != 2) { self.diagnostics.report(.@"error", 0, "forEach() expects 2 arguments (array, function)", .{}); return error.CodeGenError; }
+
+    const arr_info = getArrayAllocaFromArg(self, call_expr.args.items[0]) orelse {
+        self.diagnostics.report(.@"error", 0, "forEach() first argument must be an array variable", .{});
+        return error.CodeGenError;
+    };
+    const count = arr_info.arr.count;
+    const elem_type = arr_info.arr.element_type.*;
+    const elem_llvm = self.typeTagToLLVM(elem_type);
+    const input_array_llvm = self.typeTagToLLVM(.{ .array_type = arr_info.arr });
+
+    const fn_result = try genExpr(self, call_expr.args.items[1]);
+    const ft = switch (fn_result.type_tag) {
+        .fn_type => |f| f,
+        else => { self.diagnostics.report(.@"error", 0, "forEach() second argument must be a function", .{}); return error.CodeGenError; },
+    };
+
+    const i8ptr_ty = c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0);
+    var desc_ft = [_]c.LLVMTypeRef{ i8ptr_ty, i8ptr_ty };
+    const desc_type = c.LLVMStructTypeInContext(self.context, &desc_ft, 2, 0);
+    const fn_alloca = c.LLVMBuildAlloca(self.builder, desc_type, "forEach_fn");
+    _ = c.LLVMBuildStore(self.builder, fn_result.value, fn_alloca);
+
+    const i32_llvm = c.LLVMInt32TypeInContext(self.context);
+    const count_val = c.LLVMConstInt(i32_llvm, count, 0);
+    const zero = c.LLVMConstInt(i32_llvm, 0, 0);
+    const one = c.LLVMConstInt(i32_llvm, 1, 0);
+
+    const current_fn = c.LLVMGetBasicBlockParent(c.LLVMGetInsertBlock(self.builder));
+    const loop_header = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "forEach_loop");
+    const loop_body = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "forEach_body");
+    const loop_end = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "forEach_end");
+
+    _ = c.LLVMBuildBr(self.builder, loop_header);
+
+    c.LLVMPositionBuilderAtEnd(self.builder, loop_header);
+    const i_phi = c.LLVMBuildPhi(self.builder, i32_llvm, "forEach_i");
+    const done = c.LLVMBuildICmp(self.builder, c.LLVMIntUGE, i_phi, count_val, "forEach_done");
+    _ = c.LLVMBuildCondBr(self.builder, done, loop_end, loop_body);
+
+    c.LLVMPositionBuilderAtEnd(self.builder, loop_body);
+    var in_gep = [_]c.LLVMValueRef{ zero, i_phi };
+    const in_ptr = c.LLVMBuildGEP2(self.builder, input_array_llvm, arr_info.alloca, &in_gep, 2, "forEach_in_ptr");
+    const in_val = c.LLVMBuildLoad2(self.builder, elem_llvm, in_ptr, "forEach_in_val");
+
+    _ = try callClosureWithValues(self, fn_alloca, ft, &[_]c.LLVMValueRef{in_val});
+
+    const i_next = c.LLVMBuildAdd(self.builder, i_phi, one, "forEach_i_next");
+    _ = c.LLVMBuildBr(self.builder, loop_header);
+
+    const entry_bb = c.LLVMGetPreviousBasicBlock(loop_header);
+    c.LLVMAddIncoming(i_phi, @constCast(&[_]c.LLVMValueRef{zero}), @constCast(&[_]c.LLVMBasicBlockRef{entry_bb}), 1);
+    c.LLVMAddIncoming(i_phi, @constCast(&[_]c.LLVMValueRef{i_next}), @constCast(&[_]c.LLVMBasicBlockRef{loop_body}), 1);
+
+    c.LLVMPositionBuilderAtEnd(self.builder, loop_end);
+    return .{ .value = c.LLVMGetUndef(c.LLVMVoidTypeInContext(self.context)), .type_tag = .void_type };
+}
+
 fn genIoCall(self: *CodeGen, func: []const u8, args: *const std.ArrayList(Ast.ExprIndex)) CodeGen.GenError!CodeGen.ExprResult {
     const void_val = c.LLVMGetUndef(c.LLVMVoidTypeInContext(self.context));
     if (std.mem.eql(u8, func, "println")) {
@@ -2299,7 +2359,10 @@ fn callClosureWithValues(self: *CodeGen, desc_alloca: c.LLVMValueRef, ft: CodeGe
         call_args.append(self.allocator, v) catch {};
     }
 
-    return c.LLVMBuildCall2(self.builder, callee_fn_type, fn_ptr_typed, call_args.items.ptr, @intCast(call_args.items.len), "hof_call");
+    const ret_llvm_type = c.LLVMGetReturnType(callee_fn_type);
+    const is_void_ret = c.LLVMGetTypeKind(ret_llvm_type) == c.LLVMVoidTypeKind;
+    const call_name: [*c]const u8 = if (is_void_ret) "" else "hof_call";
+    return c.LLVMBuildCall2(self.builder, callee_fn_type, fn_ptr_typed, call_args.items.ptr, @intCast(call_args.items.len), call_name);
 }
 
 fn getArrayAllocaFromArg(self: *CodeGen, arg_idx: Ast.ExprIndex) ?struct { alloca: c.LLVMValueRef, arr: CodeGen.ArrayTypeTag } {

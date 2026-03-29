@@ -80,6 +80,7 @@ pub const SemanticAnalyzer = struct {
         self.registerBuiltin("map", 2);
         self.registerBuiltin("filter", 2);
         self.registerBuiltin("reduce", 3);
+        self.registerBuiltin("forEach", 2);
 
         // Pass 1: Register all top-level declarations
         for (self.ast.program.decls.items) |decl| {
