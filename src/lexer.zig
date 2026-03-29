@@ -343,3 +343,192 @@ fn isDigit(c: u8) bool {
 fn isHexDigit(c: u8) bool {
     return isDigit(c) or (c >= 'a' and c <= 'f') or (c >= 'A' and c <= 'F');
 }
+
+// --- Tests ---
+
+const testing = std.testing;
+
+fn collectTags(source: []const u8) ![]Tag {
+    var lexer = Lexer.init(source);
+    var tags = std.ArrayList(Tag).init(testing.allocator);
+    while (true) {
+        const tok = lexer.next();
+        try tags.append(testing.allocator, tok.tag);
+        if (tok.tag == .eof) break;
+    }
+    return tags.items;
+}
+
+test "lex empty input" {
+    var lexer = Lexer.init("");
+    const tok = lexer.next();
+    try testing.expectEqual(Tag.eof, tok.tag);
+}
+
+test "lex keywords" {
+    var lexer = Lexer.init("let mut fn return");
+    try testing.expectEqual(Tag.keyword_let, lexer.next().tag);
+    try testing.expectEqual(Tag.keyword_mut, lexer.next().tag);
+    try testing.expectEqual(Tag.keyword_fn, lexer.next().tag);
+    try testing.expectEqual(Tag.keyword_return, lexer.next().tag);
+    try testing.expectEqual(Tag.eof, lexer.next().tag);
+}
+
+test "lex identifiers" {
+    var lexer = Lexer.init("foo bar_baz _x x123");
+    const source = "foo bar_baz _x x123";
+    var tok = lexer.next();
+    try testing.expectEqual(Tag.identifier, tok.tag);
+    try testing.expectEqualStrings("foo", tok.slice(source));
+    tok = lexer.next();
+    try testing.expectEqualStrings("bar_baz", tok.slice(source));
+    tok = lexer.next();
+    try testing.expectEqualStrings("_x", tok.slice(source));
+    tok = lexer.next();
+    try testing.expectEqualStrings("x123", tok.slice(source));
+}
+
+test "lex integer literals" {
+    const source = "42 0xFF 0b1010 0o77";
+    var lexer = Lexer.init(source);
+    var tok = lexer.next();
+    try testing.expectEqual(Tag.int_literal, tok.tag);
+    try testing.expectEqualStrings("42", tok.slice(source));
+    tok = lexer.next();
+    try testing.expectEqual(Tag.int_literal, tok.tag);
+    try testing.expectEqualStrings("0xFF", tok.slice(source));
+    tok = lexer.next();
+    try testing.expectEqual(Tag.int_literal, tok.tag);
+    try testing.expectEqualStrings("0b1010", tok.slice(source));
+    tok = lexer.next();
+    try testing.expectEqual(Tag.int_literal, tok.tag);
+    try testing.expectEqualStrings("0o77", tok.slice(source));
+}
+
+test "lex float literals" {
+    const source = "3.14 0.5";
+    var lexer = Lexer.init(source);
+    var tok = lexer.next();
+    try testing.expectEqual(Tag.float_literal, tok.tag);
+    try testing.expectEqualStrings("3.14", tok.slice(source));
+    tok = lexer.next();
+    try testing.expectEqual(Tag.float_literal, tok.tag);
+    try testing.expectEqualStrings("0.5", tok.slice(source));
+}
+
+test "lex string literals" {
+    const source =
+        \\"hello" "world"
+    ;
+    var lexer = Lexer.init(source);
+    try testing.expectEqual(Tag.string_literal, lexer.next().tag);
+    try testing.expectEqual(Tag.string_literal, lexer.next().tag);
+    try testing.expectEqual(Tag.eof, lexer.next().tag);
+}
+
+test "lex string with escape sequences" {
+    const source =
+        \\"hello\nworld"
+    ;
+    var lexer = Lexer.init(source);
+    const tok = lexer.next();
+    try testing.expectEqual(Tag.string_literal, tok.tag);
+}
+
+test "lex char literals" {
+    const source = "'a' '\\n'";
+    var lexer = Lexer.init(source);
+    try testing.expectEqual(Tag.char_literal, lexer.next().tag);
+    try testing.expectEqual(Tag.char_literal, lexer.next().tag);
+}
+
+test "lex operators" {
+    var lexer = Lexer.init("+ - * / % -> == != <= >= << >> && || :: #[");
+    try testing.expectEqual(Tag.plus, lexer.next().tag);
+    try testing.expectEqual(Tag.minus, lexer.next().tag);
+    try testing.expectEqual(Tag.star, lexer.next().tag);
+    try testing.expectEqual(Tag.slash, lexer.next().tag);
+    try testing.expectEqual(Tag.percent, lexer.next().tag);
+    try testing.expectEqual(Tag.arrow, lexer.next().tag);
+    try testing.expectEqual(Tag.double_equal, lexer.next().tag);
+    try testing.expectEqual(Tag.bang_equal, lexer.next().tag);
+    try testing.expectEqual(Tag.less_equal, lexer.next().tag);
+    try testing.expectEqual(Tag.greater_equal, lexer.next().tag);
+    try testing.expectEqual(Tag.shift_left, lexer.next().tag);
+    try testing.expectEqual(Tag.shift_right, lexer.next().tag);
+    try testing.expectEqual(Tag.double_ampersand, lexer.next().tag);
+    try testing.expectEqual(Tag.double_pipe, lexer.next().tag);
+    try testing.expectEqual(Tag.double_colon, lexer.next().tag);
+    try testing.expectEqual(Tag.hash_lbracket, lexer.next().tag);
+}
+
+test "lex delimiters" {
+    var lexer = Lexer.init("( ) { } [ ] ; : , .");
+    try testing.expectEqual(Tag.lparen, lexer.next().tag);
+    try testing.expectEqual(Tag.rparen, lexer.next().tag);
+    try testing.expectEqual(Tag.lbrace, lexer.next().tag);
+    try testing.expectEqual(Tag.rbrace, lexer.next().tag);
+    try testing.expectEqual(Tag.lbracket, lexer.next().tag);
+    try testing.expectEqual(Tag.rbracket, lexer.next().tag);
+    try testing.expectEqual(Tag.semicolon, lexer.next().tag);
+    try testing.expectEqual(Tag.colon, lexer.next().tag);
+    try testing.expectEqual(Tag.comma, lexer.next().tag);
+    try testing.expectEqual(Tag.dot, lexer.next().tag);
+}
+
+test "skip single-line comments" {
+    var lexer = Lexer.init("foo // this is a comment\nbar");
+    try testing.expectEqual(Tag.identifier, lexer.next().tag);
+    try testing.expectEqual(Tag.identifier, lexer.next().tag);
+    try testing.expectEqual(Tag.eof, lexer.next().tag);
+}
+
+test "skip multi-line comments" {
+    var lexer = Lexer.init("foo /* comment */ bar");
+    try testing.expectEqual(Tag.identifier, lexer.next().tag);
+    try testing.expectEqual(Tag.identifier, lexer.next().tag);
+    try testing.expectEqual(Tag.eof, lexer.next().tag);
+}
+
+test "skip nested multi-line comments" {
+    var lexer = Lexer.init("foo /* outer /* inner */ outer */ bar");
+    try testing.expectEqual(Tag.identifier, lexer.next().tag);
+    try testing.expectEqual(Tag.identifier, lexer.next().tag);
+    try testing.expectEqual(Tag.eof, lexer.next().tag);
+}
+
+test "lex complete function declaration" {
+    var lexer = Lexer.init("pub fn main() -> void { return; }");
+    try testing.expectEqual(Tag.keyword_pub, lexer.next().tag);
+    try testing.expectEqual(Tag.keyword_fn, lexer.next().tag);
+    try testing.expectEqual(Tag.identifier, lexer.next().tag);
+    try testing.expectEqual(Tag.lparen, lexer.next().tag);
+    try testing.expectEqual(Tag.rparen, lexer.next().tag);
+    try testing.expectEqual(Tag.arrow, lexer.next().tag);
+    try testing.expectEqual(Tag.keyword_void, lexer.next().tag);
+    try testing.expectEqual(Tag.lbrace, lexer.next().tag);
+    try testing.expectEqual(Tag.keyword_return, lexer.next().tag);
+    try testing.expectEqual(Tag.semicolon, lexer.next().tag);
+    try testing.expectEqual(Tag.rbrace, lexer.next().tag);
+    try testing.expectEqual(Tag.eof, lexer.next().tag);
+}
+
+test "lex variable declaration with arithmetic" {
+    var lexer = Lexer.init("let x: i32 = 10 + 20 * 2;");
+    try testing.expectEqual(Tag.keyword_let, lexer.next().tag);
+    try testing.expectEqual(Tag.identifier, lexer.next().tag);
+    try testing.expectEqual(Tag.colon, lexer.next().tag);
+    try testing.expectEqual(Tag.keyword_i32, lexer.next().tag);
+    try testing.expectEqual(Tag.equal, lexer.next().tag);
+    try testing.expectEqual(Tag.int_literal, lexer.next().tag);
+    try testing.expectEqual(Tag.plus, lexer.next().tag);
+    try testing.expectEqual(Tag.int_literal, lexer.next().tag);
+    try testing.expectEqual(Tag.star, lexer.next().tag);
+    try testing.expectEqual(Tag.int_literal, lexer.next().tag);
+    try testing.expectEqual(Tag.semicolon, lexer.next().tag);
+}
+
+test "lex invalid character produces invalid token" {
+    var lexer = Lexer.init("@");
+    try testing.expectEqual(Tag.invalid, lexer.next().tag);
+}

@@ -44,5 +44,61 @@ jobs:
       - name: Build compiler
         run: zig build -Dllvm-prefix="$LLVM_PREFIX"
 
+      - name: Run unit tests
+        run: zig build test -Dllvm-prefix="$LLVM_PREFIX"
+
       - name: Run integration tests
         run: bash tests/run_examples.sh
+
+  coverage:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Zig
+        uses: mlugg/setup-zig@v2
+        with:
+          version: "0.15.2"
+
+      - name: Install LLVM
+        run: |
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          echo "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-20 main" | sudo tee /etc/apt/sources.list.d/llvm.list
+          sudo apt-get update
+          sudo apt-get install -y llvm-20-dev
+
+      - name: Install kcov
+        run: sudo apt-get install -y kcov
+
+      - name: Build test binary
+        run: zig build test -Dllvm-prefix=/usr/lib/llvm-20 --summary none 2>&1 || true
+
+      - name: Find and run test binary with kcov
+        run: |
+          # Build the test binary without running it
+          TEST_BIN=$(find .zig-cache -name "test" -type f -executable 2>/dev/null | head -1)
+          if [ -z "$TEST_BIN" ]; then
+            # Build test step produces the binary; find it after build
+            zig build test -Dllvm-prefix=/usr/lib/llvm-20 2>&1 || true
+            TEST_BIN=$(find .zig-cache -name "test" -type f -executable 2>/dev/null | head -1)
+          fi
+          if [ -n "$TEST_BIN" ]; then
+            kcov --include-path=src/ coverage/ "$TEST_BIN" || true
+          else
+            echo "Warning: Could not find test binary, running kcov on compiler binary with integration tests"
+            zig build -Dllvm-prefix=/usr/lib/llvm-20
+            for src in examples/*.ast; do
+              name=$(basename "$src" .ast)
+              kcov --include-path=src/ coverage/ ./zig-out/bin/asthra "$src" -o "/tmp/asthra_cov_$name" || true
+              rm -f "/tmp/asthra_cov_$name"
+            done
+          fi
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          directory: coverage/
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}

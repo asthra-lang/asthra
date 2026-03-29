@@ -89,3 +89,61 @@ pub const Diagnostics = struct {
         return .{ .line = line, .column = col };
     }
 };
+
+// --- Tests ---
+
+const testing = std.testing;
+
+test "getLineAndColumn at start of file" {
+    var diag = Diagnostics.init(testing.allocator, "hello\nworld", "test.ast");
+    defer diag.deinit();
+    const loc = diag.getLineAndColumn(0);
+    try testing.expectEqual(@as(u32, 1), loc.line);
+    try testing.expectEqual(@as(u32, 1), loc.column);
+}
+
+test "getLineAndColumn middle of first line" {
+    var diag = Diagnostics.init(testing.allocator, "hello\nworld", "test.ast");
+    defer diag.deinit();
+    const loc = diag.getLineAndColumn(3);
+    try testing.expectEqual(@as(u32, 1), loc.line);
+    try testing.expectEqual(@as(u32, 4), loc.column);
+}
+
+test "getLineAndColumn second line" {
+    var diag = Diagnostics.init(testing.allocator, "hello\nworld", "test.ast");
+    defer diag.deinit();
+    const loc = diag.getLineAndColumn(6);
+    try testing.expectEqual(@as(u32, 2), loc.line);
+    try testing.expectEqual(@as(u32, 1), loc.column);
+}
+
+test "getLineAndColumn third line" {
+    var diag = Diagnostics.init(testing.allocator, "a\nb\ncde", "test.ast");
+    defer diag.deinit();
+    const loc = diag.getLineAndColumn(5);
+    try testing.expectEqual(@as(u32, 3), loc.line);
+    try testing.expectEqual(@as(u32, 2), loc.column);
+}
+
+test "report and hasErrors" {
+    var diag = Diagnostics.init(testing.allocator, "test", "test.ast");
+    defer diag.deinit();
+    try testing.expect(!diag.hasErrors());
+    diag.report(.@"error", 0, "something went wrong: {s}", .{"details"});
+    try testing.expect(diag.hasErrors());
+    try testing.expectEqual(@as(usize, 1), diag.errors.items.len);
+}
+
+test "warnings do not count as errors" {
+    var diag = Diagnostics.init(testing.allocator, "test", "test.ast");
+    defer diag.deinit();
+    diag.report(.warning, 0, "just a warning", .{});
+    try testing.expect(!diag.hasErrors());
+}
+
+test "severity labels" {
+    try testing.expectEqualStrings("error", Severity.@"error".label());
+    try testing.expectEqualStrings("warning", Severity.warning.label());
+    try testing.expectEqualStrings("note", Severity.note.label());
+}

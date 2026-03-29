@@ -615,3 +615,186 @@ fn parseIntLiteral(text: []const u8) i64 {
     }
     return std.fmt.parseInt(i64, text, 10) catch 0;
 }
+
+// --- Tests ---
+
+const testing = std.testing;
+
+fn testParse(source: []const u8) !struct { ast: Ast, diag: Diagnostics } {
+    var ast = Ast.init(testing.allocator);
+    var diag = Diagnostics.init(testing.allocator, source, "test.ast");
+    var parser = Parser.init(source, &ast, &diag);
+    parser.parse() catch {};
+    return .{ .ast = ast, .diag = diag };
+}
+
+test "parse empty main function" {
+    var result = try testParse("package main;\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    try testing.expectEqualStrings("main", result.ast.program.package_name);
+    try testing.expectEqual(@as(usize, 1), result.ast.program.decls.items.len);
+    const decl = result.ast.program.decls.items[0];
+    try testing.expectEqual(Ast.Visibility.public, decl.visibility);
+    switch (decl.decl) {
+        .function => |f| try testing.expectEqualStrings("main", f.name),
+    }
+}
+
+test "parse function with parameters" {
+    var result = try testParse("package main;\npub fn add(a: i32, b: i32) -> i32 { return a; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            try testing.expectEqualStrings("add", f.name);
+            try testing.expectEqual(@as(usize, 2), f.params.items.len);
+            try testing.expectEqualStrings("a", f.params.items[0].name);
+            try testing.expectEqualStrings("b", f.params.items[1].name);
+        },
+    }
+}
+
+test "parse variable declaration" {
+    var result = try testParse("package main;\npub fn main() -> void { let x: i32 = 42; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            try testing.expectEqual(@as(usize, 2), f.body.stmts.items.len);
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("x", vd.name);
+                    try testing.expect(!vd.is_mutable);
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse mutable variable declaration" {
+    var result = try testParse("package main;\npub fn main() -> void { let mut y: i32 = 0; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("y", vd.name);
+                    try testing.expect(vd.is_mutable);
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse if/else statement" {
+    var result = try testParse("package main;\npub fn main() -> void { if x > 0 { return; } else { return; } }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .if_stmt => |if_s| {
+                    try testing.expect(if_s.else_block != null);
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse for loop" {
+    var result = try testParse("package main;\npub fn main() -> void { for i in range(10) { log(i); } return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .for_stmt => |for_s| {
+                    try testing.expectEqualStrings("i", for_s.iter_var);
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse arithmetic expression precedence" {
+    var result = try testParse("package main;\npub fn main() -> void { let z: i32 = 1 + 2 * 3; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    // The init expr should be a binary add at the top
+                    const expr = result.ast.getExpr(vd.init_expr);
+                    switch (expr) {
+                        .binary => |bin| {
+                            try testing.expectEqual(Ast.BinaryOp.add, bin.op);
+                            // RHS should be mul
+                            const rhs = result.ast.getExpr(bin.rhs);
+                            switch (rhs) {
+                                .binary => |rhs_bin| try testing.expectEqual(Ast.BinaryOp.mul, rhs_bin.op),
+                                else => return error.TestUnexpectedResult,
+                            }
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse error on missing semicolon" {
+    var result = try testParse("package main;\npub fn main() -> void { return }");
+    defer result.diag.deinit();
+    try testing.expect(result.diag.hasErrors());
+}
+
+test "parse error on missing visibility" {
+    var result = try testParse("package main;\nfn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(result.diag.hasErrors());
+}
+
+test "parse multiple functions" {
+    var result = try testParse("package main;\npub fn foo() -> void { return; }\npriv fn bar() -> i32 { return 0; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    try testing.expectEqual(@as(usize, 2), result.ast.program.decls.items.len);
+    try testing.expectEqual(Ast.Visibility.public, result.ast.program.decls.items[0].visibility);
+    try testing.expectEqual(Ast.Visibility.private, result.ast.program.decls.items[1].visibility);
+}
+
+test "parseIntLiteral decimal" {
+    try testing.expectEqual(@as(i64, 42), parseIntLiteral("42"));
+    try testing.expectEqual(@as(i64, 0), parseIntLiteral("0"));
+    try testing.expectEqual(@as(i64, 12345), parseIntLiteral("12345"));
+}
+
+test "parseIntLiteral hex" {
+    try testing.expectEqual(@as(i64, 255), parseIntLiteral("0xFF"));
+    try testing.expectEqual(@as(i64, 255), parseIntLiteral("0XFF"));
+    try testing.expectEqual(@as(i64, 0x1A), parseIntLiteral("0x1A"));
+}
+
+test "parseIntLiteral binary" {
+    try testing.expectEqual(@as(i64, 10), parseIntLiteral("0b1010"));
+    try testing.expectEqual(@as(i64, 10), parseIntLiteral("0B1010"));
+}
+
+test "parseIntLiteral octal" {
+    try testing.expectEqual(@as(i64, 63), parseIntLiteral("0o77"));
+}

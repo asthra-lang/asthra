@@ -208,3 +208,64 @@ pub const keywords = std.StaticStringMap(Tag).initComptime(.{
 pub fn getKeyword(bytes: []const u8) ?Tag {
     return keywords.get(bytes);
 }
+
+// --- Tests ---
+
+const testing = std.testing;
+
+test "getKeyword returns correct tags for keywords" {
+    try testing.expectEqual(Tag.keyword_fn, getKeyword("fn").?);
+    try testing.expectEqual(Tag.keyword_let, getKeyword("let").?);
+    try testing.expectEqual(Tag.keyword_pub, getKeyword("pub").?);
+    try testing.expectEqual(Tag.keyword_priv, getKeyword("priv").?);
+    try testing.expectEqual(Tag.keyword_return, getKeyword("return").?);
+    try testing.expectEqual(Tag.keyword_if, getKeyword("if").?);
+    try testing.expectEqual(Tag.keyword_else, getKeyword("else").?);
+    try testing.expectEqual(Tag.keyword_for, getKeyword("for").?);
+    try testing.expectEqual(Tag.keyword_mut, getKeyword("mut").?);
+    try testing.expectEqual(Tag.keyword_void, getKeyword("void").?);
+    try testing.expectEqual(Tag.keyword_i32, getKeyword("i32").?);
+    try testing.expectEqual(Tag.keyword_true, getKeyword("true").?);
+    try testing.expectEqual(Tag.keyword_false, getKeyword("false").?);
+    try testing.expectEqual(Tag.keyword_package, getKeyword("package").?);
+    try testing.expectEqual(Tag.keyword_Result, getKeyword("Result").?);
+    try testing.expectEqual(Tag.keyword_Option, getKeyword("Option").?);
+}
+
+test "getKeyword returns null for non-keywords" {
+    try testing.expect(getKeyword("foo") == null);
+    try testing.expect(getKeyword("main") == null);
+    try testing.expect(getKeyword("x") == null);
+    try testing.expect(getKeyword("println") == null);
+    try testing.expect(getKeyword("") == null);
+}
+
+test "isTypeKeyword identifies type keywords" {
+    try testing.expect(Tag.keyword_i32.isTypeKeyword());
+    try testing.expect(Tag.keyword_f64.isTypeKeyword());
+    try testing.expect(Tag.keyword_bool.isTypeKeyword());
+    try testing.expect(Tag.keyword_string.isTypeKeyword());
+    try testing.expect(Tag.keyword_void.isTypeKeyword());
+    try testing.expect(Tag.keyword_Result.isTypeKeyword());
+    try testing.expect(Tag.keyword_Option.isTypeKeyword());
+    try testing.expect(Tag.keyword_Never.isTypeKeyword());
+    try testing.expect(Tag.keyword_usize.isTypeKeyword());
+}
+
+test "isTypeKeyword rejects non-type keywords" {
+    try testing.expect(!Tag.keyword_fn.isTypeKeyword());
+    try testing.expect(!Tag.keyword_let.isTypeKeyword());
+    try testing.expect(!Tag.keyword_if.isTypeKeyword());
+    try testing.expect(!Tag.keyword_return.isTypeKeyword());
+    try testing.expect(!Tag.identifier.isTypeKeyword());
+    try testing.expect(!Tag.int_literal.isTypeKeyword());
+}
+
+test "Token.slice extracts correct text" {
+    const source = "let x: i32 = 42;";
+    const tok = Token{ .tag = .keyword_let, .loc = .{ .start = 0, .end = 3 } };
+    try testing.expectEqualStrings("let", tok.slice(source));
+
+    const tok2 = Token{ .tag = .int_literal, .loc = .{ .start = 14, .end = 16 } };
+    try testing.expectEqualStrings("42", tok2.slice(source));
+}
