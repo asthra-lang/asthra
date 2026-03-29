@@ -87,8 +87,10 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 
 ## CI/CD
 
-- **CI** (`.github/workflows/ci.yml`) — builds and runs integration tests on Ubuntu + macOS for every push to `main` and PRs
+- **CI** (`.github/workflows/ci.yml`) — builds, unit tests, and integration tests on Ubuntu + macOS for every push to `main` and PRs
+- **Coverage** — kcov traces the compiler binary against all examples, uploads to Codecov
 - **Release** (`.github/workflows/release.yml`) — triggered by `v*` tags, builds ReleaseFast binaries for Linux x86_64, Linux ARM64, macOS ARM64, publishes to GitHub Releases
+- **Unit tests** — 42 tests across `token.zig`, `lexer.zig`, `parser.zig`, `diagnostics.zig` (run via `zig build test`)
 - **Integration tests** (`tests/run_examples.sh`) — compiles and runs all `examples/*.ast` files, reports pass/fail
 - **Pre-commit hook** (`.claude/settings.json`) — runs `zig build` before commits via Claude Code
 

@@ -1,5 +1,8 @@
 # Asthra
 
+[![CI](https://github.com/asthra-lang/asthra/actions/workflows/ci.yml/badge.svg)](https://github.com/asthra-lang/asthra/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/asthra-lang/asthra/branch/main/graph/badge.svg)](https://codecov.io/gh/asthra-lang/asthra)
+
 A compiled programming language with Rust/Go influences, built with a Zig compiler and LLVM backend.
 
 ## Features
@@ -145,10 +148,9 @@ pub fn main() -> void {
 ### Testing
 
 ```sh
-bash tests/run_examples.sh
+zig build test                # Unit tests (42 tests across lexer, parser, token, diagnostics)
+bash tests/run_examples.sh    # Integration tests (compile + run all examples)
 ```
-
-Compiles and runs all programs in `examples/`, reporting pass/fail for each.
 
 ## Project Structure
 
@@ -183,7 +185,8 @@ The compiler uses LLVM for optimization and native code generation, and invokes 
 
 ## CI/CD
 
-- **CI**: Builds and tests on every push/PR (Ubuntu + macOS)
+- **CI**: Builds, unit tests, and integration tests on every push/PR (Ubuntu + macOS)
+- **Coverage**: Code coverage via kcov, reported to [Codecov](https://codecov.io/gh/asthra-lang/asthra)
 - **Releases**: Tag with `v*` (e.g., `git tag v0.1.0 && git push --tags`) to build binaries for Linux x86_64, Linux ARM64, and macOS ARM64
 
 ## License
