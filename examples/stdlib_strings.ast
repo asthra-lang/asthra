@@ -28,6 +28,17 @@ pub fn main() -> void {
     log(str.from_int(123));
     log(str.from_float(2.718));
 
+    // str.index_of
+    log(str.index_of("hello world", "world"));
+    log(str.index_of("hello", "xyz"));
+
+    // str.replace
+    log(str.replace("hello world", "world", "asthra"));
+
+    // str.split
+    let parts: []string = str.split("a,b,c", ",");
+    log(len(parts));
+
     log("stdlib_strings: all tests passed");
     return;
 }

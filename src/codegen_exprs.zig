@@ -1233,6 +1233,22 @@ fn genStrCall(self: *CodeGen, func: []const u8, args: *const std.ArrayList(Ast.E
         if (args.items.len != 1) { self.diagnostics.report(.@"error", 0, "str.trim() expects 1 argument", .{}); return error.CodeGenError; }
         const arg = try genExpr(self, args.items[0]);
         return genStrTrim(self, arg.value);
+    } else if (std.mem.eql(u8, func, "index_of")) {
+        if (args.items.len != 2) { self.diagnostics.report(.@"error", 0, "str.index_of() expects 2 arguments", .{}); return error.CodeGenError; }
+        const haystack = try genExpr(self, args.items[0]);
+        const needle = try genExpr(self, args.items[1]);
+        return genStrIndexOf(self, haystack.value, needle.value);
+    } else if (std.mem.eql(u8, func, "replace")) {
+        if (args.items.len != 3) { self.diagnostics.report(.@"error", 0, "str.replace() expects 3 arguments", .{}); return error.CodeGenError; }
+        const text = try genExpr(self, args.items[0]);
+        const find = try genExpr(self, args.items[1]);
+        const replacement = try genExpr(self, args.items[2]);
+        return genStrReplace(self, text.value, find.value, replacement.value);
+    } else if (std.mem.eql(u8, func, "split")) {
+        if (args.items.len != 2) { self.diagnostics.report(.@"error", 0, "str.split() expects 2 arguments", .{}); return error.CodeGenError; }
+        const text = try genExpr(self, args.items[0]);
+        const delimiter = try genExpr(self, args.items[1]);
+        return genStrSplit(self, text.value, delimiter.value);
     }
     self.diagnostics.report(.@"error", 0, "unknown str function '{s}'", .{func});
     return error.CodeGenError;
@@ -1401,6 +1417,260 @@ fn genStrTrim(self: *CodeGen, str_val: c.LLVMValueRef) CodeGen.GenError!CodeGen.
     _ = c.LLVMBuildStore(self.builder, c.LLVMConstInt(i8_type, 0, 0), null_pos);
 
     return .{ .value = buf, .type_tag = .string_type };
+}
+
+fn genStrIndexOf(self: *CodeGen, haystack: c.LLVMValueRef, needle: c.LLVMValueRef) CodeGen.GenError!CodeGen.ExprResult {
+    const i32_llvm = c.LLVMInt32TypeInContext(self.context);
+    const i64_llvm = c.LLVMInt64TypeInContext(self.context);
+    const i8ptr_ty = c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0);
+
+    // Call strstr(haystack, needle)
+    const strstr_fn_type = c.LLVMGlobalGetValueType(self.strstr_fn);
+    var strstr_args = [_]c.LLVMValueRef{ haystack, needle };
+    const match_ptr = c.LLVMBuildCall2(self.builder, strstr_fn_type, self.strstr_fn, &strstr_args, 2, "index_match");
+
+    // Check if null
+    const null_ptr = c.LLVMConstNull(i8ptr_ty);
+    const is_found = c.LLVMBuildICmp(self.builder, c.LLVMIntNE, match_ptr, null_ptr, "is_found");
+
+    // Compute offset: match_ptr - haystack
+    const haystack_int = c.LLVMBuildPtrToInt(self.builder, haystack, i64_llvm, "h_int");
+    const match_int = c.LLVMBuildPtrToInt(self.builder, match_ptr, i64_llvm, "m_int");
+    const offset_i64 = c.LLVMBuildSub(self.builder, match_int, haystack_int, "offset");
+    const offset_i32 = c.LLVMBuildTrunc(self.builder, offset_i64, i32_llvm, "offset_i32");
+
+    // Select: found ? offset : -1
+    const neg_one = c.LLVMConstInt(i32_llvm, @as(c_ulonglong, @bitCast(@as(c_longlong, -1))), 0);
+    const result = c.LLVMBuildSelect(self.builder, is_found, offset_i32, neg_one, "index_of_res");
+    return .{ .value = result, .type_tag = .i32_type };
+}
+
+fn genStrReplace(self: *CodeGen, text: c.LLVMValueRef, find: c.LLVMValueRef, replacement: c.LLVMValueRef) CodeGen.GenError!CodeGen.ExprResult {
+    const i8_type = c.LLVMInt8TypeInContext(self.context);
+    const i64_llvm = c.LLVMInt64TypeInContext(self.context);
+    const i8ptr_ty = c.LLVMPointerType(i8_type, 0);
+    const one_i64 = c.LLVMConstInt(i64_llvm, 1, 0);
+
+    const strlen_fn_type = c.LLVMGlobalGetValueType(self.strlen_fn);
+    const memcpy_fn_type = c.LLVMGlobalGetValueType(self.memcpy_fn);
+    const malloc_fn_type = c.LLVMGlobalGetValueType(self.malloc_fn);
+
+    // Find match
+    const strstr_fn_type = c.LLVMGlobalGetValueType(self.strstr_fn);
+    var strstr_args = [_]c.LLVMValueRef{ text, find };
+    const match_ptr = c.LLVMBuildCall2(self.builder, strstr_fn_type, self.strstr_fn, &strstr_args, 2, "repl_match");
+
+    // If no match, return original string
+    const null_ptr = c.LLVMConstNull(i8ptr_ty);
+    const is_found = c.LLVMBuildICmp(self.builder, c.LLVMIntNE, match_ptr, null_ptr, "repl_found");
+
+    const current_fn = c.LLVMGetBasicBlockParent(c.LLVMGetInsertBlock(self.builder));
+    const do_replace_bb = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "do_replace");
+    const done_bb = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "repl_done");
+    _ = c.LLVMBuildCondBr(self.builder, is_found, do_replace_bb, done_bb);
+
+    // do_replace: build new string
+    c.LLVMPositionBuilderAtEnd(self.builder, do_replace_bb);
+
+    // Lengths
+    var text_len_args = [_]c.LLVMValueRef{text};
+    const text_len = c.LLVMBuildCall2(self.builder, strlen_fn_type, self.strlen_fn, &text_len_args, 1, "text_len");
+    var find_len_args = [_]c.LLVMValueRef{find};
+    const find_len = c.LLVMBuildCall2(self.builder, strlen_fn_type, self.strlen_fn, &find_len_args, 1, "find_len");
+    var repl_len_args = [_]c.LLVMValueRef{replacement};
+    const repl_len = c.LLVMBuildCall2(self.builder, strlen_fn_type, self.strlen_fn, &repl_len_args, 1, "repl_len");
+
+    // prefix_len = match_ptr - text
+    const text_int = c.LLVMBuildPtrToInt(self.builder, text, i64_llvm, "text_int");
+    const match_int = c.LLVMBuildPtrToInt(self.builder, match_ptr, i64_llvm, "match_int");
+    const prefix_len = c.LLVMBuildSub(self.builder, match_int, text_int, "prefix_len");
+
+    // suffix_len = text_len - prefix_len - find_len
+    const prefix_plus_find = c.LLVMBuildAdd(self.builder, prefix_len, find_len, "pf");
+    const suffix_len = c.LLVMBuildSub(self.builder, text_len, prefix_plus_find, "suffix_len");
+
+    // new_len = prefix_len + repl_len + suffix_len
+    const pr = c.LLVMBuildAdd(self.builder, prefix_len, repl_len, "pr");
+    const new_len = c.LLVMBuildAdd(self.builder, pr, suffix_len, "new_len");
+    const buf_size = c.LLVMBuildAdd(self.builder, new_len, one_i64, "buf_size");
+
+    // malloc
+    var malloc_args = [_]c.LLVMValueRef{buf_size};
+    const buf = c.LLVMBuildCall2(self.builder, malloc_fn_type, self.malloc_fn, &malloc_args, 1, "repl_buf");
+
+    // memcpy prefix
+    var prefix_args = [_]c.LLVMValueRef{ buf, text, prefix_len };
+    _ = c.LLVMBuildCall2(self.builder, memcpy_fn_type, self.memcpy_fn, &prefix_args, 3, "");
+
+    // memcpy replacement
+    var gep_repl_off = [_]c.LLVMValueRef{prefix_len};
+    const repl_dst = c.LLVMBuildGEP2(self.builder, i8_type, buf, &gep_repl_off, 1, "repl_dst");
+    var repl_args = [_]c.LLVMValueRef{ repl_dst, replacement, repl_len };
+    _ = c.LLVMBuildCall2(self.builder, memcpy_fn_type, self.memcpy_fn, &repl_args, 3, "");
+
+    // memcpy suffix
+    const suffix_off = c.LLVMBuildAdd(self.builder, prefix_len, repl_len, "suffix_off");
+    var gep_suf_off = [_]c.LLVMValueRef{suffix_off};
+    const suffix_dst = c.LLVMBuildGEP2(self.builder, i8_type, buf, &gep_suf_off, 1, "suffix_dst");
+    var gep_suf_src = [_]c.LLVMValueRef{prefix_plus_find};
+    const suffix_src = c.LLVMBuildGEP2(self.builder, i8_type, text, &gep_suf_src, 1, "suffix_src");
+    var suffix_args = [_]c.LLVMValueRef{ suffix_dst, suffix_src, suffix_len };
+    _ = c.LLVMBuildCall2(self.builder, memcpy_fn_type, self.memcpy_fn, &suffix_args, 3, "");
+
+    // Null-terminate
+    var gep_null = [_]c.LLVMValueRef{new_len};
+    const null_pos = c.LLVMBuildGEP2(self.builder, i8_type, buf, &gep_null, 1, "null_pos");
+    _ = c.LLVMBuildStore(self.builder, c.LLVMConstInt(i8_type, 0, 0), null_pos);
+
+    _ = c.LLVMBuildBr(self.builder, done_bb);
+
+    // done: phi between original text and replaced text
+    c.LLVMPositionBuilderAtEnd(self.builder, done_bb);
+    const entry_bb = c.LLVMGetPreviousBasicBlock(do_replace_bb);
+    const result_phi = c.LLVMBuildPhi(self.builder, i8ptr_ty, "repl_result");
+    c.LLVMAddIncoming(result_phi, @constCast(&[_]c.LLVMValueRef{ text, buf }), @constCast(&[_]c.LLVMBasicBlockRef{ entry_bb, do_replace_bb }), 2);
+
+    return .{ .value = result_phi, .type_tag = .string_type };
+}
+
+fn genStrSplit(self: *CodeGen, text: c.LLVMValueRef, delimiter: c.LLVMValueRef) CodeGen.GenError!CodeGen.ExprResult {
+    const i8_type = c.LLVMInt8TypeInContext(self.context);
+    const i32_llvm = c.LLVMInt32TypeInContext(self.context);
+    const i64_llvm = c.LLVMInt64TypeInContext(self.context);
+    const i8ptr_ty = c.LLVMPointerType(i8_type, 0);
+    const zero_i32 = c.LLVMConstInt(i32_llvm, 0, 0);
+    const one_i32 = c.LLVMConstInt(i32_llvm, 1, 0);
+    const one_i64 = c.LLVMConstInt(i64_llvm, 1, 0);
+
+    const strlen_fn_type = c.LLVMGlobalGetValueType(self.strlen_fn);
+    const strstr_fn_type = c.LLVMGlobalGetValueType(self.strstr_fn);
+    const memcpy_fn_type = c.LLVMGlobalGetValueType(self.memcpy_fn);
+    const malloc_fn_type = c.LLVMGlobalGetValueType(self.malloc_fn);
+
+    // Get delimiter length
+    var delim_len_args = [_]c.LLVMValueRef{delimiter};
+    const delim_len = c.LLVMBuildCall2(self.builder, strlen_fn_type, self.strlen_fn, &delim_len_args, 1, "delim_len");
+
+    const current_fn = c.LLVMGetBasicBlockParent(c.LLVMGetInsertBlock(self.builder));
+
+    // Phase 1: Count segments by counting delimiter occurrences
+    const count_header = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "split_count");
+    const count_body = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "split_count_body");
+    const count_done = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "split_count_done");
+
+    _ = c.LLVMBuildBr(self.builder, count_header);
+    c.LLVMPositionBuilderAtEnd(self.builder, count_header);
+    const pos_phi = c.LLVMBuildPhi(self.builder, i8ptr_ty, "pos");
+    const cnt_phi = c.LLVMBuildPhi(self.builder, i32_llvm, "cnt");
+
+    // Find next delimiter
+    var find_args = [_]c.LLVMValueRef{ pos_phi, delimiter };
+    const found = c.LLVMBuildCall2(self.builder, strstr_fn_type, self.strstr_fn, &find_args, 2, "found");
+    const null_ptr = c.LLVMConstNull(i8ptr_ty);
+    const has_more = c.LLVMBuildICmp(self.builder, c.LLVMIntNE, found, null_ptr, "has_more");
+    _ = c.LLVMBuildCondBr(self.builder, has_more, count_body, count_done);
+
+    c.LLVMPositionBuilderAtEnd(self.builder, count_body);
+    const cnt_next = c.LLVMBuildAdd(self.builder, cnt_phi, one_i32, "cnt_next");
+    // Advance past delimiter
+    const delim_len_as_gep = c.LLVMBuildTrunc(self.builder, delim_len, i32_llvm, "dl_i32");
+    _ = delim_len_as_gep;
+    var gep_advance = [_]c.LLVMValueRef{delim_len};
+    const next_pos = c.LLVMBuildGEP2(self.builder, i8_type, found, &gep_advance, 1, "next_pos");
+    _ = c.LLVMBuildBr(self.builder, count_header);
+
+    // Wire count phis
+    const pre_count_bb = c.LLVMGetPreviousBasicBlock(count_header);
+    c.LLVMAddIncoming(pos_phi, @constCast(&[_]c.LLVMValueRef{ text, next_pos }), @constCast(&[_]c.LLVMBasicBlockRef{ pre_count_bb, count_body }), 2);
+    c.LLVMAddIncoming(cnt_phi, @constCast(&[_]c.LLVMValueRef{ zero_i32, cnt_next }), @constCast(&[_]c.LLVMBasicBlockRef{ pre_count_bb, count_body }), 2);
+
+    c.LLVMPositionBuilderAtEnd(self.builder, count_done);
+    // segments = count + 1
+    const num_segments = c.LLVMBuildAdd(self.builder, cnt_phi, one_i32, "num_segments");
+
+    // Phase 2: Allocate array of string pointers
+    const ptr_size = c.LLVMConstInt(i64_llvm, 8, 0); // sizeof(i8*)
+    const num_seg_i64 = c.LLVMBuildZExt(self.builder, num_segments, i64_llvm, "ns_i64");
+    const arr_size = c.LLVMBuildMul(self.builder, num_seg_i64, ptr_size, "arr_size");
+    var arr_malloc_args = [_]c.LLVMValueRef{arr_size};
+    const arr_buf = c.LLVMBuildCall2(self.builder, malloc_fn_type, self.malloc_fn, &arr_malloc_args, 1, "split_arr");
+    const typed_arr = c.LLVMBuildBitCast(self.builder, arr_buf, c.LLVMPointerType(i8ptr_ty, 0), "typed_arr");
+
+    // Phase 3: Extract segments
+    const extract_header = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "split_extract");
+    const extract_found = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "split_found");
+    const extract_last = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "split_last");
+    const extract_done = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "split_done");
+
+    _ = c.LLVMBuildBr(self.builder, extract_header);
+    c.LLVMPositionBuilderAtEnd(self.builder, extract_header);
+    const cur_phi = c.LLVMBuildPhi(self.builder, i8ptr_ty, "cur");
+    const idx_phi = c.LLVMBuildPhi(self.builder, i32_llvm, "idx");
+
+    // Find next delimiter
+    var find_args2 = [_]c.LLVMValueRef{ cur_phi, delimiter };
+    const found2 = c.LLVMBuildCall2(self.builder, strstr_fn_type, self.strstr_fn, &find_args2, 2, "found2");
+    const has_delim = c.LLVMBuildICmp(self.builder, c.LLVMIntNE, found2, null_ptr, "has_delim");
+    _ = c.LLVMBuildCondBr(self.builder, has_delim, extract_found, extract_last);
+
+    // extract_found: segment = cur..found
+    c.LLVMPositionBuilderAtEnd(self.builder, extract_found);
+    const cur_int = c.LLVMBuildPtrToInt(self.builder, cur_phi, i64_llvm, "cur_int");
+    const found_int = c.LLVMBuildPtrToInt(self.builder, found2, i64_llvm, "found_int");
+    const seg_len = c.LLVMBuildSub(self.builder, found_int, cur_int, "seg_len");
+    const seg_buf_size = c.LLVMBuildAdd(self.builder, seg_len, one_i64, "seg_buf_sz");
+    var seg_malloc_args = [_]c.LLVMValueRef{seg_buf_size};
+    const seg_buf = c.LLVMBuildCall2(self.builder, malloc_fn_type, self.malloc_fn, &seg_malloc_args, 1, "seg_buf");
+    var seg_cpy_args = [_]c.LLVMValueRef{ seg_buf, cur_phi, seg_len };
+    _ = c.LLVMBuildCall2(self.builder, memcpy_fn_type, self.memcpy_fn, &seg_cpy_args, 3, "");
+    // Null-terminate
+    var gep_seg_null = [_]c.LLVMValueRef{seg_len};
+    const seg_null = c.LLVMBuildGEP2(self.builder, i8_type, seg_buf, &gep_seg_null, 1, "seg_null");
+    _ = c.LLVMBuildStore(self.builder, c.LLVMConstInt(i8_type, 0, 0), seg_null);
+    // Store in array
+    var gep_arr_idx = [_]c.LLVMValueRef{idx_phi};
+    const arr_slot = c.LLVMBuildGEP2(self.builder, i8ptr_ty, typed_arr, &gep_arr_idx, 1, "arr_slot");
+    _ = c.LLVMBuildStore(self.builder, seg_buf, arr_slot);
+    // Advance
+    var gep_past_delim = [_]c.LLVMValueRef{delim_len};
+    const next_cur = c.LLVMBuildGEP2(self.builder, i8_type, found2, &gep_past_delim, 1, "next_cur");
+    const idx_next = c.LLVMBuildAdd(self.builder, idx_phi, one_i32, "idx_next");
+    _ = c.LLVMBuildBr(self.builder, extract_header);
+
+    // Wire extract phis
+    c.LLVMAddIncoming(cur_phi, @constCast(&[_]c.LLVMValueRef{ text, next_cur }), @constCast(&[_]c.LLVMBasicBlockRef{ count_done, extract_found }), 2);
+    c.LLVMAddIncoming(idx_phi, @constCast(&[_]c.LLVMValueRef{ zero_i32, idx_next }), @constCast(&[_]c.LLVMBasicBlockRef{ count_done, extract_found }), 2);
+
+    // extract_last: remaining string is last segment
+    c.LLVMPositionBuilderAtEnd(self.builder, extract_last);
+    var last_len_args = [_]c.LLVMValueRef{cur_phi};
+    const last_len = c.LLVMBuildCall2(self.builder, strlen_fn_type, self.strlen_fn, &last_len_args, 1, "last_len");
+    const last_buf_size = c.LLVMBuildAdd(self.builder, last_len, one_i64, "last_buf_sz");
+    var last_malloc_args = [_]c.LLVMValueRef{last_buf_size};
+    const last_buf = c.LLVMBuildCall2(self.builder, malloc_fn_type, self.malloc_fn, &last_malloc_args, 1, "last_buf");
+    var last_cpy_args = [_]c.LLVMValueRef{ last_buf, cur_phi, last_len };
+    _ = c.LLVMBuildCall2(self.builder, memcpy_fn_type, self.memcpy_fn, &last_cpy_args, 3, "");
+    var gep_last_null = [_]c.LLVMValueRef{last_len};
+    const last_null = c.LLVMBuildGEP2(self.builder, i8_type, last_buf, &gep_last_null, 1, "last_null");
+    _ = c.LLVMBuildStore(self.builder, c.LLVMConstInt(i8_type, 0, 0), last_null);
+    var gep_last_slot = [_]c.LLVMValueRef{idx_phi};
+    const last_slot = c.LLVMBuildGEP2(self.builder, i8ptr_ty, typed_arr, &gep_last_slot, 1, "last_slot");
+    _ = c.LLVMBuildStore(self.builder, last_buf, last_slot);
+    _ = c.LLVMBuildBr(self.builder, extract_done);
+
+    // Build slice struct
+    c.LLVMPositionBuilderAtEnd(self.builder, extract_done);
+    const slice_llvm = self.sliceLLVMType();
+    const slice_alloca = c.LLVMBuildAlloca(self.builder, slice_llvm, "split_slice");
+    const sl_ptr_field = c.LLVMBuildStructGEP2(self.builder, slice_llvm, slice_alloca, 0, "split_ptr_f");
+    _ = c.LLVMBuildStore(self.builder, arr_buf, sl_ptr_field);
+    const sl_len_field = c.LLVMBuildStructGEP2(self.builder, slice_llvm, slice_alloca, 1, "split_len_f");
+    _ = c.LLVMBuildStore(self.builder, num_segments, sl_len_field);
+    const slice_val = c.LLVMBuildLoad2(self.builder, slice_llvm, slice_alloca, "split_result");
+
+    const elem_ptr = self.allocator.create(CodeGen.TypeTag) catch return error.CodeGenError;
+    elem_ptr.* = .string_type;
+    return .{ .value = slice_val, .type_tag = .{ .slice_type = .{ .element_type = elem_ptr } } };
 }
 
 fn genIoCall(self: *CodeGen, func: []const u8, args: *const std.ArrayList(Ast.ExprIndex)) CodeGen.GenError!CodeGen.ExprResult {
