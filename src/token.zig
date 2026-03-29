@@ -102,6 +102,7 @@ pub const Tag = enum {
     keyword_int,
     keyword_float,
     keyword_bool,
+    keyword_char,
     keyword_string,
     keyword_usize,
     keyword_isize,
@@ -127,6 +128,7 @@ pub const Tag = enum {
             .keyword_int,
             .keyword_float,
             .keyword_bool,
+            .keyword_char,
             .keyword_string,
             .keyword_usize,
             .keyword_isize,
@@ -190,6 +192,7 @@ pub const keywords = std.StaticStringMap(Tag).initComptime(.{
     .{ "int", .keyword_int },
     .{ "float", .keyword_float },
     .{ "bool", .keyword_bool },
+    .{ "char", .keyword_char },
     .{ "string", .keyword_string },
     .{ "usize", .keyword_usize },
     .{ "isize", .keyword_isize },
@@ -232,6 +235,14 @@ test "getKeyword returns correct tags for keywords" {
     try testing.expectEqual(Tag.keyword_package, getKeyword("package").?);
     try testing.expectEqual(Tag.keyword_Result, getKeyword("Result").?);
     try testing.expectEqual(Tag.keyword_Option, getKeyword("Option").?);
+}
+
+test "getKeyword returns char keyword" {
+    try testing.expectEqual(Tag.keyword_char, getKeyword("char").?);
+}
+
+test "isTypeKeyword identifies char as type keyword" {
+    try testing.expect(Tag.keyword_char.isTypeKeyword());
 }
 
 test "getKeyword returns null for non-keywords" {

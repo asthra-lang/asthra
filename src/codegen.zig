@@ -24,6 +24,7 @@ pub const CodeGen = struct {
     fmt_int: c.LLVMValueRef,
     fmt_str: c.LLVMValueRef,
     fmt_float: c.LLVMValueRef,
+    fmt_char: c.LLVMValueRef,
     fmt_bool_true: c.LLVMValueRef,
     fmt_bool_false: c.LLVMValueRef,
     loop_stack: std.ArrayList(LoopContext) = .{},
@@ -64,6 +65,7 @@ pub const CodeGen = struct {
         i64_type,
         f64_type,
         bool_type,
+        char_type,
         void_type,
         string_type,
         struct_type: []const u8,
@@ -127,6 +129,7 @@ pub const CodeGen = struct {
         const fmt_int = c.LLVMBuildGlobalStringPtr(builder, "%d\n", "fmt_int");
         const fmt_str = c.LLVMBuildGlobalStringPtr(builder, "%s\n", "fmt_str");
         const fmt_float = c.LLVMBuildGlobalStringPtr(builder, "%f\n", "fmt_float");
+        const fmt_char = c.LLVMBuildGlobalStringPtr(builder, "%c\n", "fmt_char");
         const fmt_bool_true = c.LLVMBuildGlobalStringPtr(builder, "true\n", "fmt_bool_true");
         const fmt_bool_false = c.LLVMBuildGlobalStringPtr(builder, "false\n", "fmt_bool_false");
 
@@ -151,6 +154,7 @@ pub const CodeGen = struct {
             .fmt_int = fmt_int,
             .fmt_str = fmt_str,
             .fmt_float = fmt_float,
+            .fmt_char = fmt_char,
             .fmt_bool_true = fmt_bool_true,
             .fmt_bool_false = fmt_bool_false,
             .strlen_fn = strlen_fn,
@@ -415,6 +419,7 @@ pub const CodeGen = struct {
                 .f32_type => "f32",
                 .bool_type => "bool",
                 .string_type => "string",
+                .char_type => "char",
                 .void => "void",
                 .u8_type => "u8",
                 .u16_type => "u16",
@@ -761,6 +766,7 @@ pub const CodeGen = struct {
                 .i64_type => .i64_type,
                 .f64_type, .float_type => .f64_type,
                 .string_type => .string_type,
+                .char_type => .char_type,
                 else => .i32_type,
             },
             .named => |name| {
@@ -1563,6 +1569,12 @@ pub const CodeGen = struct {
                     .type_tag = .bool_type,
                 };
             },
+            .char_literal => |val| {
+                return .{
+                    .value = c.LLVMConstInt(c.LLVMInt8TypeInContext(self.context), val, 0),
+                    .type_tag = .char_type,
+                };
+            },
             .string_literal => |val| {
                 const str_z = self.allocator.dupeZ(u8, val) catch return error.CodeGenError;
                 defer self.allocator.free(str_z);
@@ -2247,6 +2259,11 @@ pub const CodeGen = struct {
         if (isTypeTag(arg.type_tag, .i32_type) or isTypeTag(arg.type_tag, .i64_type)) {
             const args_arr = [_]c.LLVMValueRef{ self.fmt_int, arg.value };
             _ = c.LLVMBuildCall2(self.builder, printf_type, self.printf_fn, @constCast(&args_arr), 2, "");
+        } else if (isTypeTag(arg.type_tag, .char_type)) {
+            // Print char using %c format - need to extend i8 to i32 for printf
+            const ext = c.LLVMBuildZExt(self.builder, arg.value, c.LLVMInt32TypeInContext(self.context), "char_ext");
+            const args_arr = [_]c.LLVMValueRef{ self.fmt_char, ext };
+            _ = c.LLVMBuildCall2(self.builder, printf_type, self.printf_fn, @constCast(&args_arr), 2, "");
         } else if (isTypeTag(arg.type_tag, .f64_type)) {
             const args_arr = [_]c.LLVMValueRef{ self.fmt_float, arg.value };
             _ = c.LLVMBuildCall2(self.builder, printf_type, self.printf_fn, @constCast(&args_arr), 2, "");
@@ -2400,6 +2417,7 @@ pub const CodeGen = struct {
         if (std.mem.eql(u8, name, "i64")) return .i64_type;
         if (std.mem.eql(u8, name, "f64")) return .f64_type;
         if (std.mem.eql(u8, name, "bool")) return .bool_type;
+        if (std.mem.eql(u8, name, "char")) return .char_type;
         return null;
     }
 
@@ -2412,6 +2430,11 @@ pub const CodeGen = struct {
             if (isTypeTag(src.type_tag, .i32_type) or isTypeTag(src.type_tag, .i64_type)) {
                 break :blk c.LLVMBuildSIToFP(self.builder, src.value, c.LLVMDoubleTypeInContext(self.context), "sitofp");
             }
+            if (isTypeTag(src.type_tag, .char_type)) {
+                // char (i8) -> f64: sign-extend to i32 first, then convert
+                const ext = c.LLVMBuildSExt(self.builder, src.value, c.LLVMInt32TypeInContext(self.context), "char_ext");
+                break :blk c.LLVMBuildSIToFP(self.builder, ext, c.LLVMDoubleTypeInContext(self.context), "sitofp");
+            }
             self.diagnostics.report(.@"error", 0, "cannot convert to f64", .{});
             return error.CodeGenError;
         } else if (isTypeTag(target, .i32_type)) blk: {
@@ -2421,7 +2444,18 @@ pub const CodeGen = struct {
             if (isTypeTag(src.type_tag, .i64_type)) {
                 break :blk c.LLVMBuildTrunc(self.builder, src.value, c.LLVMInt32TypeInContext(self.context), "trunc");
             }
+            if (isTypeTag(src.type_tag, .char_type)) {
+                // char (i8) -> i32: sign-extend
+                break :blk c.LLVMBuildSExt(self.builder, src.value, c.LLVMInt32TypeInContext(self.context), "char_to_i32");
+            }
             self.diagnostics.report(.@"error", 0, "cannot convert to i32", .{});
+            return error.CodeGenError;
+        } else if (isTypeTag(target, .char_type)) blk: {
+            if (isTypeTag(src.type_tag, .i32_type) or isTypeTag(src.type_tag, .i64_type)) {
+                // i32/i64 -> char (i8): truncate
+                break :blk c.LLVMBuildTrunc(self.builder, src.value, c.LLVMInt8TypeInContext(self.context), "to_char");
+            }
+            self.diagnostics.report(.@"error", 0, "cannot convert to char", .{});
             return error.CodeGenError;
         } else if (isTypeTag(target, .i64_type)) blk: {
             if (isTypeTag(src.type_tag, .f64_type)) {
@@ -2446,6 +2480,7 @@ pub const CodeGen = struct {
             .i64_type => c.LLVMInt64TypeInContext(self.context),
             .f64_type => c.LLVMDoubleTypeInContext(self.context),
             .bool_type => c.LLVMInt1TypeInContext(self.context),
+            .char_type => c.LLVMInt8TypeInContext(self.context),
             .void_type => c.LLVMVoidTypeInContext(self.context),
             .string_type => c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0),
             .struct_type => |name| {
@@ -2532,6 +2567,7 @@ fn builtinToTypeTag(type_expr: Ast.TypeExpr) CodeGen.TypeTag {
             .i64_type => .i64_type,
             .f64_type, .float_type => .f64_type,
             .string_type => .string_type,
+            .char_type => .char_type,
             else => .i32_type,
         },
         .named => .i32_type,

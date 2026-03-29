@@ -1,0 +1,20 @@
+package main;
+
+pub fn main() -> void {
+    let c: char = 'A';
+    let d: char = 'z';
+
+    // Convert char to int to print its ASCII value
+    let code: i32 = i32(c);
+    log(code);
+
+    let code2: i32 = i32(d);
+    log(code2);
+
+    // Char comparison
+    if c == 'A' {
+        log("char is A");
+    }
+
+    return;
+}

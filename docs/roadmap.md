@@ -38,7 +38,7 @@ Features defined in `grammar.txt` but not yet fully implemented, plus semantic a
 | 23 | `generic_enums.ast` | generic enums with type parameters, generic impl blocks | Done |
 | 24 | `associated_funcs.ast` | associated functions via `::` syntax: `Type::new()`, `Type<T>::create()` | Done |
 | 25 | `nested_match.ast` | nested patterns, tuple patterns in match, wildcard `_` pattern |
-| 26 | `char_type.ast` | `char` type, char literals, char-to-int conversion |
+| 26 | `char_type.ast` | `char` type, char literals, char-to-int conversion | Done |
 | 27 | `bitwise_ops.ast` | bitwise operators in codegen: `&`, `\|`, `^`, `~`, `<<`, `>>` on all int types |
 | 28 | `predeclared.ast` | predeclared builtins: `panic()`, `exit()`, `args()`, `infinite()` |
 | 29 | `module_resolution.ast` | multi-file compilation, import path resolution, symbol linking |

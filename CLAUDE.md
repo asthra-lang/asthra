@@ -74,9 +74,10 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 - Logical operators (`&&`, `||`, `!`)
 - `if`/`else` statements (including nested)
 - `for` loops with `range(end)` and `range(start, end)`
-- `log()` builtin for i32, string, f64, bool
+- `log()` builtin for i32, string, f64, bool, char
 - String literals
 - Boolean literals
+- Char type (`char`), char literals (`'a'`, `'\n'`), char-to-int conversion (`i32(c)`)
 - Float types (`f64`) and type conversions (`f64(x)`, `i32(y)`)
 - Struct declarations, struct literals, field access, field assignment
 - Impl blocks, methods with `self`, method calls
@@ -96,7 +97,6 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 - Generic enums and generic impl blocks
 - Associated functions (`Type::new()`)
 - Nested/wildcard match patterns (`_`)
-- `char` type and character operations
 - Predeclared builtins (`panic()`, `exit()`, `args()`, `infinite()`)
 - Multi-file compilation and import resolution
 - Real async concurrency runtime (currently synchronous)

@@ -566,6 +566,7 @@ pub const Parser = struct {
                 .keyword_int => .int_type,
                 .keyword_float => .float_type,
                 .keyword_string => .string_type,
+                .keyword_char => .char_type,
                 .keyword_i8 => .i8_type,
                 .keyword_i16 => .i16_type,
                 .keyword_i32 => .i32_type,
@@ -1372,6 +1373,28 @@ pub const Parser = struct {
                 self.advance();
                 return self.ast.addExpr(.{ .bool_literal = false });
             },
+            .char_literal => {
+                const raw = self.current.slice(self.source);
+                // Extract the character value from 'x' or '\n' style literals
+                const char_val: u8 = if (raw.len >= 3 and raw[1] == '\\') blk: {
+                    // Escape sequence
+                    break :blk switch (raw[2]) {
+                        'n' => '\n',
+                        't' => '\t',
+                        'r' => '\r',
+                        '\\' => '\\',
+                        '\'' => '\'',
+                        '0' => 0,
+                        else => raw[2],
+                    };
+                } else if (raw.len >= 3) blk: {
+                    break :blk raw[1];
+                } else blk: {
+                    break :blk 0;
+                };
+                self.advance();
+                return self.ast.addExpr(.{ .char_literal = char_val });
+            },
             .string_literal => {
                 const raw = self.current.slice(self.source);
                 // Strip quotes: triple-quoted """...""" or single-quoted "..."
@@ -1486,7 +1509,7 @@ pub const Parser = struct {
                 return self.ast.addExpr(.{ .sizeof_expr = type_expr });
             },
             // Type conversion calls: i32(expr), f64(expr), etc.
-            .keyword_i8, .keyword_i16, .keyword_i32, .keyword_i64, .keyword_i128, .keyword_u8, .keyword_u16, .keyword_u32, .keyword_u64, .keyword_u128, .keyword_f32, .keyword_f64, .keyword_usize, .keyword_isize, .keyword_bool => {
+            .keyword_i8, .keyword_i16, .keyword_i32, .keyword_i64, .keyword_i128, .keyword_u8, .keyword_u16, .keyword_u32, .keyword_u64, .keyword_u128, .keyword_f32, .keyword_f64, .keyword_usize, .keyword_isize, .keyword_bool, .keyword_char => {
                 // Treat as an identifier for now (type conversion is a call)
                 const name = self.current.slice(self.source);
                 self.advance();
@@ -3291,5 +3314,68 @@ test "parse identifier catch-all pattern in match" {
             }
         },
         else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse char literal" {
+    var result = try testParse("package main;\npub fn main() -> void { let c: char = 'A'; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("c", vd.name);
+                    try testing.expectEqual(Ast.BuiltinType.char_type, vd.type_expr.builtin);
+                    const expr = result.ast.getExpr(vd.init_expr);
+                    switch (expr) {
+                        .char_literal => |val| try testing.expectEqual(@as(u8, 'A'), val),
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse char literal escape sequence" {
+    var result = try testParse("package main;\npub fn main() -> void { let c: char = '\\n'; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    const expr = result.ast.getExpr(vd.init_expr);
+                    switch (expr) {
+                        .char_literal => |val| try testing.expectEqual(@as(u8, '\n'), val),
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse char to i32 type conversion" {
+    var result = try testParse("package main;\npub fn main() -> void { let c: char = 'A'; let code: i32 = i32(c); return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            // Second statement should be the i32 conversion
+            switch (f.body.stmts.items[1]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("code", vd.name);
+                    try testing.expectEqual(Ast.BuiltinType.i32_type, vd.type_expr.builtin);
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
     }
 }
