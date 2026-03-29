@@ -911,6 +911,24 @@ pub const CodeGen = struct {
                 // (no safety checks to disable yet)
                 try self.genBlock(block, is_main);
             },
+            .spawn_stmt => |spawn_s| {
+                // Synchronous spawn: just execute the expression (call the function)
+                _ = try self.genExpr(spawn_s.expr);
+            },
+            .spawn_handle_stmt => |spawn_h| {
+                // Synchronous spawn_with_handle: execute the call and store result in a local
+                const result = try self.genExpr(spawn_h.expr);
+                const llvm_type = self.typeTagToLLVM(result.type_tag);
+                const name_z = self.allocator.dupeZ(u8, spawn_h.handle_name) catch return error.CodeGenError;
+                defer self.allocator.free(name_z);
+                const alloca = c.LLVMBuildAlloca(self.builder, llvm_type, name_z.ptr);
+                _ = c.LLVMBuildStore(self.builder, result.value, alloca);
+                self.named_values.put(spawn_h.handle_name, .{
+                    .alloca = alloca,
+                    .is_mutable = false,
+                    .type_tag = result.type_tag,
+                }) catch {};
+            },
         }
     }
 
@@ -1235,6 +1253,10 @@ pub const CodeGen = struct {
             },
             .sizeof_expr => |type_expr| {
                 return self.genSizeOf(type_expr);
+            },
+            .await_expr => |inner_idx| {
+                // Synchronous await: just load the handle variable (it already has the value)
+                return self.genExpr(inner_idx);
             },
         }
     }

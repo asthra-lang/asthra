@@ -121,6 +121,8 @@ pub const Ast = struct {
         continue_stmt,
         match_stmt: MatchStmt,
         unsafe_block: *Block,
+        spawn_stmt: SpawnStmt,
+        spawn_handle_stmt: SpawnHandleStmt,
     };
 
     pub const MatchStmt = struct {
@@ -174,6 +176,15 @@ pub const Ast = struct {
         body: *Block,
     };
 
+    pub const SpawnStmt = struct {
+        expr: ExprIndex,
+    };
+
+    pub const SpawnHandleStmt = struct {
+        handle_name: []const u8,
+        expr: ExprIndex,
+    };
+
     // Expression system
     pub const ExprIndex = u32;
     pub const null_expr: ExprIndex = std.math.maxInt(u32);
@@ -196,6 +207,7 @@ pub const Ast = struct {
         index_access: IndexAccessExpr,
         tuple_literal: TupleLiteralExpr,
         sizeof_expr: TypeExpr,
+        await_expr: ExprIndex,
     };
 
     pub const TupleLiteralExpr = struct {

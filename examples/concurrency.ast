@@ -1,0 +1,26 @@
+package main;
+
+pub fn compute(x: i32) -> i32 {
+    return x * x;
+}
+
+pub fn greet() -> void {
+    log("Hello from spawned task");
+    return;
+}
+
+pub fn main() -> void {
+    // spawn runs a function (currently synchronous)
+    spawn greet();
+
+    // spawn_with_handle captures the result
+    spawn_with_handle result = compute(5);
+    let value: i32 = await result;
+    log(value);
+
+    spawn_with_handle result2 = compute(10);
+    let value2: i32 = await result2;
+    log(value2);
+
+    return;
+}

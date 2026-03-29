@@ -674,6 +674,8 @@ pub const Parser = struct {
             },
             .keyword_match => return self.parseMatchStmt(),
             .keyword_unsafe => return self.parseUnsafeBlock(),
+            .keyword_spawn => return self.parseSpawnStmt(),
+            .keyword_spawn_with_handle => return self.parseSpawnHandleStmt(),
             .identifier => {
                 // Check for assignment: ident = expr;
                 // We need to peek ahead
@@ -920,6 +922,24 @@ pub const Parser = struct {
         return .{ .unsafe_block = block };
     }
 
+    fn parseSpawnStmt(self: *Parser) ParseError!Ast.Stmt {
+        self.advance(); // consume 'spawn'
+        const expr = try self.parseExpr();
+        try self.expect(.semicolon);
+        return .{ .spawn_stmt = .{ .expr = expr } };
+    }
+
+    fn parseSpawnHandleStmt(self: *Parser) ParseError!Ast.Stmt {
+        self.advance(); // consume 'spawn_with_handle'
+        const name_token = self.current;
+        try self.expect(.identifier);
+        const handle_name = name_token.slice(self.source);
+        try self.expect(.equal);
+        const expr = try self.parseExpr();
+        try self.expect(.semicolon);
+        return .{ .spawn_handle_stmt = .{ .handle_name = handle_name, .expr = expr } };
+    }
+
     fn parseExprStmt(self: *Parser) ParseError!Ast.Stmt {
         const expr = try self.parseExpr();
         try self.expect(.semicolon);
@@ -1066,6 +1086,11 @@ pub const Parser = struct {
             self.advance();
             const operand = try self.parsePostfix();
             return self.ast.addExpr(.{ .unary = .{ .op = .bit_not, .operand = operand } });
+        }
+        if (self.current.tag == .keyword_await) {
+            self.advance();
+            const operand = try self.parsePostfix();
+            return self.ast.addExpr(.{ .await_expr = operand });
         }
         return self.parsePostfix();
     }
@@ -2340,6 +2365,95 @@ test "parse annotation on struct" {
     try testing.expectEqualStrings("ownership", decl.annotations.items[0].name);
     switch (decl.decl) {
         .struct_decl => |sd| try testing.expectEqualStrings("Data", sd.name),
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse spawn statement" {
+    var result = try testParse("package main;\npub fn greet() -> void { return; }\npub fn main() -> void { spawn greet(); return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[1];
+    switch (decl.decl) {
+        .function => |f| {
+            try testing.expectEqual(@as(usize, 2), f.body.stmts.items.len);
+            switch (f.body.stmts.items[0]) {
+                .spawn_stmt => |spawn_s| {
+                    const expr = result.ast.getExpr(spawn_s.expr);
+                    switch (expr) {
+                        .call => |call_e| {
+                            const callee = result.ast.getExpr(call_e.callee);
+                            switch (callee) {
+                                .identifier => |name| try testing.expectEqualStrings("greet", name),
+                                else => return error.TestUnexpectedResult,
+                            }
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse spawn_with_handle statement" {
+    var result = try testParse("package main;\npub fn compute(x: i32) -> i32 { return x; }\npub fn main() -> void { spawn_with_handle h = compute(5); return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[1];
+    switch (decl.decl) {
+        .function => |f| {
+            try testing.expectEqual(@as(usize, 2), f.body.stmts.items.len);
+            switch (f.body.stmts.items[0]) {
+                .spawn_handle_stmt => |sh| {
+                    try testing.expectEqualStrings("h", sh.handle_name);
+                    const expr = result.ast.getExpr(sh.expr);
+                    switch (expr) {
+                        .call => |call_e| {
+                            const callee = result.ast.getExpr(call_e.callee);
+                            switch (callee) {
+                                .identifier => |name| try testing.expectEqualStrings("compute", name),
+                                else => return error.TestUnexpectedResult,
+                            }
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse await expression" {
+    var result = try testParse("package main;\npub fn compute(x: i32) -> i32 { return x; }\npub fn main() -> void { spawn_with_handle h = compute(5); let v: i32 = await h; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[1];
+    switch (decl.decl) {
+        .function => |f| {
+            try testing.expectEqual(@as(usize, 3), f.body.stmts.items.len);
+            switch (f.body.stmts.items[1]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("v", vd.name);
+                    const init_expr = result.ast.getExpr(vd.init_expr);
+                    switch (init_expr) {
+                        .await_expr => |inner| {
+                            const awaited = result.ast.getExpr(inner);
+                            switch (awaited) {
+                                .identifier => |name| try testing.expectEqualStrings("h", name),
+                                else => return error.TestUnexpectedResult,
+                            }
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
         else => return error.TestUnexpectedResult,
     }
 }
