@@ -1,0 +1,21 @@
+package main;
+
+pub struct Wrapper<T> {
+    pub value: T
+}
+
+pub impl Wrapper {
+    pub fn get(self) -> T {
+        return self.value;
+    }
+}
+
+pub fn main() -> void {
+    let w: Wrapper<i32> = Wrapper<i32> { value: 42 };
+    log(w.get());
+
+    let w2: Wrapper<f64> = Wrapper<f64> { value: 3.14 };
+    log(w2.get());
+
+    return;
+}

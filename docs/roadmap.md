@@ -52,7 +52,7 @@ Closing remaining gaps between the grammar spec and implementation, plus compile
 
 | # | Example | Features Unlocked |
 |---|---------|-------------------|
-| 33 | `generic_impl.ast` | generic impl blocks: `impl Pair<T> { ... }` with monomorphized methods |
+| 33 | `generic_impl.ast` | generic impl blocks: `impl Pair<T> { ... }` with monomorphized methods | Done |
 | 34 | `tuple_patterns.ast` | tuple patterns in match: `(a, b) => { ... }`, nested destructuring |
 | 35 | `nested_enum_patterns.ast` | nested enum patterns: `Option.Some(Result.Ok(val)) => { ... }` |
 | 36 | `string_escapes.ast` | escape sequence processing in string literals (`\n`, `\t`, `\\`, `\0`) |

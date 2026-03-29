@@ -31,6 +31,8 @@ pub const CodeGen = struct {
     struct_types: std.StringHashMap(StructTypeInfo),
     generic_struct_decls: std.StringHashMap(*const Ast.StructDecl),
     monomorphized_names: std.ArrayList([]const u8) = .{},
+    monomorphized_origins: std.StringHashMap(MonomorphizedOrigin),
+    generic_impl_decls: std.StringHashMap(*const Ast.ImplDecl),
     enum_types: std.StringHashMap(EnumTypeInfo),
     generic_enum_decls: std.StringHashMap(*const Ast.EnumDecl),
     strlen_fn: c.LLVMValueRef,
@@ -50,6 +52,11 @@ pub const CodeGen = struct {
         llvm_type: c.LLVMTypeRef,
         variant_names: []const []const u8,
         variant_data_types: []const []const TypeTag,
+    };
+
+    const MonomorphizedOrigin = struct {
+        generic_name: []const u8,
+        type_args: []const Ast.TypeExpr,
     };
 
     const LoopContext = struct {
@@ -154,6 +161,8 @@ pub const CodeGen = struct {
             .const_values = std.StringHashMap(NamedValue).init(allocator),
             .struct_types = std.StringHashMap(StructTypeInfo).init(allocator),
             .generic_struct_decls = std.StringHashMap(*const Ast.StructDecl).init(allocator),
+            .monomorphized_origins = std.StringHashMap(MonomorphizedOrigin).init(allocator),
+            .generic_impl_decls = std.StringHashMap(*const Ast.ImplDecl).init(allocator),
             .enum_types = std.StringHashMap(EnumTypeInfo).init(allocator),
             .generic_enum_decls = std.StringHashMap(*const Ast.EnumDecl).init(allocator),
             .diagnostics = diagnostics,
@@ -189,6 +198,8 @@ pub const CodeGen = struct {
         }
         self.struct_types.deinit();
         self.generic_struct_decls.deinit();
+        self.monomorphized_origins.deinit();
+        self.generic_impl_decls.deinit();
         for (self.monomorphized_names.items) |name| {
             self.allocator.free(name);
         }
@@ -367,6 +378,17 @@ pub const CodeGen = struct {
             .field_types = field_type_tags,
         }) catch {};
 
+        // Track origin so we can look up generic impls later
+        self.monomorphized_origins.put(mangled_name, .{
+            .generic_name = generic_name,
+            .type_args = type_args,
+        }) catch {};
+
+        // Check if there's a generic impl for this struct and generate methods
+        if (self.generic_impl_decls.get(generic_name)) |impl_decl| {
+            self.genGenericImplMethods(mangled_name, impl_decl, sd, type_args) catch {};
+        }
+
         return mangled_name;
     }
 
@@ -491,8 +513,138 @@ pub const CodeGen = struct {
     }
 
     fn genImplDecl(self: *CodeGen, impl_decl: *const Ast.ImplDecl) GenError!void {
+        // If this impl is for a generic struct, store it for lazy monomorphization
+        if (self.generic_struct_decls.contains(impl_decl.type_name)) {
+            self.generic_impl_decls.put(impl_decl.type_name, impl_decl) catch {};
+            // Also generate methods for any already-monomorphized instances
+            var it = self.monomorphized_origins.iterator();
+            while (it.next()) |entry| {
+                if (std.mem.eql(u8, entry.value_ptr.generic_name, impl_decl.type_name)) {
+                    const sd = self.generic_struct_decls.get(impl_decl.type_name) orelse continue;
+                    self.genGenericImplMethods(entry.key_ptr.*, impl_decl, sd, entry.value_ptr.type_args) catch {};
+                }
+            }
+            return;
+        }
         for (impl_decl.methods.items) |method| {
             try self.genMethod(impl_decl.type_name, &method);
+        }
+    }
+
+    fn genGenericImplMethods(
+        self: *CodeGen,
+        mangled_name: []const u8,
+        impl_decl: *const Ast.ImplDecl,
+        sd: *const Ast.StructDecl,
+        type_args: []const Ast.TypeExpr,
+    ) GenError!void {
+        // Build type parameter substitution map
+        var type_map = std.StringHashMap(TypeTag).init(self.allocator);
+        defer type_map.deinit();
+        for (sd.type_params.items, 0..) |tp, i| {
+            if (i < type_args.len) {
+                const resolved = self.resolveTypeExpr(type_args[i]);
+                type_map.put(tp, resolved) catch return error.CodeGenError;
+            }
+        }
+
+        // Save builder position and named_values since we may be in the middle of generating another function
+        const saved_bb = c.LLVMGetInsertBlock(self.builder);
+        var saved_values = std.StringHashMap(NamedValue).init(self.allocator);
+        defer saved_values.deinit();
+        var it = self.named_values.iterator();
+        while (it.next()) |entry| {
+            saved_values.put(entry.key_ptr.*, entry.value_ptr.*) catch {};
+        }
+
+        for (impl_decl.methods.items) |method| {
+            try self.genMethodWithSubst(mangled_name, &method, &type_map);
+        }
+
+        // Restore builder position and named_values
+        if (saved_bb != null) {
+            c.LLVMPositionBuilderAtEnd(self.builder, saved_bb);
+        }
+        self.named_values.clearRetainingCapacity();
+        var it2 = saved_values.iterator();
+        while (it2.next()) |entry| {
+            self.named_values.put(entry.key_ptr.*, entry.value_ptr.*) catch {};
+        }
+    }
+
+    fn genMethodWithSubst(self: *CodeGen, type_name: []const u8, method: *const Ast.MethodDecl, type_map: *const std.StringHashMap(TypeTag)) GenError!void {
+        const return_type_tag = self.resolveTypeExprWithSubst(method.return_type, type_map);
+        const llvm_return_type = self.typeTagToLLVM(return_type_tag);
+
+        var param_types = std.ArrayList(c.LLVMTypeRef){};
+        defer param_types.deinit(self.allocator);
+
+        // If method has self, first param is the struct type
+        if (method.has_self) {
+            const self_type = TypeTag{ .struct_type = type_name };
+            try param_types.append(self.allocator, self.typeTagToLLVM(self_type));
+        }
+
+        for (method.params.items) |param| {
+            const pt = self.resolveTypeExprWithSubst(param.type_expr, type_map);
+            try param_types.append(self.allocator, self.typeTagToLLVM(pt));
+        }
+
+        const fn_type = c.LLVMFunctionType(llvm_return_type, param_types.items.ptr, @intCast(param_types.items.len), 0);
+
+        // Mangled name: TypeName_methodName
+        const mangled_slice = std.fmt.allocPrint(self.allocator, "{s}_{s}", .{ type_name, method.name }) catch return error.CodeGenError;
+        defer self.allocator.free(mangled_slice);
+        const mangled = self.allocator.dupeZ(u8, mangled_slice) catch return error.CodeGenError;
+        defer self.allocator.free(mangled);
+
+        // Skip if already generated
+        if (c.LLVMGetNamedFunction(self.module, mangled.ptr) != null) return;
+
+        const function = c.LLVMAddFunction(self.module, mangled.ptr, fn_type);
+        const entry = c.LLVMAppendBasicBlockInContext(self.context, function, "entry");
+        c.LLVMPositionBuilderAtEnd(self.builder, entry);
+
+        self.named_values.clearRetainingCapacity();
+
+        var param_idx: u32 = 0;
+        if (method.has_self) {
+            const llvm_param = c.LLVMGetParam(function, 0);
+            const self_type = TypeTag{ .struct_type = type_name };
+            const alloca = c.LLVMBuildAlloca(self.builder, self.typeTagToLLVM(self_type), "self");
+            _ = c.LLVMBuildStore(self.builder, llvm_param, alloca);
+            self.named_values.put("self", .{
+                .alloca = alloca,
+                .is_mutable = false,
+                .type_tag = self_type,
+            }) catch {};
+            param_idx = 1;
+        }
+
+        for (method.params.items) |param| {
+            const llvm_param = c.LLVMGetParam(function, param_idx);
+            const pt = self.resolveTypeExprWithSubst(param.type_expr, type_map);
+
+            const pname_z = self.allocator.dupeZ(u8, param.name) catch return error.CodeGenError;
+            defer self.allocator.free(pname_z);
+
+            const alloca = c.LLVMBuildAlloca(self.builder, self.typeTagToLLVM(pt), pname_z.ptr);
+            _ = c.LLVMBuildStore(self.builder, llvm_param, alloca);
+            self.named_values.put(param.name, .{
+                .alloca = alloca,
+                .is_mutable = false,
+                .type_tag = pt,
+            }) catch {};
+            param_idx += 1;
+        }
+
+        try self.genBlock(&method.body, false);
+
+        const current_bb = c.LLVMGetInsertBlock(self.builder);
+        if (c.LLVMGetBasicBlockTerminator(current_bb) == null) {
+            if (isTypeTag(return_type_tag, .void_type)) {
+                _ = c.LLVMBuildRetVoid(self.builder);
+            }
         }
     }
 
@@ -2250,6 +2402,27 @@ pub const CodeGen = struct {
                     }
                 },
                 else => {},
+            }
+        }
+        // Check if this is a monomorphized generic struct
+        if (self.monomorphized_origins.get(type_name)) |origin| {
+            // Find the generic impl and resolve return type with substitution
+            if (self.generic_impl_decls.get(origin.generic_name)) |impl_decl| {
+                if (self.generic_struct_decls.get(origin.generic_name)) |sd| {
+                    var type_map = std.StringHashMap(TypeTag).init(self.allocator);
+                    defer type_map.deinit();
+                    for (sd.type_params.items, 0..) |tp, i| {
+                        if (i < origin.type_args.len) {
+                            const resolved = self.resolveTypeExpr(origin.type_args[i]);
+                            type_map.put(tp, resolved) catch {};
+                        }
+                    }
+                    for (impl_decl.methods.items) |method| {
+                        if (std.mem.eql(u8, method.name, method_name)) {
+                            return self.resolveTypeExprWithSubst(method.return_type, &type_map);
+                        }
+                    }
+                }
             }
         }
         return .i32_type;
