@@ -1,0 +1,44 @@
+package main;
+
+pub struct Point {
+    pub x: i32,
+    pub y: i32
+}
+
+pub struct Color {
+    pub r: f64,
+    pub g: f64,
+    pub b: f64
+}
+
+pub fn print_point(p: Point) -> void {
+    log("Point:");
+    log(p.x);
+    log(p.y);
+    return;
+}
+
+pub fn main() -> void {
+    // Create a struct literal
+    let p: Point = Point { x: 10, y: 20 };
+    log(p.x);
+    log(p.y);
+
+    // Pass struct to function
+    print_point(p);
+
+    // Mutable struct
+    let mut q: Point = Point { x: 0, y: 0 };
+    q.x = 5;
+    q.y = 15;
+    log(q.x);
+    log(q.y);
+
+    // Struct with float fields
+    let c: Color = Color { r: 0.5, g: 0.8, b: 1.0 };
+    log(c.r);
+    log(c.g);
+    log(c.b);
+
+    return;
+}

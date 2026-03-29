@@ -26,6 +26,18 @@ pub const Ast = struct {
 
     pub const DeclKind = union(enum) {
         function: FnDecl,
+        struct_decl: StructDecl,
+    };
+
+    pub const StructDecl = struct {
+        name: []const u8,
+        fields: std.ArrayList(StructField),
+    };
+
+    pub const StructField = struct {
+        name: []const u8,
+        type_expr: TypeExpr,
+        visibility: Visibility,
     };
 
     pub const FnDecl = struct {
@@ -68,6 +80,7 @@ pub const Ast = struct {
 
     pub const AssignStmt = struct {
         target: []const u8,
+        target_fields: std.ArrayList([]const u8),
         value: ExprIndex,
     };
 
@@ -97,6 +110,23 @@ pub const Ast = struct {
         unary: UnaryExpr,
         call: CallExpr,
         grouped: ExprIndex,
+        field_access: FieldAccessExpr,
+        struct_literal: StructLiteralExpr,
+    };
+
+    pub const FieldAccessExpr = struct {
+        object: ExprIndex,
+        field: []const u8,
+    };
+
+    pub const StructLiteralExpr = struct {
+        name: []const u8,
+        field_inits: std.ArrayList(FieldInitExpr),
+    };
+
+    pub const FieldInitExpr = struct {
+        name: []const u8,
+        value: ExprIndex,
     };
 
     pub const BinaryExpr = struct {

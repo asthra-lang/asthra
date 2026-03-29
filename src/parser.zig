@@ -64,7 +64,16 @@ pub const Parser = struct {
             };
         }
 
-        self.reportError("expected function declaration");
+        if (self.current.tag == .keyword_struct) {
+            const struct_decl = try self.parseStructDecl();
+            return .{
+                .visibility = visibility,
+                .decl = .{ .struct_decl = struct_decl },
+                .start = start,
+            };
+        }
+
+        self.reportError("expected function or struct declaration");
         return error.ParseError;
     }
 
@@ -114,6 +123,52 @@ pub const Parser = struct {
             .return_type = return_type,
             .body = body,
         };
+    }
+
+    fn parseStructDecl(self: *Parser) ParseError!Ast.StructDecl {
+        self.advance(); // consume 'struct'
+
+        const name_token = self.current;
+        try self.expect(.identifier);
+        const name = name_token.slice(self.source);
+
+        try self.expect(.lbrace);
+        var fields = std.ArrayList(Ast.StructField){};
+
+        if (self.current.tag == .keyword_none) {
+            self.advance(); // consume 'none'
+        } else {
+            while (self.current.tag != .rbrace and self.current.tag != .eof) {
+                var visibility: Ast.Visibility = .private;
+                if (self.current.tag == .keyword_pub) {
+                    visibility = .public;
+                    self.advance();
+                } else if (self.current.tag == .keyword_priv) {
+                    visibility = .private;
+                    self.advance();
+                }
+
+                const field_name_token = self.current;
+                try self.expect(.identifier);
+                const field_name = field_name_token.slice(self.source);
+
+                try self.expect(.colon);
+                const type_expr = try self.parseType();
+
+                try fields.append(self.ast.allocator, .{
+                    .name = field_name,
+                    .type_expr = type_expr,
+                    .visibility = visibility,
+                });
+
+                if (self.current.tag == .comma) {
+                    self.advance();
+                }
+            }
+        }
+
+        try self.expect(.rbrace);
+        return .{ .name = name, .fields = fields };
     }
 
     fn parseParam(self: *Parser) ParseError!Ast.Param {
@@ -213,6 +268,15 @@ pub const Parser = struct {
         const saved_current = self.current;
         // Advance past identifier
         self.advance();
+        // Skip field access chain: ident.field.field = ...
+        while (self.current.tag == .dot) {
+            self.advance(); // consume '.'
+            if (self.current.tag == .identifier) {
+                self.advance(); // consume field name
+            } else {
+                break;
+            }
+        }
         const is_assign = self.current.tag == .equal;
         // Restore state
         self.lexer = saved_lexer;
@@ -268,12 +332,22 @@ pub const Parser = struct {
         try self.expect(.identifier);
         const name = name_token.slice(self.source);
 
+        // Parse field access chain: ident.field.field = ...
+        var target_fields = std.ArrayList([]const u8){};
+        while (self.current.tag == .dot) {
+            self.advance(); // consume '.'
+            const field_token = self.current;
+            try self.expect(.identifier);
+            try target_fields.append(self.ast.allocator, field_token.slice(self.source));
+        }
+
         try self.expect(.equal);
         const value = try self.parseExpr();
         try self.expect(.semicolon);
 
         return .{ .assign = .{
             .target = name,
+            .target_fields = target_fields,
             .value = value,
         } };
     }
@@ -500,6 +574,13 @@ pub const Parser = struct {
                 }
                 try self.expect(.rparen);
                 expr = try self.ast.addExpr(.{ .call = .{ .callee = expr, .args = args } });
+            } else if (self.current.tag == .dot) {
+                // Field access: expr.field
+                self.advance(); // consume '.'
+                const field_token = self.current;
+                try self.expect(.identifier);
+                const field_name = field_token.slice(self.source);
+                expr = try self.ast.addExpr(.{ .field_access = .{ .object = expr, .field = field_name } });
             } else {
                 break;
             }
@@ -540,6 +621,14 @@ pub const Parser = struct {
             .identifier => {
                 const name = self.current.slice(self.source);
                 self.advance();
+                // Check for struct literal: Name { field: value, ... }
+                if (self.current.tag == .lbrace) {
+                    // Peek ahead to distinguish struct literal from block
+                    // Struct literal: identifier '{' identifier ':' ...
+                    if (self.peekIsStructLiteral()) {
+                        return self.parseStructLiteral(name);
+                    }
+                }
                 return self.ast.addExpr(.{ .identifier = name });
             },
             .lparen => {
@@ -560,6 +649,41 @@ pub const Parser = struct {
                 return error.ParseError;
             },
         }
+    }
+
+    fn peekIsStructLiteral(self: *Parser) bool {
+        // Save state and check if we see: { identifier :
+        const saved_lexer = self.lexer;
+        const saved_current = self.current;
+        self.advance(); // consume '{'
+        const is_struct = self.current.tag == .identifier and blk: {
+            self.advance(); // consume identifier
+            break :blk self.current.tag == .colon;
+        };
+        // Restore state
+        self.lexer = saved_lexer;
+        self.current = saved_current;
+        return is_struct;
+    }
+
+    fn parseStructLiteral(self: *Parser, name: []const u8) ParseError!Ast.ExprIndex {
+        try self.expect(.lbrace);
+        var field_inits = std.ArrayList(Ast.FieldInitExpr){};
+
+        while (self.current.tag != .rbrace and self.current.tag != .eof) {
+            const field_name_token = self.current;
+            try self.expect(.identifier);
+            const field_name = field_name_token.slice(self.source);
+            try self.expect(.colon);
+            const value = try self.parseExpr();
+            try field_inits.append(self.ast.allocator, .{ .name = field_name, .value = value });
+            if (self.current.tag == .comma) {
+                self.advance();
+            }
+        }
+
+        try self.expect(.rbrace);
+        return self.ast.addExpr(.{ .struct_literal = .{ .name = name, .field_inits = field_inits } });
     }
 
     // Helpers
@@ -853,6 +977,48 @@ test "parse float literal" {
                 else => return error.TestUnexpectedResult,
             }
         },
+    }
+}
+
+test "parse struct declaration" {
+    var result = try testParse("package main;\npub struct Point { pub x: i32, pub y: i32 }\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    try testing.expectEqual(@as(usize, 2), result.ast.program.decls.items.len);
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .struct_decl => |sd| {
+            try testing.expectEqualStrings("Point", sd.name);
+            try testing.expectEqual(@as(usize, 2), sd.fields.items.len);
+            try testing.expectEqualStrings("x", sd.fields.items[0].name);
+            try testing.expectEqualStrings("y", sd.fields.items[1].name);
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse struct literal" {
+    var result = try testParse("package main;\npub fn main() -> void { let p: Point = Point { x: 1, y: 2 }; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    const expr = result.ast.getExpr(vd.init_expr);
+                    switch (expr) {
+                        .struct_literal => |sl| {
+                            try testing.expectEqualStrings("Point", sl.name);
+                            try testing.expectEqual(@as(usize, 2), sl.field_inits.items.len);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
     }
 }
 

@@ -26,6 +26,13 @@ pub const CodeGen = struct {
     fmt_bool_true: c.LLVMValueRef,
     fmt_bool_false: c.LLVMValueRef,
     loop_stack: std.ArrayList(LoopContext) = .{},
+    struct_types: std.StringHashMap(StructTypeInfo),
+
+    const StructTypeInfo = struct {
+        llvm_type: c.LLVMTypeRef,
+        field_names: []const []const u8,
+        field_types: []const TypeTag,
+    };
 
     const LoopContext = struct {
         continue_bb: c.LLVMBasicBlockRef,
@@ -38,13 +45,14 @@ pub const CodeGen = struct {
         type_tag: TypeTag,
     };
 
-    pub const TypeTag = enum {
+    pub const TypeTag = union(enum) {
         i32_type,
         i64_type,
         f64_type,
         bool_type,
         void_type,
         string_type,
+        struct_type: []const u8,
     };
 
     pub fn init(allocator: std.mem.Allocator, module_name: [*:0]const u8, diagnostics: *Diagnostics, ast: *const Ast) CodeGen {
@@ -78,6 +86,7 @@ pub const CodeGen = struct {
             .module = module,
             .builder = builder,
             .named_values = std.StringHashMap(NamedValue).init(allocator),
+            .struct_types = std.StringHashMap(StructTypeInfo).init(allocator),
             .diagnostics = diagnostics,
             .allocator = allocator,
             .ast = ast,
@@ -96,12 +105,28 @@ pub const CodeGen = struct {
         c.LLVMContextDispose(self.context);
         self.named_values.deinit();
         self.loop_stack.deinit(self.allocator);
+        var it = self.struct_types.iterator();
+        while (it.next()) |entry| {
+            self.allocator.free(entry.value_ptr.field_names);
+            self.allocator.free(entry.value_ptr.field_types);
+        }
+        self.struct_types.deinit();
     }
 
     pub fn generate(self: *CodeGen) GenError!void {
+        // First pass: register all struct types
+        for (self.ast.program.decls.items) |decl| {
+            switch (decl.decl) {
+                .struct_decl => |sd| try self.genStructType(&sd),
+                else => {},
+            }
+        }
+
+        // Second pass: generate functions
         for (self.ast.program.decls.items) |decl| {
             switch (decl.decl) {
                 .function => |fn_decl| try self.genFunction(&fn_decl),
+                .struct_decl => {},
             }
         }
 
@@ -116,9 +141,57 @@ pub const CodeGen = struct {
         }
     }
 
+    fn genStructType(self: *CodeGen, sd: *const Ast.StructDecl) GenError!void {
+        const name_z = self.allocator.dupeZ(u8, sd.name) catch return error.CodeGenError;
+        defer self.allocator.free(name_z);
+
+        const field_count: u32 = @intCast(sd.fields.items.len);
+        var field_llvm_types = self.allocator.alloc(c.LLVMTypeRef, field_count) catch return error.CodeGenError;
+        defer self.allocator.free(field_llvm_types);
+
+        var field_names = self.allocator.alloc([]const u8, field_count) catch return error.CodeGenError;
+        var field_type_tags = self.allocator.alloc(TypeTag, field_count) catch return error.CodeGenError;
+
+        for (sd.fields.items, 0..) |field, i| {
+            const ft = self.resolveTypeExpr(field.type_expr);
+            field_llvm_types[i] = self.typeTagToLLVM(ft);
+            field_names[i] = field.name;
+            field_type_tags[i] = ft;
+        }
+
+        const struct_type = c.LLVMStructCreateNamed(self.context, name_z.ptr);
+        c.LLVMStructSetBody(struct_type, field_llvm_types.ptr, field_count, 0);
+
+        self.struct_types.put(sd.name, .{
+            .llvm_type = struct_type,
+            .field_names = field_names,
+            .field_types = field_type_tags,
+        }) catch {};
+    }
+
+    fn resolveTypeExpr(self: *const CodeGen, type_expr: Ast.TypeExpr) TypeTag {
+        return switch (type_expr) {
+            .builtin => |b| switch (b) {
+                .void => .void_type,
+                .bool_type => .bool_type,
+                .i32_type, .int_type => .i32_type,
+                .i64_type => .i64_type,
+                .f64_type, .float_type => .f64_type,
+                .string_type => .string_type,
+                else => .i32_type,
+            },
+            .named => |name| {
+                if (self.struct_types.contains(name)) {
+                    return .{ .struct_type = name };
+                }
+                return .i32_type;
+            },
+        };
+    }
+
     fn genFunction(self: *CodeGen, fn_decl: *const Ast.FnDecl) GenError!void {
         const is_main = std.mem.eql(u8, fn_decl.name, "main");
-        const return_type_tag = builtinToTypeTag(fn_decl.return_type);
+        const return_type_tag = self.resolveTypeExpr(fn_decl.return_type);
         const llvm_return_type = if (is_main)
             c.LLVMInt32TypeInContext(self.context)
         else
@@ -127,7 +200,7 @@ pub const CodeGen = struct {
         var param_types = std.ArrayList(c.LLVMTypeRef){};
         defer param_types.deinit(self.allocator);
         for (fn_decl.params.items) |param| {
-            const pt = builtinToTypeTag(param.type_expr);
+            const pt = self.resolveTypeExpr(param.type_expr);
             try param_types.append(self.allocator, self.typeTagToLLVM(pt));
         }
 
@@ -145,7 +218,7 @@ pub const CodeGen = struct {
 
         for (fn_decl.params.items, 0..) |param, i| {
             const llvm_param = c.LLVMGetParam(function, @intCast(i));
-            const pt = builtinToTypeTag(param.type_expr);
+            const pt = self.resolveTypeExpr(param.type_expr);
 
             const pname_z = self.allocator.dupeZ(u8, param.name) catch return error.CodeGenError;
             defer self.allocator.free(pname_z);
@@ -165,7 +238,7 @@ pub const CodeGen = struct {
         if (c.LLVMGetBasicBlockTerminator(current_bb) == null) {
             if (is_main) {
                 _ = c.LLVMBuildRet(self.builder, c.LLVMConstInt(c.LLVMInt32TypeInContext(self.context), 0, 0));
-            } else if (return_type_tag == .void_type) {
+            } else if (isTypeTag(return_type_tag, .void_type)) {
                 _ = c.LLVMBuildRetVoid(self.builder);
             }
         }
@@ -193,7 +266,7 @@ pub const CodeGen = struct {
                 }
             },
             .var_decl => |vd| {
-                const type_tag = builtinToTypeTag(vd.type_expr);
+                const type_tag = self.resolveTypeExpr(vd.type_expr);
                 const llvm_type = self.typeTagToLLVM(type_tag);
                 const name_z = self.allocator.dupeZ(u8, vd.name) catch return error.CodeGenError;
                 defer self.allocator.free(name_z);
@@ -209,7 +282,35 @@ pub const CodeGen = struct {
             .assign => |assign| {
                 const val = try self.genExpr(assign.value);
                 if (self.named_values.get(assign.target)) |nv| {
-                    _ = c.LLVMBuildStore(self.builder, val.value, nv.alloca);
+                    if (assign.target_fields.items.len > 0) {
+                        // Field assignment: obj.field = value
+                        var current_ptr = nv.alloca;
+                        var current_type_tag = nv.type_tag;
+
+                        for (assign.target_fields.items) |field_name| {
+                            switch (current_type_tag) {
+                                .struct_type => |struct_name| {
+                                    if (self.struct_types.get(struct_name)) |info| {
+                                        const field_idx = self.findFieldIndex(info, field_name);
+                                        if (field_idx) |idx| {
+                                            current_ptr = c.LLVMBuildStructGEP2(self.builder, info.llvm_type, current_ptr, @intCast(idx), "field_ptr");
+                                            current_type_tag = info.field_types[idx];
+                                        } else {
+                                            self.diagnostics.report(.@"error", 0, "no field '{s}' on struct '{s}'", .{ field_name, struct_name });
+                                            return error.CodeGenError;
+                                        }
+                                    }
+                                },
+                                else => {
+                                    self.diagnostics.report(.@"error", 0, "cannot access field on non-struct type", .{});
+                                    return error.CodeGenError;
+                                },
+                            }
+                        }
+                        _ = c.LLVMBuildStore(self.builder, val.value, current_ptr);
+                    } else {
+                        _ = c.LLVMBuildStore(self.builder, val.value, nv.alloca);
+                    }
                 } else {
                     self.diagnostics.report(.@"error", 0, "undefined variable '{s}'", .{assign.target});
                     return error.CodeGenError;
@@ -425,11 +526,117 @@ pub const CodeGen = struct {
             .grouped => |inner| {
                 return self.genExpr(inner);
             },
+            .field_access => |fa| {
+                return self.genFieldAccess(fa);
+            },
+            .struct_literal => |sl| {
+                return self.genStructLiteral(sl);
+            },
         }
     }
 
+    fn genFieldAccess(self: *CodeGen, fa: Ast.FieldAccessExpr) GenError!ExprResult {
+        // Get the object - we need its alloca (pointer), not the loaded value
+        const obj_expr = self.ast.getExpr(fa.object);
+        switch (obj_expr) {
+            .identifier => |name| {
+                if (self.named_values.get(name)) |nv| {
+                    switch (nv.type_tag) {
+                        .struct_type => |struct_name| {
+                            if (self.struct_types.get(struct_name)) |info| {
+                                if (self.findFieldIndex(info, fa.field)) |idx| {
+                                    const field_ptr = c.LLVMBuildStructGEP2(self.builder, info.llvm_type, nv.alloca, @intCast(idx), "field_ptr");
+                                    const field_type = info.field_types[idx];
+                                    const loaded = c.LLVMBuildLoad2(self.builder, self.typeTagToLLVM(field_type), field_ptr, "field");
+                                    return .{ .value = loaded, .type_tag = field_type };
+                                }
+                                self.diagnostics.report(.@"error", 0, "no field '{s}' on struct '{s}'", .{ fa.field, struct_name });
+                                return error.CodeGenError;
+                            }
+                        },
+                        else => {},
+                    }
+                }
+            },
+            .field_access => {
+                // Nested field access: a.b.c — we need to chain GEPs
+                const parent = try self.genFieldAccessPtr(fa.object);
+                switch (parent.type_tag) {
+                    .struct_type => |struct_name| {
+                        if (self.struct_types.get(struct_name)) |info| {
+                            if (self.findFieldIndex(info, fa.field)) |idx| {
+                                const field_ptr = c.LLVMBuildStructGEP2(self.builder, info.llvm_type, parent.value, @intCast(idx), "field_ptr");
+                                const field_type = info.field_types[idx];
+                                const loaded = c.LLVMBuildLoad2(self.builder, self.typeTagToLLVM(field_type), field_ptr, "field");
+                                return .{ .value = loaded, .type_tag = field_type };
+                            }
+                        }
+                    },
+                    else => {},
+                }
+            },
+            else => {},
+        }
+        self.diagnostics.report(.@"error", 0, "cannot access field on this expression", .{});
+        return error.CodeGenError;
+    }
+
+    fn genFieldAccessPtr(self: *CodeGen, expr_idx: Ast.ExprIndex) GenError!ExprResult {
+        const expr = self.ast.getExpr(expr_idx);
+        switch (expr) {
+            .identifier => |name| {
+                if (self.named_values.get(name)) |nv| {
+                    return .{ .value = nv.alloca, .type_tag = nv.type_tag };
+                }
+            },
+            .field_access => |fa| {
+                const parent = try self.genFieldAccessPtr(fa.object);
+                switch (parent.type_tag) {
+                    .struct_type => |struct_name| {
+                        if (self.struct_types.get(struct_name)) |info| {
+                            if (self.findFieldIndex(info, fa.field)) |idx| {
+                                const field_ptr = c.LLVMBuildStructGEP2(self.builder, info.llvm_type, parent.value, @intCast(idx), "field_ptr");
+                                return .{ .value = field_ptr, .type_tag = info.field_types[idx] };
+                            }
+                        }
+                    },
+                    else => {},
+                }
+            },
+            else => {},
+        }
+        self.diagnostics.report(.@"error", 0, "cannot get pointer to field", .{});
+        return error.CodeGenError;
+    }
+
+    fn genStructLiteral(self: *CodeGen, sl: Ast.StructLiteralExpr) GenError!ExprResult {
+        const info = self.struct_types.get(sl.name) orelse {
+            self.diagnostics.report(.@"error", 0, "undefined struct '{s}'", .{sl.name});
+            return error.CodeGenError;
+        };
+
+        // Allocate the struct on the stack
+        const alloca = c.LLVMBuildAlloca(self.builder, info.llvm_type, "struct_lit");
+
+        // Initialize each field
+        for (sl.field_inits.items) |fi| {
+            if (self.findFieldIndex(info, fi.name)) |idx| {
+                const val = try self.genExpr(fi.value);
+                const field_ptr = c.LLVMBuildStructGEP2(self.builder, info.llvm_type, alloca, @intCast(idx), "field_init");
+                _ = c.LLVMBuildStore(self.builder, val.value, field_ptr);
+            } else {
+                self.diagnostics.report(.@"error", 0, "no field '{s}' on struct '{s}'", .{ fi.name, sl.name });
+                return error.CodeGenError;
+            }
+        }
+
+        // Load the full struct value
+        const loaded = c.LLVMBuildLoad2(self.builder, info.llvm_type, alloca, "struct_val");
+        return .{ .value = loaded, .type_tag = .{ .struct_type = sl.name } };
+    }
+
     fn genBinaryOp(self: *CodeGen, op: Ast.BinaryOp, lhs: ExprResult, rhs: ExprResult) GenError!ExprResult {
-        const is_float = lhs.type_tag == .f64_type;
+        const is_float = isTypeTag(lhs.type_tag, .f64_type);
         const value = switch (op) {
             .add => if (is_float) c.LLVMBuildFAdd(self.builder, lhs.value, rhs.value, "fadd") else c.LLVMBuildAdd(self.builder, lhs.value, rhs.value, "add"),
             .sub => if (is_float) c.LLVMBuildFSub(self.builder, lhs.value, rhs.value, "fsub") else c.LLVMBuildSub(self.builder, lhs.value, rhs.value, "sub"),
@@ -461,7 +668,7 @@ pub const CodeGen = struct {
 
     fn genUnaryOp(self: *CodeGen, op: Ast.UnaryOp, operand: ExprResult) GenError!ExprResult {
         const value = switch (op) {
-            .negate => if (operand.type_tag == .f64_type)
+            .negate => if (isTypeTag(operand.type_tag, .f64_type))
                 c.LLVMBuildFNeg(self.builder, operand.value, "fneg")
             else
                 c.LLVMBuildNeg(self.builder, operand.value, "neg"),
@@ -525,7 +732,9 @@ pub const CodeGen = struct {
             return .{ .value = c.LLVMGetUndef(c.LLVMVoidTypeInContext(self.context)), .type_tag = .void_type };
         } else {
             const result = c.LLVMBuildCall2(self.builder, fn_type, function, args.items.ptr, @intCast(args.items.len), "call");
-            return .{ .value = result, .type_tag = .i32_type };
+            // Look up return type from AST
+            const ret_tag = self.lookupFunctionReturnType(name);
+            return .{ .value = result, .type_tag = ret_tag };
         }
     }
 
@@ -538,31 +747,53 @@ pub const CodeGen = struct {
         const arg = try self.genExpr(call_expr.args.items[0]);
         const printf_type = c.LLVMGlobalGetValueType(self.printf_fn);
 
-        switch (arg.type_tag) {
-            .i32_type, .i64_type => {
-                const args_arr = [_]c.LLVMValueRef{ self.fmt_int, arg.value };
-                _ = c.LLVMBuildCall2(self.builder, printf_type, self.printf_fn, @constCast(&args_arr), 2, "");
-            },
-            .f64_type => {
-                const args_arr = [_]c.LLVMValueRef{ self.fmt_float, arg.value };
-                _ = c.LLVMBuildCall2(self.builder, printf_type, self.printf_fn, @constCast(&args_arr), 2, "");
-            },
-            .string_type => {
-                const args_arr = [_]c.LLVMValueRef{ self.fmt_str, arg.value };
-                _ = c.LLVMBuildCall2(self.builder, printf_type, self.printf_fn, @constCast(&args_arr), 2, "");
-            },
-            .bool_type => {
-                const fmt = c.LLVMBuildSelect(self.builder, arg.value, self.fmt_bool_true, self.fmt_bool_false, "bool_fmt");
-                const args_arr = [_]c.LLVMValueRef{fmt};
-                _ = c.LLVMBuildCall2(self.builder, printf_type, self.printf_fn, @constCast(&args_arr), 1, "");
-            },
-            .void_type => {
-                self.diagnostics.report(.@"error", 0, "cannot log void value", .{});
-                return error.CodeGenError;
-            },
+        if (isTypeTag(arg.type_tag, .i32_type) or isTypeTag(arg.type_tag, .i64_type)) {
+            const args_arr = [_]c.LLVMValueRef{ self.fmt_int, arg.value };
+            _ = c.LLVMBuildCall2(self.builder, printf_type, self.printf_fn, @constCast(&args_arr), 2, "");
+        } else if (isTypeTag(arg.type_tag, .f64_type)) {
+            const args_arr = [_]c.LLVMValueRef{ self.fmt_float, arg.value };
+            _ = c.LLVMBuildCall2(self.builder, printf_type, self.printf_fn, @constCast(&args_arr), 2, "");
+        } else if (isTypeTag(arg.type_tag, .string_type)) {
+            const args_arr = [_]c.LLVMValueRef{ self.fmt_str, arg.value };
+            _ = c.LLVMBuildCall2(self.builder, printf_type, self.printf_fn, @constCast(&args_arr), 2, "");
+        } else if (isTypeTag(arg.type_tag, .bool_type)) {
+            const fmt = c.LLVMBuildSelect(self.builder, arg.value, self.fmt_bool_true, self.fmt_bool_false, "bool_fmt");
+            const args_arr = [_]c.LLVMValueRef{fmt};
+            _ = c.LLVMBuildCall2(self.builder, printf_type, self.printf_fn, @constCast(&args_arr), 1, "");
+        } else if (isTypeTag(arg.type_tag, .void_type)) {
+            self.diagnostics.report(.@"error", 0, "cannot log void value", .{});
+            return error.CodeGenError;
+        } else {
+            self.diagnostics.report(.@"error", 0, "cannot log this type", .{});
+            return error.CodeGenError;
         }
 
         return .{ .value = c.LLVMGetUndef(c.LLVMVoidTypeInContext(self.context)), .type_tag = .void_type };
+    }
+
+    fn lookupFunctionReturnType(self: *const CodeGen, name: []const u8) TypeTag {
+        for (self.ast.program.decls.items) |decl| {
+            switch (decl.decl) {
+                .function => |fn_decl| {
+                    if (std.mem.eql(u8, fn_decl.name, name)) {
+                        return self.resolveTypeExpr(fn_decl.return_type);
+                    }
+                },
+                else => {},
+            }
+        }
+        return .i32_type;
+    }
+
+    fn isTypeTag(tag: TypeTag, comptime expected: @typeInfo(TypeTag).@"union".tag_type.?) bool {
+        return @as(@typeInfo(TypeTag).@"union".tag_type.?, tag) == expected;
+    }
+
+    fn findFieldIndex(_: *const CodeGen, info: StructTypeInfo, field_name: []const u8) ?usize {
+        for (info.field_names, 0..) |name, i| {
+            if (std.mem.eql(u8, name, field_name)) return i;
+        }
+        return null;
     }
 
     fn getTypeConversion(_: *const CodeGen, name: []const u8) ?TypeTag {
@@ -574,36 +805,37 @@ pub const CodeGen = struct {
     }
 
     fn genTypeConversion(self: *CodeGen, src: ExprResult, target: TypeTag) GenError!ExprResult {
-        if (src.type_tag == target) return src;
+        const src_tag: @typeInfo(TypeTag).@"union".tag_type.? = src.type_tag;
+        const tgt_tag: @typeInfo(TypeTag).@"union".tag_type.? = target;
+        if (src_tag == tgt_tag) return src;
 
-        const value = switch (target) {
-            .f64_type => switch (src.type_tag) {
-                .i32_type, .i64_type => c.LLVMBuildSIToFP(self.builder, src.value, c.LLVMDoubleTypeInContext(self.context), "sitofp"),
-                else => {
-                    self.diagnostics.report(.@"error", 0, "cannot convert to f64", .{});
-                    return error.CodeGenError;
-                },
-            },
-            .i32_type => switch (src.type_tag) {
-                .f64_type => c.LLVMBuildFPToSI(self.builder, src.value, c.LLVMInt32TypeInContext(self.context), "fptosi"),
-                .i64_type => c.LLVMBuildTrunc(self.builder, src.value, c.LLVMInt32TypeInContext(self.context), "trunc"),
-                else => {
-                    self.diagnostics.report(.@"error", 0, "cannot convert to i32", .{});
-                    return error.CodeGenError;
-                },
-            },
-            .i64_type => switch (src.type_tag) {
-                .f64_type => c.LLVMBuildFPToSI(self.builder, src.value, c.LLVMInt64TypeInContext(self.context), "fptosi"),
-                .i32_type => c.LLVMBuildSExt(self.builder, src.value, c.LLVMInt64TypeInContext(self.context), "sext"),
-                else => {
-                    self.diagnostics.report(.@"error", 0, "cannot convert to i64", .{});
-                    return error.CodeGenError;
-                },
-            },
-            else => {
-                self.diagnostics.report(.@"error", 0, "unsupported type conversion", .{});
-                return error.CodeGenError;
-            },
+        const value: c.LLVMValueRef = if (isTypeTag(target, .f64_type)) blk: {
+            if (isTypeTag(src.type_tag, .i32_type) or isTypeTag(src.type_tag, .i64_type)) {
+                break :blk c.LLVMBuildSIToFP(self.builder, src.value, c.LLVMDoubleTypeInContext(self.context), "sitofp");
+            }
+            self.diagnostics.report(.@"error", 0, "cannot convert to f64", .{});
+            return error.CodeGenError;
+        } else if (isTypeTag(target, .i32_type)) blk: {
+            if (isTypeTag(src.type_tag, .f64_type)) {
+                break :blk c.LLVMBuildFPToSI(self.builder, src.value, c.LLVMInt32TypeInContext(self.context), "fptosi");
+            }
+            if (isTypeTag(src.type_tag, .i64_type)) {
+                break :blk c.LLVMBuildTrunc(self.builder, src.value, c.LLVMInt32TypeInContext(self.context), "trunc");
+            }
+            self.diagnostics.report(.@"error", 0, "cannot convert to i32", .{});
+            return error.CodeGenError;
+        } else if (isTypeTag(target, .i64_type)) blk: {
+            if (isTypeTag(src.type_tag, .f64_type)) {
+                break :blk c.LLVMBuildFPToSI(self.builder, src.value, c.LLVMInt64TypeInContext(self.context), "fptosi");
+            }
+            if (isTypeTag(src.type_tag, .i32_type)) {
+                break :blk c.LLVMBuildSExt(self.builder, src.value, c.LLVMInt64TypeInContext(self.context), "sext");
+            }
+            self.diagnostics.report(.@"error", 0, "cannot convert to i64", .{});
+            return error.CodeGenError;
+        } else {
+            self.diagnostics.report(.@"error", 0, "unsupported type conversion", .{});
+            return error.CodeGenError;
         };
 
         return .{ .value = value, .type_tag = target };
@@ -617,6 +849,12 @@ pub const CodeGen = struct {
             .bool_type => c.LLVMInt1TypeInContext(self.context),
             .void_type => c.LLVMVoidTypeInContext(self.context),
             .string_type => c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0),
+            .struct_type => |name| {
+                if (self.struct_types.get(name)) |info| {
+                    return info.llvm_type;
+                }
+                return c.LLVMInt32TypeInContext(self.context);
+            },
         };
     }
 

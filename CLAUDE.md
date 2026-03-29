@@ -78,10 +78,11 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 - String literals
 - Boolean literals
 - Float types (`f64`) and type conversions (`f64(x)`, `i32(y)`)
+- Struct declarations, struct literals, field access, field assignment
 
 ## Not Yet Implemented
 
-- Structs, enums, impl blocks
+- Enums, impl blocks
 - Generics and type parameters
 - Pattern matching (`match`)
 - `Result<T,E>` / `Option<T>`
@@ -112,7 +113,7 @@ See [docs/roadmap.md](docs/roadmap.md) for the feature development sequence.
 - **CI** (`.github/workflows/ci.yml`) — builds, unit tests, and integration tests on Ubuntu + macOS for every push to `main` and PRs
 - **Coverage** — kcov traces the compiler binary against all examples, uploads to Codecov
 - **Release** (`.github/workflows/release.yml`) — triggered by `v*` tags, builds ReleaseFast binaries for Linux x86_64, Linux ARM64, macOS ARM64, publishes to GitHub Releases
-- **Unit tests** — 46 tests across `token.zig`, `lexer.zig`, `parser.zig`, `diagnostics.zig` (run via `zig build test`)
+- **Unit tests** — 50 tests across `token.zig`, `lexer.zig`, `parser.zig`, `diagnostics.zig` (run via `zig build test`)
 - **Integration tests** (`tests/run_examples.sh`) — compiles and runs all `examples/*.ast` files, reports pass/fail
 - **Pre-commit hook** (`.claude/settings.json`) — runs `zig build` before commits via Claude Code
 
