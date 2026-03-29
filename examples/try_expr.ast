@@ -1,0 +1,31 @@
+package main;
+
+pub fn safe_divide(a: i32, b: i32) -> Result<i32, string> {
+    if b == 0 {
+        return Result.Err("division by zero");
+    }
+    return Result.Ok(a / b);
+}
+
+pub fn compute(x: i32, y: i32) -> Result<i32, string> {
+    let first: i32 = try safe_divide(x, y);
+    let second: i32 = try safe_divide(first, 2);
+    return Result.Ok(second);
+}
+
+pub fn main() -> void {
+    // Success case: 100 / 5 / 2 = 10
+    match compute(100, 5) {
+        Result.Ok(val) => { log(val); }
+        Result.Err(msg) => { log(msg); }
+    }
+
+    // Error case: division by zero propagates via try
+    match compute(100, 0) {
+        Result.Ok(val) => { log(val); }
+        Result.Err(msg) => { log(msg); }
+    }
+
+    log("try_expr: all tests passed");
+    return;
+}

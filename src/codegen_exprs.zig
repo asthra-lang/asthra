@@ -111,6 +111,9 @@ pub fn genExpr(self: *CodeGen, expr_idx: Ast.ExprIndex) CodeGen.GenError!CodeGen
         .closure => |cl| {
             return genClosureExpr(self, cl);
         },
+        .try_expr => |inner_idx| {
+            return genTryExpr(self, inner_idx);
+        },
     }
 }
 
@@ -1820,6 +1823,77 @@ fn genOsCall(self: *CodeGen, func: []const u8, args: *const std.ArrayList(Ast.Ex
     }
     self.diagnostics.report(.@"error", 0, "unknown os function '{s}'", .{func});
     return error.CodeGenError;
+}
+
+// ── Try Expression ────────────────────────────────────────────────────────
+
+fn genTryExpr(self: *CodeGen, inner_idx: Ast.ExprIndex) CodeGen.GenError!CodeGen.ExprResult {
+    // Evaluate the inner expression (should return Result<T,E> or Option<T>)
+    const inner = try genExpr(self, inner_idx);
+
+    const enum_name = switch (inner.type_tag) {
+        .enum_type => |name| name,
+        else => {
+            self.diagnostics.report(.@"error", 0, "try requires Result or Option type", .{});
+            return error.CodeGenError;
+        },
+    };
+
+    const info = self.enum_types.get(enum_name) orelse {
+        self.diagnostics.report(.@"error", 0, "undefined enum type for try", .{});
+        return error.CodeGenError;
+    };
+
+    // Store enum value to access tag and data
+    const alloca = c.LLVMBuildAlloca(self.builder, info.llvm_type, "try_val");
+    _ = c.LLVMBuildStore(self.builder, inner.value, alloca);
+
+    // Load the tag (field 0): 0 = Ok/Some, 1 = Err/None
+    const tag_ptr = c.LLVMBuildStructGEP2(self.builder, info.llvm_type, alloca, 0, "try_tag_ptr");
+    const tag_val = c.LLVMBuildLoad2(self.builder, c.LLVMInt32TypeInContext(self.context), tag_ptr, "try_tag");
+    const is_ok = c.LLVMBuildICmp(self.builder, c.LLVMIntEQ, tag_val, c.LLVMConstInt(c.LLVMInt32TypeInContext(self.context), 0, 0), "is_ok");
+
+    const current_fn = c.LLVMGetBasicBlockParent(c.LLVMGetInsertBlock(self.builder));
+    const ok_bb = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "try.ok");
+    const err_bb = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "try.err");
+    const cont_bb = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "try.cont");
+
+    _ = c.LLVMBuildCondBr(self.builder, is_ok, ok_bb, err_bb);
+
+    // Error/None branch: early return from enclosing function
+    c.LLVMPositionBuilderAtEnd(self.builder, err_bb);
+    // Return the entire enum value as-is (propagates error)
+    _ = c.LLVMBuildRet(self.builder, inner.value);
+
+    // Ok/Some branch: extract the data (variant 0's data at offset 0)
+    c.LLVMPositionBuilderAtEnd(self.builder, ok_bb);
+    const data_types = info.variant_data_types[0]; // Ok/Some is variant 0
+    if (data_types.len == 0) {
+        _ = c.LLVMBuildBr(self.builder, cont_bb);
+        c.LLVMPositionBuilderAtEnd(self.builder, cont_bb);
+        return .{ .value = c.LLVMGetUndef(c.LLVMVoidTypeInContext(self.context)), .type_tag = .void_type };
+    }
+
+    const unwrapped_type = data_types[0];
+    const unwrapped_llvm = self.typeTagToLLVM(unwrapped_type);
+
+    // Extract data using byte-offset pattern (same as match arm codegen)
+    const data_ptr = c.LLVMBuildStructGEP2(self.builder, info.llvm_type, alloca, 1, "try_data_ptr");
+    const data_byte_ptr = c.LLVMBuildBitCast(self.builder, data_ptr, c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0), "try_data_bytes");
+    var gep_zero = [_]c.LLVMValueRef{c.LLVMConstInt(c.LLVMInt64TypeInContext(self.context), 0, 0)};
+    const field_ptr = c.LLVMBuildGEP2(self.builder, c.LLVMInt8TypeInContext(self.context), data_byte_ptr, &gep_zero, 1, "try_field_ptr");
+    const typed_ptr = c.LLVMBuildBitCast(self.builder, field_ptr, c.LLVMPointerType(unwrapped_llvm, 0), "try_typed_ptr");
+    const unwrapped_val = c.LLVMBuildLoad2(self.builder, unwrapped_llvm, typed_ptr, "try_unwrapped");
+
+    _ = c.LLVMBuildBr(self.builder, cont_bb);
+
+    // Continue with the unwrapped value
+    c.LLVMPositionBuilderAtEnd(self.builder, cont_bb);
+    // Use phi to carry the value from ok_bb
+    const result_phi = c.LLVMBuildPhi(self.builder, unwrapped_llvm, "try_result");
+    c.LLVMAddIncoming(result_phi, @constCast(&[_]c.LLVMValueRef{unwrapped_val}), @constCast(&[_]c.LLVMBasicBlockRef{ok_bb}), 1);
+
+    return .{ .value = result_phi, .type_tag = unwrapped_type };
 }
 
 // ── Closures ──────────────────────────────────────────────────────────────

@@ -1613,6 +1613,11 @@ pub const Parser = struct {
             .keyword_fn => {
                 return self.parseClosure();
             },
+            .keyword_try => {
+                self.advance(); // consume 'try'
+                const inner = try self.parseExpr();
+                return self.ast.addExpr(.{ .try_expr = inner });
+            },
             else => {
                 self.reportError("expected expression");
                 return error.ParseError;

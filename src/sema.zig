@@ -435,6 +435,9 @@ pub const SemanticAnalyzer = struct {
             .bool_literal => {},
             .string_literal => {},
             .char_literal => {},
+            .try_expr => |inner| {
+                self.checkExpr(inner);
+            },
             .closure => |cl| {
                 self.pushScope(true);
                 for (cl.params.items) |param| {

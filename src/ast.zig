@@ -251,6 +251,7 @@ pub const Ast = struct {
         address_of: ExprIndex,
         deref: ExprIndex,
         closure: ClosureExpr,
+        try_expr: ExprIndex,
     };
 
     pub const ClosureExpr = struct {
