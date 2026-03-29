@@ -781,6 +781,11 @@ pub fn genCallExpr(self: *CodeGen, call_expr: Ast.CallExpr) CodeGen.GenError!Cod
         return error.CodeGenError;
     }
 
+    // Higher-order array functions
+    if (std.mem.eql(u8, name, "map")) return genMapCall(self, call_expr);
+    if (std.mem.eql(u8, name, "filter")) return genFilterCall(self, call_expr);
+    if (std.mem.eql(u8, name, "reduce")) return genReduceCall(self, call_expr);
+
     // Type conversion calls: i32(expr), f64(expr), etc.
     if (self.getTypeConversion(name)) |target_type| {
         if (call_expr.args.items.len != 1) {
@@ -1858,4 +1863,299 @@ fn genClosureCall(self: *CodeGen, ct: CodeGen.ClosureTypeTag, args: *const std.A
         const result = c.LLVMBuildCall2(self.builder, fn_type, function, call_args.items.ptr, @intCast(call_args.items.len), "closure_call");
         return .{ .value = result, .type_tag = ct.return_type.* };
     }
+}
+
+// ── Higher-Order Array Functions ──────────────────────────────────────────
+
+/// Helper: call a closure descriptor with LLVM values (not AST ExprIndex)
+fn callClosureWithValues(self: *CodeGen, desc_alloca: c.LLVMValueRef, ft: CodeGen.FnTypeTag, values: []const c.LLVMValueRef) CodeGen.GenError!c.LLVMValueRef {
+    const i8ptr_ty = c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0);
+    var desc_field_types = [_]c.LLVMTypeRef{ i8ptr_ty, i8ptr_ty };
+    const desc_struct_type = c.LLVMStructTypeInContext(self.context, &desc_field_types, 2, 0);
+
+    const fn_ptr_field = c.LLVMBuildStructGEP2(self.builder, desc_struct_type, desc_alloca, 0, "hof_fn_ptr_f");
+    const fn_ptr_raw = c.LLVMBuildLoad2(self.builder, i8ptr_ty, fn_ptr_field, "hof_fn_ptr");
+    const env_ptr_field = c.LLVMBuildStructGEP2(self.builder, desc_struct_type, desc_alloca, 1, "hof_env_ptr_f");
+    const env_ptr = c.LLVMBuildLoad2(self.builder, i8ptr_ty, env_ptr_field, "hof_env_ptr");
+
+    const ret_llvm = self.typeTagToLLVM(ft.return_type.*);
+    var fn_param_types = std.ArrayList(c.LLVMTypeRef){};
+    defer fn_param_types.deinit(self.allocator);
+    fn_param_types.append(self.allocator, i8ptr_ty) catch {};
+    for (ft.param_types) |pt| {
+        fn_param_types.append(self.allocator, self.typeTagToLLVM(pt)) catch {};
+    }
+    const callee_fn_type = c.LLVMFunctionType(ret_llvm, fn_param_types.items.ptr, @intCast(fn_param_types.items.len), 0);
+    const fn_ptr_typed = c.LLVMBuildBitCast(self.builder, fn_ptr_raw, c.LLVMPointerType(callee_fn_type, 0), "hof_fn_typed");
+
+    var call_args = std.ArrayList(c.LLVMValueRef){};
+    defer call_args.deinit(self.allocator);
+    call_args.append(self.allocator, env_ptr) catch {};
+    for (values) |v| {
+        call_args.append(self.allocator, v) catch {};
+    }
+
+    return c.LLVMBuildCall2(self.builder, callee_fn_type, fn_ptr_typed, call_args.items.ptr, @intCast(call_args.items.len), "hof_call");
+}
+
+fn getArrayAllocaFromArg(self: *CodeGen, arg_idx: Ast.ExprIndex) ?struct { alloca: c.LLVMValueRef, arr: CodeGen.ArrayTypeTag } {
+    const expr = self.ast.getExpr(arg_idx);
+    switch (expr) {
+        .identifier => |name| {
+            if (self.named_values.get(name)) |nv| {
+                switch (nv.type_tag) {
+                    .array_type => |arr| return .{ .alloca = nv.alloca, .arr = arr },
+                    else => {},
+                }
+            }
+        },
+        else => {},
+    }
+    return null;
+}
+
+fn genMapCall(self: *CodeGen, call_expr: Ast.CallExpr) CodeGen.GenError!CodeGen.ExprResult {
+    if (call_expr.args.items.len != 2) { self.diagnostics.report(.@"error", 0, "map() expects 2 arguments (array, function)", .{}); return error.CodeGenError; }
+
+    // Get array alloca and type info
+    const arr_info = getArrayAllocaFromArg(self, call_expr.args.items[0]) orelse {
+        self.diagnostics.report(.@"error", 0, "map() first argument must be an array variable", .{});
+        return error.CodeGenError;
+    };
+    const count = arr_info.arr.count;
+    const elem_type = arr_info.arr.element_type.*;
+    const elem_llvm = self.typeTagToLLVM(elem_type);
+    const input_array_llvm = self.typeTagToLLVM(.{ .array_type = arr_info.arr });
+
+    // Get closure descriptor
+    const fn_result = try genExpr(self, call_expr.args.items[1]);
+    const ft = switch (fn_result.type_tag) {
+        .fn_type => |f| f,
+        else => { self.diagnostics.report(.@"error", 0, "map() second argument must be a function", .{}); return error.CodeGenError; },
+    };
+    const out_elem_type = ft.return_type.*;
+    const out_elem_llvm = self.typeTagToLLVM(out_elem_type);
+
+    // Store closure descriptor to alloca for GEP access
+    const i8ptr_ty = c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0);
+    var desc_ft = [_]c.LLVMTypeRef{ i8ptr_ty, i8ptr_ty };
+    const desc_type = c.LLVMStructTypeInContext(self.context, &desc_ft, 2, 0);
+    const fn_alloca = c.LLVMBuildAlloca(self.builder, desc_type, "map_fn");
+    _ = c.LLVMBuildStore(self.builder, fn_result.value, fn_alloca);
+
+    // Allocate output array
+    const out_array_llvm = c.LLVMArrayType(out_elem_llvm, count);
+    const out_alloca = c.LLVMBuildAlloca(self.builder, out_array_llvm, "map_out");
+
+    const i32_llvm = c.LLVMInt32TypeInContext(self.context);
+    const count_val = c.LLVMConstInt(i32_llvm, count, 0);
+    const zero = c.LLVMConstInt(i32_llvm, 0, 0);
+    const one = c.LLVMConstInt(i32_llvm, 1, 0);
+
+    const current_fn = c.LLVMGetBasicBlockParent(c.LLVMGetInsertBlock(self.builder));
+    const loop_header = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "map_loop");
+    const loop_body = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "map_body");
+    const loop_end = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "map_end");
+
+    _ = c.LLVMBuildBr(self.builder, loop_header);
+
+    // Header: i = phi(0, entry)(i_next, body)
+    c.LLVMPositionBuilderAtEnd(self.builder, loop_header);
+    const i_phi = c.LLVMBuildPhi(self.builder, i32_llvm, "map_i");
+    const done = c.LLVMBuildICmp(self.builder, c.LLVMIntUGE, i_phi, count_val, "map_done");
+    _ = c.LLVMBuildCondBr(self.builder, done, loop_end, loop_body);
+
+    // Body: load input[i], call fn, store to output[i]
+    c.LLVMPositionBuilderAtEnd(self.builder, loop_body);
+    var in_gep = [_]c.LLVMValueRef{ zero, i_phi };
+    const in_ptr = c.LLVMBuildGEP2(self.builder, input_array_llvm, arr_info.alloca, &in_gep, 2, "map_in_ptr");
+    const in_val = c.LLVMBuildLoad2(self.builder, elem_llvm, in_ptr, "map_in_val");
+
+    const mapped_val = try callClosureWithValues(self, fn_alloca, ft, &[_]c.LLVMValueRef{in_val});
+
+    var out_gep = [_]c.LLVMValueRef{ zero, i_phi };
+    const out_ptr = c.LLVMBuildGEP2(self.builder, out_array_llvm, out_alloca, &out_gep, 2, "map_out_ptr");
+    _ = c.LLVMBuildStore(self.builder, mapped_val, out_ptr);
+
+    const i_next = c.LLVMBuildAdd(self.builder, i_phi, one, "map_i_next");
+    _ = c.LLVMBuildBr(self.builder, loop_header);
+
+    // Wire phi
+    const entry_bb = c.LLVMGetPreviousBasicBlock(loop_header);
+    c.LLVMAddIncoming(i_phi, @constCast(&[_]c.LLVMValueRef{zero}), @constCast(&[_]c.LLVMBasicBlockRef{entry_bb}), 1);
+    c.LLVMAddIncoming(i_phi, @constCast(&[_]c.LLVMValueRef{i_next}), @constCast(&[_]c.LLVMBasicBlockRef{loop_body}), 1);
+
+    c.LLVMPositionBuilderAtEnd(self.builder, loop_end);
+    const result = c.LLVMBuildLoad2(self.builder, out_array_llvm, out_alloca, "map_result");
+
+    const out_elem_ptr = self.allocator.create(CodeGen.TypeTag) catch return error.CodeGenError;
+    out_elem_ptr.* = out_elem_type;
+    return .{ .value = result, .type_tag = .{ .array_type = .{ .element_type = out_elem_ptr, .count = count } } };
+}
+
+fn genReduceCall(self: *CodeGen, call_expr: Ast.CallExpr) CodeGen.GenError!CodeGen.ExprResult {
+    if (call_expr.args.items.len != 3) { self.diagnostics.report(.@"error", 0, "reduce() expects 3 arguments (array, init, function)", .{}); return error.CodeGenError; }
+
+    const arr_info = getArrayAllocaFromArg(self, call_expr.args.items[0]) orelse {
+        self.diagnostics.report(.@"error", 0, "reduce() first argument must be an array variable", .{});
+        return error.CodeGenError;
+    };
+    const count = arr_info.arr.count;
+    const elem_type = arr_info.arr.element_type.*;
+    const elem_llvm = self.typeTagToLLVM(elem_type);
+    const input_array_llvm = self.typeTagToLLVM(.{ .array_type = arr_info.arr });
+
+    const init_val = try genExpr(self, call_expr.args.items[1]);
+
+    const fn_result = try genExpr(self, call_expr.args.items[2]);
+    const ft = switch (fn_result.type_tag) {
+        .fn_type => |f| f,
+        else => { self.diagnostics.report(.@"error", 0, "reduce() third argument must be a function", .{}); return error.CodeGenError; },
+    };
+
+    // Store closure descriptor
+    const i8ptr_ty = c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0);
+    var desc_ft = [_]c.LLVMTypeRef{ i8ptr_ty, i8ptr_ty };
+    const desc_type = c.LLVMStructTypeInContext(self.context, &desc_ft, 2, 0);
+    const fn_alloca = c.LLVMBuildAlloca(self.builder, desc_type, "reduce_fn");
+    _ = c.LLVMBuildStore(self.builder, fn_result.value, fn_alloca);
+
+    const i32_llvm = c.LLVMInt32TypeInContext(self.context);
+    const count_val = c.LLVMConstInt(i32_llvm, count, 0);
+    const zero = c.LLVMConstInt(i32_llvm, 0, 0);
+    const one = c.LLVMConstInt(i32_llvm, 1, 0);
+
+    const current_fn = c.LLVMGetBasicBlockParent(c.LLVMGetInsertBlock(self.builder));
+    const loop_header = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "reduce_loop");
+    const loop_body = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "reduce_body");
+    const loop_end = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "reduce_end");
+
+    _ = c.LLVMBuildBr(self.builder, loop_header);
+
+    // Header: i = phi, acc = phi
+    c.LLVMPositionBuilderAtEnd(self.builder, loop_header);
+    const i_phi = c.LLVMBuildPhi(self.builder, i32_llvm, "reduce_i");
+    const acc_phi = c.LLVMBuildPhi(self.builder, self.typeTagToLLVM(init_val.type_tag), "reduce_acc");
+    const done = c.LLVMBuildICmp(self.builder, c.LLVMIntUGE, i_phi, count_val, "reduce_done");
+    _ = c.LLVMBuildCondBr(self.builder, done, loop_end, loop_body);
+
+    // Body: load input[i], call fn(acc, elem)
+    c.LLVMPositionBuilderAtEnd(self.builder, loop_body);
+    var in_gep = [_]c.LLVMValueRef{ zero, i_phi };
+    const in_ptr = c.LLVMBuildGEP2(self.builder, input_array_llvm, arr_info.alloca, &in_gep, 2, "reduce_in_ptr");
+    const in_val = c.LLVMBuildLoad2(self.builder, elem_llvm, in_ptr, "reduce_in_val");
+
+    const new_acc = try callClosureWithValues(self, fn_alloca, ft, &[_]c.LLVMValueRef{ acc_phi, in_val });
+
+    const i_next = c.LLVMBuildAdd(self.builder, i_phi, one, "reduce_i_next");
+    _ = c.LLVMBuildBr(self.builder, loop_header);
+
+    // Wire phis
+    const entry_bb = c.LLVMGetPreviousBasicBlock(loop_header);
+    c.LLVMAddIncoming(i_phi, @constCast(&[_]c.LLVMValueRef{zero}), @constCast(&[_]c.LLVMBasicBlockRef{entry_bb}), 1);
+    c.LLVMAddIncoming(i_phi, @constCast(&[_]c.LLVMValueRef{i_next}), @constCast(&[_]c.LLVMBasicBlockRef{loop_body}), 1);
+    c.LLVMAddIncoming(acc_phi, @constCast(&[_]c.LLVMValueRef{init_val.value}), @constCast(&[_]c.LLVMBasicBlockRef{entry_bb}), 1);
+    c.LLVMAddIncoming(acc_phi, @constCast(&[_]c.LLVMValueRef{new_acc}), @constCast(&[_]c.LLVMBasicBlockRef{loop_body}), 1);
+
+    c.LLVMPositionBuilderAtEnd(self.builder, loop_end);
+    return .{ .value = acc_phi, .type_tag = init_val.type_tag };
+}
+
+fn genFilterCall(self: *CodeGen, call_expr: Ast.CallExpr) CodeGen.GenError!CodeGen.ExprResult {
+    if (call_expr.args.items.len != 2) { self.diagnostics.report(.@"error", 0, "filter() expects 2 arguments (array, predicate)", .{}); return error.CodeGenError; }
+
+    const arr_info = getArrayAllocaFromArg(self, call_expr.args.items[0]) orelse {
+        self.diagnostics.report(.@"error", 0, "filter() first argument must be an array variable", .{});
+        return error.CodeGenError;
+    };
+    const count = arr_info.arr.count;
+    const elem_type = arr_info.arr.element_type.*;
+    const elem_llvm = self.typeTagToLLVM(elem_type);
+    const input_array_llvm = self.typeTagToLLVM(.{ .array_type = arr_info.arr });
+    const elem_size = c.LLVMABISizeOfType(c.LLVMGetModuleDataLayout(self.module), elem_llvm);
+
+    const fn_result = try genExpr(self, call_expr.args.items[1]);
+    const ft = switch (fn_result.type_tag) {
+        .fn_type => |f| f,
+        else => { self.diagnostics.report(.@"error", 0, "filter() second argument must be a function", .{}); return error.CodeGenError; },
+    };
+
+    // Store closure descriptor
+    const i8ptr_ty = c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0);
+    var desc_ft = [_]c.LLVMTypeRef{ i8ptr_ty, i8ptr_ty };
+    const desc_type = c.LLVMStructTypeInContext(self.context, &desc_ft, 2, 0);
+    const fn_alloca = c.LLVMBuildAlloca(self.builder, desc_type, "filter_fn");
+    _ = c.LLVMBuildStore(self.builder, fn_result.value, fn_alloca);
+
+    // Allocate max-size buffer via malloc
+    const i32_llvm = c.LLVMInt32TypeInContext(self.context);
+    const i64_llvm = c.LLVMInt64TypeInContext(self.context);
+    const buf_size = c.LLVMConstInt(i64_llvm, @as(u64, count) * elem_size, 0);
+    const malloc_fn_type = c.LLVMGlobalGetValueType(self.malloc_fn);
+    var malloc_args = [_]c.LLVMValueRef{buf_size};
+    const buf = c.LLVMBuildCall2(self.builder, malloc_fn_type, self.malloc_fn, &malloc_args, 1, "filter_buf");
+    const typed_buf = c.LLVMBuildBitCast(self.builder, buf, c.LLVMPointerType(elem_llvm, 0), "filter_typed_buf");
+
+    const count_val = c.LLVMConstInt(i32_llvm, count, 0);
+    const zero = c.LLVMConstInt(i32_llvm, 0, 0);
+    const one = c.LLVMConstInt(i32_llvm, 1, 0);
+
+    const current_fn = c.LLVMGetBasicBlockParent(c.LLVMGetInsertBlock(self.builder));
+    const loop_header = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "filter_loop");
+    const loop_body = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "filter_body");
+    const store_bb = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "filter_store");
+    const skip_bb = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "filter_skip");
+    const loop_end = c.LLVMAppendBasicBlockInContext(self.context, current_fn, "filter_end");
+
+    _ = c.LLVMBuildBr(self.builder, loop_header);
+
+    // Header: i = phi, out_count = phi
+    c.LLVMPositionBuilderAtEnd(self.builder, loop_header);
+    const i_phi = c.LLVMBuildPhi(self.builder, i32_llvm, "filter_i");
+    const j_phi = c.LLVMBuildPhi(self.builder, i32_llvm, "filter_j");
+    const done = c.LLVMBuildICmp(self.builder, c.LLVMIntUGE, i_phi, count_val, "filter_done");
+    _ = c.LLVMBuildCondBr(self.builder, done, loop_end, loop_body);
+
+    // Body: load input[i], call predicate
+    c.LLVMPositionBuilderAtEnd(self.builder, loop_body);
+    var in_gep = [_]c.LLVMValueRef{ c.LLVMConstInt(i32_llvm, 0, 0), i_phi };
+    const in_ptr = c.LLVMBuildGEP2(self.builder, input_array_llvm, arr_info.alloca, &in_gep, 2, "filter_in_ptr");
+    const in_val = c.LLVMBuildLoad2(self.builder, elem_llvm, in_ptr, "filter_in_val");
+
+    const pred_result = try callClosureWithValues(self, fn_alloca, ft, &[_]c.LLVMValueRef{in_val});
+    _ = c.LLVMBuildCondBr(self.builder, pred_result, store_bb, skip_bb);
+
+    // Store: buf[j] = in_val, j_next = j + 1
+    c.LLVMPositionBuilderAtEnd(self.builder, store_bb);
+    var out_gep = [_]c.LLVMValueRef{j_phi};
+    const out_ptr = c.LLVMBuildGEP2(self.builder, elem_llvm, typed_buf, &out_gep, 1, "filter_out_ptr");
+    _ = c.LLVMBuildStore(self.builder, in_val, out_ptr);
+    const j_inc = c.LLVMBuildAdd(self.builder, j_phi, one, "filter_j_inc");
+    _ = c.LLVMBuildBr(self.builder, skip_bb);
+
+    // Skip: merge j values
+    c.LLVMPositionBuilderAtEnd(self.builder, skip_bb);
+    const j_merged = c.LLVMBuildPhi(self.builder, i32_llvm, "filter_j_merged");
+    c.LLVMAddIncoming(j_merged, @constCast(&[_]c.LLVMValueRef{ j_inc, j_phi }), @constCast(&[_]c.LLVMBasicBlockRef{ store_bb, loop_body }), 2);
+    const i_next = c.LLVMBuildAdd(self.builder, i_phi, one, "filter_i_next");
+    _ = c.LLVMBuildBr(self.builder, loop_header);
+
+    // Wire header phis
+    const entry_bb = c.LLVMGetPreviousBasicBlock(loop_header);
+    c.LLVMAddIncoming(i_phi, @constCast(&[_]c.LLVMValueRef{ zero, i_next }), @constCast(&[_]c.LLVMBasicBlockRef{ entry_bb, skip_bb }), 2);
+    c.LLVMAddIncoming(j_phi, @constCast(&[_]c.LLVMValueRef{ zero, j_merged }), @constCast(&[_]c.LLVMBasicBlockRef{ entry_bb, skip_bb }), 2);
+
+    // Build slice struct { ptr, len }
+    c.LLVMPositionBuilderAtEnd(self.builder, loop_end);
+    const slice_llvm = self.sliceLLVMType();
+    const slice_alloca = c.LLVMBuildAlloca(self.builder, slice_llvm, "filter_slice");
+    const ptr_field = c.LLVMBuildStructGEP2(self.builder, slice_llvm, slice_alloca, 0, "filter_ptr_f");
+    _ = c.LLVMBuildStore(self.builder, buf, ptr_field);
+    const len_field = c.LLVMBuildStructGEP2(self.builder, slice_llvm, slice_alloca, 1, "filter_len_f");
+    _ = c.LLVMBuildStore(self.builder, j_phi, len_field);
+    const slice_val = c.LLVMBuildLoad2(self.builder, slice_llvm, slice_alloca, "filter_result");
+
+    const elem_ptr = self.allocator.create(CodeGen.TypeTag) catch return error.CodeGenError;
+    elem_ptr.* = elem_type;
+    return .{ .value = slice_val, .type_tag = .{ .slice_type = .{ .element_type = elem_ptr } } };
 }

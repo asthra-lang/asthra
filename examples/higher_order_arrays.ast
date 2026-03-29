@@ -1,0 +1,26 @@
+package main;
+
+pub fn main() -> void {
+    let nums: [5]i32 = [1, 2, 3, 4, 5];
+
+    // map: transform each element
+    let doubled: [5]i32 = map(nums, fn(x: i32) -> i32 { return x * 2; });
+    log(doubled[0]);
+    log(doubled[4]);
+
+    // reduce: fold to single value
+    let sum: i32 = reduce(nums, 0, fn(acc: i32, x: i32) -> i32 { return acc + x; });
+    log(sum);
+
+    // filter: keep matching elements (returns slice)
+    let evens: []i32 = filter(nums, fn(x: i32) -> bool { return x % 2 == 0; });
+    log(len(evens));
+
+    // map with capture
+    let factor: i32 = 10;
+    let scaled: [5]i32 = map(nums, fn(x: i32) -> i32 { return x * factor; });
+    log(scaled[2]);
+
+    log("higher_order_arrays: all tests passed");
+    return;
+}

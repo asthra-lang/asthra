@@ -99,3 +99,4 @@ Anonymous functions with variable capture via lambda lifting.
 |---|---------|-------------------|--------|
 | 57 | `closures.ast` | `fn(params) -> Type { body }` syntax, variable capture by value, env struct codegen | Done |
 | 58 | `higher_order.ast` | `fn(T) -> R` as parameter type, closure descriptors, indirect calls | Done |
+| 59 | `higher_order_arrays.ast` | `map`, `filter`, `reduce` builtin functions on arrays | Done |

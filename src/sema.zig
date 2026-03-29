@@ -76,6 +76,10 @@ pub const SemanticAnalyzer = struct {
         self.registerBuiltin("char", 1);
         self.registerBuiltin("bool", 1);
         self.registerBuiltin("sizeof", 1);
+        // Higher-order array functions
+        self.registerBuiltin("map", 2);
+        self.registerBuiltin("filter", 2);
+        self.registerBuiltin("reduce", 3);
 
         // Pass 1: Register all top-level declarations
         for (self.ast.program.decls.items) |decl| {

@@ -106,12 +106,12 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 
 - Closures / anonymous functions with variable capture: `fn(x: i32) -> i32 { return x * captured; }`
 - Higher-order functions: `fn(i32) -> i32` as parameter types, indirect calls through closure descriptors
+- `map(arr, fn)`, `filter(arr, fn)`, `reduce(arr, init, fn)` builtin functions on arrays
 
 ## Not Yet Implemented
 
 - DWARF debug info for lldb/gdb
 - Real pthread-based async runtime
-- Higher-order functions (`map`, `filter`, `reduce`) as stdlib builtins
 
 ## Development Strategy: Example-Driven
 
