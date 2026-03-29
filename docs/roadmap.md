@@ -14,3 +14,9 @@ Development follows an example-driven approach. Each example builds on the previ
 | 8 | `result.ast` | `Result<T,E>`, error handling patterns |
 | 9 | `tuples.ast` | tuple types, tuple literals, tuple element access (`.0`, `.1`) |
 | 10 | `ffi.ast` | extern functions, unsafe blocks, pointer types |
+| 11 | `constants.ast` | `const` declarations, compile-time expressions, `sizeof()` |
+| 12 | `imports.ast` | `import` declarations, module system, `as` aliases |
+| 13 | `generics.ast` | type parameters `<T>`, generic structs/enums, type args |
+| 14 | `annotations.ast` | `#[...]` tags: human_review, security, ownership, semantic |
+| 15 | `concurrency.ast` | `spawn`, `spawn_with_handle`, `await` |
+| 16 | `multiline_strings.ast` | triple-quoted strings `"""..."""`, raw strings `r"""..."""` |

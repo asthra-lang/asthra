@@ -80,18 +80,19 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 
 ## Not Yet Implemented
 
+- Float types (`f64`) and type conversions (`f64(x)`, `i32(y)`)
 - Structs, enums, impl blocks
-- Generics
+- Generics and type parameters
 - Pattern matching (`match`)
 - `Result<T,E>` / `Option<T>`
 - Slices and arrays
 - Tuples
-- FFI (`extern`, `unsafe`)
-- Concurrency (`spawn`, `await`)
-- Annotations (`#[...]`)
-- `break` / `continue` (parsed but not yet wired in codegen)
-- Float types and type conversions
+- FFI (`extern`, `unsafe`, pointer types)
+- `const` declarations and compile-time expressions
 - Import system
+- Concurrency (`spawn`, `spawn_with_handle`, `await`)
+- Annotations (`#[...]` — human_review, security, ownership, semantic)
+- Multi-line strings (`"""..."""`, `r"""..."""`)
 - Semantic analysis (type checking, mutability enforcement)
 
 ## Development Strategy: Example-Driven
@@ -111,7 +112,7 @@ See [docs/roadmap.md](docs/roadmap.md) for the feature development sequence.
 - **CI** (`.github/workflows/ci.yml`) — builds, unit tests, and integration tests on Ubuntu + macOS for every push to `main` and PRs
 - **Coverage** — kcov traces the compiler binary against all examples, uploads to Codecov
 - **Release** (`.github/workflows/release.yml`) — triggered by `v*` tags, builds ReleaseFast binaries for Linux x86_64, Linux ARM64, macOS ARM64, publishes to GitHub Releases
-- **Unit tests** — 42 tests across `token.zig`, `lexer.zig`, `parser.zig`, `diagnostics.zig` (run via `zig build test`)
+- **Unit tests** — 44 tests across `token.zig`, `lexer.zig`, `parser.zig`, `diagnostics.zig` (run via `zig build test`)
 - **Integration tests** (`tests/run_examples.sh`) — compiles and runs all `examples/*.ast` files, reports pass/fail
 - **Pre-commit hook** (`.claude/settings.json`) — runs `zig build` before commits via Claude Code
 
