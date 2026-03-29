@@ -1,0 +1,21 @@
+package main;
+
+pub fn main() -> void {
+    let x = 42;
+    log(x);
+
+    let y = 3.14;
+    log(y);
+
+    let s = "hello";
+    log(s);
+
+    let b = true;
+    log(b);
+
+    let mut counter = 0;
+    counter = counter + 1;
+    log(counter);
+
+    return;
+}

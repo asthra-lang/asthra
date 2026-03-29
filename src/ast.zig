@@ -328,6 +328,7 @@ pub const Ast = struct {
         tuple_type: TupleTypeExpr,
         generic_type: GenericTypeExpr,
         ptr_type: PtrTypeExpr,
+        inferred,
     };
 
     pub const PtrTypeExpr = struct {

@@ -690,6 +690,10 @@ pub const CodeGen = struct {
                 pointee_ptr.* = pointee_tag;
                 return .{ .ptr_type = .{ .pointee = pointee_ptr, .is_mutable = pt.is_mutable } };
             },
+            .inferred => {
+                // Inferred types should be resolved at the call site, not here
+                return .i32_type;
+            },
         };
     }
 
@@ -866,18 +870,35 @@ pub const CodeGen = struct {
                 }
             },
             .var_decl => |vd| {
-                const type_tag = self.resolveTypeExpr(vd.type_expr);
-                const llvm_type = self.typeTagToLLVM(type_tag);
-                const name_z = self.allocator.dupeZ(u8, vd.name) catch return error.CodeGenError;
-                defer self.allocator.free(name_z);
-                const alloca = c.LLVMBuildAlloca(self.builder, llvm_type, name_z.ptr);
-                const init_val = try self.genExpr(vd.init_expr);
-                _ = c.LLVMBuildStore(self.builder, init_val.value, alloca);
-                self.named_values.put(vd.name, .{
-                    .alloca = alloca,
-                    .is_mutable = vd.is_mutable,
-                    .type_tag = type_tag,
-                }) catch {};
+                if (vd.type_expr == .inferred) {
+                    // Type inference: evaluate init first to determine type
+                    const init_val = try self.genExpr(vd.init_expr);
+                    const type_tag = init_val.type_tag;
+                    const llvm_type = self.typeTagToLLVM(type_tag);
+                    const name_z = self.allocator.dupeZ(u8, vd.name) catch return error.CodeGenError;
+                    defer self.allocator.free(name_z);
+                    const alloca = c.LLVMBuildAlloca(self.builder, llvm_type, name_z.ptr);
+                    _ = c.LLVMBuildStore(self.builder, init_val.value, alloca);
+                    self.named_values.put(vd.name, .{
+                        .alloca = alloca,
+                        .is_mutable = vd.is_mutable,
+                        .type_tag = type_tag,
+                    }) catch {};
+                } else {
+                    // Explicit type: resolve type first (may register Option/Result)
+                    const type_tag = self.resolveTypeExpr(vd.type_expr);
+                    const llvm_type = self.typeTagToLLVM(type_tag);
+                    const name_z = self.allocator.dupeZ(u8, vd.name) catch return error.CodeGenError;
+                    defer self.allocator.free(name_z);
+                    const alloca = c.LLVMBuildAlloca(self.builder, llvm_type, name_z.ptr);
+                    const init_val = try self.genExpr(vd.init_expr);
+                    _ = c.LLVMBuildStore(self.builder, init_val.value, alloca);
+                    self.named_values.put(vd.name, .{
+                        .alloca = alloca,
+                        .is_mutable = vd.is_mutable,
+                        .type_tag = type_tag,
+                    }) catch {};
+                }
             },
             .assign => |assign| {
                 const val = try self.genExpr(assign.value);
@@ -2322,5 +2343,6 @@ fn builtinToTypeTag(type_expr: Ast.TypeExpr) CodeGen.TypeTag {
         .tuple_type => .i32_type, // resolved properly in CodeGen
         .generic_type => .i32_type, // resolved properly in CodeGen via monomorphization
         .ptr_type => .i32_type, // resolved properly in CodeGen
+        .inferred => .i32_type, // resolved at call site via expression type
     };
 }

@@ -791,8 +791,11 @@ pub const Parser = struct {
         try self.expect(.identifier);
         const name = name_token.slice(self.source);
 
-        try self.expect(.colon);
-        const type_expr = try self.parseType();
+        var type_expr: Ast.TypeExpr = .inferred;
+        if (self.current.tag == .colon) {
+            self.advance(); // consume ':'
+            type_expr = try self.parseType();
+        }
 
         try self.expect(.equal);
         const init_expr = try self.parseExpr();
@@ -1672,6 +1675,45 @@ test "parse mutable variable declaration" {
                 .var_decl => |vd| {
                     try testing.expectEqualStrings("y", vd.name);
                     try testing.expect(vd.is_mutable);
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse type-inferred variable declaration" {
+    var result = try testParse("package main;\npub fn main() -> void { let x = 42; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            try testing.expectEqual(@as(usize, 2), f.body.stmts.items.len);
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("x", vd.name);
+                    try testing.expect(!vd.is_mutable);
+                    try testing.expect(vd.type_expr == .inferred);
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse mutable type-inferred variable declaration" {
+    var result = try testParse("package main;\npub fn main() -> void { let mut counter = 0; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("counter", vd.name);
+                    try testing.expect(vd.is_mutable);
+                    try testing.expect(vd.type_expr == .inferred);
                 },
                 else => return error.TestUnexpectedResult,
             }
