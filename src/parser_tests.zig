@@ -1897,6 +1897,71 @@ test "parse triple-element tuple pattern" {
     }
 }
 
+test "parse type alias declaration" {
+    var result = try testParse("package main;\npub type Integer = i32;\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    try testing.expectEqual(@as(usize, 2), result.ast.program.decls.items.len);
+    const decl = result.ast.program.decls.items[0];
+    try testing.expectEqual(Ast.Visibility.public, decl.visibility);
+    switch (decl.decl) {
+        .type_alias => |ta| {
+            try testing.expectEqualStrings("Integer", ta.name);
+            try testing.expectEqual(Ast.BuiltinType.i32_type, ta.target.builtin);
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse type alias with string type" {
+    var result = try testParse("package main;\npub type Text = string;\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .type_alias => |ta| {
+            try testing.expectEqualStrings("Text", ta.name);
+            try testing.expectEqual(Ast.BuiltinType.string_type, ta.target.builtin);
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse while loop" {
+    var result = try testParse("package main;\npub fn main() -> void { let mut x: i32 = 0; while x < 5 { x = x + 1; } return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[1]) {
+                .while_stmt => |ws| {
+                    try testing.expect(ws.body.stmts.items.len > 0);
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse while true with break" {
+    var result = try testParse("package main;\npub fn main() -> void { while true { break; } return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .while_stmt => |ws| {
+                    try testing.expectEqual(@as(usize, 1), ws.body.stmts.items.len);
+                    try testing.expectEqual(Ast.Stmt.break_stmt, ws.body.stmts.items[0]);
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
 // ===== processEscapes unit tests =====
 const processEscapes = @import("parser.zig").processEscapes;
 

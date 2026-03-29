@@ -1,0 +1,23 @@
+package main;
+
+pub fn main() -> void {
+    // Basic while loop
+    let mut count: i32 = 0;
+    while count < 5 {
+        log(count);
+        count = count + 1;
+    }
+
+    // While loop with break
+    let mut n: i32 = 0;
+    while true {
+        if n >= 3 {
+            break;
+        }
+        n = n + 1;
+    }
+    log(n);
+
+    log("while loops work");
+    return;
+}

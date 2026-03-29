@@ -44,6 +44,7 @@ pub const CodeGen = struct {
     exit_fn: c.LLVMValueRef,
     fmt_panic: c.LLVMValueRef,
     imported_fn_return_types: std.StringHashMap(TypeTag),
+    type_aliases: std.StringHashMap(Ast.TypeExpr),
 
     pub const StructTypeInfo = struct {
         llvm_type: c.LLVMTypeRef,
@@ -194,6 +195,7 @@ pub const CodeGen = struct {
             .exit_fn = exit_fn,
             .fmt_panic = fmt_panic,
             .imported_fn_return_types = std.StringHashMap(TypeTag).init(allocator),
+            .type_aliases = std.StringHashMap(Ast.TypeExpr).init(allocator),
         };
     }
 
@@ -228,9 +230,20 @@ pub const CodeGen = struct {
         self.enum_types.deinit();
         self.generic_enum_decls.deinit();
         self.imported_fn_return_types.deinit();
+        self.type_aliases.deinit();
     }
 
     pub fn generate(self: *CodeGen) GenError!void {
+        // Pre-pass: register type aliases
+        for (self.ast.program.decls.items) |decl| {
+            switch (decl.decl) {
+                .type_alias => |ta| {
+                    self.type_aliases.put(ta.name, ta.target) catch {};
+                },
+                else => {},
+            }
+        }
+
         // First pass: register all struct and enum types
         for (self.ast.program.decls.items) |decl| {
             switch (decl.decl) {
@@ -258,6 +271,7 @@ pub const CodeGen = struct {
                 .enum_decl => {},
                 .extern_decl => {},
                 .const_decl => {},
+                .type_alias => {},
             }
         }
 
@@ -419,6 +433,10 @@ pub const CodeGen = struct {
                 else => .i32_type,
             },
             .named => |name| {
+                // Check type aliases first
+                if (self.type_aliases.get(name)) |alias_target| {
+                    return self.resolveTypeExpr(alias_target);
+                }
                 if (self.struct_types.contains(name)) {
                     return .{ .struct_type = name };
                 }

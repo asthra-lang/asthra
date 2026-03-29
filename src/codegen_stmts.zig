@@ -185,6 +185,7 @@ pub fn genStmt(self: *CodeGen, stmt: Ast.Stmt, is_main: bool) CodeGen.GenError!v
         .if_stmt => |if_s| try genIfStmt(self, if_s, is_main),
         .if_let_stmt => |il_s| try genIfLetStmt(self, il_s, is_main),
         .for_stmt => |for_s| try genForStmt(self, for_s, is_main),
+        .while_stmt => |while_s| try genWhileStmt(self, while_s, is_main),
         .expr_stmt => |expr_idx| {
             _ = try self.genExpr(expr_idx);
         },
@@ -461,6 +462,37 @@ pub fn genForStmt(self: *CodeGen, for_stmt: Ast.ForStmt, is_main: bool) CodeGen.
     );
     _ = c.LLVMBuildStore(self.builder, next_val, counter_alloca);
     _ = c.LLVMBuildBr(self.builder, cond_bb);
+
+    c.LLVMPositionBuilderAtEnd(self.builder, exit_bb);
+}
+
+pub fn genWhileStmt(self: *CodeGen, while_stmt: Ast.WhileStmt, is_main: bool) CodeGen.GenError!void {
+    const function = c.LLVMGetBasicBlockParent(c.LLVMGetInsertBlock(self.builder));
+
+    const cond_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "while.cond");
+    const body_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "while.body");
+    const exit_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "while.exit");
+
+    _ = c.LLVMBuildBr(self.builder, cond_bb);
+
+    // Condition block
+    c.LLVMPositionBuilderAtEnd(self.builder, cond_bb);
+    const cond = try self.genExpr(while_stmt.condition);
+    _ = c.LLVMBuildCondBr(self.builder, cond.value, body_bb, exit_bb);
+
+    // Push loop context for break/continue
+    try self.loop_stack.append(self.allocator, .{
+        .continue_bb = cond_bb,
+        .break_bb = exit_bb,
+    });
+    defer _ = self.loop_stack.pop();
+
+    // Body block
+    c.LLVMPositionBuilderAtEnd(self.builder, body_bb);
+    try genBlock(self, while_stmt.body, is_main);
+    if (c.LLVMGetBasicBlockTerminator(c.LLVMGetInsertBlock(self.builder)) == null) {
+        _ = c.LLVMBuildBr(self.builder, cond_bb);
+    }
 
     c.LLVMPositionBuilderAtEnd(self.builder, exit_bb);
 }

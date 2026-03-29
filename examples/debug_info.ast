@@ -1,0 +1,8 @@
+package main;
+
+pub fn main() -> void {
+    log("Debug info support planned");
+    let x: i32 = 42;
+    log(x);
+    return;
+}

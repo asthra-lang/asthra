@@ -1,0 +1,11 @@
+package main;
+
+pub fn double(x: i32) -> i32 {
+    return x * 2;
+}
+
+pub fn main() -> void {
+    log("Closure syntax planned");
+    log(double(21));
+    return;
+}

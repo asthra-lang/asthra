@@ -195,6 +195,17 @@ pub const Parser = struct {
             };
         }
 
+        // Type alias: type Name = ExistingType;
+        if (self.current.tag == .identifier and std.mem.eql(u8, self.current.slice(self.source), "type")) {
+            const type_alias = try self.parseTypeAlias();
+            return .{
+                .visibility = visibility,
+                .decl = .{ .type_alias = type_alias },
+                .start = start,
+                .annotations = annotations,
+            };
+        }
+
         self.reportError("expected declaration");
         return error.ParseError;
     }
@@ -433,6 +444,23 @@ pub const Parser = struct {
             .name = name,
             .type_expr = type_expr,
             .init_expr = init_expr,
+        };
+    }
+
+    fn parseTypeAlias(self: *Parser) ParseError!Ast.TypeAliasDecl {
+        self.advance(); // consume 'type' identifier
+
+        const name_token = self.current;
+        try self.expect(.identifier);
+        const name = name_token.slice(self.source);
+
+        try self.expect(.equal);
+        const target = try self.parseType();
+
+        try self.expect(.semicolon);
+        return .{
+            .name = name,
+            .target = target,
         };
     }
 
@@ -711,6 +739,7 @@ pub const Parser = struct {
                 return self.parseIfStmt();
             },
             .keyword_for => return self.parseForStmt(),
+            .keyword_while => return self.parseWhileStmt(),
             .keyword_break => {
                 self.advance();
                 try self.expect(.semicolon);
@@ -986,6 +1015,19 @@ pub const Parser = struct {
         return .{ .for_stmt = .{
             .iter_var = iter_var,
             .iterable = iterable,
+            .body = body,
+        } };
+    }
+
+    fn parseWhileStmt(self: *Parser) ParseError!Ast.Stmt {
+        self.advance(); // consume 'while'
+        const condition = try self.parseExpr();
+
+        const body = try self.ast.allocator.create(Ast.Block);
+        body.* = try self.parseBlock();
+
+        return .{ .while_stmt = .{
+            .condition = condition,
             .body = body,
         } };
     }
@@ -1678,7 +1720,7 @@ pub const Parser = struct {
         while (self.current.tag != .eof) {
             if (self.previous.tag == .semicolon) return;
             switch (self.current.tag) {
-                .keyword_fn, .keyword_let, .keyword_if, .keyword_for, .keyword_return, .keyword_pub, .keyword_priv, .hash_lbracket, .rbrace => return,
+                .keyword_fn, .keyword_let, .keyword_if, .keyword_for, .keyword_while, .keyword_return, .keyword_pub, .keyword_priv, .hash_lbracket, .rbrace => return,
                 else => self.advance(),
             }
         }

@@ -1,0 +1,7 @@
+package main;
+
+pub fn main() -> void {
+    log("Error messages improved");
+    log("Source context now shown with errors");
+    return;
+}

@@ -1,0 +1,12 @@
+package main;
+
+pub type Integer = i32;
+pub type Text = string;
+
+pub fn main() -> void {
+    let x: Integer = 42;
+    let s: Text = "hello";
+    log(x);
+    log(s);
+    return;
+}

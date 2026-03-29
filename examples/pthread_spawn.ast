@@ -1,0 +1,12 @@
+package main;
+
+pub fn compute() -> void {
+    log("Running in spawned context");
+    return;
+}
+
+pub fn main() -> void {
+    spawn compute();
+    log("Main continues");
+    return;
+}

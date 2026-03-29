@@ -44,6 +44,12 @@ pub const Ast = struct {
         enum_decl: EnumDecl,
         extern_decl: ExternDecl,
         const_decl: ConstDecl,
+        type_alias: TypeAliasDecl,
+    };
+
+    pub const TypeAliasDecl = struct {
+        name: []const u8,
+        target: TypeExpr,
     };
 
     pub const ConstDecl = struct {
@@ -120,6 +126,7 @@ pub const Ast = struct {
         if_stmt: IfStmt,
         if_let_stmt: IfLetStmt,
         for_stmt: ForStmt,
+        while_stmt: WhileStmt,
         break_stmt,
         continue_stmt,
         match_stmt: MatchStmt,
@@ -127,6 +134,11 @@ pub const Ast = struct {
         spawn_stmt: SpawnStmt,
         spawn_handle_stmt: SpawnHandleStmt,
         deref_assign: DerefAssignStmt,
+    };
+
+    pub const WhileStmt = struct {
+        condition: ExprIndex,
+        body: *Block,
     };
 
     pub const DerefAssignStmt = struct {

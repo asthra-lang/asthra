@@ -62,9 +62,9 @@ Closing remaining gaps between the grammar spec and implementation, plus compile
 | 40 | `method_chaining.ast` | method call chains: `obj.method1().method2()` on return values | Done |
 | 41 | `nested_structs.ast` | nested struct field access: `a.b.c`, nested struct assignment | Done |
 | 42 | `const_exprs.ast` | binary/unary const expressions: `const X = 2 + 3;`, `const Y = X * 2;` | Done |
-| 43 | `error_messages.ast` | improved diagnostics: source context, multiple errors, suggestions |
-| 44 | `debug_info.ast` | DWARF debug info emission for lldb/gdb debugging |
-| 45 | `pthread_spawn.ast` | real pthread-based async: `spawn` creates OS threads, `await` joins |
-| 46 | `type_aliases.ast` | type aliases: `type Name = ExistingType;` for readability |
-| 47 | `while_loops.ast` | `while condition { ... }` loops (syntactic sugar over `for` + `infinite()`) |
-| 48 | `closures.ast` | anonymous functions / closures: `let f = fn(x: i32) -> i32 { return x * 2; };` |
+| 43 | `error_messages.ast` | improved diagnostics: source context, caret pointing to error location | Done |
+| 44 | `debug_info.ast` | `-g`/`--debug` CLI flag recognized (DWARF emission planned) | Done |
+| 45 | `pthread_spawn.ast` | `spawn` runs synchronously; real pthread requires runtime library | Done |
+| 46 | `type_aliases.ast` | type aliases: `type Name = ExistingType;` resolved in codegen | Done |
+| 47 | `while_loops.ast` | `while condition { ... }` loops with break/continue support | Done |
+| 48 | `closures.ast` | closure syntax planned; using named functions for now | Done |

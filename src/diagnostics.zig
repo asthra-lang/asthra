@@ -71,7 +71,37 @@ pub const Diagnostics = struct {
                 err.severity.label(),
                 err.message,
             }) catch {};
+
+            // Print source context: the offending line and a caret pointing to the error
+            if (self.getSourceLine(err.start)) |line_info| {
+                writer.print("{s}\n", .{line_info.line}) catch {};
+                // Print spaces up to the column, then a caret
+                var col: u32 = 1;
+                while (col < loc.column) : (col += 1) {
+                    writer.print(" ", .{}) catch {};
+                }
+                writer.print("^\n", .{}) catch {};
+            }
         }
+    }
+
+    /// Extract the source line containing the given byte offset.
+    pub fn getSourceLine(self: *const Diagnostics, byte_offset: u32) ?struct { line: []const u8 } {
+        if (byte_offset >= self.source.len) return null;
+
+        // Find start of line
+        var line_start: usize = byte_offset;
+        while (line_start > 0 and self.source[line_start - 1] != '\n') {
+            line_start -= 1;
+        }
+
+        // Find end of line
+        var line_end: usize = byte_offset;
+        while (line_end < self.source.len and self.source[line_end] != '\n') {
+            line_end += 1;
+        }
+
+        return .{ .line = self.source[line_start..line_end] };
     }
 
     pub fn getLineAndColumn(self: *const Diagnostics, byte_offset: u32) struct { line: u32, column: u32 } {
@@ -146,4 +176,24 @@ test "severity labels" {
     try testing.expectEqualStrings("error", Severity.@"error".label());
     try testing.expectEqualStrings("warning", Severity.warning.label());
     try testing.expectEqualStrings("note", Severity.note.label());
+}
+
+test "getSourceLine extracts correct line" {
+    var diag = Diagnostics.init(testing.allocator, "hello\nworld\nfoo", "test.ast");
+    defer diag.deinit();
+    // Offset 0 is in first line
+    const line1 = diag.getSourceLine(0).?;
+    try testing.expectEqualStrings("hello", line1.line);
+    // Offset 6 is in second line (w of "world")
+    const line2 = diag.getSourceLine(6).?;
+    try testing.expectEqualStrings("world", line2.line);
+    // Offset 12 is in third line (f of "foo")
+    const line3 = diag.getSourceLine(12).?;
+    try testing.expectEqualStrings("foo", line3.line);
+}
+
+test "getSourceLine returns null for out of bounds" {
+    var diag = Diagnostics.init(testing.allocator, "hello", "test.ast");
+    defer diag.deinit();
+    try testing.expect(diag.getSourceLine(100) == null);
 }

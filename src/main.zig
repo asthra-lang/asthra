@@ -42,6 +42,9 @@ pub fn main() !void {
             output_path = args[i];
         } else if (std.mem.eql(u8, args[i], "--emit-ir")) {
             emit_ir = true;
+        } else if (std.mem.eql(u8, args[i], "-g") or std.mem.eql(u8, args[i], "--debug")) {
+            // Debug info emission planned for future release
+            writeAll("note: -g flag recognized; DWARF debug info not yet implemented\n", .{});
         }
     }
 
