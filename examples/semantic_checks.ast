@@ -1,0 +1,30 @@
+package main;
+
+pub fn main() -> void {
+    // Immutable variable - this works
+    let x: i32 = 42;
+    log(x);
+
+    // Mutable variable - can be reassigned
+    let mut y: i32 = 10;
+    y = 20;
+    log(y);
+
+    // Immutable struct - can read fields
+    let p = Point { x: 1, y: 2 };
+    log(p.x);
+
+    // Mutable struct - can assign fields
+    let mut q = Point { x: 0, y: 0 };
+    q.x = 5;
+    q.y = 10;
+    log(q.x);
+    log(q.y);
+
+    return;
+}
+
+pub struct Point {
+    pub x: i32,
+    pub y: i32
+}

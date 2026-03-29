@@ -903,6 +903,11 @@ pub const CodeGen = struct {
             .assign => |assign| {
                 const val = try self.genExpr(assign.value);
                 if (self.named_values.get(assign.target)) |nv| {
+                    // Mutability check: prevent assignment to immutable variables
+                    if (!nv.is_mutable) {
+                        self.diagnostics.report(.@"error", 0, "cannot assign to immutable variable '{s}'", .{assign.target});
+                        return error.CodeGenError;
+                    }
                     if (assign.target_index) |idx_expr| {
                         // Indexed assignment: arr[i] = value or slice[i] = value
                         switch (nv.type_tag) {
