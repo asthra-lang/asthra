@@ -62,6 +62,12 @@ pub const CodeGen = struct {
         struct_type: []const u8,
         enum_type: []const u8,
         array_type: ArrayTypeTag,
+        tuple_type: TupleTypeTag,
+    };
+
+    pub const TupleTypeTag = struct {
+        element_types: []const TypeTag,
+        llvm_type: c.LLVMTypeRef,
     };
 
     pub const ArrayTypeTag = struct {
@@ -486,6 +492,20 @@ pub const CodeGen = struct {
                 const err_tag = self.resolveTypeExpr(res.err_type.*);
                 self.ensureResultType(ok_tag, err_tag);
                 return .{ .enum_type = "Result" };
+            },
+            .tuple_type => |tt| {
+                const count = tt.element_types.items.len;
+                var elem_tags = self.allocator.alloc(TypeTag, count) catch return .i32_type;
+                var elem_llvm_types = self.allocator.alloc(c.LLVMTypeRef, count) catch return .i32_type;
+                defer self.allocator.free(elem_llvm_types);
+
+                for (tt.element_types.items, 0..) |et, i| {
+                    elem_tags[i] = self.resolveTypeExpr(et);
+                    elem_llvm_types[i] = self.typeTagToLLVM(elem_tags[i]);
+                }
+
+                const llvm_type = c.LLVMStructTypeInContext(self.context, elem_llvm_types.ptr, @intCast(count), 0);
+                return .{ .tuple_type = .{ .element_types = elem_tags, .llvm_type = llvm_type } };
             },
         };
     }
@@ -975,6 +995,9 @@ pub const CodeGen = struct {
             .index_access => |ia| {
                 return self.genIndexAccess(ia);
             },
+            .tuple_literal => |tl| {
+                return self.genTupleLiteral(tl);
+            },
         }
     }
 
@@ -1018,6 +1041,41 @@ pub const CodeGen = struct {
         const elem_ptr = self.allocator.create(TypeTag) catch return error.CodeGenError;
         elem_ptr.* = elem_type_tag;
         return .{ .value = loaded, .type_tag = .{ .array_type = .{ .element_type = elem_ptr, .count = count } } };
+    }
+
+    fn genTupleLiteral(self: *CodeGen, tl: Ast.TupleLiteralExpr) GenError!ExprResult {
+        if (tl.elements.items.len < 2) {
+            self.diagnostics.report(.@"error", 0, "tuple requires at least 2 elements", .{});
+            return error.CodeGenError;
+        }
+
+        const count = tl.elements.items.len;
+
+        // Generate all element values and collect types
+        var elem_vals = self.allocator.alloc(ExprResult, count) catch return error.CodeGenError;
+        defer self.allocator.free(elem_vals);
+        var elem_tags = self.allocator.alloc(TypeTag, count) catch return error.CodeGenError;
+        var elem_llvm_types = self.allocator.alloc(c.LLVMTypeRef, count) catch return error.CodeGenError;
+        defer self.allocator.free(elem_llvm_types);
+
+        for (tl.elements.items, 0..) |elem_idx, i| {
+            elem_vals[i] = try self.genExpr(elem_idx);
+            elem_tags[i] = elem_vals[i].type_tag;
+            elem_llvm_types[i] = self.typeTagToLLVM(elem_tags[i]);
+        }
+
+        // Create anonymous struct type for the tuple
+        const tuple_llvm = c.LLVMStructTypeInContext(self.context, elem_llvm_types.ptr, @intCast(count), 0);
+        const alloca = c.LLVMBuildAlloca(self.builder, tuple_llvm, "tuple_lit");
+
+        // Store each element via GEP
+        for (elem_vals, 0..) |ev, i| {
+            const field_ptr = c.LLVMBuildStructGEP2(self.builder, tuple_llvm, alloca, @intCast(i), "tup_elem_ptr");
+            _ = c.LLVMBuildStore(self.builder, ev.value, field_ptr);
+        }
+
+        const loaded = c.LLVMBuildLoad2(self.builder, tuple_llvm, alloca, "tuple_val");
+        return .{ .value = loaded, .type_tag = .{ .tuple_type = .{ .element_types = elem_tags, .llvm_type = tuple_llvm } } };
     }
 
     fn genIndexAccess(self: *CodeGen, ia: Ast.IndexAccessExpr) GenError!ExprResult {
@@ -1071,6 +1129,21 @@ pub const CodeGen = struct {
                                 self.diagnostics.report(.@"error", 0, "no field '{s}' on struct '{s}'", .{ fa.field, struct_name });
                                 return error.CodeGenError;
                             }
+                        },
+                        .tuple_type => |tt| {
+                            // Tuple element access: tuple.0, tuple.1, etc.
+                            const idx = std.fmt.parseInt(u32, fa.field, 10) catch {
+                                self.diagnostics.report(.@"error", 0, "invalid tuple index '{s}'", .{fa.field});
+                                return error.CodeGenError;
+                            };
+                            if (idx >= tt.element_types.len) {
+                                self.diagnostics.report(.@"error", 0, "tuple index {d} out of bounds (tuple has {d} elements)", .{ idx, tt.element_types.len });
+                                return error.CodeGenError;
+                            }
+                            const field_ptr = c.LLVMBuildStructGEP2(self.builder, tt.llvm_type, nv.alloca, idx, "tup_idx_ptr");
+                            const elem_type = tt.element_types[idx];
+                            const loaded = c.LLVMBuildLoad2(self.builder, self.typeTagToLLVM(elem_type), field_ptr, "tup_elem");
+                            return .{ .value = loaded, .type_tag = elem_type };
                         },
                         else => {},
                     }
@@ -1495,6 +1568,9 @@ pub const CodeGen = struct {
                 const elem_llvm = self.typeTagToLLVM(arr.element_type.*);
                 return c.LLVMArrayType(elem_llvm, arr.count);
             },
+            .tuple_type => |tt| {
+                return tt.llvm_type;
+            },
         };
     }
 
@@ -1554,5 +1630,6 @@ fn builtinToTypeTag(type_expr: Ast.TypeExpr) CodeGen.TypeTag {
         .array_type => .i32_type, // fallback - real resolution happens in CodeGen
         .option_type => .{ .enum_type = "Option" }, // resolved properly in CodeGen
         .result_type => .{ .enum_type = "Result" }, // resolved properly in CodeGen
+        .tuple_type => .i32_type, // resolved properly in CodeGen
     };
 }

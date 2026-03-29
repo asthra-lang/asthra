@@ -166,6 +166,11 @@ pub const Ast = struct {
         enum_constructor: EnumConstructorExpr,
         array_literal: ArrayLiteralExpr,
         index_access: IndexAccessExpr,
+        tuple_literal: TupleLiteralExpr,
+    };
+
+    pub const TupleLiteralExpr = struct {
+        elements: std.ArrayList(ExprIndex),
     };
 
     pub const ArrayLiteralExpr = struct {
@@ -254,6 +259,11 @@ pub const Ast = struct {
         array_type: ArrayTypeExpr,
         option_type: OptionTypeExpr,
         result_type: ResultTypeExpr,
+        tuple_type: TupleTypeExpr,
+    };
+
+    pub const TupleTypeExpr = struct {
+        element_types: std.ArrayList(TypeExpr),
     };
 
     pub const OptionTypeExpr = struct {

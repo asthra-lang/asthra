@@ -1,0 +1,22 @@
+package main;
+
+pub fn swap(a: i32, b: i32) -> (i32, i32) {
+    return (b, a);
+}
+
+pub fn main() -> void {
+    let pair: (i32, f64) = (42, 3.14);
+    log(pair.0);
+    log(pair.1);
+
+    let triple: (i32, string, bool) = (10, "hello", true);
+    log(triple.0);
+    log(triple.1);
+    log(triple.2);
+
+    let swapped: (i32, i32) = swap(1, 2);
+    log(swapped.0);
+    log(swapped.1);
+
+    return;
+}

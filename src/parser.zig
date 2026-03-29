@@ -392,6 +392,25 @@ pub const Parser = struct {
             } };
         }
 
+        if (tag == .lparen) {
+            // Tuple type: (T1, T2, ...)
+            self.advance(); // consume '('
+            var element_types = std.ArrayList(Ast.TypeExpr){};
+            const first_type = try self.parseType();
+            try element_types.append(self.ast.allocator, first_type);
+            if (self.current.tag != .comma) {
+                self.reportError("tuple type requires at least 2 elements");
+                return error.ParseError;
+            }
+            while (self.current.tag == .comma) {
+                self.advance(); // consume ','
+                const elem_type = try self.parseType();
+                try element_types.append(self.ast.allocator, elem_type);
+            }
+            try self.expect(.rparen);
+            return .{ .tuple_type = .{ .element_types = element_types } };
+        }
+
         if (tag == .identifier) {
             const name = self.current.slice(self.source);
             self.advance();
@@ -845,7 +864,18 @@ pub const Parser = struct {
                 expr = try self.ast.addExpr(.{ .call = .{ .callee = expr, .args = args } });
             } else if (self.current.tag == .dot) {
                 // Field access or method call: expr.field or expr.method(...)
+                // Also handles tuple index: expr.0, expr.1, etc.
                 self.advance(); // consume '.'
+
+                // Handle tuple index access: .0, .1, .2, etc.
+                if (self.current.tag == .int_literal) {
+                    const idx_token = self.current;
+                    const field_name = idx_token.slice(self.source);
+                    self.advance();
+                    expr = try self.ast.addExpr(.{ .field_access = .{ .object = expr, .field = field_name } });
+                    continue;
+                }
+
                 const field_token = self.current;
                 try self.expect(.identifier);
                 const field_name = field_token.slice(self.source);
@@ -931,9 +961,21 @@ pub const Parser = struct {
             },
             .lparen => {
                 self.advance();
-                const inner = try self.parseExpr();
+                const first = try self.parseExpr();
+                if (self.current.tag == .comma) {
+                    // Tuple literal: (expr, expr, ...)
+                    var elements = std.ArrayList(Ast.ExprIndex){};
+                    try elements.append(self.ast.allocator, first);
+                    while (self.current.tag == .comma) {
+                        self.advance(); // consume ','
+                        const elem = try self.parseExpr();
+                        try elements.append(self.ast.allocator, elem);
+                    }
+                    try self.expect(.rparen);
+                    return self.ast.addExpr(.{ .tuple_literal = .{ .elements = elements } });
+                }
                 try self.expect(.rparen);
-                return self.ast.addExpr(.{ .grouped = inner });
+                return self.ast.addExpr(.{ .grouped = first });
             },
             .lbracket => {
                 // Array literal: [expr, expr, ...]
@@ -1508,5 +1550,110 @@ test "parse Option return type" {
             }
         },
         else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse tuple type" {
+    var result = try testParse("package main;\npub fn main() -> void { let p: (i32, f64) = (1, 2.0); return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("p", vd.name);
+                    switch (vd.type_expr) {
+                        .tuple_type => |tt| {
+                            try testing.expectEqual(@as(usize, 2), tt.element_types.items.len);
+                            try testing.expectEqual(Ast.BuiltinType.i32_type, tt.element_types.items[0].builtin);
+                            try testing.expectEqual(Ast.BuiltinType.f64_type, tt.element_types.items[1].builtin);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                    // Check the init is a tuple literal
+                    const expr = result.ast.getExpr(vd.init_expr);
+                    switch (expr) {
+                        .tuple_literal => |tl| {
+                            try testing.expectEqual(@as(usize, 2), tl.elements.items.len);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse tuple return type" {
+    var result = try testParse("package main;\npub fn swap(a: i32, b: i32) -> (i32, i32) { return (b, a); }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            try testing.expectEqualStrings("swap", f.name);
+            switch (f.return_type) {
+                .tuple_type => |tt| {
+                    try testing.expectEqual(@as(usize, 2), tt.element_types.items.len);
+                    try testing.expectEqual(Ast.BuiltinType.i32_type, tt.element_types.items[0].builtin);
+                    try testing.expectEqual(Ast.BuiltinType.i32_type, tt.element_types.items[1].builtin);
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse tuple element access" {
+    var result = try testParse("package main;\npub fn main() -> void { let p: (i32, i32) = (1, 2); log(p.0); return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            // Second statement is log(p.0) which is an expr_stmt
+            switch (f.body.stmts.items[1]) {
+                .expr_stmt => |expr_idx| {
+                    const expr = result.ast.getExpr(expr_idx);
+                    switch (expr) {
+                        .call => |call_e| {
+                            // The argument is p.0 (field_access)
+                            const arg_expr = result.ast.getExpr(call_e.args.items[0]);
+                            switch (arg_expr) {
+                                .field_access => |fa| {
+                                    try testing.expectEqualStrings("0", fa.field);
+                                },
+                                else => return error.TestUnexpectedResult,
+                            }
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse grouped expression still works" {
+    var result = try testParse("package main;\npub fn main() -> void { let x: i32 = (1 + 2); return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    const expr = result.ast.getExpr(vd.init_expr);
+                    switch (expr) {
+                        .grouped => {},
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
     }
 }
