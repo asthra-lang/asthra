@@ -78,6 +78,7 @@ pub const Ast = struct {
 
     pub const StructDecl = struct {
         name: []const u8,
+        type_params: std.ArrayList([]const u8),
         fields: std.ArrayList(StructField),
     };
 
@@ -223,6 +224,7 @@ pub const Ast = struct {
 
     pub const StructLiteralExpr = struct {
         name: []const u8,
+        type_args: std.ArrayList(TypeExpr),
         field_inits: std.ArrayList(FieldInitExpr),
     };
 
@@ -282,6 +284,12 @@ pub const Ast = struct {
         option_type: OptionTypeExpr,
         result_type: ResultTypeExpr,
         tuple_type: TupleTypeExpr,
+        generic_type: GenericTypeExpr,
+    };
+
+    pub const GenericTypeExpr = struct {
+        name: []const u8,
+        type_args: std.ArrayList(TypeExpr),
     };
 
     pub const TupleTypeExpr = struct {

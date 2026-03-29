@@ -28,6 +28,8 @@ pub const CodeGen = struct {
     fmt_bool_false: c.LLVMValueRef,
     loop_stack: std.ArrayList(LoopContext) = .{},
     struct_types: std.StringHashMap(StructTypeInfo),
+    generic_struct_decls: std.StringHashMap(*const Ast.StructDecl),
+    monomorphized_names: std.ArrayList([]const u8) = .{},
     enum_types: std.StringHashMap(EnumTypeInfo),
 
     const StructTypeInfo = struct {
@@ -109,6 +111,7 @@ pub const CodeGen = struct {
             .named_values = std.StringHashMap(NamedValue).init(allocator),
             .const_values = std.StringHashMap(NamedValue).init(allocator),
             .struct_types = std.StringHashMap(StructTypeInfo).init(allocator),
+            .generic_struct_decls = std.StringHashMap(*const Ast.StructDecl).init(allocator),
             .enum_types = std.StringHashMap(EnumTypeInfo).init(allocator),
             .diagnostics = diagnostics,
             .allocator = allocator,
@@ -135,6 +138,11 @@ pub const CodeGen = struct {
             self.allocator.free(entry.value_ptr.field_types);
         }
         self.struct_types.deinit();
+        self.generic_struct_decls.deinit();
+        for (self.monomorphized_names.items) |name| {
+            self.allocator.free(name);
+        }
+        self.monomorphized_names.deinit(self.allocator);
         var eit = self.enum_types.iterator();
         while (eit.next()) |entry| {
             for (entry.value_ptr.variant_data_types) |dt| {
@@ -189,6 +197,13 @@ pub const CodeGen = struct {
     }
 
     fn genStructType(self: *CodeGen, sd: *const Ast.StructDecl) GenError!void {
+        // If this struct has type parameters, it's a generic struct template.
+        // Don't generate an LLVM type yet - it will be monomorphized on demand.
+        if (sd.type_params.items.len > 0) {
+            self.generic_struct_decls.put(sd.name, sd) catch {};
+            return;
+        }
+
         const name_z = self.allocator.dupeZ(u8, sd.name) catch return error.CodeGenError;
         defer self.allocator.free(name_z);
 
@@ -214,6 +229,110 @@ pub const CodeGen = struct {
             .field_names = field_names,
             .field_types = field_type_tags,
         }) catch {};
+    }
+
+    fn monomorphizeStruct(self: *CodeGen, generic_name: []const u8, type_args: []const Ast.TypeExpr) GenError![]const u8 {
+        // Build the mangled name: e.g., "Pair_i32" or "Pair_i32_f64"
+        var name_buf = std.ArrayList(u8){};
+        defer name_buf.deinit(self.allocator);
+        name_buf.appendSlice(self.allocator, generic_name) catch return error.CodeGenError;
+        for (type_args) |ta| {
+            name_buf.append(self.allocator, '_') catch return error.CodeGenError;
+            const type_name = self.typeExprName(ta);
+            name_buf.appendSlice(self.allocator, type_name) catch return error.CodeGenError;
+        }
+        // Check if already monomorphized - return the existing key to avoid duplicate allocation
+        if (self.struct_types.getKey(name_buf.items)) |existing_key| {
+            return existing_key;
+        }
+
+        const mangled_name = self.allocator.dupe(u8, name_buf.items) catch return error.CodeGenError;
+        self.monomorphized_names.append(self.allocator, mangled_name) catch {};
+
+        // Look up the generic struct declaration
+        const sd = self.generic_struct_decls.get(generic_name) orelse {
+            self.diagnostics.report(.@"error", 0, "undefined generic struct '{s}'", .{generic_name});
+            return error.CodeGenError;
+        };
+
+        // Build type parameter substitution map
+        var type_map = std.StringHashMap(TypeTag).init(self.allocator);
+        defer type_map.deinit();
+        for (sd.type_params.items, 0..) |tp, i| {
+            if (i < type_args.len) {
+                const resolved = self.resolveTypeExpr(type_args[i]);
+                type_map.put(tp, resolved) catch return error.CodeGenError;
+            }
+        }
+
+        // Generate the concrete struct type with substituted fields
+        const field_count: u32 = @intCast(sd.fields.items.len);
+        var field_llvm_types = self.allocator.alloc(c.LLVMTypeRef, field_count) catch return error.CodeGenError;
+        defer self.allocator.free(field_llvm_types);
+        var field_names = self.allocator.alloc([]const u8, field_count) catch return error.CodeGenError;
+        var field_type_tags = self.allocator.alloc(TypeTag, field_count) catch return error.CodeGenError;
+
+        for (sd.fields.items, 0..) |field, i| {
+            const ft = self.resolveTypeExprWithSubst(field.type_expr, &type_map);
+            field_llvm_types[i] = self.typeTagToLLVM(ft);
+            field_names[i] = field.name;
+            field_type_tags[i] = ft;
+        }
+
+        const name_z = self.allocator.dupeZ(u8, mangled_name) catch return error.CodeGenError;
+        defer self.allocator.free(name_z);
+
+        const struct_type = c.LLVMStructCreateNamed(self.context, name_z.ptr);
+        c.LLVMStructSetBody(struct_type, field_llvm_types.ptr, field_count, 0);
+
+        self.struct_types.put(mangled_name, .{
+            .llvm_type = struct_type,
+            .field_names = field_names,
+            .field_types = field_type_tags,
+        }) catch {};
+
+        return mangled_name;
+    }
+
+    fn typeExprName(_: *CodeGen, type_expr: Ast.TypeExpr) []const u8 {
+        return switch (type_expr) {
+            .builtin => |b| switch (b) {
+                .i32_type, .int_type => "i32",
+                .i64_type => "i64",
+                .f64_type, .float_type => "f64",
+                .f32_type => "f32",
+                .bool_type => "bool",
+                .string_type => "string",
+                .void => "void",
+                .u8_type => "u8",
+                .u16_type => "u16",
+                .u32_type => "u32",
+                .u64_type => "u64",
+                .u128_type => "u128",
+                .i8_type => "i8",
+                .i16_type => "i16",
+                .i128_type => "i128",
+                .usize_type => "usize",
+                .isize_type => "isize",
+                .never_type => "Never",
+            },
+            .named => |name| name,
+            .generic_type => |gt| gt.name,
+            else => "unknown",
+        };
+    }
+
+    fn resolveTypeExprWithSubst(self: *CodeGen, type_expr: Ast.TypeExpr, type_map: *const std.StringHashMap(TypeTag)) TypeTag {
+        return switch (type_expr) {
+            .named => |name| {
+                // Check if it's a type parameter that should be substituted
+                if (type_map.get(name)) |resolved| {
+                    return resolved;
+                }
+                return self.resolveTypeExpr(type_expr);
+            },
+            else => self.resolveTypeExpr(type_expr),
+        };
     }
 
     fn genImplDecl(self: *CodeGen, impl_decl: *const Ast.ImplDecl) GenError!void {
@@ -520,6 +639,11 @@ pub const CodeGen = struct {
 
                 const llvm_type = c.LLVMStructTypeInContext(self.context, elem_llvm_types.ptr, @intCast(count), 0);
                 return .{ .tuple_type = .{ .element_types = elem_tags, .llvm_type = llvm_type } };
+            },
+            .generic_type => |gt| {
+                // Monomorphize the generic struct with concrete type args
+                const mangled_name = self.monomorphizeStruct(gt.name, gt.type_args.items) catch return .i32_type;
+                return .{ .struct_type = mangled_name };
             },
         };
     }
@@ -1315,7 +1439,13 @@ pub const CodeGen = struct {
     }
 
     fn genStructLiteral(self: *CodeGen, sl: Ast.StructLiteralExpr) GenError!ExprResult {
-        const info = self.struct_types.get(sl.name) orelse {
+        // Determine the concrete struct name (handle generic type args via monomorphization)
+        const struct_name = if (sl.type_args.items.len > 0)
+            try self.monomorphizeStruct(sl.name, sl.type_args.items)
+        else
+            sl.name;
+
+        const info = self.struct_types.get(struct_name) orelse {
             self.diagnostics.report(.@"error", 0, "undefined struct '{s}'", .{sl.name});
             return error.CodeGenError;
         };
@@ -1330,14 +1460,14 @@ pub const CodeGen = struct {
                 const field_ptr = c.LLVMBuildStructGEP2(self.builder, info.llvm_type, alloca, @intCast(idx), "field_init");
                 _ = c.LLVMBuildStore(self.builder, val.value, field_ptr);
             } else {
-                self.diagnostics.report(.@"error", 0, "no field '{s}' on struct '{s}'", .{ fi.name, sl.name });
+                self.diagnostics.report(.@"error", 0, "no field '{s}' on struct '{s}'", .{ fi.name, struct_name });
                 return error.CodeGenError;
             }
         }
 
         // Load the full struct value
         const loaded = c.LLVMBuildLoad2(self.builder, info.llvm_type, alloca, "struct_val");
-        return .{ .value = loaded, .type_tag = .{ .struct_type = sl.name } };
+        return .{ .value = loaded, .type_tag = .{ .struct_type = struct_name } };
     }
 
     fn genMethodCall(self: *CodeGen, mc: Ast.MethodCallExpr) GenError!ExprResult {
@@ -1760,5 +1890,6 @@ fn builtinToTypeTag(type_expr: Ast.TypeExpr) CodeGen.TypeTag {
         .option_type => .{ .enum_type = "Option" }, // resolved properly in CodeGen
         .result_type => .{ .enum_type = "Result" }, // resolved properly in CodeGen
         .tuple_type => .i32_type, // resolved properly in CodeGen
+        .generic_type => .i32_type, // resolved properly in CodeGen via monomorphization
     };
 }

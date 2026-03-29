@@ -1,0 +1,18 @@
+package main;
+
+pub struct Pair<T> {
+    pub first: T,
+    pub second: T
+}
+
+pub fn main() -> void {
+    let p: Pair<i32> = Pair<i32> { first: 10, second: 20 };
+    log(p.first);
+    log(p.second);
+
+    let q: Pair<f64> = Pair<f64> { first: 1.5, second: 2.5 };
+    log(q.first);
+    log(q.second);
+
+    return;
+}

@@ -242,6 +242,20 @@ pub const Parser = struct {
         try self.expect(.identifier);
         const name = name_token.slice(self.source);
 
+        // Parse optional type parameters: <T, U, ...>
+        var type_params = std.ArrayList([]const u8){};
+        if (self.current.tag == .less) {
+            self.advance(); // consume '<'
+            while (true) {
+                const tp_token = self.current;
+                try self.expect(.identifier);
+                try type_params.append(self.ast.allocator, tp_token.slice(self.source));
+                if (self.current.tag != .comma) break;
+                self.advance(); // consume ','
+            }
+            try self.expect(.greater);
+        }
+
         try self.expect(.lbrace);
         var fields = std.ArrayList(Ast.StructField){};
 
@@ -278,7 +292,7 @@ pub const Parser = struct {
         }
 
         try self.expect(.rbrace);
-        return .{ .name = name, .fields = fields };
+        return .{ .name = name, .type_params = type_params, .fields = fields };
     }
 
     fn parseEnumDecl(self: *Parser) ParseError!Ast.EnumDecl {
@@ -527,6 +541,46 @@ pub const Parser = struct {
         if (tag == .identifier) {
             const name = self.current.slice(self.source);
             self.advance();
+            // Check for generic type: Name<Type, ...>
+            if (self.current.tag == .less) {
+                // Save state to backtrack if this isn't a generic type
+                const saved_lexer = self.lexer;
+                const saved_current = self.current;
+                const saved_had_error = self.had_error;
+                const saved_diag_count = self.diagnostics.errors.items.len;
+                self.advance(); // consume '<'
+                var type_args = std.ArrayList(Ast.TypeExpr){};
+                const first_arg = self.parseType() catch {
+                    // Not a generic type, restore state
+                    self.lexer = saved_lexer;
+                    self.current = saved_current;
+                    self.had_error = saved_had_error;
+                    self.restoreDiagnostics(saved_diag_count);
+                    return .{ .named = name };
+                };
+                try type_args.append(self.ast.allocator, first_arg);
+                while (self.current.tag == .comma) {
+                    self.advance(); // consume ','
+                    const arg = self.parseType() catch {
+                        self.lexer = saved_lexer;
+                        self.current = saved_current;
+                        self.had_error = saved_had_error;
+                        self.restoreDiagnostics(saved_diag_count);
+                        return .{ .named = name };
+                    };
+                    try type_args.append(self.ast.allocator, arg);
+                }
+                if (self.current.tag != .greater) {
+                    // Not a generic type, restore state
+                    self.lexer = saved_lexer;
+                    self.current = saved_current;
+                    self.had_error = saved_had_error;
+                    self.restoreDiagnostics(saved_diag_count);
+                    return .{ .named = name };
+                }
+                self.advance(); // consume '>'
+                return .{ .generic_type = .{ .name = name, .type_args = type_args } };
+            }
             return .{ .named = name };
         }
 
@@ -1066,12 +1120,18 @@ pub const Parser = struct {
             .identifier => {
                 const name = self.current.slice(self.source);
                 self.advance();
+                // Check for generic struct literal: Name<Type> { field: value, ... }
+                if (self.current.tag == .less) {
+                    if (try self.tryParseGenericStructLiteral(name)) |expr_idx| {
+                        return expr_idx;
+                    }
+                }
                 // Check for struct literal: Name { field: value, ... }
                 if (self.current.tag == .lbrace) {
                     // Peek ahead to distinguish struct literal from block
                     // Struct literal: identifier '{' identifier ':' ...
                     if (self.peekIsStructLiteral()) {
-                        return self.parseStructLiteral(name);
+                        return self.parseStructLiteral(name, .{});
                     }
                 }
                 return self.ast.addExpr(.{ .identifier = name });
@@ -1159,7 +1219,7 @@ pub const Parser = struct {
         return is_struct;
     }
 
-    fn parseStructLiteral(self: *Parser, name: []const u8) ParseError!Ast.ExprIndex {
+    fn parseStructLiteral(self: *Parser, name: []const u8, type_args: std.ArrayList(Ast.TypeExpr)) ParseError!Ast.ExprIndex {
         try self.expect(.lbrace);
         var field_inits = std.ArrayList(Ast.FieldInitExpr){};
 
@@ -1176,7 +1236,68 @@ pub const Parser = struct {
         }
 
         try self.expect(.rbrace);
-        return self.ast.addExpr(.{ .struct_literal = .{ .name = name, .field_inits = field_inits } });
+        return self.ast.addExpr(.{ .struct_literal = .{ .name = name, .type_args = type_args, .field_inits = field_inits } });
+    }
+
+    fn tryParseGenericStructLiteral(self: *Parser, name: []const u8) ParseError!?Ast.ExprIndex {
+        // Save state: we're at '<' after identifier
+        const saved_lexer = self.lexer;
+        const saved_current = self.current;
+        const saved_had_error = self.had_error;
+        const saved_diag_count = self.diagnostics.errors.items.len;
+
+        self.advance(); // consume '<'
+        var type_args = std.ArrayList(Ast.TypeExpr){};
+        const first_arg = self.parseType() catch {
+            // Not a generic type, restore state
+            self.lexer = saved_lexer;
+            self.current = saved_current;
+            self.had_error = saved_had_error;
+            self.restoreDiagnostics(saved_diag_count);
+            return null;
+        };
+        try type_args.append(self.ast.allocator, first_arg);
+        while (self.current.tag == .comma) {
+            self.advance(); // consume ','
+            const arg = self.parseType() catch {
+                self.lexer = saved_lexer;
+                self.current = saved_current;
+                self.had_error = saved_had_error;
+                self.restoreDiagnostics(saved_diag_count);
+                return null;
+            };
+            try type_args.append(self.ast.allocator, arg);
+        }
+        if (self.current.tag != .greater) {
+            // Not a generic type, restore state
+            self.lexer = saved_lexer;
+            self.current = saved_current;
+            self.had_error = saved_had_error;
+            self.restoreDiagnostics(saved_diag_count);
+            return null;
+        }
+        self.advance(); // consume '>'
+
+        // Must be followed by '{' for a struct literal
+        if (self.current.tag == .lbrace and self.peekIsStructLiteral()) {
+            const result = try self.parseStructLiteral(name, type_args);
+            return result;
+        }
+
+        // Not a struct literal, restore state
+        self.lexer = saved_lexer;
+        self.current = saved_current;
+        self.had_error = saved_had_error;
+        self.restoreDiagnostics(saved_diag_count);
+        return null;
+    }
+
+    fn restoreDiagnostics(self: *Parser, saved_count: usize) void {
+        // Free and remove diagnostics added during speculative parsing
+        for (self.diagnostics.errors.items[saved_count..]) |err| {
+            self.diagnostics.allocator.free(err.message);
+        }
+        self.diagnostics.errors.items.len = saved_count;
     }
 
     // Helpers
@@ -2012,4 +2133,91 @@ test "parse no imports" {
     try testing.expect(!result.diag.hasErrors());
     try testing.expectEqual(@as(usize, 0), result.ast.program.imports.items.len);
     try testing.expectEqual(@as(usize, 1), result.ast.program.decls.items.len);
+}
+
+test "parse generic struct declaration" {
+    var result = try testParse("package main;\npub struct Pair<T> { pub first: T, pub second: T }\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    try testing.expectEqual(@as(usize, 2), result.ast.program.decls.items.len);
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .struct_decl => |sd| {
+            try testing.expectEqualStrings("Pair", sd.name);
+            try testing.expectEqual(@as(usize, 1), sd.type_params.items.len);
+            try testing.expectEqualStrings("T", sd.type_params.items[0]);
+            try testing.expectEqual(@as(usize, 2), sd.fields.items.len);
+            try testing.expectEqualStrings("first", sd.fields.items[0].name);
+            try testing.expectEqualStrings("second", sd.fields.items[1].name);
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse generic struct with multiple type params" {
+    var result = try testParse("package main;\npub struct Map<K, V> { pub key: K, pub value: V }\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .struct_decl => |sd| {
+            try testing.expectEqualStrings("Map", sd.name);
+            try testing.expectEqual(@as(usize, 2), sd.type_params.items.len);
+            try testing.expectEqualStrings("K", sd.type_params.items[0]);
+            try testing.expectEqualStrings("V", sd.type_params.items[1]);
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse generic type in variable declaration" {
+    var result = try testParse("package main;\npub fn main() -> void { let p: Pair<i32> = Pair<i32> { first: 10, second: 20 }; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("p", vd.name);
+                    // Type should be generic_type
+                    switch (vd.type_expr) {
+                        .generic_type => |gt| {
+                            try testing.expectEqualStrings("Pair", gt.name);
+                            try testing.expectEqual(@as(usize, 1), gt.type_args.items.len);
+                            try testing.expectEqual(Ast.BuiltinType.i32_type, gt.type_args.items[0].builtin);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                    // Init should be a struct literal with type args
+                    const expr = result.ast.getExpr(vd.init_expr);
+                    switch (expr) {
+                        .struct_literal => |sl| {
+                            try testing.expectEqualStrings("Pair", sl.name);
+                            try testing.expectEqual(@as(usize, 1), sl.type_args.items.len);
+                            try testing.expectEqual(@as(usize, 2), sl.field_inits.items.len);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse non-generic struct still works" {
+    var result = try testParse("package main;\npub struct Point { pub x: i32, pub y: i32 }\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .struct_decl => |sd| {
+            try testing.expectEqualStrings("Point", sd.name);
+            try testing.expectEqual(@as(usize, 0), sd.type_params.items.len);
+            try testing.expectEqual(@as(usize, 2), sd.fields.items.len);
+        },
+        else => return error.TestUnexpectedResult,
+    }
 }
