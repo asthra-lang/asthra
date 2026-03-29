@@ -81,9 +81,11 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 - Struct declarations, struct literals, field access, field assignment
 - Impl blocks, methods with `self`, method calls
 
+- Enum declarations, enum constructors, match statements
+
 ## Not Yet Implemented
 
-- Enums
+-
 - Generics and type parameters
 - Pattern matching (`match`)
 - `Result<T,E>` / `Option<T>`

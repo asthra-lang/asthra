@@ -1,0 +1,57 @@
+package main;
+
+pub enum Color {
+    pub Red,
+    pub Green,
+    pub Blue
+}
+
+pub enum Shape {
+    pub Circle(f64),
+    pub Rectangle(f64, f64)
+}
+
+pub fn describe_color(c: Color) -> void {
+    match c {
+        Color.Red => {
+            log("Red");
+        }
+        Color.Green => {
+            log("Green");
+        }
+        Color.Blue => {
+            log("Blue");
+        }
+    }
+    return;
+}
+
+pub fn area(s: Shape) -> f64 {
+    match s {
+        Shape.Circle(r) => {
+            return 3.14159 * r * r;
+        }
+        Shape.Rectangle(w, h) => {
+            return w * h;
+        }
+    }
+    return 0.0;
+}
+
+pub fn main() -> void {
+    let r: Color = Color.Red;
+    let g: Color = Color.Green;
+    let b: Color = Color.Blue;
+
+    describe_color(r);
+    describe_color(g);
+    describe_color(b);
+
+    let circle: Shape = Shape.Circle(5.0);
+    let rect: Shape = Shape.Rectangle(3.0, 4.0);
+
+    log(area(circle));
+    log(area(rect));
+
+    return;
+}

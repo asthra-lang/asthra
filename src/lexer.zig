@@ -214,6 +214,10 @@ pub const Lexer = struct {
                     self.advance();
                     return .{ .tag = .double_equal, .loc = .{ .start = start, .end = self.index } };
                 }
+                if (!self.isAtEnd() and self.peek() == '>') {
+                    self.advance();
+                    return .{ .tag = .fat_arrow, .loc = .{ .start = start, .end = self.index } };
+                }
                 return .{ .tag = .equal, .loc = .{ .start = start, .end = self.index } };
             },
             '!' => {

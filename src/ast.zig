@@ -28,6 +28,18 @@ pub const Ast = struct {
         function: FnDecl,
         struct_decl: StructDecl,
         impl_decl: ImplDecl,
+        enum_decl: EnumDecl,
+    };
+
+    pub const EnumDecl = struct {
+        name: []const u8,
+        variants: std.ArrayList(EnumVariant),
+    };
+
+    pub const EnumVariant = struct {
+        name: []const u8,
+        visibility: Visibility,
+        data_types: std.ArrayList(TypeExpr),
     };
 
     pub const ImplDecl = struct {
@@ -80,6 +92,28 @@ pub const Ast = struct {
         for_stmt: ForStmt,
         break_stmt,
         continue_stmt,
+        match_stmt: MatchStmt,
+    };
+
+    pub const MatchStmt = struct {
+        expr: ExprIndex,
+        arms: std.ArrayList(MatchArm),
+    };
+
+    pub const MatchArm = struct {
+        pattern: Pattern,
+        body: *Block,
+    };
+
+    pub const Pattern = union(enum) {
+        enum_pattern: EnumPattern,
+        identifier: []const u8,
+    };
+
+    pub const EnumPattern = struct {
+        enum_name: []const u8,
+        variant_name: []const u8,
+        bindings: std.ArrayList([]const u8),
     };
 
     pub const ReturnStmt = struct {
@@ -128,6 +162,13 @@ pub const Ast = struct {
         field_access: FieldAccessExpr,
         struct_literal: StructLiteralExpr,
         method_call: MethodCallExpr,
+        enum_constructor: EnumConstructorExpr,
+    };
+
+    pub const EnumConstructorExpr = struct {
+        enum_name: []const u8,
+        variant_name: []const u8,
+        args: std.ArrayList(ExprIndex),
     };
 
     pub const MethodCallExpr = struct {

@@ -82,7 +82,16 @@ pub const Parser = struct {
             };
         }
 
-        self.reportError("expected function, struct, or impl declaration");
+        if (self.current.tag == .keyword_enum) {
+            const enum_decl = try self.parseEnumDecl();
+            return .{
+                .visibility = visibility,
+                .decl = .{ .enum_decl = enum_decl },
+                .start = start,
+            };
+        }
+
+        self.reportError("expected declaration");
         return error.ParseError;
     }
 
@@ -178,6 +187,58 @@ pub const Parser = struct {
 
         try self.expect(.rbrace);
         return .{ .name = name, .fields = fields };
+    }
+
+    fn parseEnumDecl(self: *Parser) ParseError!Ast.EnumDecl {
+        self.advance(); // consume 'enum'
+
+        const name_token = self.current;
+        try self.expect(.identifier);
+        const name = name_token.slice(self.source);
+
+        try self.expect(.lbrace);
+        var variants = std.ArrayList(Ast.EnumVariant){};
+
+        if (self.current.tag == .keyword_none) {
+            self.advance();
+        } else {
+            while (self.current.tag != .rbrace and self.current.tag != .eof) {
+                var visibility: Ast.Visibility = .private;
+                if (self.current.tag == .keyword_pub) {
+                    visibility = .public;
+                    self.advance();
+                } else if (self.current.tag == .keyword_priv) {
+                    visibility = .private;
+                    self.advance();
+                }
+
+                const variant_name_token = self.current;
+                try self.expect(.identifier);
+                const variant_name = variant_name_token.slice(self.source);
+
+                var data_types = std.ArrayList(Ast.TypeExpr){};
+                if (self.current.tag == .lparen) {
+                    self.advance(); // consume '('
+                    while (self.current.tag != .rparen) {
+                        const t = try self.parseType();
+                        try data_types.append(self.ast.allocator, t);
+                        if (self.current.tag == .comma) self.advance();
+                    }
+                    try self.expect(.rparen);
+                }
+
+                try variants.append(self.ast.allocator, .{
+                    .name = variant_name,
+                    .visibility = visibility,
+                    .data_types = data_types,
+                });
+
+                if (self.current.tag == .comma) self.advance();
+            }
+        }
+
+        try self.expect(.rbrace);
+        return .{ .name = name, .variants = variants };
     }
 
     fn parseImplDecl(self: *Parser) ParseError!Ast.ImplDecl {
@@ -324,6 +385,7 @@ pub const Parser = struct {
                 try self.expect(.semicolon);
                 return .continue_stmt;
             },
+            .keyword_match => return self.parseMatchStmt(),
             .identifier => {
                 // Check for assignment: ident = expr;
                 // We need to peek ahead
@@ -475,6 +537,63 @@ pub const Parser = struct {
             .iterable = iterable,
             .body = body,
         } };
+    }
+
+    fn parseMatchStmt(self: *Parser) ParseError!Ast.Stmt {
+        self.advance(); // consume 'match'
+        const expr = try self.parseExpr();
+
+        try self.expect(.lbrace);
+        var arms = std.ArrayList(Ast.MatchArm){};
+
+        while (self.current.tag != .rbrace and self.current.tag != .eof) {
+            const pattern = try self.parsePattern();
+
+            // Expect '=>'
+            try self.expect(.fat_arrow);
+
+            const body = try self.ast.allocator.create(Ast.Block);
+            body.* = try self.parseBlock();
+
+            try arms.append(self.ast.allocator, .{ .pattern = pattern, .body = body });
+        }
+
+        try self.expect(.rbrace);
+        return .{ .match_stmt = .{ .expr = expr, .arms = arms } };
+    }
+
+    fn parsePattern(self: *Parser) ParseError!Ast.Pattern {
+        const first_token = self.current;
+        try self.expect(.identifier);
+        const first_name = first_token.slice(self.source);
+
+        if (self.current.tag == .dot) {
+            // Enum pattern: EnumName.VariantName or EnumName.VariantName(bindings)
+            self.advance(); // consume '.'
+            const variant_token = self.current;
+            try self.expect(.identifier);
+            const variant_name = variant_token.slice(self.source);
+
+            var bindings = std.ArrayList([]const u8){};
+            if (self.current.tag == .lparen) {
+                self.advance(); // consume '('
+                while (self.current.tag != .rparen and self.current.tag != .eof) {
+                    const binding_token = self.current;
+                    try self.expect(.identifier);
+                    try bindings.append(self.ast.allocator, binding_token.slice(self.source));
+                    if (self.current.tag == .comma) self.advance();
+                }
+                try self.expect(.rparen);
+            }
+
+            return .{ .enum_pattern = .{
+                .enum_name = first_name,
+                .variant_name = variant_name,
+                .bindings = bindings,
+            } };
+        }
+
+        return .{ .identifier = first_name };
     }
 
     fn parseExprStmt(self: *Parser) ParseError!Ast.Stmt {

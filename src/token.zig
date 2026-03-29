@@ -58,6 +58,7 @@ pub const Tag = enum {
     double_ampersand,
     double_pipe,
     arrow, // ->
+    fat_arrow, // =>
     double_colon, // ::
 
     // Keywords

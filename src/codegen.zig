@@ -27,11 +27,18 @@ pub const CodeGen = struct {
     fmt_bool_false: c.LLVMValueRef,
     loop_stack: std.ArrayList(LoopContext) = .{},
     struct_types: std.StringHashMap(StructTypeInfo),
+    enum_types: std.StringHashMap(EnumTypeInfo),
 
     const StructTypeInfo = struct {
         llvm_type: c.LLVMTypeRef,
         field_names: []const []const u8,
         field_types: []const TypeTag,
+    };
+
+    const EnumTypeInfo = struct {
+        llvm_type: c.LLVMTypeRef,
+        variant_names: []const []const u8,
+        variant_data_types: []const []const TypeTag,
     };
 
     const LoopContext = struct {
@@ -53,6 +60,7 @@ pub const CodeGen = struct {
         void_type,
         string_type,
         struct_type: []const u8,
+        enum_type: []const u8,
     };
 
     pub fn init(allocator: std.mem.Allocator, module_name: [*:0]const u8, diagnostics: *Diagnostics, ast: *const Ast) CodeGen {
@@ -87,6 +95,7 @@ pub const CodeGen = struct {
             .builder = builder,
             .named_values = std.StringHashMap(NamedValue).init(allocator),
             .struct_types = std.StringHashMap(StructTypeInfo).init(allocator),
+            .enum_types = std.StringHashMap(EnumTypeInfo).init(allocator),
             .diagnostics = diagnostics,
             .allocator = allocator,
             .ast = ast,
@@ -111,13 +120,23 @@ pub const CodeGen = struct {
             self.allocator.free(entry.value_ptr.field_types);
         }
         self.struct_types.deinit();
+        var eit = self.enum_types.iterator();
+        while (eit.next()) |entry| {
+            for (entry.value_ptr.variant_data_types) |dt| {
+                self.allocator.free(dt);
+            }
+            self.allocator.free(entry.value_ptr.variant_names);
+            self.allocator.free(entry.value_ptr.variant_data_types);
+        }
+        self.enum_types.deinit();
     }
 
     pub fn generate(self: *CodeGen) GenError!void {
-        // First pass: register all struct types
+        // First pass: register all struct and enum types
         for (self.ast.program.decls.items) |decl| {
             switch (decl.decl) {
                 .struct_decl => |sd| try self.genStructType(&sd),
+                .enum_decl => |ed| try self.genEnumType(&ed),
                 else => {},
             }
         }
@@ -128,6 +147,7 @@ pub const CodeGen = struct {
                 .function => |fn_decl| try self.genFunction(&fn_decl),
                 .struct_decl => {},
                 .impl_decl => |impl_decl| try self.genImplDecl(&impl_decl),
+                .enum_decl => {},
             }
         }
 
@@ -249,6 +269,105 @@ pub const CodeGen = struct {
         }
     }
 
+    fn genEnumType(self: *CodeGen, ed: *const Ast.EnumDecl) GenError!void {
+        const name_z = self.allocator.dupeZ(u8, ed.name) catch return error.CodeGenError;
+        defer self.allocator.free(name_z);
+
+        const variant_count: usize = ed.variants.items.len;
+        var variant_names = self.allocator.alloc([]const u8, variant_count) catch return error.CodeGenError;
+        var variant_data_types = self.allocator.alloc([]const TypeTag, variant_count) catch return error.CodeGenError;
+
+        // Calculate max payload size
+        var max_payload_size: usize = 0;
+        for (ed.variants.items, 0..) |variant, i| {
+            variant_names[i] = variant.name;
+            const dt_count = variant.data_types.items.len;
+            var dts = self.allocator.alloc(TypeTag, dt_count) catch return error.CodeGenError;
+            var size: usize = 0;
+            for (variant.data_types.items, 0..) |dt, j| {
+                dts[j] = self.resolveTypeExpr(dt);
+                size += 8; // assume 8 bytes per field for simplicity
+            }
+            variant_data_types[i] = dts;
+            if (size > max_payload_size) max_payload_size = size;
+        }
+
+        // Enum LLVM type: { i32 tag, [max_payload_size x i8] data }
+        var field_types: [2]c.LLVMTypeRef = undefined;
+        field_types[0] = c.LLVMInt32TypeInContext(self.context); // tag
+        if (max_payload_size > 0) {
+            field_types[1] = c.LLVMArrayType(c.LLVMInt8TypeInContext(self.context), @intCast(max_payload_size));
+        } else {
+            field_types[1] = c.LLVMArrayType(c.LLVMInt8TypeInContext(self.context), 0);
+        }
+
+        const enum_type = c.LLVMStructCreateNamed(self.context, name_z.ptr);
+        c.LLVMStructSetBody(enum_type, &field_types, 2, 0);
+
+        self.enum_types.put(ed.name, .{
+            .llvm_type = enum_type,
+            .variant_names = variant_names,
+            .variant_data_types = variant_data_types,
+        }) catch {};
+    }
+
+    fn genEnumConstructor(self: *CodeGen, enum_name: []const u8, variant_name: []const u8, args: *const std.ArrayList(Ast.ExprIndex)) GenError!ExprResult {
+        const info = self.enum_types.get(enum_name) orelse {
+            self.diagnostics.report(.@"error", 0, "undefined enum '{s}'", .{enum_name});
+            return error.CodeGenError;
+        };
+
+        // Find variant index
+        var variant_idx: ?usize = null;
+        for (info.variant_names, 0..) |vn, i| {
+            if (std.mem.eql(u8, vn, variant_name)) {
+                variant_idx = i;
+                break;
+            }
+        }
+        const idx = variant_idx orelse {
+            self.diagnostics.report(.@"error", 0, "undefined variant '{s}' on enum '{s}'", .{ variant_name, enum_name });
+            return error.CodeGenError;
+        };
+
+        // Allocate enum on stack
+        const alloca = c.LLVMBuildAlloca(self.builder, info.llvm_type, "enum_lit");
+
+        // Set tag
+        const tag_ptr = c.LLVMBuildStructGEP2(self.builder, info.llvm_type, alloca, 0, "tag_ptr");
+        _ = c.LLVMBuildStore(self.builder, c.LLVMConstInt(c.LLVMInt32TypeInContext(self.context), @intCast(idx), 0), tag_ptr);
+
+        // Store data fields if any
+        const data_types = info.variant_data_types[idx];
+        if (data_types.len > 0 and args.items.len > 0) {
+            const data_ptr = c.LLVMBuildStructGEP2(self.builder, info.llvm_type, alloca, 1, "data_ptr");
+            // Cast data array to pointer
+            const data_byte_ptr = c.LLVMBuildBitCast(self.builder, data_ptr, c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0), "data_bytes");
+
+            var offset: u64 = 0;
+            for (args.items, 0..) |arg_idx, i| {
+                if (i >= data_types.len) break;
+                const val = try self.genExpr(arg_idx);
+                const field_type = self.typeTagToLLVM(data_types[i]);
+                var gep_indices = [_]c.LLVMValueRef{c.LLVMConstInt(c.LLVMInt64TypeInContext(self.context), offset, 0)};
+                const field_ptr = c.LLVMBuildGEP2(
+                    self.builder,
+                    c.LLVMInt8TypeInContext(self.context),
+                    data_byte_ptr,
+                    &gep_indices,
+                    1,
+                    "field_byte_ptr",
+                );
+                const typed_ptr = c.LLVMBuildBitCast(self.builder, field_ptr, c.LLVMPointerType(field_type, 0), "typed_ptr");
+                _ = c.LLVMBuildStore(self.builder, val.value, typed_ptr);
+                offset += 8; // each field takes 8 bytes
+            }
+        }
+
+        const loaded = c.LLVMBuildLoad2(self.builder, info.llvm_type, alloca, "enum_val");
+        return .{ .value = loaded, .type_tag = .{ .enum_type = enum_name } };
+    }
+
     fn resolveTypeExpr(self: *const CodeGen, type_expr: Ast.TypeExpr) TypeTag {
         return switch (type_expr) {
             .builtin => |b| switch (b) {
@@ -263,6 +382,9 @@ pub const CodeGen = struct {
             .named => |name| {
                 if (self.struct_types.contains(name)) {
                     return .{ .struct_type = name };
+                }
+                if (self.enum_types.contains(name)) {
+                    return .{ .enum_type = name };
                 }
                 return .i32_type;
             },
@@ -401,6 +523,7 @@ pub const CodeGen = struct {
             .expr_stmt => |expr_idx| {
                 _ = try self.genExpr(expr_idx);
             },
+            .match_stmt => |match_s| try self.genMatchStmt(match_s, is_main),
             .break_stmt => {
                 if (self.loop_stack.items.len == 0) {
                     self.diagnostics.report(.@"error", 0, "'break' used outside of a loop", .{});
@@ -505,6 +628,117 @@ pub const CodeGen = struct {
         _ = c.LLVMBuildBr(self.builder, cond_bb);
 
         c.LLVMPositionBuilderAtEnd(self.builder, exit_bb);
+    }
+
+    fn genMatchStmt(self: *CodeGen, match_stmt: Ast.MatchStmt, is_main: bool) GenError!void {
+        const match_val = try self.genExpr(match_stmt.expr);
+        const function = c.LLVMGetBasicBlockParent(c.LLVMGetInsertBlock(self.builder));
+
+        // Get enum info
+        const enum_name = switch (match_val.type_tag) {
+            .enum_type => |name| name,
+            else => {
+                self.diagnostics.report(.@"error", 0, "match requires enum type", .{});
+                return error.CodeGenError;
+            },
+        };
+
+        const info = self.enum_types.get(enum_name) orelse {
+            self.diagnostics.report(.@"error", 0, "undefined enum type", .{});
+            return error.CodeGenError;
+        };
+
+        // Store the enum value to access tag and data
+        const alloca = c.LLVMBuildAlloca(self.builder, info.llvm_type, "match_val");
+        _ = c.LLVMBuildStore(self.builder, match_val.value, alloca);
+
+        // Load the tag
+        const tag_ptr = c.LLVMBuildStructGEP2(self.builder, info.llvm_type, alloca, 0, "tag_ptr");
+        const tag_val = c.LLVMBuildLoad2(self.builder, c.LLVMInt32TypeInContext(self.context), tag_ptr, "tag");
+
+        const merge_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "match.end");
+
+        // Build switch
+        const default_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "match.default");
+        const switch_inst = c.LLVMBuildSwitch(self.builder, tag_val, default_bb, @intCast(match_stmt.arms.items.len));
+
+        // Default block just branches to merge
+        c.LLVMPositionBuilderAtEnd(self.builder, default_bb);
+        _ = c.LLVMBuildBr(self.builder, merge_bb);
+
+        for (match_stmt.arms.items) |arm| {
+            switch (arm.pattern) {
+                .enum_pattern => |ep| {
+                    // Find variant index
+                    var found_idx: ?usize = null;
+                    for (info.variant_names, 0..) |vn, i| {
+                        if (std.mem.eql(u8, vn, ep.variant_name)) {
+                            found_idx = i;
+                            break;
+                        }
+                    }
+                    const vidx = found_idx orelse {
+                        self.diagnostics.report(.@"error", 0, "undefined variant '{s}'", .{ep.variant_name});
+                        return error.CodeGenError;
+                    };
+
+                    const arm_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "match.arm");
+                    c.LLVMAddCase(switch_inst, c.LLVMConstInt(c.LLVMInt32TypeInContext(self.context), @intCast(vidx), 0), arm_bb);
+
+                    c.LLVMPositionBuilderAtEnd(self.builder, arm_bb);
+
+                    // Extract bindings if any
+                    const data_types = info.variant_data_types[vidx];
+                    if (ep.bindings.items.len > 0 and data_types.len > 0) {
+                        const data_ptr = c.LLVMBuildStructGEP2(self.builder, info.llvm_type, alloca, 1, "data_ptr");
+                        const data_byte_ptr = c.LLVMBuildBitCast(self.builder, data_ptr, c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0), "data_bytes");
+
+                        var offset: u64 = 0;
+                        for (ep.bindings.items, 0..) |binding_name, bi| {
+                            if (bi >= data_types.len) break;
+                            const field_type = self.typeTagToLLVM(data_types[bi]);
+                            var gep_idx = [_]c.LLVMValueRef{c.LLVMConstInt(c.LLVMInt64TypeInContext(self.context), offset, 0)};
+                            const field_ptr = c.LLVMBuildGEP2(
+                                self.builder,
+                                c.LLVMInt8TypeInContext(self.context),
+                                data_byte_ptr,
+                                &gep_idx,
+                                1,
+                                "bind_byte_ptr",
+                            );
+                            const typed_ptr = c.LLVMBuildBitCast(self.builder, field_ptr, c.LLVMPointerType(field_type, 0), "bind_typed_ptr");
+                            const loaded = c.LLVMBuildLoad2(self.builder, field_type, typed_ptr, "bind_val");
+
+                            // Create local alloca for the binding
+                            const bind_name_z = self.allocator.dupeZ(u8, binding_name) catch return error.CodeGenError;
+                            defer self.allocator.free(bind_name_z);
+
+                            const bind_alloca = c.LLVMBuildAlloca(self.builder, field_type, bind_name_z.ptr);
+                            _ = c.LLVMBuildStore(self.builder, loaded, bind_alloca);
+                            self.named_values.put(binding_name, .{
+                                .alloca = bind_alloca,
+                                .is_mutable = false,
+                                .type_tag = data_types[bi],
+                            }) catch {};
+
+                            offset += 8;
+                        }
+                    }
+
+                    try self.genBlock(arm.body, is_main);
+                    if (c.LLVMGetBasicBlockTerminator(c.LLVMGetInsertBlock(self.builder)) == null) {
+                        _ = c.LLVMBuildBr(self.builder, merge_bb);
+                    }
+                },
+                .identifier => {
+                    // Wildcard / catch-all pattern - not implemented yet
+                    self.diagnostics.report(.@"error", 0, "identifier patterns in match not yet implemented", .{});
+                    return error.CodeGenError;
+                },
+            }
+        }
+
+        c.LLVMPositionBuilderAtEnd(self.builder, merge_bb);
     }
 
     const RangeInfo = struct {
@@ -615,14 +849,21 @@ pub const CodeGen = struct {
             .method_call => |mc| {
                 return self.genMethodCall(mc);
             },
+            .enum_constructor => |ec| {
+                return self.genEnumConstructor(ec.enum_name, ec.variant_name, &ec.args);
+            },
         }
     }
 
     fn genFieldAccess(self: *CodeGen, fa: Ast.FieldAccessExpr) GenError!ExprResult {
-        // Get the object - we need its alloca (pointer), not the loaded value
+        // Check if this is an enum constructor: EnumName.VariantName
         const obj_expr = self.ast.getExpr(fa.object);
         switch (obj_expr) {
             .identifier => |name| {
+                if (self.enum_types.contains(name)) {
+                    // This is an enum constructor without args: EnumName.VariantName
+                    return self.genEnumConstructor(name, fa.field, &.{});
+                }
                 if (self.named_values.get(name)) |nv| {
                     switch (nv.type_tag) {
                         .struct_type => |struct_name| {
@@ -719,6 +960,17 @@ pub const CodeGen = struct {
     }
 
     fn genMethodCall(self: *CodeGen, mc: Ast.MethodCallExpr) GenError!ExprResult {
+        // Check if this is an enum constructor: EnumName.VariantName(args)
+        const mc_obj_expr = self.ast.getExpr(mc.object);
+        switch (mc_obj_expr) {
+            .identifier => |name| {
+                if (self.enum_types.contains(name)) {
+                    return self.genEnumConstructor(name, mc.method, &mc.args);
+                }
+            },
+            else => {},
+        }
+
         // Get the object value
         const obj = try self.genExpr(mc.object);
 
@@ -1002,6 +1254,12 @@ pub const CodeGen = struct {
             .string_type => c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0),
             .struct_type => |name| {
                 if (self.struct_types.get(name)) |info| {
+                    return info.llvm_type;
+                }
+                return c.LLVMInt32TypeInContext(self.context);
+            },
+            .enum_type => |name| {
+                if (self.enum_types.get(name)) |info| {
                     return info.llvm_type;
                 }
                 return c.LLVMInt32TypeInContext(self.context);
