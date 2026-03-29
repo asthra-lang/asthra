@@ -1,0 +1,23 @@
+package main;
+
+pub fn fibonacci(n: i32) -> i32 {
+    if n <= 1 {
+        return n;
+    }
+    let mut a: i32 = 0;
+    let mut b: i32 = 1;
+    for i in range(2, n + 1) {
+        let temp: i32 = a + b;
+        a = b;
+        b = temp;
+    }
+    return b;
+}
+
+pub fn main() -> void {
+    log("Fibonacci sequence:");
+    for i in range(10) {
+        log(fibonacci(i));
+    }
+    return;
+}

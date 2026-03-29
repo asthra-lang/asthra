@@ -1,0 +1,10 @@
+.{
+    .name = .asthra,
+    .version = "0.1.0",
+    .fingerprint = 0x493d00aa8937b156,
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}

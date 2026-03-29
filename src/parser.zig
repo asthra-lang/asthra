@@ -1,0 +1,617 @@
+const std = @import("std");
+const Token = @import("token.zig").Token;
+const Tag = @import("token.zig").Tag;
+const Lexer = @import("lexer.zig").Lexer;
+const Ast = @import("ast.zig").Ast;
+const Diagnostics = @import("diagnostics.zig").Diagnostics;
+
+pub const Parser = struct {
+    lexer: Lexer,
+    current: Token,
+    previous: Token,
+    ast: *Ast,
+    diagnostics: *Diagnostics,
+    source: []const u8,
+    had_error: bool,
+
+    pub fn init(source: []const u8, ast: *Ast, diagnostics: *Diagnostics) Parser {
+        var lexer = Lexer.init(source);
+        const first = lexer.next();
+        return .{
+            .lexer = lexer,
+            .current = first,
+            .previous = first,
+            .ast = ast,
+            .diagnostics = diagnostics,
+            .source = source,
+            .had_error = false,
+        };
+    }
+
+    pub fn parse(self: *Parser) ParseError!void {
+        // Parse package declaration
+        self.ast.program.package_name = try self.parsePackageDecl();
+
+        // Parse top-level declarations
+        while (self.current.tag != .eof) {
+            const decl = self.parseTopLevelDecl() catch {
+                self.synchronize();
+                continue;
+            };
+            try self.ast.program.decls.append(self.ast.allocator, decl);
+        }
+    }
+
+    fn parsePackageDecl(self: *Parser) ParseError![]const u8 {
+        try self.expect(.keyword_package);
+        const name_token = self.current;
+        try self.expect(.identifier);
+        const name = name_token.slice(self.source);
+        try self.expect(.semicolon);
+        return name;
+    }
+
+    fn parseTopLevelDecl(self: *Parser) ParseError!Ast.TopLevelDecl {
+        const start = self.current.loc.start;
+        const visibility = try self.parseVisibility();
+
+        if (self.current.tag == .keyword_fn) {
+            const fn_decl = try self.parseFnDecl();
+            return .{
+                .visibility = visibility,
+                .decl = .{ .function = fn_decl },
+                .start = start,
+            };
+        }
+
+        self.reportError("expected function declaration");
+        return error.ParseError;
+    }
+
+    fn parseVisibility(self: *Parser) ParseError!Ast.Visibility {
+        if (self.current.tag == .keyword_pub) {
+            self.advance();
+            return .public;
+        }
+        if (self.current.tag == .keyword_priv) {
+            self.advance();
+            return .private;
+        }
+        self.reportError("expected 'pub' or 'priv' visibility modifier");
+        return error.ParseError;
+    }
+
+    fn parseFnDecl(self: *Parser) ParseError!Ast.FnDecl {
+        try self.expect(.keyword_fn);
+
+        const name_token = self.current;
+        try self.expect(.identifier);
+        const name = name_token.slice(self.source);
+
+        try self.expect(.lparen);
+        var params = std.ArrayList(Ast.Param){};
+
+        if (self.current.tag == .keyword_none) {
+            self.advance(); // consume 'none'
+        } else if (self.current.tag != .rparen) {
+            while (true) {
+                const param = try self.parseParam();
+                try params.append(self.ast.allocator, param);
+                if (self.current.tag != .comma) break;
+                self.advance(); // consume comma
+            }
+        }
+        try self.expect(.rparen);
+
+        try self.expect(.arrow);
+        const return_type = try self.parseType();
+
+        const body = try self.parseBlock();
+
+        return .{
+            .name = name,
+            .params = params,
+            .return_type = return_type,
+            .body = body,
+        };
+    }
+
+    fn parseParam(self: *Parser) ParseError!Ast.Param {
+        const name_token = self.current;
+        try self.expect(.identifier);
+        const name = name_token.slice(self.source);
+        try self.expect(.colon);
+        const type_expr = try self.parseType();
+        return .{ .name = name, .type_expr = type_expr };
+    }
+
+    fn parseType(self: *Parser) ParseError!Ast.TypeExpr {
+        const tag = self.current.tag;
+        if (tag.isTypeKeyword()) {
+            const builtin = switch (tag) {
+                .keyword_void => Ast.BuiltinType.void,
+                .keyword_bool => .bool_type,
+                .keyword_int => .int_type,
+                .keyword_float => .float_type,
+                .keyword_string => .string_type,
+                .keyword_i8 => .i8_type,
+                .keyword_i16 => .i16_type,
+                .keyword_i32 => .i32_type,
+                .keyword_i64 => .i64_type,
+                .keyword_i128 => .i128_type,
+                .keyword_u8 => .u8_type,
+                .keyword_u16 => .u16_type,
+                .keyword_u32 => .u32_type,
+                .keyword_u64 => .u64_type,
+                .keyword_u128 => .u128_type,
+                .keyword_f32 => .f32_type,
+                .keyword_f64 => .f64_type,
+                .keyword_usize => .usize_type,
+                .keyword_isize => .isize_type,
+                .keyword_Never => .never_type,
+                else => unreachable,
+            };
+            self.advance();
+            return .{ .builtin = builtin };
+        }
+
+        if (tag == .identifier) {
+            const name = self.current.slice(self.source);
+            self.advance();
+            return .{ .named = name };
+        }
+
+        self.reportError("expected type");
+        return error.ParseError;
+    }
+
+    fn parseBlock(self: *Parser) ParseError!Ast.Block {
+        try self.expect(.lbrace);
+        var stmts = std.ArrayList(Ast.Stmt){};
+        while (self.current.tag != .rbrace and self.current.tag != .eof) {
+            const stmt = self.parseStatement() catch {
+                self.synchronize();
+                continue;
+            };
+            try stmts.append(self.ast.allocator, stmt);
+        }
+        try self.expect(.rbrace);
+        return .{ .stmts = stmts };
+    }
+
+    fn parseStatement(self: *Parser) ParseError!Ast.Stmt {
+        switch (self.current.tag) {
+            .keyword_return => return self.parseReturnStmt(),
+            .keyword_let => return self.parseVarDecl(),
+            .keyword_if => return self.parseIfStmt(),
+            .keyword_for => return self.parseForStmt(),
+            .keyword_break => {
+                self.advance();
+                try self.expect(.semicolon);
+                return .break_stmt;
+            },
+            .keyword_continue => {
+                self.advance();
+                try self.expect(.semicolon);
+                return .continue_stmt;
+            },
+            .identifier => {
+                // Check for assignment: ident = expr;
+                // We need to peek ahead
+                if (self.peekIsAssignment()) {
+                    return self.parseAssignStmt();
+                }
+                return self.parseExprStmt();
+            },
+            else => return self.parseExprStmt(),
+        }
+    }
+
+    fn peekIsAssignment(self: *Parser) bool {
+        // Save state
+        const saved_lexer = self.lexer;
+        const saved_current = self.current;
+        // Advance past identifier
+        self.advance();
+        const is_assign = self.current.tag == .equal;
+        // Restore state
+        self.lexer = saved_lexer;
+        self.current = saved_current;
+        return is_assign;
+    }
+
+    fn parseReturnStmt(self: *Parser) ParseError!Ast.Stmt {
+        self.advance(); // consume 'return'
+
+        // For void return, check if next is ';'
+        if (self.current.tag == .semicolon) {
+            self.advance();
+            // Create a void expression (we'll use a special value)
+            return .{ .return_stmt = .{ .expr = Ast.null_expr } };
+        }
+
+        const expr = try self.parseExpr();
+        try self.expect(.semicolon);
+        return .{ .return_stmt = .{ .expr = expr } };
+    }
+
+    fn parseVarDecl(self: *Parser) ParseError!Ast.Stmt {
+        self.advance(); // consume 'let'
+
+        var is_mutable = false;
+        if (self.current.tag == .keyword_mut) {
+            is_mutable = true;
+            self.advance();
+        }
+
+        const name_token = self.current;
+        try self.expect(.identifier);
+        const name = name_token.slice(self.source);
+
+        try self.expect(.colon);
+        const type_expr = try self.parseType();
+
+        try self.expect(.equal);
+        const init_expr = try self.parseExpr();
+
+        try self.expect(.semicolon);
+        return .{ .var_decl = .{
+            .name = name,
+            .is_mutable = is_mutable,
+            .type_expr = type_expr,
+            .init_expr = init_expr,
+        } };
+    }
+
+    fn parseAssignStmt(self: *Parser) ParseError!Ast.Stmt {
+        const name_token = self.current;
+        try self.expect(.identifier);
+        const name = name_token.slice(self.source);
+
+        try self.expect(.equal);
+        const value = try self.parseExpr();
+        try self.expect(.semicolon);
+
+        return .{ .assign = .{
+            .target = name,
+            .value = value,
+        } };
+    }
+
+    fn parseIfStmt(self: *Parser) ParseError!Ast.Stmt {
+        self.advance(); // consume 'if'
+        const condition = try self.parseExpr();
+        const then_block = try self.ast.allocator.create(Ast.Block);
+        then_block.* = try self.parseBlock();
+
+        var else_block: ?*Ast.Block = null;
+        if (self.current.tag == .keyword_else) {
+            self.advance();
+            if (self.current.tag == .keyword_if) {
+                // else if: wrap in a block with a single if stmt
+                const inner_if = try self.parseIfStmt();
+                const eb = try self.ast.allocator.create(Ast.Block);
+                var stmts = std.ArrayList(Ast.Stmt){};
+                try stmts.append(self.ast.allocator, inner_if);
+                eb.* = .{ .stmts = stmts };
+                else_block = eb;
+            } else {
+                const eb = try self.ast.allocator.create(Ast.Block);
+                eb.* = try self.parseBlock();
+                else_block = eb;
+            }
+        }
+
+        return .{ .if_stmt = .{
+            .condition = condition,
+            .then_block = then_block,
+            .else_block = else_block,
+        } };
+    }
+
+    fn parseForStmt(self: *Parser) ParseError!Ast.Stmt {
+        self.advance(); // consume 'for'
+
+        const iter_var_token = self.current;
+        try self.expect(.identifier);
+        const iter_var = iter_var_token.slice(self.source);
+
+        try self.expect(.keyword_in);
+        const iterable = try self.parseExpr();
+
+        const body = try self.ast.allocator.create(Ast.Block);
+        body.* = try self.parseBlock();
+
+        return .{ .for_stmt = .{
+            .iter_var = iter_var,
+            .iterable = iterable,
+            .body = body,
+        } };
+    }
+
+    fn parseExprStmt(self: *Parser) ParseError!Ast.Stmt {
+        const expr = try self.parseExpr();
+        try self.expect(.semicolon);
+        return .{ .expr_stmt = expr };
+    }
+
+    pub const ParseError = error{ ParseError, OutOfMemory };
+
+    // Expression parsing with precedence climbing
+    fn parseExpr(self: *Parser) ParseError!Ast.ExprIndex {
+        return self.parseLogicOr();
+    }
+
+    fn parseLogicOr(self: *Parser) ParseError!Ast.ExprIndex {
+        var left = try self.parseLogicAnd();
+        while (self.current.tag == .double_pipe) {
+            self.advance();
+            const right = try self.parseLogicAnd();
+            left = try self.ast.addExpr(.{ .binary = .{ .lhs = left, .op = .logic_or, .rhs = right } });
+        }
+        return left;
+    }
+
+    fn parseLogicAnd(self: *Parser) ParseError!Ast.ExprIndex {
+        var left = try self.parseBitwiseOr();
+        while (self.current.tag == .double_ampersand) {
+            self.advance();
+            const right = try self.parseBitwiseOr();
+            left = try self.ast.addExpr(.{ .binary = .{ .lhs = left, .op = .logic_and, .rhs = right } });
+        }
+        return left;
+    }
+
+    fn parseBitwiseOr(self: *Parser) ParseError!Ast.ExprIndex {
+        var left = try self.parseBitwiseXor();
+        while (self.current.tag == .pipe) {
+            self.advance();
+            const right = try self.parseBitwiseXor();
+            left = try self.ast.addExpr(.{ .binary = .{ .lhs = left, .op = .bit_or, .rhs = right } });
+        }
+        return left;
+    }
+
+    fn parseBitwiseXor(self: *Parser) ParseError!Ast.ExprIndex {
+        var left = try self.parseBitwiseAnd();
+        while (self.current.tag == .caret) {
+            self.advance();
+            const right = try self.parseBitwiseAnd();
+            left = try self.ast.addExpr(.{ .binary = .{ .lhs = left, .op = .bit_xor, .rhs = right } });
+        }
+        return left;
+    }
+
+    fn parseBitwiseAnd(self: *Parser) ParseError!Ast.ExprIndex {
+        var left = try self.parseEquality();
+        while (self.current.tag == .ampersand) {
+            self.advance();
+            const right = try self.parseEquality();
+            left = try self.ast.addExpr(.{ .binary = .{ .lhs = left, .op = .bit_and, .rhs = right } });
+        }
+        return left;
+    }
+
+    fn parseEquality(self: *Parser) ParseError!Ast.ExprIndex {
+        var left = try self.parseRelational();
+        while (self.current.tag == .double_equal or self.current.tag == .bang_equal) {
+            const op: Ast.BinaryOp = if (self.current.tag == .double_equal) .eq else .neq;
+            self.advance();
+            const right = try self.parseRelational();
+            left = try self.ast.addExpr(.{ .binary = .{ .lhs = left, .op = op, .rhs = right } });
+        }
+        return left;
+    }
+
+    fn parseRelational(self: *Parser) ParseError!Ast.ExprIndex {
+        var left = try self.parseShift();
+        while (self.current.tag == .less or self.current.tag == .less_equal or
+            self.current.tag == .greater or self.current.tag == .greater_equal)
+        {
+            const op: Ast.BinaryOp = switch (self.current.tag) {
+                .less => .lt,
+                .less_equal => .le,
+                .greater => .gt,
+                .greater_equal => .ge,
+                else => unreachable,
+            };
+            self.advance();
+            const right = try self.parseShift();
+            left = try self.ast.addExpr(.{ .binary = .{ .lhs = left, .op = op, .rhs = right } });
+        }
+        return left;
+    }
+
+    fn parseShift(self: *Parser) ParseError!Ast.ExprIndex {
+        var left = try self.parseAdd();
+        while (self.current.tag == .shift_left or self.current.tag == .shift_right) {
+            const op: Ast.BinaryOp = if (self.current.tag == .shift_left) .shift_left else .shift_right;
+            self.advance();
+            const right = try self.parseAdd();
+            left = try self.ast.addExpr(.{ .binary = .{ .lhs = left, .op = op, .rhs = right } });
+        }
+        return left;
+    }
+
+    fn parseAdd(self: *Parser) ParseError!Ast.ExprIndex {
+        var left = try self.parseMult();
+        while (self.current.tag == .plus or self.current.tag == .minus) {
+            const op: Ast.BinaryOp = if (self.current.tag == .plus) .add else .sub;
+            self.advance();
+            const right = try self.parseMult();
+            left = try self.ast.addExpr(.{ .binary = .{ .lhs = left, .op = op, .rhs = right } });
+        }
+        return left;
+    }
+
+    fn parseMult(self: *Parser) ParseError!Ast.ExprIndex {
+        var left = try self.parseUnary();
+        while (self.current.tag == .star or self.current.tag == .slash or self.current.tag == .percent) {
+            const op: Ast.BinaryOp = switch (self.current.tag) {
+                .star => .mul,
+                .slash => .div,
+                .percent => .mod,
+                else => unreachable,
+            };
+            self.advance();
+            const right = try self.parseUnary();
+            left = try self.ast.addExpr(.{ .binary = .{ .lhs = left, .op = op, .rhs = right } });
+        }
+        return left;
+    }
+
+    fn parseUnary(self: *Parser) ParseError!Ast.ExprIndex {
+        if (self.current.tag == .minus) {
+            self.advance();
+            const operand = try self.parsePostfix();
+            return self.ast.addExpr(.{ .unary = .{ .op = .negate, .operand = operand } });
+        }
+        if (self.current.tag == .bang) {
+            self.advance();
+            const operand = try self.parsePostfix();
+            return self.ast.addExpr(.{ .unary = .{ .op = .logic_not, .operand = operand } });
+        }
+        if (self.current.tag == .tilde) {
+            self.advance();
+            const operand = try self.parsePostfix();
+            return self.ast.addExpr(.{ .unary = .{ .op = .bit_not, .operand = operand } });
+        }
+        return self.parsePostfix();
+    }
+
+    fn parsePostfix(self: *Parser) ParseError!Ast.ExprIndex {
+        var expr = try self.parsePrimary();
+
+        while (true) {
+            if (self.current.tag == .lparen) {
+                // Function call
+                self.advance();
+                var args = std.ArrayList(Ast.ExprIndex){};
+
+                if (self.current.tag == .keyword_none) {
+                    self.advance(); // consume 'none'
+                } else if (self.current.tag != .rparen) {
+                    while (true) {
+                        const arg = try self.parseExpr();
+                        try args.append(self.ast.allocator, arg);
+                        if (self.current.tag != .comma) break;
+                        self.advance();
+                    }
+                }
+                try self.expect(.rparen);
+                expr = try self.ast.addExpr(.{ .call = .{ .callee = expr, .args = args } });
+            } else {
+                break;
+            }
+        }
+
+        return expr;
+    }
+
+    fn parsePrimary(self: *Parser) ParseError!Ast.ExprIndex {
+        switch (self.current.tag) {
+            .int_literal => {
+                const text = self.current.slice(self.source);
+                const value = parseIntLiteral(text);
+                self.advance();
+                return self.ast.addExpr(.{ .int_literal = value });
+            },
+            .float_literal => {
+                const text = self.current.slice(self.source);
+                const value = std.fmt.parseFloat(f64, text) catch 0.0;
+                self.advance();
+                return self.ast.addExpr(.{ .float_literal = value });
+            },
+            .keyword_true => {
+                self.advance();
+                return self.ast.addExpr(.{ .bool_literal = true });
+            },
+            .keyword_false => {
+                self.advance();
+                return self.ast.addExpr(.{ .bool_literal = false });
+            },
+            .string_literal => {
+                const raw = self.current.slice(self.source);
+                // Strip quotes
+                const value = if (raw.len >= 2) raw[1 .. raw.len - 1] else raw;
+                self.advance();
+                return self.ast.addExpr(.{ .string_literal = value });
+            },
+            .identifier => {
+                const name = self.current.slice(self.source);
+                self.advance();
+                return self.ast.addExpr(.{ .identifier = name });
+            },
+            .lparen => {
+                self.advance();
+                const inner = try self.parseExpr();
+                try self.expect(.rparen);
+                return self.ast.addExpr(.{ .grouped = inner });
+            },
+            // Type conversion calls: i32(expr), f64(expr), etc.
+            .keyword_i8, .keyword_i16, .keyword_i32, .keyword_i64, .keyword_i128, .keyword_u8, .keyword_u16, .keyword_u32, .keyword_u64, .keyword_u128, .keyword_f32, .keyword_f64, .keyword_usize, .keyword_isize, .keyword_bool => {
+                // Treat as an identifier for now (type conversion is a call)
+                const name = self.current.slice(self.source);
+                self.advance();
+                return self.ast.addExpr(.{ .identifier = name });
+            },
+            else => {
+                self.reportError("expected expression");
+                return error.ParseError;
+            },
+        }
+    }
+
+    // Helpers
+    fn advance(self: *Parser) void {
+        self.previous = self.current;
+        self.current = self.lexer.next();
+    }
+
+    fn expect(self: *Parser, tag: Tag) ParseError!void {
+        if (self.current.tag == tag) {
+            self.advance();
+            return;
+        }
+        self.reportErrorExpected(tag);
+        return error.ParseError;
+    }
+
+    fn reportError(self: *Parser, message: []const u8) void {
+        self.had_error = true;
+        self.diagnostics.report(.@"error", self.current.loc.start, "{s}", .{message});
+    }
+
+    fn reportErrorExpected(self: *Parser, expected: Tag) void {
+        self.had_error = true;
+        self.diagnostics.report(.@"error", self.current.loc.start, "expected {s}, found '{s}'", .{
+            @tagName(expected),
+            self.current.slice(self.source),
+        });
+    }
+
+    fn synchronize(self: *Parser) void {
+        while (self.current.tag != .eof) {
+            if (self.previous.tag == .semicolon) return;
+            switch (self.current.tag) {
+                .keyword_fn, .keyword_let, .keyword_if, .keyword_for, .keyword_return, .keyword_pub, .keyword_priv, .rbrace => return,
+                else => self.advance(),
+            }
+        }
+    }
+};
+
+fn parseIntLiteral(text: []const u8) i64 {
+    if (text.len > 2) {
+        if (text[0] == '0' and (text[1] == 'x' or text[1] == 'X')) {
+            return std.fmt.parseInt(i64, text[2..], 16) catch 0;
+        }
+        if (text[0] == '0' and (text[1] == 'b' or text[1] == 'B')) {
+            return std.fmt.parseInt(i64, text[2..], 2) catch 0;
+        }
+        if (text[0] == '0' and text[1] == 'o') {
+            return std.fmt.parseInt(i64, text[2..], 8) catch 0;
+        }
+    }
+    return std.fmt.parseInt(i64, text, 10) catch 0;
+}

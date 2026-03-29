@@ -1,0 +1,11 @@
+package main;
+
+pub fn main() -> void {
+    log("Hello, Asthra!");
+    let x: i32 = 42;
+    log(x);
+    let mut y: i32 = 5;
+    y = y + 10;
+    log(y);
+    return;
+}

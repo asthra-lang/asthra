@@ -1,0 +1,22 @@
+package main;
+
+pub fn abs(n: i32) -> i32 {
+    if n < 0 {
+        return 0 - n;
+    } else {
+        return n;
+    }
+}
+
+pub fn main() -> void {
+    let x: i32 = 0 - 42;
+    let result: i32 = abs(x);
+    log(result);
+
+    if result > 10 {
+        log("big number");
+    } else {
+        log("small number");
+    }
+    return;
+}
