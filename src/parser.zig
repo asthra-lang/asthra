@@ -1023,6 +1023,24 @@ pub const Parser = struct {
             }
         }
 
+        // Handle tuple pattern: (pattern, pattern, ...)
+        if (self.current.tag == .lparen) {
+            self.advance(); // consume '('
+            var elements = std.ArrayList(Ast.Pattern){};
+            const first = try self.parsePattern();
+            try elements.append(self.ast.allocator, first);
+            try self.expect(.comma);
+            const second = try self.parsePattern();
+            try elements.append(self.ast.allocator, second);
+            while (self.current.tag == .comma) {
+                self.advance(); // consume ','
+                const next = try self.parsePattern();
+                try elements.append(self.ast.allocator, next);
+            }
+            try self.expect(.rparen);
+            return .{ .tuple_pattern = .{ .elements = elements } };
+        }
+
         // Handle Option/Result keyword as a pattern name
         const first_name = if (self.current.tag == .keyword_Option) blk: {
             self.advance();
@@ -3436,6 +3454,132 @@ test "parse repeated array does not break regular array literal" {
                     switch (expr) {
                         .array_literal => |al| {
                             try testing.expectEqual(@as(usize, 3), al.elements.items.len);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse tuple pattern in match" {
+    var result = try testParse(
+        \\package main;
+        \\pub fn main() -> void {
+        \\    let p: (i32, i32) = (1, 2);
+        \\    match p {
+        \\        (x, y) => { log(x); }
+        \\    }
+        \\    return;
+        \\}
+    );
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[1]) { // match stmt
+                .match_stmt => |ms| {
+                    try testing.expectEqual(@as(usize, 1), ms.arms.items.len);
+                    switch (ms.arms.items[0].pattern) {
+                        .tuple_pattern => |tp| {
+                            try testing.expectEqual(@as(usize, 2), tp.elements.items.len);
+                            switch (tp.elements.items[0]) {
+                                .identifier => |name| try testing.expectEqualStrings("x", name),
+                                else => return error.TestUnexpectedResult,
+                            }
+                            switch (tp.elements.items[1]) {
+                                .identifier => |name| try testing.expectEqualStrings("y", name),
+                                else => return error.TestUnexpectedResult,
+                            }
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse tuple pattern with wildcard sub-pattern" {
+    var result = try testParse(
+        \\package main;
+        \\pub fn main() -> void {
+        \\    let p: (i32, bool) = (1, true);
+        \\    match p {
+        \\        (val, _) => { log(val); }
+        \\    }
+        \\    return;
+        \\}
+    );
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[1]) {
+                .match_stmt => |ms| {
+                    try testing.expectEqual(@as(usize, 1), ms.arms.items.len);
+                    switch (ms.arms.items[0].pattern) {
+                        .tuple_pattern => |tp| {
+                            try testing.expectEqual(@as(usize, 2), tp.elements.items.len);
+                            switch (tp.elements.items[0]) {
+                                .identifier => |name| try testing.expectEqualStrings("val", name),
+                                else => return error.TestUnexpectedResult,
+                            }
+                            switch (tp.elements.items[1]) {
+                                .wildcard => {},
+                                else => return error.TestUnexpectedResult,
+                            }
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse triple-element tuple pattern" {
+    var result = try testParse(
+        \\package main;
+        \\pub fn main() -> void {
+        \\    let t: (i32, i32, i32) = (1, 2, 3);
+        \\    match t {
+        \\        (a, b, c) => { log(a); }
+        \\    }
+        \\    return;
+        \\}
+    );
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[1]) {
+                .match_stmt => |ms| {
+                    switch (ms.arms.items[0].pattern) {
+                        .tuple_pattern => |tp| {
+                            try testing.expectEqual(@as(usize, 3), tp.elements.items.len);
+                            switch (tp.elements.items[0]) {
+                                .identifier => |name| try testing.expectEqualStrings("a", name),
+                                else => return error.TestUnexpectedResult,
+                            }
+                            switch (tp.elements.items[1]) {
+                                .identifier => |name| try testing.expectEqualStrings("b", name),
+                                else => return error.TestUnexpectedResult,
+                            }
+                            switch (tp.elements.items[2]) {
+                                .identifier => |name| try testing.expectEqualStrings("c", name),
+                                else => return error.TestUnexpectedResult,
+                            }
                         },
                         else => return error.TestUnexpectedResult,
                     }

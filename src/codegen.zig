@@ -1505,6 +1505,10 @@ pub const CodeGen = struct {
                 self.diagnostics.report(.@"error", 0, "if let requires enum pattern", .{});
                 return error.CodeGenError;
             },
+            .tuple_pattern => {
+                self.diagnostics.report(.@"error", 0, "if let requires enum pattern, not tuple pattern", .{});
+                return error.CodeGenError;
+            },
         }
     }
 
@@ -1567,11 +1571,17 @@ pub const CodeGen = struct {
         const match_val = try self.genExpr(match_stmt.expr);
         const function = c.LLVMGetBasicBlockParent(c.LLVMGetInsertBlock(self.builder));
 
+        // Handle tuple match separately
+        switch (match_val.type_tag) {
+            .tuple_type => return self.genTupleMatch(match_stmt, match_val, function, is_main),
+            else => {},
+        }
+
         // Get enum info
         const enum_name = switch (match_val.type_tag) {
             .enum_type => |name| name,
             else => {
-                self.diagnostics.report(.@"error", 0, "match requires enum type", .{});
+                self.diagnostics.report(.@"error", 0, "match requires enum or tuple type", .{});
                 return error.CodeGenError;
             },
         };
@@ -1685,6 +1695,88 @@ pub const CodeGen = struct {
                 .identifier, .wildcard => {
                     // Catch-all patterns are handled as the default arm above
                     continue;
+                },
+                .tuple_pattern => {
+                    self.diagnostics.report(.@"error", 0, "tuple pattern not valid in enum match", .{});
+                    return error.CodeGenError;
+                },
+            }
+        }
+
+        c.LLVMPositionBuilderAtEnd(self.builder, merge_bb);
+    }
+
+    fn genTupleMatch(self: *CodeGen, match_stmt: Ast.MatchStmt, match_val: ExprResult, function: c.LLVMValueRef, is_main: bool) GenError!void {
+        const tt = match_val.type_tag.tuple_type;
+
+        // Store the tuple value so we can GEP into it
+        const tuple_alloca = c.LLVMBuildAlloca(self.builder, tt.llvm_type, "match_tuple");
+        _ = c.LLVMBuildStore(self.builder, match_val.value, tuple_alloca);
+
+        const merge_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "tuple_match.end");
+
+        // Tuple patterns with only identifiers/wildcards always match,
+        // so we process arms sequentially — the first matching arm wins.
+        // Currently only identifier and wildcard sub-patterns are supported
+        // (no literal comparison), so the first arm always matches.
+        for (match_stmt.arms.items) |arm| {
+            switch (arm.pattern) {
+                .tuple_pattern => |tp| {
+                    if (tp.elements.items.len != tt.element_types.len) {
+                        self.diagnostics.report(.@"error", 0, "tuple pattern has {d} elements but tuple has {d}", .{ tp.elements.items.len, tt.element_types.len });
+                        return error.CodeGenError;
+                    }
+
+                    // Bind each element
+                    for (tp.elements.items, 0..) |elem_pat, i| {
+                        switch (elem_pat) {
+                            .identifier => |name| {
+                                const elem_type = tt.element_types[i];
+                                const elem_llvm = self.typeTagToLLVM(elem_type);
+                                const field_ptr = c.LLVMBuildStructGEP2(self.builder, tt.llvm_type, tuple_alloca, @intCast(i), "tup_pat_ptr");
+                                const loaded = c.LLVMBuildLoad2(self.builder, elem_llvm, field_ptr, "tup_pat_val");
+
+                                const name_z = self.allocator.dupeZ(u8, name) catch return error.CodeGenError;
+                                defer self.allocator.free(name_z);
+
+                                const bind_alloca = c.LLVMBuildAlloca(self.builder, elem_llvm, name_z.ptr);
+                                _ = c.LLVMBuildStore(self.builder, loaded, bind_alloca);
+                                self.named_values.put(name, .{
+                                    .alloca = bind_alloca,
+                                    .is_mutable = false,
+                                    .type_tag = elem_type,
+                                }) catch {};
+                            },
+                            .wildcard => {
+                                // Wildcard: don't bind anything
+                            },
+                            else => {
+                                self.diagnostics.report(.@"error", 0, "unsupported sub-pattern in tuple pattern", .{});
+                                return error.CodeGenError;
+                            },
+                        }
+                    }
+
+                    try self.genBlock(arm.body, is_main);
+                    if (c.LLVMGetBasicBlockTerminator(c.LLVMGetInsertBlock(self.builder)) == null) {
+                        _ = c.LLVMBuildBr(self.builder, merge_bb);
+                    }
+                    // First matching tuple pattern wins — skip remaining arms
+                    c.LLVMPositionBuilderAtEnd(self.builder, merge_bb);
+                    return;
+                },
+                .wildcard, .identifier => {
+                    // Catch-all: always matches
+                    try self.genBlock(arm.body, is_main);
+                    if (c.LLVMGetBasicBlockTerminator(c.LLVMGetInsertBlock(self.builder)) == null) {
+                        _ = c.LLVMBuildBr(self.builder, merge_bb);
+                    }
+                    c.LLVMPositionBuilderAtEnd(self.builder, merge_bb);
+                    return;
+                },
+                .enum_pattern => {
+                    self.diagnostics.report(.@"error", 0, "enum pattern not valid in tuple match", .{});
+                    return error.CodeGenError;
                 },
             }
         }

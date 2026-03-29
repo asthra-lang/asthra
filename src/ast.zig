@@ -146,8 +146,13 @@ pub const Ast = struct {
 
     pub const Pattern = union(enum) {
         enum_pattern: EnumPattern,
+        tuple_pattern: TuplePattern,
         identifier: []const u8,
         wildcard,
+    };
+
+    pub const TuplePattern = struct {
+        elements: std.ArrayList(Pattern),
     };
 
     pub const EnumPattern = struct {

@@ -1,0 +1,46 @@
+package main;
+
+pub fn make_pair(a: i32, b: i32) -> (i32, i32) {
+    return (a, b);
+}
+
+pub fn sum_pair(p: (i32, i32)) -> i32 {
+    return p.0 + p.1;
+}
+
+pub fn main() -> void {
+    let p: (i32, i32) = make_pair(3, 7);
+    log(p.0);
+    log(p.1);
+
+    let total: i32 = sum_pair(p);
+    log(total);
+
+    // Tuple destructuring via match
+    let coords: (i32, i32) = (10, 20);
+    match coords {
+        (x, y) => {
+            log(x);
+            log(y);
+        }
+    }
+
+    // Tuple match with wildcard sub-patterns
+    let mixed: (i32, bool) = (99, true);
+    match mixed {
+        (val, _) => {
+            log(val);
+        }
+    }
+
+    // Tuple match with wildcard catch-all arm
+    let pair2: (i32, i32) = (5, 6);
+    match pair2 {
+        _ => {
+            log(pair2.0);
+            log(pair2.1);
+        }
+    }
+
+    return;
+}
