@@ -91,7 +91,7 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 - Slices (`[]T`) and Go-style slicing (`arr[1:3]`)
 - Pointer types (`*mut T`, `*const T`), address-of (`&x`), dereference (`*p`), deref assignment (`*p = value`)
 - Standard library (namespaced builtins, no import required):
-  - `math`: `sqrt`, `pow`, `abs`, `min`, `max`, `floor`, `ceil`, `PI`, `E`
+  - `math`: `sqrt`, `pow`, `abs`, `min`, `max`, `floor`, `ceil`, `round`, `sin`, `cos`, `tan`, `log`, `log10`, `exp`, `PI`, `E`
   - `str`: `upper`, `lower`, `contains`, `starts_with`, `ends_with`, `trim`, `index_of`, `replace`, `split`, `to_int`, `to_float`, `from_int`, `from_float`
   - `io`: `print` (no newline), `println` (with newline), `read_line`
   - `os`: `getenv`, `clock`, `args`

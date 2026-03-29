@@ -57,6 +57,13 @@ pub const CodeGen = struct {
     ceil_fn: c.LLVMValueRef,
     fmin_fn: c.LLVMValueRef,
     fmax_fn: c.LLVMValueRef,
+    sin_fn: c.LLVMValueRef,
+    cos_fn: c.LLVMValueRef,
+    tan_fn: c.LLVMValueRef,
+    math_log_fn: c.LLVMValueRef,
+    log10_fn: c.LLVMValueRef,
+    exp_fn: c.LLVMValueRef,
+    round_fn: c.LLVMValueRef,
     toupper_fn: c.LLVMValueRef,
     tolower_fn: c.LLVMValueRef,
     strstr_fn: c.LLVMValueRef,
@@ -203,6 +210,13 @@ pub const CodeGen = struct {
         const fabs_fn = c.LLVMAddFunction(module, "fabs", math_f64_f64_type);
         const floor_fn = c.LLVMAddFunction(module, "floor", math_f64_f64_type);
         const ceil_fn = c.LLVMAddFunction(module, "ceil", math_f64_f64_type);
+        const sin_fn = c.LLVMAddFunction(module, "sin", math_f64_f64_type);
+        const cos_fn = c.LLVMAddFunction(module, "cos", math_f64_f64_type);
+        const tan_fn = c.LLVMAddFunction(module, "tan", math_f64_f64_type);
+        const math_log_fn = c.LLVMAddFunction(module, "log", math_f64_f64_type);
+        const log10_fn = c.LLVMAddFunction(module, "log10", math_f64_f64_type);
+        const exp_fn = c.LLVMAddFunction(module, "exp", math_f64_f64_type);
+        const round_fn = c.LLVMAddFunction(module, "round", math_f64_f64_type);
 
         // Math functions: (f64, f64) -> f64
         const math_f64_f64_f64_params = [_]c.LLVMTypeRef{ double_type, double_type };
@@ -319,6 +333,13 @@ pub const CodeGen = struct {
             .ceil_fn = ceil_fn,
             .fmin_fn = fmin_fn,
             .fmax_fn = fmax_fn,
+            .sin_fn = sin_fn,
+            .cos_fn = cos_fn,
+            .tan_fn = tan_fn,
+            .math_log_fn = math_log_fn,
+            .log10_fn = log10_fn,
+            .exp_fn = exp_fn,
+            .round_fn = round_fn,
             .toupper_fn = toupper_fn,
             .tolower_fn = tolower_fn,
             .strstr_fn = strstr_fn,

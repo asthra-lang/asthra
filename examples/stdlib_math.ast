@@ -30,6 +30,20 @@ pub fn main() -> void {
     log(math.PI);
     log(math.E);
 
+    // Trigonometry
+    log(math.sin(math.PI / 2.0));
+    log(math.cos(0.0));
+    log(math.tan(0.0));
+
+    // Logarithms and exponentials
+    log(math.exp(1.0));
+    log(math.log(math.E));
+    log(math.log10(100.0));
+
+    // Round
+    log(math.round(3.7));
+    log(math.round(3.2));
+
     log("stdlib_math: all tests passed");
     return;
 }

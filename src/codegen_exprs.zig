@@ -1135,6 +1135,48 @@ fn genMathCall(self: *CodeGen, func: []const u8, args: *const std.ArrayList(Ast.
         const fn_type = c.LLVMGlobalGetValueType(self.ceil_fn);
         var call_args = [_]c.LLVMValueRef{ensureF64(self, arg)};
         return .{ .value = c.LLVMBuildCall2(self.builder, fn_type, self.ceil_fn, &call_args, 1, "ceil_res"), .type_tag = .f64_type };
+    } else if (std.mem.eql(u8, func, "sin")) {
+        if (args.items.len != 1) { self.diagnostics.report(.@"error", 0, "math.sin() expects 1 argument", .{}); return error.CodeGenError; }
+        const arg = try genExpr(self, args.items[0]);
+        const fn_type = c.LLVMGlobalGetValueType(self.sin_fn);
+        var call_args = [_]c.LLVMValueRef{ensureF64(self, arg)};
+        return .{ .value = c.LLVMBuildCall2(self.builder, fn_type, self.sin_fn, &call_args, 1, "sin_res"), .type_tag = .f64_type };
+    } else if (std.mem.eql(u8, func, "cos")) {
+        if (args.items.len != 1) { self.diagnostics.report(.@"error", 0, "math.cos() expects 1 argument", .{}); return error.CodeGenError; }
+        const arg = try genExpr(self, args.items[0]);
+        const fn_type = c.LLVMGlobalGetValueType(self.cos_fn);
+        var call_args = [_]c.LLVMValueRef{ensureF64(self, arg)};
+        return .{ .value = c.LLVMBuildCall2(self.builder, fn_type, self.cos_fn, &call_args, 1, "cos_res"), .type_tag = .f64_type };
+    } else if (std.mem.eql(u8, func, "tan")) {
+        if (args.items.len != 1) { self.diagnostics.report(.@"error", 0, "math.tan() expects 1 argument", .{}); return error.CodeGenError; }
+        const arg = try genExpr(self, args.items[0]);
+        const fn_type = c.LLVMGlobalGetValueType(self.tan_fn);
+        var call_args = [_]c.LLVMValueRef{ensureF64(self, arg)};
+        return .{ .value = c.LLVMBuildCall2(self.builder, fn_type, self.tan_fn, &call_args, 1, "tan_res"), .type_tag = .f64_type };
+    } else if (std.mem.eql(u8, func, "log")) {
+        if (args.items.len != 1) { self.diagnostics.report(.@"error", 0, "math.log() expects 1 argument", .{}); return error.CodeGenError; }
+        const arg = try genExpr(self, args.items[0]);
+        const fn_type = c.LLVMGlobalGetValueType(self.math_log_fn);
+        var call_args = [_]c.LLVMValueRef{ensureF64(self, arg)};
+        return .{ .value = c.LLVMBuildCall2(self.builder, fn_type, self.math_log_fn, &call_args, 1, "log_res"), .type_tag = .f64_type };
+    } else if (std.mem.eql(u8, func, "log10")) {
+        if (args.items.len != 1) { self.diagnostics.report(.@"error", 0, "math.log10() expects 1 argument", .{}); return error.CodeGenError; }
+        const arg = try genExpr(self, args.items[0]);
+        const fn_type = c.LLVMGlobalGetValueType(self.log10_fn);
+        var call_args = [_]c.LLVMValueRef{ensureF64(self, arg)};
+        return .{ .value = c.LLVMBuildCall2(self.builder, fn_type, self.log10_fn, &call_args, 1, "log10_res"), .type_tag = .f64_type };
+    } else if (std.mem.eql(u8, func, "exp")) {
+        if (args.items.len != 1) { self.diagnostics.report(.@"error", 0, "math.exp() expects 1 argument", .{}); return error.CodeGenError; }
+        const arg = try genExpr(self, args.items[0]);
+        const fn_type = c.LLVMGlobalGetValueType(self.exp_fn);
+        var call_args = [_]c.LLVMValueRef{ensureF64(self, arg)};
+        return .{ .value = c.LLVMBuildCall2(self.builder, fn_type, self.exp_fn, &call_args, 1, "exp_res"), .type_tag = .f64_type };
+    } else if (std.mem.eql(u8, func, "round")) {
+        if (args.items.len != 1) { self.diagnostics.report(.@"error", 0, "math.round() expects 1 argument", .{}); return error.CodeGenError; }
+        const arg = try genExpr(self, args.items[0]);
+        const fn_type = c.LLVMGlobalGetValueType(self.round_fn);
+        var call_args = [_]c.LLVMValueRef{ensureF64(self, arg)};
+        return .{ .value = c.LLVMBuildCall2(self.builder, fn_type, self.round_fn, &call_args, 1, "round_res"), .type_tag = .f64_type };
     }
     self.diagnostics.report(.@"error", 0, "unknown math function '{s}'", .{func});
     return error.CodeGenError;
