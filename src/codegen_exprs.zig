@@ -751,10 +751,11 @@ pub fn genCallExpr(self: *CodeGen, call_expr: Ast.CallExpr) CodeGen.GenError!Cod
         },
     };
 
-    // Check if callee is a closure variable
+    // Check if callee is a closure/fn_type variable
     if (self.named_values.get(name)) |nv| {
         switch (nv.type_tag) {
             .closure_type => |ct| return genClosureCall(self, ct, &call_expr.args),
+            .fn_type => |ft| return genFnTypeCall(self, nv, ft, &call_expr.args),
             else => {},
         }
     }
@@ -1583,9 +1584,12 @@ fn genClosureExpr(self: *CodeGen, cl: Ast.ClosureExpr) CodeGen.GenError!CodeGen.
     var fn_param_types = std.ArrayList(c.LLVMTypeRef){};
     defer fn_param_types.deinit(self.allocator);
 
-    // First param: env struct pointer (if any captures)
+    // First param: env pointer (always, for uniform calling convention)
+    const i8ptr_ty = c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0);
     if (has_captures) {
         fn_param_types.append(self.allocator, c.LLVMPointerType(env_struct_type, 0)) catch {};
+    } else {
+        fn_param_types.append(self.allocator, i8ptr_ty) catch {};
     }
     // Then closure declared params
     for (cl.params.items) |param| {
@@ -1600,8 +1604,8 @@ fn genClosureExpr(self: *CodeGen, cl: Ast.ClosureExpr) CodeGen.GenError!CodeGen.
     const entry_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "entry");
     c.LLVMPositionBuilderAtEnd(self.builder, entry_bb);
 
-    // Load captured vars from env struct
-    var param_offset: u32 = 0;
+    // Load captured vars from env struct (param 0 is always env_ptr)
+    const param_offset: u32 = 1;
     if (has_captures) {
         const env_param = c.LLVMGetParam(function, 0);
         for (cap_names.items, 0..) |cap_name, idx| {
@@ -1615,7 +1619,6 @@ fn genClosureExpr(self: *CodeGen, cl: Ast.ClosureExpr) CodeGen.GenError!CodeGen.
                 .type_tag = cap_tags.items[idx],
             }) catch {};
         }
-        param_offset = 1;
     }
 
     // Register closure params
@@ -1649,31 +1652,49 @@ fn genClosureExpr(self: *CodeGen, cl: Ast.ClosureExpr) CodeGen.GenError!CodeGen.
     self.named_values = saved_values;
     c.LLVMPositionBuilderAtEnd(self.builder, saved_block);
 
-    // 7. Create env struct at the closure creation site and store captured values
-    var env_alloca: c.LLVMValueRef = undefined;
+    // 7. Create env struct and build closure descriptor { fn_ptr, env_ptr }
+    var env_ptr_val: c.LLVMValueRef = undefined;
     if (has_captures) {
-        env_alloca = c.LLVMBuildAlloca(self.builder, env_struct_type, "closure_env");
+        const env_alloca = c.LLVMBuildAlloca(self.builder, env_struct_type, "closure_env");
         for (cap_names.items, 0..) |cap_name, idx| {
             const nv = saved_values.get(cap_name).?;
             const cap_val = c.LLVMBuildLoad2(self.builder, cap_types.items[idx], nv.alloca, "cap_load");
             const field_ptr = c.LLVMBuildStructGEP2(self.builder, env_struct_type, env_alloca, @intCast(idx), "env_field");
             _ = c.LLVMBuildStore(self.builder, cap_val, field_ptr);
         }
+        env_ptr_val = c.LLVMBuildBitCast(self.builder, env_alloca, i8ptr_ty, "env_ptr");
     } else {
-        env_alloca = c.LLVMConstNull(c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0));
+        env_ptr_val = c.LLVMConstNull(i8ptr_ty);
     }
 
-    // Return closure type tag
+    // Build closure descriptor struct: { fn_ptr: ptr, env_ptr: ptr }
+    var desc_field_types = [_]c.LLVMTypeRef{ i8ptr_ty, i8ptr_ty };
+    const desc_struct_type = c.LLVMStructTypeInContext(self.context, &desc_field_types, 2, 0);
+    const desc_alloca = c.LLVMBuildAlloca(self.builder, desc_struct_type, "closure_desc");
+
+    // Store fn_ptr
+    const fn_ptr_raw = c.LLVMBuildBitCast(self.builder, function, i8ptr_ty, "fn_ptr");
+    const fn_ptr_field = c.LLVMBuildStructGEP2(self.builder, desc_struct_type, desc_alloca, 0, "fn_ptr_store");
+    _ = c.LLVMBuildStore(self.builder, fn_ptr_raw, fn_ptr_field);
+
+    // Store env_ptr
+    const env_ptr_field = c.LLVMBuildStructGEP2(self.builder, desc_struct_type, desc_alloca, 1, "env_ptr_store");
+    _ = c.LLVMBuildStore(self.builder, env_ptr_val, env_ptr_field);
+
+    // Load descriptor value
+    const desc_val = c.LLVMBuildLoad2(self.builder, desc_struct_type, desc_alloca, "closure_desc_val");
+
+    // Build fn_type TypeTag
+    const param_tags = self.allocator.alloc(CodeGen.TypeTag, cl.params.items.len) catch return error.CodeGenError;
+    for (cl.params.items, 0..) |param, i| {
+        param_tags[i] = self.resolveTypeExpr(param.type_expr);
+    }
     const ret_tag_ptr = self.allocator.create(CodeGen.TypeTag) catch return error.CodeGenError;
     ret_tag_ptr.* = return_type_tag;
 
     return .{
-        .value = env_alloca,
-        .type_tag = .{ .closure_type = .{
-            .fn_name = fn_name,
-            .env_alloca = env_alloca,
-            .return_type = ret_tag_ptr,
-        } },
+        .value = desc_val,
+        .type_tag = .{ .fn_type = .{ .param_types = param_tags, .return_type = ret_tag_ptr } },
     };
 }
 
@@ -1755,6 +1776,49 @@ fn collectFreeVarsExpr(self: *CodeGen, expr_idx: Ast.ExprIndex, param_names: *co
             collectFreeVarsExpr(self, inner, param_names, captured);
         },
         else => {},
+    }
+}
+
+fn genFnTypeCall(self: *CodeGen, nv: CodeGen.NamedValue, ft: CodeGen.FnTypeTag, args: *const std.ArrayList(Ast.ExprIndex)) CodeGen.GenError!CodeGen.ExprResult {
+    const i8ptr_ty = c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0);
+    var desc_field_types = [_]c.LLVMTypeRef{ i8ptr_ty, i8ptr_ty };
+    const desc_struct_type = c.LLVMStructTypeInContext(self.context, &desc_field_types, 2, 0);
+
+    // Extract fn_ptr (field 0) and env_ptr (field 1) from descriptor
+    const fn_ptr_field = c.LLVMBuildStructGEP2(self.builder, desc_struct_type, nv.alloca, 0, "fn_ptr_field");
+    const fn_ptr_raw = c.LLVMBuildLoad2(self.builder, i8ptr_ty, fn_ptr_field, "fn_ptr");
+    const env_ptr_field = c.LLVMBuildStructGEP2(self.builder, desc_struct_type, nv.alloca, 1, "env_ptr_field");
+    const env_ptr = c.LLVMBuildLoad2(self.builder, i8ptr_ty, env_ptr_field, "env_ptr");
+
+    // Build the expected LLVM function type: ret(ptr, T1, T2, ...)
+    const ret_llvm = self.typeTagToLLVM(ft.return_type.*);
+    var fn_param_types = std.ArrayList(c.LLVMTypeRef){};
+    defer fn_param_types.deinit(self.allocator);
+    fn_param_types.append(self.allocator, i8ptr_ty) catch {}; // env_ptr
+    for (ft.param_types) |pt| {
+        fn_param_types.append(self.allocator, self.typeTagToLLVM(pt)) catch {};
+    }
+    const callee_fn_type = c.LLVMFunctionType(ret_llvm, fn_param_types.items.ptr, @intCast(fn_param_types.items.len), 0);
+
+    // Bitcast raw ptr to typed function pointer
+    const fn_ptr_typed = c.LLVMBuildBitCast(self.builder, fn_ptr_raw, c.LLVMPointerType(callee_fn_type, 0), "fn_ptr_typed");
+
+    // Build call args: env_ptr, arg1, arg2, ...
+    var call_args = std.ArrayList(c.LLVMValueRef){};
+    defer call_args.deinit(self.allocator);
+    call_args.append(self.allocator, env_ptr) catch {};
+    for (args.items) |arg_idx| {
+        const arg_val = try genExpr(self, arg_idx);
+        call_args.append(self.allocator, arg_val.value) catch {};
+    }
+
+    const is_void = c.LLVMGetTypeKind(ret_llvm) == c.LLVMVoidTypeKind;
+    if (is_void) {
+        _ = c.LLVMBuildCall2(self.builder, callee_fn_type, fn_ptr_typed, call_args.items.ptr, @intCast(call_args.items.len), "");
+        return .{ .value = c.LLVMGetUndef(c.LLVMVoidTypeInContext(self.context)), .type_tag = .void_type };
+    } else {
+        const result = c.LLVMBuildCall2(self.builder, callee_fn_type, fn_ptr_typed, call_args.items.ptr, @intCast(call_args.items.len), "fn_call");
+        return .{ .value = result, .type_tag = ft.return_type.* };
     }
 }
 

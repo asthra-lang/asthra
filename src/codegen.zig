@@ -114,6 +114,12 @@ pub const CodeGen = struct {
         tuple_type: TupleTypeTag,
         ptr_type: PtrTypeTag,
         closure_type: ClosureTypeTag,
+        fn_type: FnTypeTag,
+    };
+
+    pub const FnTypeTag = struct {
+        param_types: []const TypeTag,
+        return_type: *const TypeTag,
     };
 
     pub const ClosureTypeTag = struct {
@@ -638,6 +644,17 @@ pub const CodeGen = struct {
                 pointee_ptr.* = pointee_tag;
                 return .{ .ptr_type = .{ .pointee = pointee_ptr, .is_mutable = pt.is_mutable } };
             },
+            .fn_type => |ft| {
+                const count = ft.param_types.items.len;
+                const param_tags = self.allocator.alloc(TypeTag, count) catch return .i32_type;
+                for (ft.param_types.items, 0..) |pt, i| {
+                    param_tags[i] = self.resolveTypeExpr(pt);
+                }
+                const ret_tag = self.resolveTypeExpr(ft.return_type.*);
+                const ret_ptr = self.allocator.create(TypeTag) catch return .i32_type;
+                ret_ptr.* = ret_tag;
+                return .{ .fn_type = .{ .param_types = param_tags, .return_type = ret_ptr } };
+            },
             .inferred => {
                 // Inferred types should be resolved at the call site, not here
                 return .i32_type;
@@ -754,6 +771,12 @@ pub const CodeGen = struct {
             .closure_type => {
                 // Closure variable stores pointer to env struct
                 return c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0);
+            },
+            .fn_type => {
+                // Closure descriptor: { fn_ptr: ptr, env_ptr: ptr }
+                const ptr_ty = c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0);
+                var field_types_arr = [_]c.LLVMTypeRef{ ptr_ty, ptr_ty };
+                return c.LLVMStructTypeInContext(self.context, &field_types_arr, 2, 0);
             },
         };
     }

@@ -68,7 +68,9 @@ ExternParamList<- ExternParam (',' ExternParam)* / 'none'  # External function p
 ExternParam    <- SafeFFIAnnotation? SimpleIdent ':' Type  # External parameter with single FFI annotation (no MutModifier allowed)
 
 # Type system with built-in and composite types
-Type           <- BaseType / SliceType / FixedArrayType / StructType / EnumType / PtrType / ResultType / OptionType / TupleType / NeverType  # All supported types
+Type           <- BaseType / SliceType / FixedArrayType / StructType / EnumType / PtrType / ResultType / OptionType / TupleType / NeverType / FnType  # All supported types
+FnType         <- 'fn' '(' TypeList ')' '->' Type              # Function type: fn(i32, i32) -> i32
+TypeList       <- Type (',' Type)* / &')'                      # Comma-separated type list (empty allowed)
 TupleType      <- '(' Type ',' Type (',' Type)* ')'       # Tuple types: (T, U) or (T, U, V) - minimum 2 elements
 NeverType      <- 'Never'                                  # Never type for functions that don't return
 BaseType       <- 'int' / 'float' / 'bool' / 'string' / 'void' / 'usize' / 'isize' /  # Primitive types (void preserved as legitimate type)

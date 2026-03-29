@@ -561,6 +561,27 @@ pub const Parser = struct {
             return .{ .ptr_type = .{ .is_mutable = is_mutable, .pointee = pointee_ptr } };
         }
 
+        // Handle function type: fn(T1, T2) -> R
+        if (tag == .keyword_fn) {
+            self.advance(); // consume 'fn'
+            try self.expect(.lparen);
+            var param_types = std.ArrayList(Ast.TypeExpr){};
+            if (self.current.tag != .rparen) {
+                while (true) {
+                    const pt = try self.parseType();
+                    try param_types.append(self.ast.allocator, pt);
+                    if (self.current.tag != .comma) break;
+                    self.advance();
+                }
+            }
+            try self.expect(.rparen);
+            try self.expect(.arrow);
+            const ret_type = try self.parseType();
+            const ret_ptr = self.ast.allocator.create(Ast.TypeExpr) catch return error.ParseError;
+            ret_ptr.* = ret_type;
+            return .{ .fn_type = .{ .param_types = param_types, .return_type = ret_ptr } };
+        }
+
         // Handle Option<T> type
         if (tag == .keyword_Option) {
             self.advance(); // consume 'Option'

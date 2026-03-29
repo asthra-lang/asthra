@@ -105,13 +105,13 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
   - Import paths: `./relative`, `github.com/user/repo`, `gitlab.com/user/repo`
 
 - Closures / anonymous functions with variable capture: `fn(x: i32) -> i32 { return x * captured; }`
+- Higher-order functions: `fn(i32) -> i32` as parameter types, indirect calls through closure descriptors
 
 ## Not Yet Implemented
 
 - DWARF debug info for lldb/gdb
 - Real pthread-based async runtime
-- Closures as function parameters (requires function pointer types)
-- Higher-order functions (`map`, `filter`, `reduce`)
+- Higher-order functions (`map`, `filter`, `reduce`) as stdlib builtins
 
 ## Development Strategy: Example-Driven
 

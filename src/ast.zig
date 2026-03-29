@@ -371,7 +371,13 @@ pub const Ast = struct {
         tuple_type: TupleTypeExpr,
         generic_type: GenericTypeExpr,
         ptr_type: PtrTypeExpr,
+        fn_type: FnTypeExpr,
         inferred,
+    };
+
+    pub const FnTypeExpr = struct {
+        param_types: std.ArrayList(TypeExpr),
+        return_type: *const TypeExpr,
     };
 
     pub const PtrTypeExpr = struct {

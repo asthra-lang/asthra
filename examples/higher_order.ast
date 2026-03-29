@@ -1,0 +1,19 @@
+package main;
+
+pub fn apply(f: fn(i32) -> i32, x: i32) -> i32 {
+    return f(x);
+}
+
+pub fn main() -> void {
+    // Pass closure without captures
+    let double = fn(x: i32) -> i32 { return x * 2; };
+    log(apply(double, 21));
+
+    // Pass closure with captures
+    let n: i32 = 3;
+    let scale = fn(x: i32) -> i32 { return x * n; };
+    log(apply(scale, 10));
+
+    log("higher_order: all tests passed");
+    return;
+}
