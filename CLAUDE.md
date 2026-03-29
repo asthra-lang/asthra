@@ -87,17 +87,21 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 
 ## Not Yet Implemented
 
-- `Result<T,E>` error handling
-- Slices (`[]T`)
-- Generics and type parameters
-- Tuples
-- FFI (`extern`, `unsafe`, pointer types)
-- `const` declarations and compile-time expressions
-- Import system
-- Concurrency (`spawn`, `spawn_with_handle`, `await`)
-- Annotations (`#[...]` — human_review, security, ownership, semantic)
-- Multi-line strings (`"""..."""`, `r"""..."""`)
-- Semantic analysis (type checking, mutability enforcement)
+- Slices (`[]T`) and Go-style slicing (`arr[1:3]`)
+- Pointer types (`*mut T`, `*const T`) and address-of/dereference operators
+- `if let` pattern matching for Option/Result
+- String operations (concatenation, `len()` for strings, escape processing)
+- Type inference (omitting type annotations on `let`)
+- Semantic analysis pass (type checking, mutability enforcement, undefined variable detection)
+- Generic enums and generic impl blocks
+- Associated functions (`Type::new()`)
+- Nested/wildcard match patterns (`_`)
+- `char` type and character operations
+- Predeclared builtins (`panic()`, `exit()`, `args()`, `infinite()`)
+- Multi-file compilation and import resolution
+- Real async concurrency runtime (currently synchronous)
+- Repeated array initializers (`[value; count]`)
+- Ownership annotations with runtime effect
 
 ## Development Strategy: Example-Driven
 
