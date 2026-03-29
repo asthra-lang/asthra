@@ -73,7 +73,16 @@ pub const Parser = struct {
             };
         }
 
-        self.reportError("expected function or struct declaration");
+        if (self.current.tag == .keyword_impl) {
+            const impl_decl = try self.parseImplDecl();
+            return .{
+                .visibility = visibility,
+                .decl = .{ .impl_decl = impl_decl },
+                .start = start,
+            };
+        }
+
+        self.reportError("expected function, struct, or impl declaration");
         return error.ParseError;
     }
 
@@ -169,6 +178,71 @@ pub const Parser = struct {
 
         try self.expect(.rbrace);
         return .{ .name = name, .fields = fields };
+    }
+
+    fn parseImplDecl(self: *Parser) ParseError!Ast.ImplDecl {
+        self.advance(); // consume 'impl'
+
+        const name_token = self.current;
+        try self.expect(.identifier);
+        const type_name = name_token.slice(self.source);
+
+        try self.expect(.lbrace);
+        var methods = std.ArrayList(Ast.MethodDecl){};
+
+        while (self.current.tag != .rbrace and self.current.tag != .eof) {
+            const visibility = try self.parseVisibility();
+            try self.expect(.keyword_fn);
+
+            const method_name_token = self.current;
+            try self.expect(.identifier);
+            const method_name = method_name_token.slice(self.source);
+
+            try self.expect(.lparen);
+            var has_self = false;
+            var params = std.ArrayList(Ast.Param){};
+
+            if (self.current.tag == .keyword_self) {
+                has_self = true;
+                self.advance();
+                if (self.current.tag == .comma) {
+                    self.advance();
+                    // Parse remaining params
+                    while (self.current.tag != .rparen) {
+                        const param = try self.parseParam();
+                        try params.append(self.ast.allocator, param);
+                        if (self.current.tag != .comma) break;
+                        self.advance();
+                    }
+                }
+            } else if (self.current.tag == .keyword_none) {
+                self.advance();
+            } else if (self.current.tag != .rparen) {
+                while (true) {
+                    const param = try self.parseParam();
+                    try params.append(self.ast.allocator, param);
+                    if (self.current.tag != .comma) break;
+                    self.advance();
+                }
+            }
+            try self.expect(.rparen);
+
+            try self.expect(.arrow);
+            const return_type = try self.parseType();
+            const body = try self.parseBlock();
+
+            try methods.append(self.ast.allocator, .{
+                .visibility = visibility,
+                .name = method_name,
+                .has_self = has_self,
+                .params = params,
+                .return_type = return_type,
+                .body = body,
+            });
+        }
+
+        try self.expect(.rbrace);
+        return .{ .type_name = type_name, .methods = methods };
     }
 
     fn parseParam(self: *Parser) ParseError!Ast.Param {
@@ -575,12 +649,31 @@ pub const Parser = struct {
                 try self.expect(.rparen);
                 expr = try self.ast.addExpr(.{ .call = .{ .callee = expr, .args = args } });
             } else if (self.current.tag == .dot) {
-                // Field access: expr.field
+                // Field access or method call: expr.field or expr.method(...)
                 self.advance(); // consume '.'
                 const field_token = self.current;
                 try self.expect(.identifier);
                 const field_name = field_token.slice(self.source);
-                expr = try self.ast.addExpr(.{ .field_access = .{ .object = expr, .field = field_name } });
+
+                // Check if this is a method call: expr.method(args)
+                if (self.current.tag == .lparen) {
+                    self.advance(); // consume '('
+                    var args = std.ArrayList(Ast.ExprIndex){};
+                    if (self.current.tag == .keyword_none) {
+                        self.advance();
+                    } else if (self.current.tag != .rparen) {
+                        while (true) {
+                            const arg = try self.parseExpr();
+                            try args.append(self.ast.allocator, arg);
+                            if (self.current.tag != .comma) break;
+                            self.advance();
+                        }
+                    }
+                    try self.expect(.rparen);
+                    expr = try self.ast.addExpr(.{ .method_call = .{ .object = expr, .method = field_name, .args = args } });
+                } else {
+                    expr = try self.ast.addExpr(.{ .field_access = .{ .object = expr, .field = field_name } });
+                }
             } else {
                 break;
             }
@@ -630,6 +723,10 @@ pub const Parser = struct {
                     }
                 }
                 return self.ast.addExpr(.{ .identifier = name });
+            },
+            .keyword_self => {
+                self.advance();
+                return self.ast.addExpr(.{ .identifier = "self" });
             },
             .lparen => {
                 self.advance();

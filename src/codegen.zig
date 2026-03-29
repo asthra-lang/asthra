@@ -122,11 +122,12 @@ pub const CodeGen = struct {
             }
         }
 
-        // Second pass: generate functions
+        // Second pass: generate functions and methods
         for (self.ast.program.decls.items) |decl| {
             switch (decl.decl) {
                 .function => |fn_decl| try self.genFunction(&fn_decl),
                 .struct_decl => {},
+                .impl_decl => |impl_decl| try self.genImplDecl(&impl_decl),
             }
         }
 
@@ -167,6 +168,85 @@ pub const CodeGen = struct {
             .field_names = field_names,
             .field_types = field_type_tags,
         }) catch {};
+    }
+
+    fn genImplDecl(self: *CodeGen, impl_decl: *const Ast.ImplDecl) GenError!void {
+        for (impl_decl.methods.items) |method| {
+            try self.genMethod(impl_decl.type_name, &method);
+        }
+    }
+
+    fn genMethod(self: *CodeGen, type_name: []const u8, method: *const Ast.MethodDecl) GenError!void {
+        const return_type_tag = self.resolveTypeExpr(method.return_type);
+        const llvm_return_type = self.typeTagToLLVM(return_type_tag);
+
+        var param_types = std.ArrayList(c.LLVMTypeRef){};
+        defer param_types.deinit(self.allocator);
+
+        // If method has self, first param is the struct type
+        if (method.has_self) {
+            const self_type = TypeTag{ .struct_type = type_name };
+            try param_types.append(self.allocator, self.typeTagToLLVM(self_type));
+        }
+
+        for (method.params.items) |param| {
+            const pt = self.resolveTypeExpr(param.type_expr);
+            try param_types.append(self.allocator, self.typeTagToLLVM(pt));
+        }
+
+        const fn_type = c.LLVMFunctionType(llvm_return_type, param_types.items.ptr, @intCast(param_types.items.len), 0);
+
+        // Mangled name: TypeName_methodName
+        const mangled_slice = std.fmt.allocPrint(self.allocator, "{s}_{s}", .{ type_name, method.name }) catch return error.CodeGenError;
+        defer self.allocator.free(mangled_slice);
+        const mangled = self.allocator.dupeZ(u8, mangled_slice) catch return error.CodeGenError;
+        defer self.allocator.free(mangled);
+
+        const function = c.LLVMAddFunction(self.module, mangled.ptr, fn_type);
+        const entry = c.LLVMAppendBasicBlockInContext(self.context, function, "entry");
+        c.LLVMPositionBuilderAtEnd(self.builder, entry);
+
+        self.named_values.clearRetainingCapacity();
+
+        var param_idx: u32 = 0;
+        if (method.has_self) {
+            const llvm_param = c.LLVMGetParam(function, 0);
+            const self_type = TypeTag{ .struct_type = type_name };
+            const alloca = c.LLVMBuildAlloca(self.builder, self.typeTagToLLVM(self_type), "self");
+            _ = c.LLVMBuildStore(self.builder, llvm_param, alloca);
+            self.named_values.put("self", .{
+                .alloca = alloca,
+                .is_mutable = false,
+                .type_tag = self_type,
+            }) catch {};
+            param_idx = 1;
+        }
+
+        for (method.params.items) |param| {
+            const llvm_param = c.LLVMGetParam(function, param_idx);
+            const pt = self.resolveTypeExpr(param.type_expr);
+
+            const pname_z = self.allocator.dupeZ(u8, param.name) catch return error.CodeGenError;
+            defer self.allocator.free(pname_z);
+
+            const alloca = c.LLVMBuildAlloca(self.builder, self.typeTagToLLVM(pt), pname_z.ptr);
+            _ = c.LLVMBuildStore(self.builder, llvm_param, alloca);
+            self.named_values.put(param.name, .{
+                .alloca = alloca,
+                .is_mutable = false,
+                .type_tag = pt,
+            }) catch {};
+            param_idx += 1;
+        }
+
+        try self.genBlock(&method.body, false);
+
+        const current_bb = c.LLVMGetInsertBlock(self.builder);
+        if (c.LLVMGetBasicBlockTerminator(current_bb) == null) {
+            if (isTypeTag(return_type_tag, .void_type)) {
+                _ = c.LLVMBuildRetVoid(self.builder);
+            }
+        }
     }
 
     fn resolveTypeExpr(self: *const CodeGen, type_expr: Ast.TypeExpr) TypeTag {
@@ -532,6 +612,9 @@ pub const CodeGen = struct {
             .struct_literal => |sl| {
                 return self.genStructLiteral(sl);
             },
+            .method_call => |mc| {
+                return self.genMethodCall(mc);
+            },
         }
     }
 
@@ -633,6 +716,74 @@ pub const CodeGen = struct {
         // Load the full struct value
         const loaded = c.LLVMBuildLoad2(self.builder, info.llvm_type, alloca, "struct_val");
         return .{ .value = loaded, .type_tag = .{ .struct_type = sl.name } };
+    }
+
+    fn genMethodCall(self: *CodeGen, mc: Ast.MethodCallExpr) GenError!ExprResult {
+        // Get the object value
+        const obj = try self.genExpr(mc.object);
+
+        // Determine the struct type
+        const struct_name = switch (obj.type_tag) {
+            .struct_type => |name| name,
+            else => {
+                self.diagnostics.report(.@"error", 0, "method call on non-struct type", .{});
+                return error.CodeGenError;
+            },
+        };
+
+        // Look up the mangled function name
+        const mangled_slice = std.fmt.allocPrint(self.allocator, "{s}_{s}", .{ struct_name, mc.method }) catch return error.CodeGenError;
+        defer self.allocator.free(mangled_slice);
+        const mangled = self.allocator.dupeZ(u8, mangled_slice) catch return error.CodeGenError;
+        defer self.allocator.free(mangled);
+
+        const function = c.LLVMGetNamedFunction(self.module, mangled.ptr);
+        if (function == null) {
+            self.diagnostics.report(.@"error", 0, "undefined method '{s}' on '{s}'", .{ mc.method, struct_name });
+            return error.CodeGenError;
+        }
+
+        // Build args: self (the object) + method args
+        var args = std.ArrayList(c.LLVMValueRef){};
+        defer args.deinit(self.allocator);
+        try args.append(self.allocator, obj.value); // self parameter
+
+        for (mc.args.items) |arg_idx| {
+            const arg_val = try self.genExpr(arg_idx);
+            try args.append(self.allocator, arg_val.value);
+        }
+
+        const fn_type = c.LLVMGlobalGetValueType(function);
+        const ret_type = c.LLVMGetReturnType(fn_type);
+        const is_void = c.LLVMGetTypeKind(ret_type) == c.LLVMVoidTypeKind;
+
+        if (is_void) {
+            _ = c.LLVMBuildCall2(self.builder, fn_type, function, args.items.ptr, @intCast(args.items.len), "");
+            return .{ .value = c.LLVMGetUndef(c.LLVMVoidTypeInContext(self.context)), .type_tag = .void_type };
+        } else {
+            const result = c.LLVMBuildCall2(self.builder, fn_type, function, args.items.ptr, @intCast(args.items.len), "mcall");
+            // Look up method return type from AST
+            const ret_tag = self.lookupMethodReturnType(struct_name, mc.method);
+            return .{ .value = result, .type_tag = ret_tag };
+        }
+    }
+
+    fn lookupMethodReturnType(self: *const CodeGen, type_name: []const u8, method_name: []const u8) TypeTag {
+        for (self.ast.program.decls.items) |decl| {
+            switch (decl.decl) {
+                .impl_decl => |impl_decl| {
+                    if (std.mem.eql(u8, impl_decl.type_name, type_name)) {
+                        for (impl_decl.methods.items) |method| {
+                            if (std.mem.eql(u8, method.name, method_name)) {
+                                return self.resolveTypeExpr(method.return_type);
+                            }
+                        }
+                    }
+                },
+                else => {},
+            }
+        }
+        return .i32_type;
     }
 
     fn genBinaryOp(self: *CodeGen, op: Ast.BinaryOp, lhs: ExprResult, rhs: ExprResult) GenError!ExprResult {

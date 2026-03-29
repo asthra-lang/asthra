@@ -79,10 +79,11 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 - Boolean literals
 - Float types (`f64`) and type conversions (`f64(x)`, `i32(y)`)
 - Struct declarations, struct literals, field access, field assignment
+- Impl blocks, methods with `self`, method calls
 
 ## Not Yet Implemented
 
-- Enums, impl blocks
+- Enums
 - Generics and type parameters
 - Pattern matching (`match`)
 - `Result<T,E>` / `Option<T>`

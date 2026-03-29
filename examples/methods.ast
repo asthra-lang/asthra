@@ -1,0 +1,51 @@
+package main;
+
+pub struct Rectangle {
+    pub width: f64,
+    pub height: f64
+}
+
+pub impl Rectangle {
+    pub fn area(self) -> f64 {
+        return self.width * self.height;
+    }
+
+    pub fn perimeter(self) -> f64 {
+        return 2.0 * (self.width + self.height);
+    }
+
+    pub fn is_square(self) -> bool {
+        return self.width == self.height;
+    }
+}
+
+pub struct Counter {
+    pub value: i32
+}
+
+pub impl Counter {
+    pub fn increment(self) -> Counter {
+        return Counter { value: self.value + 1 };
+    }
+
+    pub fn get(self) -> i32 {
+        return self.value;
+    }
+}
+
+pub fn main() -> void {
+    let rect: Rectangle = Rectangle { width: 5.0, height: 3.0 };
+    log(rect.area());
+    log(rect.perimeter());
+    log(rect.is_square());
+
+    let square: Rectangle = Rectangle { width: 4.0, height: 4.0 };
+    log(square.is_square());
+
+    let c: Counter = Counter { value: 0 };
+    let c2: Counter = c.increment();
+    let c3: Counter = c2.increment();
+    log(c3.get());
+
+    return;
+}

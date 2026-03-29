@@ -27,6 +27,21 @@ pub const Ast = struct {
     pub const DeclKind = union(enum) {
         function: FnDecl,
         struct_decl: StructDecl,
+        impl_decl: ImplDecl,
+    };
+
+    pub const ImplDecl = struct {
+        type_name: []const u8,
+        methods: std.ArrayList(MethodDecl),
+    };
+
+    pub const MethodDecl = struct {
+        visibility: Visibility,
+        name: []const u8,
+        has_self: bool,
+        params: std.ArrayList(Param),
+        return_type: TypeExpr,
+        body: Block,
     };
 
     pub const StructDecl = struct {
@@ -112,6 +127,13 @@ pub const Ast = struct {
         grouped: ExprIndex,
         field_access: FieldAccessExpr,
         struct_literal: StructLiteralExpr,
+        method_call: MethodCallExpr,
+    };
+
+    pub const MethodCallExpr = struct {
+        object: ExprIndex,
+        method: []const u8,
+        args: std.ArrayList(ExprIndex),
     };
 
     pub const FieldAccessExpr = struct {
