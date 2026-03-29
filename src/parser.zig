@@ -499,6 +499,26 @@ pub const Parser = struct {
     fn parseType(self: *Parser) ParseError!Ast.TypeExpr {
         const tag = self.current.tag;
 
+        // Handle pointer types: *mut T, *const T
+        if (tag == .star) {
+            self.advance(); // consume '*'
+            var is_mutable = false;
+            if (self.current.tag == .keyword_mut) {
+                is_mutable = true;
+                self.advance();
+            } else if (self.current.tag == .keyword_const) {
+                is_mutable = false;
+                self.advance();
+            } else {
+                self.reportError("expected 'mut' or 'const' after '*' in pointer type");
+                return error.ParseError;
+            }
+            const pointee = try self.parseType();
+            const pointee_ptr = self.ast.allocator.create(Ast.TypeExpr) catch return error.ParseError;
+            pointee_ptr.* = pointee;
+            return .{ .ptr_type = .{ .is_mutable = is_mutable, .pointee = pointee_ptr } };
+        }
+
         // Handle Option<T> type
         if (tag == .keyword_Option) {
             self.advance(); // consume 'Option'
@@ -684,6 +704,14 @@ pub const Parser = struct {
             .keyword_unsafe => return self.parseUnsafeBlock(),
             .keyword_spawn => return self.parseSpawnStmt(),
             .keyword_spawn_with_handle => return self.parseSpawnHandleStmt(),
+            .star => {
+                // Deref assignment: *expr = value;
+                // Check if this is a deref assignment by peeking
+                if (self.peekIsDerefAssignment()) {
+                    return self.parseDerefAssignStmt();
+                }
+                return self.parseExprStmt();
+            },
             .identifier => {
                 // Check for assignment: ident = expr;
                 // We need to peek ahead
@@ -804,6 +832,46 @@ pub const Parser = struct {
             .target_index = target_index,
             .value = value,
         } };
+    }
+
+    fn peekIsDerefAssignment(self: *Parser) bool {
+        // Save state
+        const saved_lexer = self.lexer;
+        const saved_current = self.current;
+        // Advance past '*'
+        self.advance();
+        // Skip the target expression (identifier, possibly with more derefs)
+        // Simple heuristic: skip tokens until we find '=' or ';'
+        var depth: u32 = 0;
+        while (self.current.tag != .eof and self.current.tag != .semicolon) {
+            if (self.current.tag == .lparen) depth += 1;
+            if (self.current.tag == .rparen) {
+                if (depth == 0) break;
+                depth -= 1;
+            }
+            if (depth == 0 and self.current.tag == .equal) {
+                // Restore state
+                self.lexer = saved_lexer;
+                self.current = saved_current;
+                return true;
+            }
+            self.advance();
+        }
+        // Restore state
+        self.lexer = saved_lexer;
+        self.current = saved_current;
+        return false;
+    }
+
+    fn parseDerefAssignStmt(self: *Parser) ParseError!Ast.Stmt {
+        // Parse the LHS as an expression (which will be a deref expression)
+        // We consume '*' and parse the target
+        self.advance(); // consume '*'
+        const target = try self.parseUnary();
+        try self.expect(.equal);
+        const value = try self.parseExpr();
+        try self.expect(.semicolon);
+        return .{ .deref_assign = .{ .target = target, .value = value } };
     }
 
     fn parseIfStmt(self: *Parser) ParseError!Ast.Stmt {
@@ -1099,6 +1167,16 @@ pub const Parser = struct {
             self.advance();
             const operand = try self.parsePostfix();
             return self.ast.addExpr(.{ .await_expr = operand });
+        }
+        if (self.current.tag == .ampersand) {
+            self.advance(); // consume '&'
+            const operand = try self.parsePostfix();
+            return self.ast.addExpr(.{ .address_of = operand });
+        }
+        if (self.current.tag == .star) {
+            self.advance(); // consume '*'
+            const operand = try self.parseUnary();
+            return self.ast.addExpr(.{ .deref = operand });
         }
         return self.parsePostfix();
     }
@@ -2659,5 +2737,110 @@ test "parse index access still works with slices" {
             }
         },
         else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse pointer type *mut i32" {
+    var result = try testParse("package main;\npub fn foo(p: *mut i32) -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            try testing.expectEqual(@as(usize, 1), f.params.items.len);
+            switch (f.params.items[0].type_expr) {
+                .ptr_type => |pt| {
+                    try testing.expect(pt.is_mutable);
+                    try testing.expectEqual(Ast.BuiltinType.i32_type, pt.pointee.builtin);
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse pointer type *const i32" {
+    var result = try testParse("package main;\npub fn foo(p: *const i32) -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.params.items[0].type_expr) {
+                .ptr_type => |pt| {
+                    try testing.expect(!pt.is_mutable);
+                    try testing.expectEqual(Ast.BuiltinType.i32_type, pt.pointee.builtin);
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse address-of expression" {
+    var result = try testParse("package main;\npub fn main() -> void { let mut x: i32 = 10; unsafe { let p: *mut i32 = &x; } return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            // Second stmt is unsafe block containing var_decl
+            switch (f.body.stmts.items[1]) {
+                .unsafe_block => |block| {
+                    switch (block.stmts.items[0]) {
+                        .var_decl => |vd| {
+                            try testing.expectEqualStrings("p", vd.name);
+                            const expr = result.ast.getExpr(vd.init_expr);
+                            switch (expr) {
+                                .address_of => |operand_idx| {
+                                    const operand = result.ast.getExpr(operand_idx);
+                                    switch (operand) {
+                                        .identifier => |name| try testing.expectEqualStrings("x", name),
+                                        else => return error.TestUnexpectedResult,
+                                    }
+                                },
+                                else => return error.TestUnexpectedResult,
+                            }
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse deref assignment" {
+    var result = try testParse("package main;\npub fn main() -> void { let mut x: i32 = 10; unsafe { let p: *mut i32 = &x; *p = 42; } return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[1]) {
+                .unsafe_block => |block| {
+                    // Second stmt in unsafe block is deref_assign
+                    switch (block.stmts.items[1]) {
+                        .deref_assign => |da| {
+                            // Target should be identifier "p"
+                            const target_expr = result.ast.getExpr(da.target);
+                            switch (target_expr) {
+                                .identifier => |name| try testing.expectEqualStrings("p", name),
+                                else => return error.TestUnexpectedResult,
+                            }
+                            // Value should be int literal 42
+                            const val_expr = result.ast.getExpr(da.value);
+                            switch (val_expr) {
+                                .int_literal => |v| try testing.expectEqual(@as(i64, 42), v),
+                                else => return error.TestUnexpectedResult,
+                            }
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
     }
 }

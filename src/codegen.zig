@@ -67,6 +67,12 @@ pub const CodeGen = struct {
         array_type: ArrayTypeTag,
         slice_type: SliceTypeTag,
         tuple_type: TupleTypeTag,
+        ptr_type: PtrTypeTag,
+    };
+
+    pub const PtrTypeTag = struct {
+        pointee: *const TypeTag,
+        is_mutable: bool,
     };
 
     pub const TupleTypeTag = struct {
@@ -323,6 +329,7 @@ pub const CodeGen = struct {
             },
             .named => |name| name,
             .generic_type => |gt| gt.name,
+            .ptr_type => "ptr",
             else => "unknown",
         };
     }
@@ -656,6 +663,12 @@ pub const CodeGen = struct {
                 const mangled_name = self.monomorphizeStruct(gt.name, gt.type_args.items) catch return .i32_type;
                 return .{ .struct_type = mangled_name };
             },
+            .ptr_type => |pt| {
+                const pointee_tag = self.resolveTypeExpr(pt.pointee.*);
+                const pointee_ptr = self.allocator.create(TypeTag) catch return .i32_type;
+                pointee_ptr.* = pointee_tag;
+                return .{ .ptr_type = .{ .pointee = pointee_ptr, .is_mutable = pt.is_mutable } };
+            },
         };
     }
 
@@ -936,6 +949,11 @@ pub const CodeGen = struct {
             .spawn_stmt => |spawn_s| {
                 // Synchronous spawn: just execute the expression (call the function)
                 _ = try self.genExpr(spawn_s.expr);
+            },
+            .deref_assign => |da| {
+                const val = try self.genExpr(da.value);
+                const target = try self.genExpr(da.target);
+                _ = c.LLVMBuildStore(self.builder, val.value, target.value);
             },
             .spawn_handle_stmt => |spawn_h| {
                 // Synchronous spawn_with_handle: execute the call and store result in a local
@@ -1282,6 +1300,52 @@ pub const CodeGen = struct {
             .await_expr => |inner_idx| {
                 // Synchronous await: just load the handle variable (it already has the value)
                 return self.genExpr(inner_idx);
+            },
+            .address_of => |operand_idx| {
+                return self.genAddressOf(operand_idx);
+            },
+            .deref => |operand_idx| {
+                return self.genDeref(operand_idx);
+            },
+        }
+    }
+
+    fn genAddressOf(self: *CodeGen, operand_idx: Ast.ExprIndex) GenError!ExprResult {
+        // The operand should be an lvalue (a variable). Return its alloca pointer.
+        const expr = self.ast.getExpr(operand_idx);
+        switch (expr) {
+            .identifier => |name| {
+                const nv = self.named_values.get(name) orelse {
+                    self.diagnostics.report(.@"error", 0, "undefined variable '{s}'", .{name});
+                    return error.CodeGenError;
+                };
+                // Return the alloca as a pointer value
+                const pointee_ptr = self.allocator.create(TypeTag) catch return error.CodeGenError;
+                pointee_ptr.* = nv.type_tag;
+                return .{
+                    .value = nv.alloca,
+                    .type_tag = .{ .ptr_type = .{ .pointee = pointee_ptr, .is_mutable = nv.is_mutable } },
+                };
+            },
+            else => {
+                self.diagnostics.report(.@"error", 0, "cannot take address of this expression", .{});
+                return error.CodeGenError;
+            },
+        }
+    }
+
+    fn genDeref(self: *CodeGen, operand_idx: Ast.ExprIndex) GenError!ExprResult {
+        // Evaluate the operand (should be a pointer)
+        const ptr_val = try self.genExpr(operand_idx);
+        switch (ptr_val.type_tag) {
+            .ptr_type => |pt| {
+                const pointee_llvm = self.typeTagToLLVM(pt.pointee.*);
+                const loaded = c.LLVMBuildLoad2(self.builder, pointee_llvm, ptr_val.value, "deref");
+                return .{ .value = loaded, .type_tag = pt.pointee.* };
+            },
+            else => {
+                self.diagnostics.report(.@"error", 0, "cannot dereference non-pointer type", .{});
+                return error.CodeGenError;
             },
         }
     }
@@ -1992,6 +2056,10 @@ pub const CodeGen = struct {
             .tuple_type => |tt| {
                 return tt.llvm_type;
             },
+            .ptr_type => |pt| {
+                const pointee_llvm = self.typeTagToLLVM(pt.pointee.*);
+                return c.LLVMPointerType(pointee_llvm, 0);
+            },
         };
     }
 
@@ -2054,5 +2122,6 @@ fn builtinToTypeTag(type_expr: Ast.TypeExpr) CodeGen.TypeTag {
         .result_type => .{ .enum_type = "Result" }, // resolved properly in CodeGen
         .tuple_type => .i32_type, // resolved properly in CodeGen
         .generic_type => .i32_type, // resolved properly in CodeGen via monomorphization
+        .ptr_type => .i32_type, // resolved properly in CodeGen
     };
 }

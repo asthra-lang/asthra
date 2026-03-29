@@ -123,6 +123,12 @@ pub const Ast = struct {
         unsafe_block: *Block,
         spawn_stmt: SpawnStmt,
         spawn_handle_stmt: SpawnHandleStmt,
+        deref_assign: DerefAssignStmt,
+    };
+
+    pub const DerefAssignStmt = struct {
+        target: ExprIndex,
+        value: ExprIndex,
     };
 
     pub const MatchStmt = struct {
@@ -209,6 +215,8 @@ pub const Ast = struct {
         tuple_literal: TupleLiteralExpr,
         sizeof_expr: TypeExpr,
         await_expr: ExprIndex,
+        address_of: ExprIndex,
+        deref: ExprIndex,
     };
 
     pub const TupleLiteralExpr = struct {
@@ -311,6 +319,12 @@ pub const Ast = struct {
         result_type: ResultTypeExpr,
         tuple_type: TupleTypeExpr,
         generic_type: GenericTypeExpr,
+        ptr_type: PtrTypeExpr,
+    };
+
+    pub const PtrTypeExpr = struct {
+        is_mutable: bool,
+        pointee: *const TypeExpr,
     };
 
     pub const GenericTypeExpr = struct {

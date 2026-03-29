@@ -1,0 +1,26 @@
+package main;
+
+pub fn increment_via_ptr(p: *mut i32) -> void {
+    unsafe {
+        *p = *p + 1;
+    }
+    return;
+}
+
+pub fn main() -> void {
+    let mut x: i32 = 10;
+    log(x);
+
+    unsafe {
+        let p: *mut i32 = &x;
+        *p = 42;
+    }
+    log(x);
+
+    unsafe {
+        increment_via_ptr(&x);
+    }
+    log(x);
+
+    return;
+}

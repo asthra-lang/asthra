@@ -84,11 +84,11 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 - Enum declarations, enum constructors, match statements
 - Fixed-size arrays (`[N]T`), array literals, indexing, `len()` builtin, element assignment
 - `Option<T>` built-in type (`Option.Some(x)`, `Option.None()`, match destructuring)
+- Slices (`[]T`) and Go-style slicing (`arr[1:3]`)
+- Pointer types (`*mut T`, `*const T`), address-of (`&x`), dereference (`*p`), deref assignment (`*p = value`)
 
 ## Not Yet Implemented
 
-- Slices (`[]T`) and Go-style slicing (`arr[1:3]`)
-- Pointer types (`*mut T`, `*const T`) and address-of/dereference operators
 - `if let` pattern matching for Option/Result
 - String operations (concatenation, `len()` for strings, escape processing)
 - Type inference (omitting type annotations on `let`)
