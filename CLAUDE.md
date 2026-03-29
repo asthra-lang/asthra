@@ -85,6 +85,31 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 - Import system
 - Semantic analysis (type checking, mutability enforcement)
 
+## Development Strategy: Example-Driven
+
+Development follows an example-driven approach. Each new feature is implemented by:
+
+1. Write an example `.ast` program that uses the not-yet-implemented feature
+2. Implement everything in the compiler (lexer, parser, codegen) to make it compile and run
+3. Add unit tests for the new functionality
+4. Add the example to `examples/` and verify with `bash tests/run_examples.sh`
+5. Move to the next example
+
+**Example sequence** (each builds on previous):
+
+| # | Example | Features Unlocked |
+|---|---------|-------------------|
+| 1 | `break_continue.ast` | `break` and `continue` in for loops |
+| 2 | `floats.ast` | `f64` type, float literals, type conversions (`f64(x)`, `i32(y)`) |
+| 3 | `structs.ast` | struct declarations, field access, struct literals |
+| 4 | `methods.ast` | impl blocks, `self` parameter, method calls |
+| 5 | `enums.ast` | enum declarations, enum constructors, match statements |
+| 6 | `arrays.ast` | fixed arrays `[N]T`, slices `[]T`, `len()`, indexing |
+| 7 | `option.ast` | `Option<T>`, if-let pattern matching |
+| 8 | `result.ast` | `Result<T,E>`, error handling patterns |
+| 9 | `tuples.ast` | tuple types, tuple literals, tuple element access (`.0`, `.1`) |
+| 10 | `ffi.ast` | extern functions, unsafe blocks, pointer types |
+
 ## CI/CD
 
 - **CI** (`.github/workflows/ci.yml`) — builds, unit tests, and integration tests on Ubuntu + macOS for every push to `main` and PRs
