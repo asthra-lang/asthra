@@ -1,0 +1,36 @@
+package main;
+
+pub fn main() -> void {
+    let a: i32 = 0xFF;
+    let b: i32 = 0x0F;
+
+    // Bitwise AND
+    let and_result: i32 = a & b;
+    log(and_result);
+
+    // Bitwise OR
+    let or_result: i32 = a | 0xF0;
+    log(or_result);
+
+    // Bitwise XOR
+    let xor_result: i32 = 0xAA ^ 0x55;
+    log(xor_result);
+
+    // Bitwise NOT
+    let not_result: i32 = ~0;
+    log(not_result);
+
+    // Left shift
+    let shl: i32 = 1 << 4;
+    log(shl);
+
+    // Right shift
+    let shr: i32 = 256 >> 3;
+    log(shr);
+
+    // Combined operations
+    let flags: i32 = (1 << 0) | (1 << 2) | (1 << 4);
+    log(flags);
+
+    return;
+}
