@@ -7,10 +7,12 @@ Asthra is a compiled programming language with a Zig-based compiler and LLVM bac
 ## Build & Test
 
 ```sh
-zig build                    # Build the compiler
-zig build test               # Run unit tests
-./zig-out/bin/asthra <file.ast> -o <output>   # Compile an Asthra source file
-./zig-out/bin/asthra <file.ast> --emit-ir     # Print LLVM IR
+zig build                                      # Build (macOS Homebrew default)
+zig build -Dllvm-prefix=/usr/lib/llvm-20       # Build with custom LLVM path
+zig build test                                 # Run unit tests
+bash tests/run_examples.sh                     # Run integration tests (all examples)
+./zig-out/bin/asthra <file.ast> -o <output>    # Compile an Asthra source file
+./zig-out/bin/asthra <file.ast> --emit-ir      # Print LLVM IR
 ```
 
 ## Architecture
@@ -29,7 +31,7 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 ## Key Design Decisions
 
 - **Zig 0.15 APIs** — uses unmanaged `ArrayList` (allocator passed per-call), `std.fs.File.stdout()`/`.stderr()` with `.deprecatedWriter()`
-- **LLVM 20** — linked from `/opt/homebrew/opt/llvm@20/`, library name `LLVM-20`
+- **LLVM 20** — configurable via `zig build -Dllvm-prefix=<path> -Dllvm-lib=<name>`. Defaults to `/opt/homebrew/opt/llvm@20/` and `LLVM-20`
 - **`main()` ABI bridge** — Asthra `fn main() -> void` compiles to C `int main()` returning 0
 - **`range()` intrinsic** — not a general iterator; lowered directly to a counting loop in codegen
 - **`log()` builtin** — maps to `printf` with format string selected by argument type (i32, f64, string, bool)
@@ -82,3 +84,12 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 - Float types and type conversions
 - Import system
 - Semantic analysis (type checking, mutability enforcement)
+
+## CI/CD
+
+- **CI** (`.github/workflows/ci.yml`) — builds and runs integration tests on Ubuntu + macOS for every push to `main` and PRs
+- **Release** (`.github/workflows/release.yml`) — triggered by `v*` tags, builds ReleaseFast binaries for Linux x86_64, Linux ARM64, macOS ARM64, publishes to GitHub Releases
+- **Integration tests** (`tests/run_examples.sh`) — compiles and runs all `examples/*.ast` files, reports pass/fail
+- **Pre-commit hook** (`.claude/settings.json`) — runs `zig build` before commits via Claude Code
+
+To cut a release: `git tag v0.1.0 && git push --tags`

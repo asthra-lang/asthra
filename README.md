@@ -28,6 +28,12 @@ A compiled programming language with Rust/Go influences, built with a Zig compil
 zig build
 ```
 
+On Linux or non-Homebrew systems, specify the LLVM path:
+
+```sh
+zig build -Dllvm-prefix=/usr/lib/llvm-20
+```
+
 ### Compile and Run
 
 ```sh
@@ -136,22 +142,35 @@ pub fn main() -> void {
 }
 ```
 
+### Testing
+
+```sh
+bash tests/run_examples.sh
+```
+
+Compiles and runs all programs in `examples/`, reporting pass/fail for each.
+
 ## Project Structure
 
 ```
 asthra/
-├── build.zig          # Build configuration with LLVM linking
-├── build.zig.zon      # Zig package manifest
-├── grammar.txt        # Complete language grammar specification
+├── build.zig              # Build configuration (LLVM path configurable)
+├── build.zig.zon          # Zig package manifest
+├── grammar.txt            # Complete language grammar specification
 ├── src/
-│   ├── main.zig       # CLI driver
-│   ├── token.zig      # Token types and keyword map
-│   ├── lexer.zig      # Single-pass tokenizer
-│   ├── ast.zig        # AST node definitions
-│   ├── parser.zig     # Recursive descent parser
-│   ├── codegen.zig    # LLVM IR generation
-│   └── diagnostics.zig # Error reporting
-└── examples/          # Example Asthra programs
+│   ├── main.zig           # CLI driver
+│   ├── token.zig          # Token types and keyword map
+│   ├── lexer.zig          # Single-pass tokenizer
+│   ├── ast.zig            # AST node definitions
+│   ├── parser.zig         # Recursive descent parser
+│   ├── codegen.zig        # LLVM IR generation
+│   └── diagnostics.zig    # Error reporting
+├── examples/              # Example Asthra programs
+├── tests/
+│   └── run_examples.sh    # Integration test script
+└── .github/workflows/
+    ├── ci.yml             # Build + test on push/PR
+    └── release.yml        # Build binaries on tags
 ```
 
 ## Compiler Pipeline
@@ -161,6 +180,11 @@ Source (.ast) → Lexer → Parser → AST → LLVM IR → Object File → Execu
 ```
 
 The compiler uses LLVM for optimization and native code generation, and invokes the system C compiler (`cc`) as a linker.
+
+## CI/CD
+
+- **CI**: Builds and tests on every push/PR (Ubuntu + macOS)
+- **Releases**: Tag with `v*` (e.g., `git tag v0.1.0 && git push --tags`) to build binaries for Linux x86_64, Linux ARM64, and macOS ARM64
 
 ## License
 
