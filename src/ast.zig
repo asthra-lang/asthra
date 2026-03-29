@@ -24,10 +24,16 @@ pub const Ast = struct {
         private,
     };
 
+    pub const Annotation = struct {
+        name: []const u8,
+        args: std.ArrayList([]const u8),
+    };
+
     pub const TopLevelDecl = struct {
         visibility: Visibility,
         decl: DeclKind,
         start: u32,
+        annotations: std.ArrayList(Annotation) = .{},
     };
 
     pub const DeclKind = union(enum) {

@@ -83,8 +83,56 @@ pub const Parser = struct {
         return .{ .path = path, .alias = alias };
     }
 
+    fn parseAnnotation(self: *Parser) ParseError!Ast.Annotation {
+        try self.expect(.hash_lbracket); // consume '#['
+
+        const name_token = self.current;
+        try self.expect(.identifier);
+        const name = name_token.slice(self.source);
+
+        var args = std.ArrayList([]const u8){};
+
+        // Optional arguments: (arg1, arg2, ...)
+        if (self.current.tag == .lparen) {
+            self.advance(); // consume '('
+            while (self.current.tag != .rparen and self.current.tag != .eof) {
+                const arg_token = self.current;
+                // Args can be identifiers, keywords, or string literals
+                if (self.current.tag == .identifier) {
+                    try args.append(self.ast.allocator, arg_token.slice(self.source));
+                    self.advance();
+                } else if (self.current.tag == .string_literal) {
+                    const raw = arg_token.slice(self.source);
+                    const value = if (raw.len >= 2) raw[1 .. raw.len - 1] else raw;
+                    try args.append(self.ast.allocator, value);
+                    self.advance();
+                } else {
+                    // Accept any keyword as an annotation arg (e.g., "high", "low")
+                    try args.append(self.ast.allocator, arg_token.slice(self.source));
+                    self.advance();
+                }
+                if (self.current.tag == .comma) {
+                    self.advance(); // consume ','
+                }
+            }
+            try self.expect(.rparen); // consume ')'
+        }
+
+        try self.expect(.rbracket); // consume ']'
+
+        return .{ .name = name, .args = args };
+    }
+
     fn parseTopLevelDecl(self: *Parser) ParseError!Ast.TopLevelDecl {
         const start = self.current.loc.start;
+
+        // Parse optional annotations: #[...] #[...] ...
+        var annotations = std.ArrayList(Ast.Annotation){};
+        while (self.current.tag == .hash_lbracket) {
+            const annotation = try self.parseAnnotation();
+            try annotations.append(self.ast.allocator, annotation);
+        }
+
         const visibility = try self.parseVisibility();
 
         if (self.current.tag == .keyword_extern) {
@@ -93,6 +141,7 @@ pub const Parser = struct {
                 .visibility = visibility,
                 .decl = .{ .extern_decl = extern_decl },
                 .start = start,
+                .annotations = annotations,
             };
         }
 
@@ -102,6 +151,7 @@ pub const Parser = struct {
                 .visibility = visibility,
                 .decl = .{ .function = fn_decl },
                 .start = start,
+                .annotations = annotations,
             };
         }
 
@@ -111,6 +161,7 @@ pub const Parser = struct {
                 .visibility = visibility,
                 .decl = .{ .struct_decl = struct_decl },
                 .start = start,
+                .annotations = annotations,
             };
         }
 
@@ -120,6 +171,7 @@ pub const Parser = struct {
                 .visibility = visibility,
                 .decl = .{ .impl_decl = impl_decl },
                 .start = start,
+                .annotations = annotations,
             };
         }
 
@@ -129,6 +181,7 @@ pub const Parser = struct {
                 .visibility = visibility,
                 .decl = .{ .enum_decl = enum_decl },
                 .start = start,
+                .annotations = annotations,
             };
         }
 
@@ -138,6 +191,7 @@ pub const Parser = struct {
                 .visibility = visibility,
                 .decl = .{ .const_decl = const_decl },
                 .start = start,
+                .annotations = annotations,
             };
         }
 
@@ -1332,7 +1386,7 @@ pub const Parser = struct {
         while (self.current.tag != .eof) {
             if (self.previous.tag == .semicolon) return;
             switch (self.current.tag) {
-                .keyword_fn, .keyword_let, .keyword_if, .keyword_for, .keyword_return, .keyword_pub, .keyword_priv, .rbrace => return,
+                .keyword_fn, .keyword_let, .keyword_if, .keyword_for, .keyword_return, .keyword_pub, .keyword_priv, .hash_lbracket, .rbrace => return,
                 else => self.advance(),
             }
         }
@@ -2218,6 +2272,74 @@ test "parse non-generic struct still works" {
             try testing.expectEqual(@as(usize, 0), sd.type_params.items.len);
             try testing.expectEqual(@as(usize, 2), sd.fields.items.len);
         },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse annotation with argument" {
+    var result = try testParse("package main;\n#[human_review(high)]\npub fn foo() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    try testing.expectEqual(@as(usize, 1), result.ast.program.decls.items.len);
+    const decl = result.ast.program.decls.items[0];
+    try testing.expectEqual(@as(usize, 1), decl.annotations.items.len);
+    try testing.expectEqualStrings("human_review", decl.annotations.items[0].name);
+    try testing.expectEqual(@as(usize, 1), decl.annotations.items[0].args.items.len);
+    try testing.expectEqualStrings("high", decl.annotations.items[0].args.items[0]);
+    switch (decl.decl) {
+        .function => |f| try testing.expectEqualStrings("foo", f.name),
+    }
+}
+
+test "parse annotation without arguments" {
+    var result = try testParse("package main;\n#[constant_time]\npub fn compare() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    try testing.expectEqual(@as(usize, 1), decl.annotations.items.len);
+    try testing.expectEqualStrings("constant_time", decl.annotations.items[0].name);
+    try testing.expectEqual(@as(usize, 0), decl.annotations.items[0].args.items.len);
+}
+
+test "parse multiple annotations on one declaration" {
+    var result = try testParse("package main;\n#[human_review(high)]\n#[constant_time]\npub fn secure() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    try testing.expectEqual(@as(usize, 2), decl.annotations.items.len);
+    try testing.expectEqualStrings("human_review", decl.annotations.items[0].name);
+    try testing.expectEqualStrings("constant_time", decl.annotations.items[1].name);
+}
+
+test "parse annotation with multiple arguments" {
+    var result = try testParse("package main;\n#[ownership(gc, shared)]\npub fn alloc() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    try testing.expectEqual(@as(usize, 1), decl.annotations.items.len);
+    try testing.expectEqualStrings("ownership", decl.annotations.items[0].name);
+    try testing.expectEqual(@as(usize, 2), decl.annotations.items[0].args.items.len);
+    try testing.expectEqualStrings("gc", decl.annotations.items[0].args.items[0]);
+    try testing.expectEqualStrings("shared", decl.annotations.items[0].args.items[1]);
+}
+
+test "parse declaration without annotations has empty list" {
+    var result = try testParse("package main;\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    try testing.expectEqual(@as(usize, 0), decl.annotations.items.len);
+}
+
+test "parse annotation on struct" {
+    var result = try testParse("package main;\n#[ownership(gc)]\npub struct Data { pub x: i32 }\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    try testing.expectEqual(@as(usize, 1), decl.annotations.items.len);
+    try testing.expectEqualStrings("ownership", decl.annotations.items[0].name);
+    switch (decl.decl) {
+        .struct_decl => |sd| try testing.expectEqualStrings("Data", sd.name),
         else => return error.TestUnexpectedResult,
     }
 }

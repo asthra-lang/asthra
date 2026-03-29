@@ -1,0 +1,22 @@
+package main;
+
+#[human_review(high)]
+pub fn sensitive_operation(x: i32) -> i32 {
+    return x * 2;
+}
+
+#[constant_time]
+pub fn compare(a: i32, b: i32) -> bool {
+    return a == b;
+}
+
+pub fn main() -> void {
+    let result: i32 = sensitive_operation(21);
+    log(result);
+
+    let equal: bool = compare(5, 5);
+    log(equal);
+
+    log("Annotations parsed successfully");
+    return;
+}
