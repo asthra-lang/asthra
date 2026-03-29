@@ -1422,8 +1422,10 @@ pub const Parser = struct {
                     raw[1 .. raw.len - 1]
                 else
                     raw;
+                // Process escape sequences (\n, \t, \r, \\, \", \', \0)
+                const processed = processEscapes(self.ast.allocator, value) catch return error.ParseError;
                 self.advance();
-                return self.ast.addExpr(.{ .string_literal = value });
+                return self.ast.addExpr(.{ .string_literal = processed });
             },
             .raw_string_literal => {
                 const raw = self.current.slice(self.source);
@@ -1682,6 +1684,51 @@ pub const Parser = struct {
         }
     }
 };
+
+/// Process escape sequences in a string literal.
+/// Handles: \n, \t, \r, \\, \", \', \0
+/// Returns the original slice unchanged if no escapes are present (no allocation).
+pub fn processEscapes(allocator: std.mem.Allocator, input: []const u8) error{OutOfMemory}![]const u8 {
+    // Quick check: if no backslashes, return as-is (no allocation needed)
+    if (std.mem.indexOfScalar(u8, input, '\\') == null) {
+        return input;
+    }
+
+    var buf = allocator.alloc(u8, input.len) catch return error.OutOfMemory;
+    var out: usize = 0;
+    var i: usize = 0;
+    while (i < input.len) {
+        if (input[i] == '\\' and i + 1 < input.len) {
+            const next = input[i + 1];
+            const replacement: u8 = switch (next) {
+                'n' => '\n',
+                't' => '\t',
+                'r' => '\r',
+                '\\' => '\\',
+                '"' => '"',
+                '\'' => '\'',
+                '0' => 0,
+                else => {
+                    // Unknown escape: keep both characters
+                    buf[out] = '\\';
+                    out += 1;
+                    buf[out] = next;
+                    out += 1;
+                    i += 2;
+                    continue;
+                },
+            };
+            buf[out] = replacement;
+            out += 1;
+            i += 2;
+        } else {
+            buf[out] = input[i];
+            out += 1;
+            i += 1;
+        }
+    }
+    return buf[0..out];
+}
 
 pub fn parseIntLiteral(text: []const u8) i64 {
     if (text.len > 2) {

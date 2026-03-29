@@ -1,0 +1,10 @@
+package main;
+
+pub fn main() -> void {
+    log("Hello\tWorld");
+    log("Line 1\nLine 2");
+    log("Backslash: \\");
+    log("Quote: \"test\"");
+
+    return;
+}

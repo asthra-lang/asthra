@@ -1896,3 +1896,68 @@ test "parse triple-element tuple pattern" {
         else => return error.TestUnexpectedResult,
     }
 }
+
+// ===== processEscapes unit tests =====
+const processEscapes = @import("parser.zig").processEscapes;
+
+test "processEscapes: no escapes returns original slice" {
+    const input = "hello world";
+    const result = try processEscapes(testing.allocator, input);
+    // Should return the same pointer (no allocation)
+    try testing.expectEqual(input.ptr, result.ptr);
+    try testing.expectEqualStrings("hello world", result);
+}
+
+test "processEscapes: newline escape" {
+    const result = try processEscapes(testing.allocator, "line1\\nline2");
+    defer testing.allocator.free(result);
+    try testing.expectEqualStrings("line1\nline2", result);
+}
+
+test "processEscapes: tab escape" {
+    const result = try processEscapes(testing.allocator, "col1\\tcol2");
+    defer testing.allocator.free(result);
+    try testing.expectEqualStrings("col1\tcol2", result);
+}
+
+test "processEscapes: carriage return escape" {
+    const result = try processEscapes(testing.allocator, "hello\\rworld");
+    defer testing.allocator.free(result);
+    try testing.expectEqualStrings("hello\rworld", result);
+}
+
+test "processEscapes: backslash escape" {
+    const result = try processEscapes(testing.allocator, "path\\\\file");
+    defer testing.allocator.free(result);
+    try testing.expectEqualStrings("path\\file", result);
+}
+
+test "processEscapes: double quote escape" {
+    const result = try processEscapes(testing.allocator, "say \\\"hello\\\"");
+    defer testing.allocator.free(result);
+    try testing.expectEqualStrings("say \"hello\"", result);
+}
+
+test "processEscapes: single quote escape" {
+    const result = try processEscapes(testing.allocator, "it\\'s");
+    defer testing.allocator.free(result);
+    try testing.expectEqualStrings("it's", result);
+}
+
+test "processEscapes: null byte escape" {
+    const result = try processEscapes(testing.allocator, "hello\\0");
+    defer testing.allocator.free(result);
+    try testing.expectEqual(@as(usize, 6), result.len);
+    try testing.expectEqual(@as(u8, 0), result[5]);
+}
+
+test "processEscapes: multiple escapes" {
+    const result = try processEscapes(testing.allocator, "a\\tb\\nc\\\\d");
+    defer testing.allocator.free(result);
+    try testing.expectEqualStrings("a\tb\nc\\d", result);
+}
+
+test "processEscapes: empty string" {
+    const result = try processEscapes(testing.allocator, "");
+    try testing.expectEqualStrings("", result);
+}
