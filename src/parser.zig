@@ -554,8 +554,16 @@ pub const Parser = struct {
         }
 
         if (tag == .lbracket) {
-            // Array type: [N]T
             self.advance(); // consume '['
+            if (self.current.tag == .rbracket) {
+                // Slice type: []T
+                self.advance(); // consume ']'
+                const elem_type = try self.parseType();
+                const elem_ptr = self.ast.allocator.create(Ast.TypeExpr) catch return error.ParseError;
+                elem_ptr.* = elem_type;
+                return .{ .slice_type = .{ .element_type = elem_ptr } };
+            }
+            // Array type: [N]T
             if (self.current.tag != .int_literal) {
                 self.reportError("expected array size");
                 return error.ParseError;
@@ -1154,11 +1162,35 @@ pub const Parser = struct {
                     expr = try self.ast.addExpr(.{ .field_access = .{ .object = expr, .field = field_name } });
                 }
             } else if (self.current.tag == .lbracket) {
-                // Index access: expr[index]
+                // Index access or slice: expr[index] or expr[start:end]
                 self.advance(); // consume '['
-                const index = try self.parseExpr();
-                try self.expect(.rbracket);
-                expr = try self.ast.addExpr(.{ .index_access = .{ .object = expr, .index = index } });
+
+                // Check for arr[:] or arr[:end]
+                if (self.current.tag == .colon) {
+                    self.advance(); // consume ':'
+                    var end_expr: ?Ast.ExprIndex = null;
+                    if (self.current.tag != .rbracket) {
+                        end_expr = try self.parseExpr();
+                    }
+                    try self.expect(.rbracket);
+                    expr = try self.ast.addExpr(.{ .slice_expr = .{ .object = expr, .start = null, .end = end_expr } });
+                } else {
+                    const first = try self.parseExpr();
+                    if (self.current.tag == .colon) {
+                        // Slice: arr[start:end] or arr[start:]
+                        self.advance(); // consume ':'
+                        var end_expr: ?Ast.ExprIndex = null;
+                        if (self.current.tag != .rbracket) {
+                            end_expr = try self.parseExpr();
+                        }
+                        try self.expect(.rbracket);
+                        expr = try self.ast.addExpr(.{ .slice_expr = .{ .object = expr, .start = first, .end = end_expr } });
+                    } else {
+                        // Index access: arr[index]
+                        try self.expect(.rbracket);
+                        expr = try self.ast.addExpr(.{ .index_access = .{ .object = expr, .index = first } });
+                    }
+                }
             } else {
                 break;
             }
@@ -2511,5 +2543,121 @@ test "parse raw triple-quoted string literal" {
                 else => return error.TestUnexpectedResult,
             }
         },
+    }
+}
+
+test "parse slice type" {
+    var result = try testParse("package main;\npub fn foo(s: []i32) -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            try testing.expectEqual(@as(usize, 1), f.params.items.len);
+            try testing.expectEqualStrings("s", f.params.items[0].name);
+            switch (f.params.items[0].type_expr) {
+                .slice_type => |sl| {
+                    try testing.expectEqual(Ast.BuiltinType.i32_type, sl.element_type.builtin);
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse slice type in variable declaration" {
+    var result = try testParse("package main;\npub fn main() -> void { let s: []i32 = arr[:]; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("s", vd.name);
+                    switch (vd.type_expr) {
+                        .slice_type => |sl| {
+                            try testing.expectEqual(Ast.BuiltinType.i32_type, sl.element_type.builtin);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse full slice expression arr[:]" {
+    var result = try testParse("package main;\npub fn main() -> void { let s: []i32 = arr[:]; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    const expr = result.ast.getExpr(vd.init_expr);
+                    switch (expr) {
+                        .slice_expr => |se| {
+                            try testing.expect(se.start == null);
+                            try testing.expect(se.end == null);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse partial slice expression arr[1:4]" {
+    var result = try testParse("package main;\npub fn main() -> void { let s: []i32 = arr[1:4]; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    const expr = result.ast.getExpr(vd.init_expr);
+                    switch (expr) {
+                        .slice_expr => |se| {
+                            try testing.expect(se.start != null);
+                            try testing.expect(se.end != null);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse index access still works with slices" {
+    var result = try testParse("package main;\npub fn main() -> void { let x: i32 = arr[0]; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    const expr = result.ast.getExpr(vd.init_expr);
+                    switch (expr) {
+                        .index_access => {},
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
     }
 }

@@ -205,6 +205,7 @@ pub const Ast = struct {
         enum_constructor: EnumConstructorExpr,
         array_literal: ArrayLiteralExpr,
         index_access: IndexAccessExpr,
+        slice_expr: SliceExprNode,
         tuple_literal: TupleLiteralExpr,
         sizeof_expr: TypeExpr,
         await_expr: ExprIndex,
@@ -221,6 +222,12 @@ pub const Ast = struct {
     pub const IndexAccessExpr = struct {
         object: ExprIndex,
         index: ExprIndex,
+    };
+
+    pub const SliceExprNode = struct {
+        object: ExprIndex,
+        start: ?ExprIndex,
+        end: ?ExprIndex,
     };
 
     pub const EnumConstructorExpr = struct {
@@ -299,6 +306,7 @@ pub const Ast = struct {
         builtin: BuiltinType,
         named: []const u8,
         array_type: ArrayTypeExpr,
+        slice_type: SliceTypeExpr,
         option_type: OptionTypeExpr,
         result_type: ResultTypeExpr,
         tuple_type: TupleTypeExpr,
@@ -325,6 +333,10 @@ pub const Ast = struct {
 
     pub const ArrayTypeExpr = struct {
         size: u32,
+        element_type: *const TypeExpr,
+    };
+
+    pub const SliceTypeExpr = struct {
         element_type: *const TypeExpr,
     };
 

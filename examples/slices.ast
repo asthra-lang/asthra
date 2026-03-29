@@ -1,0 +1,29 @@
+package main;
+
+pub fn sum_slice(s: []i32) -> i32 {
+    let mut total: i32 = 0;
+    for i in range(len(s)) {
+        total = total + s[i];
+    }
+    return total;
+}
+
+pub fn main() -> void {
+    let arr: [5]i32 = [10, 20, 30, 40, 50];
+
+    // Full slice
+    let all: []i32 = arr[:];
+    log(len(all));
+    log(sum_slice(all));
+
+    // Partial slice
+    let mid: []i32 = arr[1:4];
+    log(len(mid));
+    log(sum_slice(mid));
+
+    // Slice indexing
+    log(mid[0]);
+    log(mid[2]);
+
+    return;
+}

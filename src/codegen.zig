@@ -65,6 +65,7 @@ pub const CodeGen = struct {
         struct_type: []const u8,
         enum_type: []const u8,
         array_type: ArrayTypeTag,
+        slice_type: SliceTypeTag,
         tuple_type: TupleTypeTag,
     };
 
@@ -76,6 +77,10 @@ pub const CodeGen = struct {
     pub const ArrayTypeTag = struct {
         element_type: *const TypeTag,
         count: u32,
+    };
+
+    pub const SliceTypeTag = struct {
+        element_type: *const TypeTag,
     };
 
     pub fn init(allocator: std.mem.Allocator, module_name: [*:0]const u8, diagnostics: *Diagnostics, ast: *const Ast) CodeGen {
@@ -613,6 +618,12 @@ pub const CodeGen = struct {
                 elem_ptr.* = elem_tag;
                 return .{ .array_type = .{ .element_type = elem_ptr, .count = arr.size } };
             },
+            .slice_type => |sl| {
+                const elem_tag = self.resolveTypeExpr(sl.element_type.*);
+                const elem_ptr = self.allocator.create(TypeTag) catch return .i32_type;
+                elem_ptr.* = elem_tag;
+                return .{ .slice_type = .{ .element_type = elem_ptr } };
+            },
             .option_type => |opt| {
                 // Auto-register Option as an enum type for this inner type
                 const inner_tag = self.resolveTypeExpr(opt.inner_type.*);
@@ -833,7 +844,7 @@ pub const CodeGen = struct {
                 const val = try self.genExpr(assign.value);
                 if (self.named_values.get(assign.target)) |nv| {
                     if (assign.target_index) |idx_expr| {
-                        // Indexed assignment: arr[i] = value
+                        // Indexed assignment: arr[i] = value or slice[i] = value
                         switch (nv.type_tag) {
                             .array_type => {
                                 const index_val = try self.genExpr(idx_expr);
@@ -845,8 +856,19 @@ pub const CodeGen = struct {
                                 const elem_ptr = c.LLVMBuildGEP2(self.builder, array_llvm, nv.alloca, &gep_idx, 2, "idx_assign_ptr");
                                 _ = c.LLVMBuildStore(self.builder, val.value, elem_ptr);
                             },
+                            .slice_type => |sl| {
+                                const index_val = try self.genExpr(idx_expr);
+                                const slice_llvm = self.sliceLLVMType();
+                                const ptr_field = c.LLVMBuildStructGEP2(self.builder, slice_llvm, nv.alloca, 0, "slice_ptr_field");
+                                const data_ptr = c.LLVMBuildLoad2(self.builder, c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0), ptr_field, "slice_ptr");
+                                const elem_llvm = self.typeTagToLLVM(sl.element_type.*);
+                                const typed_ptr = c.LLVMBuildBitCast(self.builder, data_ptr, c.LLVMPointerType(elem_llvm, 0), "typed_ptr");
+                                var gep_idx = [_]c.LLVMValueRef{index_val.value};
+                                const elem_ptr = c.LLVMBuildGEP2(self.builder, elem_llvm, typed_ptr, &gep_idx, 1, "slice_idx_assign_ptr");
+                                _ = c.LLVMBuildStore(self.builder, val.value, elem_ptr);
+                            },
                             else => {
-                                self.diagnostics.report(.@"error", 0, "indexed assignment requires an array", .{});
+                                self.diagnostics.report(.@"error", 0, "indexed assignment requires an array or slice", .{});
                                 return error.CodeGenError;
                             },
                         }
@@ -1248,6 +1270,9 @@ pub const CodeGen = struct {
             .index_access => |ia| {
                 return self.genIndexAccess(ia);
             },
+            .slice_expr => |se| {
+                return self.genSliceExpr(se);
+            },
             .tuple_literal => |tl| {
                 return self.genTupleLiteral(tl);
             },
@@ -1339,7 +1364,7 @@ pub const CodeGen = struct {
     }
 
     fn genIndexAccess(self: *CodeGen, ia: Ast.IndexAccessExpr) GenError!ExprResult {
-        // We need the alloca (pointer) of the array, not a loaded value
+        // We need the alloca (pointer) of the array or slice, not a loaded value
         const obj_expr = self.ast.getExpr(ia.object);
         switch (obj_expr) {
             .identifier => |name| {
@@ -1357,14 +1382,111 @@ pub const CodeGen = struct {
                             const loaded = c.LLVMBuildLoad2(self.builder, elem_llvm, elem_ptr, "idx_val");
                             return .{ .value = loaded, .type_tag = arr.element_type.* };
                         },
+                        .slice_type => |sl| {
+                            return self.genSliceIndexAccess(nv.alloca, sl, ia.index);
+                        },
                         else => {},
                     }
                 }
             },
             else => {},
         }
-        self.diagnostics.report(.@"error", 0, "index access requires an array", .{});
+        self.diagnostics.report(.@"error", 0, "index access requires an array or slice", .{});
         return error.CodeGenError;
+    }
+
+    fn genSliceIndexAccess(self: *CodeGen, slice_alloca: c.LLVMValueRef, sl: SliceTypeTag, index_expr_idx: Ast.ExprIndex) GenError!ExprResult {
+        const slice_llvm = self.sliceLLVMType();
+        // Extract pointer (field 0)
+        const ptr_field = c.LLVMBuildStructGEP2(self.builder, slice_llvm, slice_alloca, 0, "slice_ptr_field");
+        const data_ptr = c.LLVMBuildLoad2(self.builder, c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0), ptr_field, "slice_ptr");
+
+        const index_val = try self.genExpr(index_expr_idx);
+        const elem_llvm = self.typeTagToLLVM(sl.element_type.*);
+
+        // GEP on the data pointer with element type
+        var gep_idx = [_]c.LLVMValueRef{index_val.value};
+        const elem_ptr = c.LLVMBuildGEP2(self.builder, elem_llvm, c.LLVMBuildBitCast(self.builder, data_ptr, c.LLVMPointerType(elem_llvm, 0), "typed_ptr"), &gep_idx, 1, "slice_elem_ptr");
+        const loaded = c.LLVMBuildLoad2(self.builder, elem_llvm, elem_ptr, "slice_elem");
+        return .{ .value = loaded, .type_tag = sl.element_type.* };
+    }
+
+    fn sliceLLVMType(self: *const CodeGen) c.LLVMTypeRef {
+        var field_types_arr = [_]c.LLVMTypeRef{
+            c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0),
+            c.LLVMInt32TypeInContext(self.context),
+        };
+        return c.LLVMStructTypeInContext(self.context, &field_types_arr, 2, 0);
+    }
+
+    fn genSliceExpr(self: *CodeGen, se: Ast.SliceExprNode) GenError!ExprResult {
+        const obj_expr = self.ast.getExpr(se.object);
+        switch (obj_expr) {
+            .identifier => |name| {
+                if (self.named_values.get(name)) |nv| {
+                    switch (nv.type_tag) {
+                        .array_type => |arr| {
+                            return self.genSliceFromArray(nv.alloca, arr, se);
+                        },
+                        else => {},
+                    }
+                }
+            },
+            else => {},
+        }
+        self.diagnostics.report(.@"error", 0, "slicing requires an array", .{});
+        return error.CodeGenError;
+    }
+
+    fn genSliceFromArray(self: *CodeGen, array_alloca: c.LLVMValueRef, arr: ArrayTypeTag, se: Ast.SliceExprNode) GenError!ExprResult {
+        const elem_llvm = self.typeTagToLLVM(arr.element_type.*);
+        const array_llvm = self.typeTagToLLVM(.{ .array_type = arr });
+
+        // Compute start index
+        const start_val = if (se.start) |start_idx|
+            (try self.genExpr(start_idx)).value
+        else
+            c.LLVMConstInt(c.LLVMInt32TypeInContext(self.context), 0, 0);
+
+        // Compute end index
+        const end_val = if (se.end) |end_idx|
+            (try self.genExpr(end_idx)).value
+        else
+            c.LLVMConstInt(c.LLVMInt32TypeInContext(self.context), arr.count, 0);
+
+        // GEP to get pointer to arr[start]
+        var gep_idx = [_]c.LLVMValueRef{
+            c.LLVMConstInt(c.LLVMInt64TypeInContext(self.context), 0, 0),
+            start_val,
+        };
+        const elem_ptr = c.LLVMBuildGEP2(self.builder, array_llvm, array_alloca, &gep_idx, 2, "slice_start_ptr");
+
+        // Cast to i8*
+        const byte_ptr = c.LLVMBuildBitCast(self.builder, elem_ptr, c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0), "byte_ptr");
+
+        // Compute length = end - start
+        const length = c.LLVMBuildSub(self.builder, end_val, start_val, "slice_len");
+
+        // Build the slice struct { i8*, i32 }
+        const slice_llvm = self.sliceLLVMType();
+        const alloca = c.LLVMBuildAlloca(self.builder, slice_llvm, "slice_lit");
+
+        // Store pointer (field 0)
+        const ptr_field = c.LLVMBuildStructGEP2(self.builder, slice_llvm, alloca, 0, "slice_ptr_store");
+        _ = c.LLVMBuildStore(self.builder, byte_ptr, ptr_field);
+
+        // Store length (field 1)
+        const len_field = c.LLVMBuildStructGEP2(self.builder, slice_llvm, alloca, 1, "slice_len_store");
+        _ = c.LLVMBuildStore(self.builder, length, len_field);
+
+        const loaded = c.LLVMBuildLoad2(self.builder, slice_llvm, alloca, "slice_val");
+
+        // Create slice type tag with element type
+        const elem_ptr_tag = self.allocator.create(TypeTag) catch return error.CodeGenError;
+        elem_ptr_tag.* = arr.element_type.*;
+        _ = elem_llvm;
+
+        return .{ .value = loaded, .type_tag = .{ .slice_type = .{ .element_type = elem_ptr_tag } } };
     }
 
     fn genFieldAccess(self: *CodeGen, fa: Ast.FieldAccessExpr) GenError!ExprResult {
@@ -1729,6 +1851,16 @@ pub const CodeGen = struct {
                                 .type_tag = .i32_type,
                             };
                         },
+                        .slice_type => {
+                            // Load length field (index 1) from the slice struct
+                            const slice_llvm = self.sliceLLVMType();
+                            const len_ptr = c.LLVMBuildStructGEP2(self.builder, slice_llvm, nv.alloca, 1, "slice_len_ptr");
+                            const len_val = c.LLVMBuildLoad2(self.builder, c.LLVMInt32TypeInContext(self.context), len_ptr, "slice_len");
+                            return .{
+                                .value = len_val,
+                                .type_tag = .i32_type,
+                            };
+                        },
                         else => {},
                     }
                 }
@@ -1736,7 +1868,7 @@ pub const CodeGen = struct {
             else => {},
         }
 
-        self.diagnostics.report(.@"error", 0, "len() requires an array argument", .{});
+        self.diagnostics.report(.@"error", 0, "len() requires an array or slice argument", .{});
         return error.CodeGenError;
     }
 
@@ -1849,6 +1981,14 @@ pub const CodeGen = struct {
                 const elem_llvm = self.typeTagToLLVM(arr.element_type.*);
                 return c.LLVMArrayType(elem_llvm, arr.count);
             },
+            .slice_type => {
+                // Slice is { i8*, i32 } — pointer + length
+                var field_types_arr = [_]c.LLVMTypeRef{
+                    c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0),
+                    c.LLVMInt32TypeInContext(self.context),
+                };
+                return c.LLVMStructTypeInContext(self.context, &field_types_arr, 2, 0);
+            },
             .tuple_type => |tt| {
                 return tt.llvm_type;
             },
@@ -1909,6 +2049,7 @@ fn builtinToTypeTag(type_expr: Ast.TypeExpr) CodeGen.TypeTag {
         },
         .named => .i32_type,
         .array_type => .i32_type, // fallback - real resolution happens in CodeGen
+        .slice_type => .i32_type, // fallback - real resolution happens in CodeGen
         .option_type => .{ .enum_type = "Option" }, // resolved properly in CodeGen
         .result_type => .{ .enum_type = "Result" }, // resolved properly in CodeGen
         .tuple_type => .i32_type, // resolved properly in CodeGen
