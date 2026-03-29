@@ -1,0 +1,30 @@
+package main;
+
+pub enum Animal {
+    pub Cat,
+    pub Dog,
+    pub Bird
+}
+
+pub fn describe(a: Animal) -> void {
+    match a {
+        Animal.Cat => {
+            log("It's a cat!");
+        }
+        Animal.Dog => {
+            log("It's a dog!");
+        }
+        _ => {
+            log("Some other animal");
+        }
+    }
+    return;
+}
+
+pub fn main() -> void {
+    describe(Animal.Cat);
+    describe(Animal.Dog);
+    describe(Animal.Bird);
+
+    return;
+}

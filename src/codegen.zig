@@ -1306,7 +1306,7 @@ pub const CodeGen = struct {
                     _ = c.LLVMBuildUnreachable(self.builder);
                 }
             },
-            .identifier => {
+            .identifier, .wildcard => {
                 self.diagnostics.report(.@"error", 0, "if let requires enum pattern", .{});
                 return error.CodeGenError;
             },
@@ -1396,13 +1396,32 @@ pub const CodeGen = struct {
 
         const merge_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "match.end");
 
-        // Build switch
+        // Check if there's a wildcard or identifier catch-all arm
+        var wildcard_arm: ?Ast.MatchArm = null;
+        for (match_stmt.arms.items) |arm| {
+            switch (arm.pattern) {
+                .wildcard, .identifier => {
+                    wildcard_arm = arm;
+                    break;
+                },
+                else => {},
+            }
+        }
+
+        // Build switch — default goes to wildcard arm body if present, otherwise to merge
         const default_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "match.default");
         const switch_inst = c.LLVMBuildSwitch(self.builder, tag_val, default_bb, @intCast(match_stmt.arms.items.len));
 
-        // Default block just branches to merge
+        // Generate default block
         c.LLVMPositionBuilderAtEnd(self.builder, default_bb);
-        _ = c.LLVMBuildBr(self.builder, merge_bb);
+        if (wildcard_arm) |wa| {
+            try self.genBlock(wa.body, is_main);
+            if (c.LLVMGetBasicBlockTerminator(c.LLVMGetInsertBlock(self.builder)) == null) {
+                _ = c.LLVMBuildBr(self.builder, merge_bb);
+            }
+        } else {
+            _ = c.LLVMBuildBr(self.builder, merge_bb);
+        }
 
         for (match_stmt.arms.items) |arm| {
             switch (arm.pattern) {
@@ -1468,10 +1487,9 @@ pub const CodeGen = struct {
                         _ = c.LLVMBuildBr(self.builder, merge_bb);
                     }
                 },
-                .identifier => {
-                    // Wildcard / catch-all pattern - not implemented yet
-                    self.diagnostics.report(.@"error", 0, "identifier patterns in match not yet implemented", .{});
-                    return error.CodeGenError;
+                .identifier, .wildcard => {
+                    // Catch-all patterns are handled as the default arm above
+                    continue;
                 },
             }
         }

@@ -146,6 +146,7 @@ pub const Ast = struct {
     pub const Pattern = union(enum) {
         enum_pattern: EnumPattern,
         identifier: []const u8,
+        wildcard,
     };
 
     pub const EnumPattern = struct {

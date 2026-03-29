@@ -1013,6 +1013,15 @@ pub const Parser = struct {
     }
 
     fn parsePattern(self: *Parser) ParseError!Ast.Pattern {
+        // Handle wildcard pattern: _
+        if (self.current.tag == .identifier) {
+            const text = self.current.slice(self.source);
+            if (std.mem.eql(u8, text, "_")) {
+                self.advance();
+                return .wildcard;
+            }
+        }
+
         // Handle Option/Result keyword as a pattern name
         const first_name = if (self.current.tag == .keyword_Option) blk: {
             self.advance();
@@ -3195,6 +3204,85 @@ test "parse associated function call with multiple args" {
                             try testing.expectEqualStrings("Rect", ac.type_name);
                             try testing.expectEqualStrings("create", ac.func_name);
                             try testing.expectEqual(@as(usize, 2), ac.args.items.len);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse wildcard pattern in match" {
+    var result = try testParse(
+        \\package main;
+        \\pub enum Color { pub Red, pub Green, pub Blue }
+        \\pub fn main() -> void {
+        \\    let c: Color = Color.Red;
+        \\    match c {
+        \\        Color.Red => { log("red"); }
+        \\        _ => { log("other"); }
+        \\    }
+        \\    return;
+        \\}
+    );
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    // Find the match statement
+    const decl = result.ast.program.decls.items[1]; // fn main
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[1]) { // match stmt
+                .match_stmt => |ms| {
+                    try testing.expectEqual(@as(usize, 2), ms.arms.items.len);
+                    // First arm is enum pattern
+                    switch (ms.arms.items[0].pattern) {
+                        .enum_pattern => |ep| {
+                            try testing.expectEqualStrings("Color", ep.enum_name);
+                            try testing.expectEqualStrings("Red", ep.variant_name);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                    // Second arm is wildcard
+                    switch (ms.arms.items[1].pattern) {
+                        .wildcard => {},
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse identifier catch-all pattern in match" {
+    var result = try testParse(
+        \\package main;
+        \\pub enum Color { pub Red, pub Green, pub Blue }
+        \\pub fn main() -> void {
+        \\    let c: Color = Color.Red;
+        \\    match c {
+        \\        Color.Red => { log("red"); }
+        \\        other => { log("other"); }
+        \\    }
+        \\    return;
+        \\}
+    );
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[1];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[1]) {
+                .match_stmt => |ms| {
+                    try testing.expectEqual(@as(usize, 2), ms.arms.items.len);
+                    // Second arm is identifier catch-all
+                    switch (ms.arms.items[1].pattern) {
+                        .identifier => |name| {
+                            try testing.expectEqualStrings("other", name);
                         },
                         else => return error.TestUnexpectedResult,
                     }
