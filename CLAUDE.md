@@ -104,20 +104,14 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
   - Namespace isolation via function name mangling (`__pkg_{pkg}_{fn}`)
   - Import paths: `./relative`, `github.com/user/repo`, `gitlab.com/user/repo`
 
+- Closures / anonymous functions with variable capture: `fn(x: i32) -> i32 { return x * captured; }`
+
 ## Not Yet Implemented
 
-- Generic impl blocks (`impl Pair<T> { ... }`)
-- Tuple patterns in match (`(a, b) => { ... }`)
-- Nested enum patterns (`Option.Some(Result.Ok(val))`)
-- String escape processing (`\n` → actual newline in output)
-- `for` loops over arrays/slices (currently only `range()`)
-- Method chaining on return values (`obj.a().b()`)
-- Const binary expressions (`const X = 2 + 3;`)
 - DWARF debug info for lldb/gdb
 - Real pthread-based async runtime
-- Type aliases (`type Name = Type;`)
-- While loops (`while cond { ... }`)
-- Closures / anonymous functions
+- Closures as function parameters (requires function pointer types)
+- Higher-order functions (`map`, `filter`, `reduce`)
 
 ## Development Strategy: Example-Driven
 

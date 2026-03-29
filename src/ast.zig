@@ -250,6 +250,13 @@ pub const Ast = struct {
         await_expr: ExprIndex,
         address_of: ExprIndex,
         deref: ExprIndex,
+        closure: ClosureExpr,
+    };
+
+    pub const ClosureExpr = struct {
+        params: std.ArrayList(Param),
+        return_type: TypeExpr,
+        body: Block,
     };
 
     pub const AssociatedCallExpr = struct {

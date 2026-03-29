@@ -132,7 +132,8 @@ SliceBounds    <- Expr ':' Expr /                         # start:end (slice fro
                   Expr ':' /                              # start: (slice from start to end)
                   ':' Expr /                              # :end (slice from beginning to end)
                   ':'                                     # : (full slice copy)
-Primary        <- Literal / EnumConstructor / TypeConversionCall / SimpleIdent / '(' Expr ')' / SizeOf / AssociatedFuncCall  # Primary expressions (SimpleIdent includes predeclared identifiers)
+Primary        <- Literal / ClosureExpr / EnumConstructor / TypeConversionCall / SimpleIdent / '(' Expr ')' / SizeOf / AssociatedFuncCall  # Primary expressions (SimpleIdent includes predeclared identifiers)
+ClosureExpr    <- 'fn' '(' ParamList ')' '->' TypeExpr Block   # Anonymous function / closure: fn(x: i32) -> i32 { return x * 2; }
 TypeConversionCall <- TypeKeyword '(' Expr ')'               # Go-style type conversion: i32(x), f64(y), etc.
 TypeKeyword    <- 'i8' / 'i16' / 'i32' / 'i64' / 'i128' / 'u8' / 'u16' / 'u32' / 'u64' / 'u128' / 'f32' / 'f64' / 'bool' / 'isize' / 'usize'
 AssociatedFuncCall <- (SimpleIdent / GenericType) '::' SimpleIdent '(' ArgList ')'  # Static method calls: Type::function() or Type<T>::function()

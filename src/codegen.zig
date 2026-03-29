@@ -45,6 +45,7 @@ pub const CodeGen = struct {
     fmt_panic: c.LLVMValueRef,
     imported_fn_return_types: std.StringHashMap(TypeTag),
     type_aliases: std.StringHashMap(Ast.TypeExpr),
+    closure_counter: u32 = 0,
     // Stdlib C function refs
     sqrt_fn: c.LLVMValueRef,
     pow_fn: c.LLVMValueRef,
@@ -112,6 +113,13 @@ pub const CodeGen = struct {
         slice_type: SliceTypeTag,
         tuple_type: TupleTypeTag,
         ptr_type: PtrTypeTag,
+        closure_type: ClosureTypeTag,
+    };
+
+    pub const ClosureTypeTag = struct {
+        fn_name: []const u8,
+        env_alloca: c.LLVMValueRef,
+        return_type: *const TypeTag,
     };
 
     pub const PtrTypeTag = struct {
@@ -742,6 +750,10 @@ pub const CodeGen = struct {
             .ptr_type => |pt| {
                 const pointee_llvm = self.typeTagToLLVM(pt.pointee.*);
                 return c.LLVMPointerType(pointee_llvm, 0);
+            },
+            .closure_type => {
+                // Closure variable stores pointer to env struct
+                return c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0);
             },
         };
     }

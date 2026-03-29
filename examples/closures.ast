@@ -1,11 +1,20 @@
 package main;
 
-pub fn double(x: i32) -> i32 {
-    return x * 2;
-}
-
 pub fn main() -> void {
-    log("Closure syntax planned");
+    // Simple anonymous function (no capture)
+    let double = fn(x: i32) -> i32 { return x * 2; };
     log(double(21));
+
+    // Closure capturing a variable
+    let multiplier: i32 = 3;
+    let scale = fn(x: i32) -> i32 { return x * multiplier; };
+    log(scale(10));
+
+    // Closure capturing a string
+    let prefix: string = "Hello";
+    let greet = fn(name: string) -> string { return prefix + " " + name; };
+    log(greet("World"));
+
+    log("closures: all tests passed");
     return;
 }

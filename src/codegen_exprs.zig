@@ -108,6 +108,9 @@ pub fn genExpr(self: *CodeGen, expr_idx: Ast.ExprIndex) CodeGen.GenError!CodeGen
         .deref => |operand_idx| {
             return genDeref(self, operand_idx);
         },
+        .closure => |cl| {
+            return genClosureExpr(self, cl);
+        },
     }
 }
 
@@ -747,6 +750,14 @@ pub fn genCallExpr(self: *CodeGen, call_expr: Ast.CallExpr) CodeGen.GenError!Cod
             return error.CodeGenError;
         },
     };
+
+    // Check if callee is a closure variable
+    if (self.named_values.get(name)) |nv| {
+        switch (nv.type_tag) {
+            .closure_type => |ct| return genClosureCall(self, ct, &call_expr.args),
+            else => {},
+        }
+    }
 
     if (std.mem.eql(u8, name, "log")) {
         return genLogCall(self, call_expr);
@@ -1515,4 +1526,272 @@ fn genOsCall(self: *CodeGen, func: []const u8, args: *const std.ArrayList(Ast.Ex
     }
     self.diagnostics.report(.@"error", 0, "unknown os function '{s}'", .{func});
     return error.CodeGenError;
+}
+
+// ── Closures ──────────────────────────────────────────────────────────────
+
+fn genClosureExpr(self: *CodeGen, cl: Ast.ClosureExpr) CodeGen.GenError!CodeGen.ExprResult {
+    const codegen_stmts = @import("codegen_stmts.zig");
+
+    // 1. Collect free variables (captured from enclosing scope)
+    var captured = std.StringHashMap(CodeGen.NamedValue).init(self.allocator);
+    defer captured.deinit();
+
+    var param_names = std.StringHashMap(void).init(self.allocator);
+    defer param_names.deinit();
+    for (cl.params.items) |param| {
+        param_names.put(param.name, {}) catch {};
+    }
+    collectFreeVars(self, &cl.body, &param_names, &captured);
+
+    // 2. Generate unique closure function name
+    const closure_id = self.closure_counter;
+    self.closure_counter += 1;
+    const fn_name = std.fmt.allocPrint(self.allocator, "__closure_{d}", .{closure_id}) catch return error.CodeGenError;
+    self.monomorphized_names.append(self.allocator, fn_name) catch {};
+
+    // 3. Build env struct type from captured variables
+    var cap_names = std.ArrayList([]const u8){};
+    defer cap_names.deinit(self.allocator);
+    var cap_types = std.ArrayList(c.LLVMTypeRef){};
+    defer cap_types.deinit(self.allocator);
+    var cap_tags = std.ArrayList(CodeGen.TypeTag){};
+    defer cap_tags.deinit(self.allocator);
+
+    var cap_iter = captured.iterator();
+    while (cap_iter.next()) |entry| {
+        cap_names.append(self.allocator, entry.key_ptr.*) catch {};
+        cap_types.append(self.allocator, self.typeTagToLLVM(entry.value_ptr.type_tag)) catch {};
+        cap_tags.append(self.allocator, entry.value_ptr.type_tag) catch {};
+    }
+
+    const has_captures = cap_names.items.len > 0;
+    var env_struct_type: c.LLVMTypeRef = undefined;
+    if (has_captures) {
+        env_struct_type = c.LLVMStructTypeInContext(self.context, cap_types.items.ptr, @intCast(cap_types.items.len), 0);
+    }
+
+    // 4. Save codegen state
+    const saved_block = c.LLVMGetInsertBlock(self.builder);
+    const saved_values = self.named_values;
+    self.named_values = std.StringHashMap(CodeGen.NamedValue).init(self.allocator);
+
+    // 5. Build lifted function
+    const return_type_tag = self.resolveTypeExpr(cl.return_type);
+    const llvm_return_type = self.typeTagToLLVM(return_type_tag);
+
+    var fn_param_types = std.ArrayList(c.LLVMTypeRef){};
+    defer fn_param_types.deinit(self.allocator);
+
+    // First param: env struct pointer (if any captures)
+    if (has_captures) {
+        fn_param_types.append(self.allocator, c.LLVMPointerType(env_struct_type, 0)) catch {};
+    }
+    // Then closure declared params
+    for (cl.params.items) |param| {
+        const pt = self.resolveTypeExpr(param.type_expr);
+        fn_param_types.append(self.allocator, self.typeTagToLLVM(pt)) catch {};
+    }
+
+    const fn_type = c.LLVMFunctionType(llvm_return_type, fn_param_types.items.ptr, @intCast(fn_param_types.items.len), 0);
+    const fn_name_z = self.allocator.dupeZ(u8, fn_name) catch return error.CodeGenError;
+    defer self.allocator.free(fn_name_z);
+    const function = c.LLVMAddFunction(self.module, fn_name_z.ptr, fn_type);
+    const entry_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "entry");
+    c.LLVMPositionBuilderAtEnd(self.builder, entry_bb);
+
+    // Load captured vars from env struct
+    var param_offset: u32 = 0;
+    if (has_captures) {
+        const env_param = c.LLVMGetParam(function, 0);
+        for (cap_names.items, 0..) |cap_name, idx| {
+            const field_ptr = c.LLVMBuildStructGEP2(self.builder, env_struct_type, env_param, @intCast(idx), "cap_ptr");
+            const loaded = c.LLVMBuildLoad2(self.builder, cap_types.items[idx], field_ptr, "cap_val");
+            const alloca = c.LLVMBuildAlloca(self.builder, cap_types.items[idx], "cap_alloca");
+            _ = c.LLVMBuildStore(self.builder, loaded, alloca);
+            self.named_values.put(cap_name, .{
+                .alloca = alloca,
+                .is_mutable = false,
+                .type_tag = cap_tags.items[idx],
+            }) catch {};
+        }
+        param_offset = 1;
+    }
+
+    // Register closure params
+    for (cl.params.items, 0..) |param, i| {
+        const llvm_param = c.LLVMGetParam(function, @intCast(i + param_offset));
+        const pt = self.resolveTypeExpr(param.type_expr);
+        const pname_z = self.allocator.dupeZ(u8, param.name) catch return error.CodeGenError;
+        defer self.allocator.free(pname_z);
+        const alloca = c.LLVMBuildAlloca(self.builder, self.typeTagToLLVM(pt), pname_z.ptr);
+        _ = c.LLVMBuildStore(self.builder, llvm_param, alloca);
+        self.named_values.put(param.name, .{
+            .alloca = alloca,
+            .is_mutable = false,
+            .type_tag = pt,
+        }) catch {};
+    }
+
+    // Generate closure body
+    codegen_stmts.genBlock(self, &cl.body, false) catch {};
+
+    // Add terminator if missing
+    const current_bb = c.LLVMGetInsertBlock(self.builder);
+    if (c.LLVMGetBasicBlockTerminator(current_bb) == null) {
+        if (CodeGen.isTypeTag(return_type_tag, .void_type)) {
+            _ = c.LLVMBuildRetVoid(self.builder);
+        }
+    }
+
+    // 6. Restore codegen state
+    self.named_values.deinit();
+    self.named_values = saved_values;
+    c.LLVMPositionBuilderAtEnd(self.builder, saved_block);
+
+    // 7. Create env struct at the closure creation site and store captured values
+    var env_alloca: c.LLVMValueRef = undefined;
+    if (has_captures) {
+        env_alloca = c.LLVMBuildAlloca(self.builder, env_struct_type, "closure_env");
+        for (cap_names.items, 0..) |cap_name, idx| {
+            const nv = saved_values.get(cap_name).?;
+            const cap_val = c.LLVMBuildLoad2(self.builder, cap_types.items[idx], nv.alloca, "cap_load");
+            const field_ptr = c.LLVMBuildStructGEP2(self.builder, env_struct_type, env_alloca, @intCast(idx), "env_field");
+            _ = c.LLVMBuildStore(self.builder, cap_val, field_ptr);
+        }
+    } else {
+        env_alloca = c.LLVMConstNull(c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0));
+    }
+
+    // Return closure type tag
+    const ret_tag_ptr = self.allocator.create(CodeGen.TypeTag) catch return error.CodeGenError;
+    ret_tag_ptr.* = return_type_tag;
+
+    return .{
+        .value = env_alloca,
+        .type_tag = .{ .closure_type = .{
+            .fn_name = fn_name,
+            .env_alloca = env_alloca,
+            .return_type = ret_tag_ptr,
+        } },
+    };
+}
+
+fn collectFreeVars(self: *CodeGen, block: *const Ast.Block, param_names: *const std.StringHashMap(void), captured: *std.StringHashMap(CodeGen.NamedValue)) void {
+    for (block.stmts.items) |stmt| {
+        switch (stmt) {
+            .return_stmt => |ret| {
+                collectFreeVarsExpr(self, ret.expr, param_names, captured);
+            },
+            .expr_stmt => |expr_idx| collectFreeVarsExpr(self, expr_idx, param_names, captured),
+            .var_decl => |vd| {
+                collectFreeVarsExpr(self, vd.init_expr, param_names, captured);
+            },
+            .assign => |a| {
+                collectFreeVarsExpr(self, a.value, param_names, captured);
+            },
+            .if_stmt => |ifs| {
+                collectFreeVarsExpr(self, ifs.condition, param_names, captured);
+                collectFreeVars(self, ifs.then_block, param_names, captured);
+                if (ifs.else_block) |eb| collectFreeVars(self, eb, param_names, captured);
+            },
+            .for_stmt => |fs| {
+                collectFreeVarsExpr(self, fs.iterable, param_names, captured);
+                collectFreeVars(self, fs.body, param_names, captured);
+            },
+            .while_stmt => |ws| {
+                collectFreeVarsExpr(self, ws.condition, param_names, captured);
+                collectFreeVars(self, ws.body, param_names, captured);
+            },
+            else => {},
+        }
+    }
+}
+
+fn collectFreeVarsExpr(self: *CodeGen, expr_idx: Ast.ExprIndex, param_names: *const std.StringHashMap(void), captured: *std.StringHashMap(CodeGen.NamedValue)) void {
+    if (expr_idx >= self.ast.exprs.items.len) return;
+    const expr = self.ast.getExpr(expr_idx);
+    switch (expr) {
+        .identifier => |name| {
+            if (param_names.contains(name)) return;
+            if (captured.contains(name)) return;
+            if (self.named_values.get(name)) |nv| {
+                captured.put(name, nv) catch {};
+            }
+        },
+        .binary => |bin| {
+            collectFreeVarsExpr(self, bin.lhs, param_names, captured);
+            collectFreeVarsExpr(self, bin.rhs, param_names, captured);
+        },
+        .unary => |un| {
+            collectFreeVarsExpr(self, un.operand, param_names, captured);
+        },
+        .call => |call| {
+            collectFreeVarsExpr(self, call.callee, param_names, captured);
+            for (call.args.items) |arg| {
+                collectFreeVarsExpr(self, arg, param_names, captured);
+            }
+        },
+        .method_call => |mc| {
+            collectFreeVarsExpr(self, mc.object, param_names, captured);
+            for (mc.args.items) |arg| {
+                collectFreeVarsExpr(self, arg, param_names, captured);
+            }
+        },
+        .field_access => |fa| {
+            collectFreeVarsExpr(self, fa.object, param_names, captured);
+        },
+        .index_access => |ia| {
+            collectFreeVarsExpr(self, ia.object, param_names, captured);
+            collectFreeVarsExpr(self, ia.index, param_names, captured);
+        },
+        .grouped => |inner| {
+            collectFreeVarsExpr(self, inner, param_names, captured);
+        },
+        .address_of => |inner| {
+            collectFreeVarsExpr(self, inner, param_names, captured);
+        },
+        .deref => |inner| {
+            collectFreeVarsExpr(self, inner, param_names, captured);
+        },
+        else => {},
+    }
+}
+
+fn genClosureCall(self: *CodeGen, ct: CodeGen.ClosureTypeTag, args: *const std.ArrayList(Ast.ExprIndex)) CodeGen.GenError!CodeGen.ExprResult {
+    const fn_name_z = self.allocator.dupeZ(u8, ct.fn_name) catch return error.CodeGenError;
+    defer self.allocator.free(fn_name_z);
+    const function = c.LLVMGetNamedFunction(self.module, fn_name_z.ptr);
+    if (function == null) {
+        self.diagnostics.report(.@"error", 0, "undefined closure function '{s}'", .{ct.fn_name});
+        return error.CodeGenError;
+    }
+
+    var call_args = std.ArrayList(c.LLVMValueRef){};
+    defer call_args.deinit(self.allocator);
+
+    // Pass env pointer as first arg (if closure has captures)
+    const fn_type = c.LLVMGlobalGetValueType(function);
+    const fn_param_count = c.LLVMCountParamTypes(fn_type);
+    if (fn_param_count > args.items.len) {
+        // Has env param
+        call_args.append(self.allocator, ct.env_alloca) catch {};
+    }
+
+    // Pass user arguments
+    for (args.items) |arg_idx| {
+        const arg_val = try genExpr(self, arg_idx);
+        call_args.append(self.allocator, arg_val.value) catch {};
+    }
+
+    const ret_llvm = c.LLVMGetReturnType(fn_type);
+    const is_void = c.LLVMGetTypeKind(ret_llvm) == c.LLVMVoidTypeKind;
+
+    if (is_void) {
+        _ = c.LLVMBuildCall2(self.builder, fn_type, function, call_args.items.ptr, @intCast(call_args.items.len), "");
+        return .{ .value = c.LLVMGetUndef(c.LLVMVoidTypeInContext(self.context)), .type_tag = .void_type };
+    } else {
+        const result = c.LLVMBuildCall2(self.builder, fn_type, function, call_args.items.ptr, @intCast(call_args.items.len), "closure_call");
+        return .{ .value = result, .type_tag = ct.return_type.* };
+    }
 }

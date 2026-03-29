@@ -431,6 +431,19 @@ pub const SemanticAnalyzer = struct {
             .bool_literal => {},
             .string_literal => {},
             .char_literal => {},
+            .closure => |cl| {
+                self.pushScope(true);
+                for (cl.params.items) |param| {
+                    self.defineSymbol(param.name, .{
+                        .is_mutable = false,
+                        .is_used = true,
+                        .is_param = true,
+                        .start = 0,
+                    });
+                }
+                self.checkBlock(cl.body, false);
+                self.popScope();
+            },
         }
     }
 

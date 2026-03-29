@@ -1589,11 +1589,42 @@ pub const Parser = struct {
                 self.advance();
                 return self.ast.addExpr(.{ .identifier = name });
             },
+            .keyword_fn => {
+                return self.parseClosure();
+            },
             else => {
                 self.reportError("expected expression");
                 return error.ParseError;
             },
         }
+    }
+
+    fn parseClosure(self: *Parser) ParseError!Ast.ExprIndex {
+        self.advance(); // consume 'fn'
+        try self.expect(.lparen);
+
+        var params = std.ArrayList(Ast.Param){};
+        if (self.current.tag == .keyword_none) {
+            self.advance();
+        } else if (self.current.tag != .rparen) {
+            while (true) {
+                const param = try self.parseParam();
+                try params.append(self.ast.allocator, param);
+                if (self.current.tag != .comma) break;
+                self.advance();
+            }
+        }
+        try self.expect(.rparen);
+
+        try self.expect(.arrow);
+        const return_type = try self.parseType();
+        const body = try self.parseBlock();
+
+        return self.ast.addExpr(.{ .closure = .{
+            .params = params,
+            .return_type = return_type,
+            .body = body,
+        } });
     }
 
     fn peekIsStructLiteral(self: *Parser) bool {

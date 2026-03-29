@@ -90,3 +90,11 @@ Built-in namespaced modules (`math`, `str`, `io`, `os`) available without import
 | 54 | — | `asthra init`, `asthra add`, `asthra install` CLI commands | Done |
 | 55 | — | `asthra.toml` manifest, `asthra.lock` lockfile, TOML parser | Done |
 | 56 | — | remote import resolution for `github.com/*` and `gitlab.com/*` packages | Done |
+
+## Phase 6: Closures
+
+Anonymous functions with variable capture via lambda lifting.
+
+| # | Example | Features Unlocked | Status |
+|---|---------|-------------------|--------|
+| 57 | `closures.ast` | `fn(params) -> Type { body }` syntax, variable capture by value, env struct codegen | Done |
