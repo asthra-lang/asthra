@@ -70,31 +70,22 @@ jobs:
           sudo apt-get install -y llvm-20-dev
 
       - name: Install kcov
-        run: sudo apt-get install -y kcov
-
-      - name: Build test binary
-        run: zig build test -Dllvm-prefix=/usr/lib/llvm-20 --summary none 2>&1 || true
-
-      - name: Find and run test binary with kcov
         run: |
-          # Build the test binary without running it
-          TEST_BIN=$(find .zig-cache -name "test" -type f -executable 2>/dev/null | head -1)
-          if [ -z "$TEST_BIN" ]; then
-            # Build test step produces the binary; find it after build
-            zig build test -Dllvm-prefix=/usr/lib/llvm-20 2>&1 || true
-            TEST_BIN=$(find .zig-cache -name "test" -type f -executable 2>/dev/null | head -1)
-          fi
-          if [ -n "$TEST_BIN" ]; then
-            kcov --include-path=src/ coverage/ "$TEST_BIN" || true
-          else
-            echo "Warning: Could not find test binary, running kcov on compiler binary with integration tests"
-            zig build -Dllvm-prefix=/usr/lib/llvm-20
-            for src in examples/*.ast; do
-              name=$(basename "$src" .ast)
-              kcov --include-path=src/ coverage/ ./zig-out/bin/asthra "$src" -o "/tmp/asthra_cov_$name" || true
-              rm -f "/tmp/asthra_cov_$name"
-            done
-          fi
+          sudo apt-get install -y cmake g++ pkg-config libdw-dev libcurl4-openssl-dev
+          git clone --depth 1 https://github.com/SimonKagworthy/kcov.git /tmp/kcov-src
+          cd /tmp/kcov-src && mkdir build && cd build
+          cmake .. && make -j$(nproc) && sudo make install
+
+      - name: Build compiler and run tests with coverage
+        run: |
+          zig build -Dllvm-prefix=/usr/lib/llvm-20
+          kcov --include-path=$(pwd)/src/ coverage/ ./zig-out/bin/asthra examples/hello.ast -o /tmp/cov_hello
+          kcov --include-path=$(pwd)/src/ coverage/ ./zig-out/bin/asthra examples/arithmetic.ast -o /tmp/cov_arith
+          kcov --include-path=$(pwd)/src/ coverage/ ./zig-out/bin/asthra examples/fibonacci.ast -o /tmp/cov_fib
+          kcov --include-path=$(pwd)/src/ coverage/ ./zig-out/bin/asthra examples/fizzbuzz.ast -o /tmp/cov_fizz
+          kcov --include-path=$(pwd)/src/ coverage/ ./zig-out/bin/asthra examples/ifelse.ast -o /tmp/cov_if
+          kcov --include-path=$(pwd)/src/ coverage/ ./zig-out/bin/asthra examples/strings.ast -o /tmp/cov_str
+          rm -f /tmp/cov_*
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
