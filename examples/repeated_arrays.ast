@@ -1,0 +1,21 @@
+package main;
+
+pub fn main() -> void {
+    // Repeated element initializer
+    let zeros: [5]i32 = [0; 5];
+    log(len(zeros));
+    log(zeros[0]);
+    log(zeros[4]);
+
+    let ones: [3]i32 = [1; 3];
+    for i in range(3) {
+        log(ones[i]);
+    }
+
+    let big: [10]i32 = [42; 10];
+    log(big[0]);
+    log(big[9]);
+    log(len(big));
+
+    return;
+}

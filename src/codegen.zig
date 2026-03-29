@@ -1664,6 +1664,9 @@ pub const CodeGen = struct {
             .array_literal => |al| {
                 return self.genArrayLiteral(al);
             },
+            .repeated_array => |ra| {
+                return self.genRepeatedArray(ra);
+            },
             .index_access => |ia| {
                 return self.genIndexAccess(ia);
             },
@@ -1769,6 +1772,43 @@ pub const CodeGen = struct {
         const elem_ptr = self.allocator.create(TypeTag) catch return error.CodeGenError;
         elem_ptr.* = elem_type_tag;
         return .{ .value = loaded, .type_tag = .{ .array_type = .{ .element_type = elem_ptr, .count = count } } };
+    }
+
+    fn genRepeatedArray(self: *CodeGen, ra: Ast.RepeatedArrayExpr) GenError!ExprResult {
+        // Count must be a compile-time integer literal
+        const count_expr = self.ast.getExpr(ra.count);
+        const count: u32 = switch (count_expr) {
+            .int_literal => |v| @intCast(v),
+            else => {
+                self.diagnostics.report(.@"error", 0, "repeated array count must be a compile-time integer literal", .{});
+                return error.CodeGenError;
+            },
+        };
+
+        // Generate the value expression
+        const val = try self.genExpr(ra.value);
+        const elem_type_tag = val.type_tag;
+        const elem_llvm = self.typeTagToLLVM(elem_type_tag);
+        const array_llvm = c.LLVMArrayType(elem_llvm, count);
+
+        const alloca = c.LLVMBuildAlloca(self.builder, array_llvm, "rep_arr");
+
+        // Store the value at each index
+        for (0..count) |i| {
+            var gep_idx = [_]c.LLVMValueRef{
+                c.LLVMConstInt(c.LLVMInt64TypeInContext(self.context), 0, 0),
+                c.LLVMConstInt(c.LLVMInt64TypeInContext(self.context), @intCast(i), 0),
+            };
+            const elem_ptr = c.LLVMBuildGEP2(self.builder, array_llvm, alloca, &gep_idx, 2, "elem_ptr");
+            _ = c.LLVMBuildStore(self.builder, val.value, elem_ptr);
+        }
+
+        // Load the full array value
+        const loaded = c.LLVMBuildLoad2(self.builder, array_llvm, alloca, "rep_arr_val");
+
+        const elem_type_ptr = self.allocator.create(TypeTag) catch return error.CodeGenError;
+        elem_type_ptr.* = elem_type_tag;
+        return .{ .value = loaded, .type_tag = .{ .array_type = .{ .element_type = elem_type_ptr, .count = count } } };
     }
 
     fn genTupleLiteral(self: *CodeGen, tl: Ast.TupleLiteralExpr) GenError!ExprResult {

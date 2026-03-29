@@ -1477,15 +1477,23 @@ pub const Parser = struct {
                 return self.ast.addExpr(.{ .grouped = first });
             },
             .lbracket => {
-                // Array literal: [expr, expr, ...]
+                // Array literal: [expr, expr, ...] or repeated array: [expr; count]
                 self.advance(); // consume '['
                 var elements = std.ArrayList(Ast.ExprIndex){};
                 if (self.current.tag != .rbracket) {
-                    while (true) {
+                    const first = try self.parseExpr();
+                    // Check for repeated array syntax: [value; count]
+                    if (self.current.tag == .semicolon) {
+                        self.advance(); // consume ';'
+                        const count_expr = try self.parseExpr();
+                        try self.expect(.rbracket);
+                        return self.ast.addExpr(.{ .repeated_array = .{ .value = first, .count = count_expr } });
+                    }
+                    try elements.append(self.ast.allocator, first);
+                    while (self.current.tag == .comma) {
+                        self.advance(); // consume comma
                         const elem = try self.parseExpr();
                         try elements.append(self.ast.allocator, elem);
-                        if (self.current.tag != .comma) break;
-                        self.advance(); // consume comma
                     }
                 }
                 try self.expect(.rbracket);
@@ -3377,5 +3385,64 @@ test "parse char to i32 type conversion" {
                 else => return error.TestUnexpectedResult,
             }
         },
+    }
+}
+
+test "parse repeated array initializer" {
+    var result = try testParse("package main;\npub fn main() -> void { let a: [5]i32 = [0; 5]; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("a", vd.name);
+                    switch (vd.type_expr) {
+                        .array_type => |arr| {
+                            try testing.expectEqual(@as(u32, 5), arr.size);
+                            try testing.expectEqual(Ast.BuiltinType.i32_type, arr.element_type.builtin);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                    const expr = result.ast.getExpr(vd.init_expr);
+                    switch (expr) {
+                        .repeated_array => |ra| {
+                            const val_expr = result.ast.getExpr(ra.value);
+                            try testing.expectEqual(@as(i64, 0), val_expr.int_literal);
+                            const count_expr = result.ast.getExpr(ra.count);
+                            try testing.expectEqual(@as(i64, 5), count_expr.int_literal);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse repeated array does not break regular array literal" {
+    var result = try testParse("package main;\npub fn main() -> void { let a: [3]i32 = [1, 2, 3]; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    const expr = result.ast.getExpr(vd.init_expr);
+                    switch (expr) {
+                        .array_literal => |al| {
+                            try testing.expectEqual(@as(usize, 3), al.elements.items.len);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
     }
 }

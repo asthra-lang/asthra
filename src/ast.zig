@@ -222,6 +222,7 @@ pub const Ast = struct {
         method_call: MethodCallExpr,
         enum_constructor: EnumConstructorExpr,
         array_literal: ArrayLiteralExpr,
+        repeated_array: RepeatedArrayExpr,
         index_access: IndexAccessExpr,
         slice_expr: SliceExprNode,
         tuple_literal: TupleLiteralExpr,
@@ -244,6 +245,11 @@ pub const Ast = struct {
 
     pub const ArrayLiteralExpr = struct {
         elements: std.ArrayList(ExprIndex),
+    };
+
+    pub const RepeatedArrayExpr = struct {
+        value: ExprIndex,
+        count: ExprIndex,
     };
 
     pub const IndexAccessExpr = struct {
