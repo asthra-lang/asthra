@@ -317,6 +317,43 @@ pub const CodeGen = struct {
         }) catch {};
     }
 
+    fn ensureOptionType(self: *CodeGen, inner_tag: TypeTag) void {
+        if (self.enum_types.contains("Option")) return;
+
+        // Option has two variants: Some(T) and None
+        var variant_names = self.allocator.alloc([]const u8, 2) catch return;
+        variant_names[0] = "Some";
+        variant_names[1] = "None";
+
+        var variant_data_types = self.allocator.alloc([]const TypeTag, 2) catch return;
+
+        // Some variant has one data field of the inner type
+        var some_types = self.allocator.alloc(TypeTag, 1) catch return;
+        some_types[0] = inner_tag;
+        variant_data_types[0] = some_types;
+
+        // None variant has no data
+        var none_types = self.allocator.alloc(TypeTag, 0) catch return;
+        variant_data_types[1] = none_types;
+        _ = &none_types;
+
+        // Calculate max payload size (8 bytes for one field)
+        const max_payload_size: u32 = 8;
+
+        var field_types: [2]c.LLVMTypeRef = undefined;
+        field_types[0] = c.LLVMInt32TypeInContext(self.context); // tag
+        field_types[1] = c.LLVMArrayType(c.LLVMInt8TypeInContext(self.context), max_payload_size);
+
+        const enum_type = c.LLVMStructCreateNamed(self.context, "Option");
+        c.LLVMStructSetBody(enum_type, &field_types, 2, 0);
+
+        self.enum_types.put("Option", .{
+            .llvm_type = enum_type,
+            .variant_names = variant_names,
+            .variant_data_types = variant_data_types,
+        }) catch {};
+    }
+
     fn genEnumConstructor(self: *CodeGen, enum_name: []const u8, variant_name: []const u8, args: *const std.ArrayList(Ast.ExprIndex)) GenError!ExprResult {
         const info = self.enum_types.get(enum_name) orelse {
             self.diagnostics.report(.@"error", 0, "undefined enum '{s}'", .{enum_name});
@@ -374,7 +411,7 @@ pub const CodeGen = struct {
         return .{ .value = loaded, .type_tag = .{ .enum_type = enum_name } };
     }
 
-    fn resolveTypeExpr(self: *const CodeGen, type_expr: Ast.TypeExpr) TypeTag {
+    fn resolveTypeExpr(self: *CodeGen, type_expr: Ast.TypeExpr) TypeTag {
         return switch (type_expr) {
             .builtin => |b| switch (b) {
                 .void => .void_type,
@@ -399,6 +436,12 @@ pub const CodeGen = struct {
                 const elem_ptr = self.allocator.create(TypeTag) catch return .i32_type;
                 elem_ptr.* = elem_tag;
                 return .{ .array_type = .{ .element_type = elem_ptr, .count = arr.size } };
+            },
+            .option_type => |opt| {
+                // Auto-register Option as an enum type for this inner type
+                const inner_tag = self.resolveTypeExpr(opt.inner_type.*);
+                self.ensureOptionType(inner_tag);
+                return .{ .enum_type = "Option" };
             },
         };
     }
@@ -1127,7 +1170,7 @@ pub const CodeGen = struct {
         }
     }
 
-    fn lookupMethodReturnType(self: *const CodeGen, type_name: []const u8, method_name: []const u8) TypeTag {
+    fn lookupMethodReturnType(self: *CodeGen, type_name: []const u8, method_name: []const u8) TypeTag {
         for (self.ast.program.decls.items) |decl| {
             switch (decl.decl) {
                 .impl_decl => |impl_decl| {
@@ -1314,7 +1357,7 @@ pub const CodeGen = struct {
         return error.CodeGenError;
     }
 
-    fn lookupFunctionReturnType(self: *const CodeGen, name: []const u8) TypeTag {
+    fn lookupFunctionReturnType(self: *CodeGen, name: []const u8) TypeTag {
         for (self.ast.program.decls.items) |decl| {
             switch (decl.decl) {
                 .function => |fn_decl| {
@@ -1465,5 +1508,6 @@ fn builtinToTypeTag(type_expr: Ast.TypeExpr) CodeGen.TypeTag {
         },
         .named => .i32_type,
         .array_type => .i32_type, // fallback - real resolution happens in CodeGen
+        .option_type => .{ .enum_type = "Option" }, // resolved properly in CodeGen
     };
 }

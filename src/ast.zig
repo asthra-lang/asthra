@@ -252,6 +252,11 @@ pub const Ast = struct {
         builtin: BuiltinType,
         named: []const u8,
         array_type: ArrayTypeExpr,
+        option_type: OptionTypeExpr,
+    };
+
+    pub const OptionTypeExpr = struct {
+        inner_type: *const TypeExpr,
     };
 
     pub const ArrayTypeExpr = struct {

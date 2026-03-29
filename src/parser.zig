@@ -317,6 +317,18 @@ pub const Parser = struct {
 
     fn parseType(self: *Parser) ParseError!Ast.TypeExpr {
         const tag = self.current.tag;
+
+        // Handle Option<T> type
+        if (tag == .keyword_Option) {
+            self.advance(); // consume 'Option'
+            try self.expect(.less); // consume '<'
+            const inner = try self.parseType();
+            try self.expect(.greater); // consume '>'
+            const inner_ptr = self.ast.allocator.create(Ast.TypeExpr) catch return error.ParseError;
+            inner_ptr.* = inner;
+            return .{ .option_type = .{ .inner_type = inner_ptr } };
+        }
+
         if (tag.isTypeKeyword()) {
             const builtin = switch (tag) {
                 .keyword_void => Ast.BuiltinType.void,
@@ -603,9 +615,15 @@ pub const Parser = struct {
     }
 
     fn parsePattern(self: *Parser) ParseError!Ast.Pattern {
-        const first_token = self.current;
-        try self.expect(.identifier);
-        const first_name = first_token.slice(self.source);
+        // Handle Option keyword as a pattern name
+        const first_name = if (self.current.tag == .keyword_Option) blk: {
+            self.advance();
+            break :blk "Option";
+        } else blk: {
+            const first_token = self.current;
+            try self.expect(.identifier);
+            break :blk first_token.slice(self.source);
+        };
 
         if (self.current.tag == .dot) {
             // Enum pattern: EnumName.VariantName or EnumName.VariantName(bindings)
@@ -913,6 +931,11 @@ pub const Parser = struct {
                 }
                 try self.expect(.rbracket);
                 return self.ast.addExpr(.{ .array_literal = .{ .elements = elements } });
+            },
+            // Option used as expression (e.g., Option.Some(42), Option.None())
+            .keyword_Option => {
+                self.advance();
+                return self.ast.addExpr(.{ .identifier = "Option" });
             },
             // Type conversion calls: i32(expr), f64(expr), etc.
             .keyword_i8, .keyword_i16, .keyword_i32, .keyword_i64, .keyword_i128, .keyword_u8, .keyword_u16, .keyword_u32, .keyword_u64, .keyword_u128, .keyword_f32, .keyword_f64, .keyword_usize, .keyword_isize, .keyword_bool => {
@@ -1369,6 +1392,49 @@ test "parse indexed assignment" {
                 .assign => |assign| {
                     try testing.expectEqualStrings("a", assign.target);
                     try testing.expect(assign.target_index != null);
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse Option type and constructors" {
+    var result = try testParse("package main;\npub fn main() -> void { let a: Option<i32> = Option.Some(42); return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("a", vd.name);
+                    switch (vd.type_expr) {
+                        .option_type => |opt| {
+                            try testing.expectEqual(Ast.BuiltinType.i32_type, opt.inner_type.builtin);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse Option return type" {
+    var result = try testParse("package main;\npub fn find(x: i32) -> Option<i32> { return Option.None(); }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            try testing.expectEqualStrings("find", f.name);
+            switch (f.return_type) {
+                .option_type => |opt| {
+                    try testing.expectEqual(Ast.BuiltinType.i32_type, opt.inner_type.builtin);
                 },
                 else => return error.TestUnexpectedResult,
             }

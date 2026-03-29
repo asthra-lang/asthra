@@ -1,0 +1,55 @@
+package main;
+
+pub fn find_positive(x: i32) -> Option<i32> {
+    if x > 0 {
+        return Option.Some(x);
+    }
+    return Option.None();
+}
+
+pub fn main() -> void {
+    let a: Option<i32> = Option.Some(42);
+    let b: Option<i32> = Option.None();
+
+    // Use match to handle options
+    match a {
+        Option.Some(val) => {
+            log("Found:");
+            log(val);
+        }
+        Option.None => {
+            log("Nothing");
+        }
+    }
+
+    match b {
+        Option.Some(val) => {
+            log(val);
+        }
+        Option.None => {
+            log("Nothing");
+        }
+    }
+
+    let result: Option<i32> = find_positive(10);
+    match result {
+        Option.Some(v) => {
+            log(v);
+        }
+        Option.None => {
+            log("No positive");
+        }
+    }
+
+    let result2: Option<i32> = find_positive(-5);
+    match result2 {
+        Option.Some(v) => {
+            log(v);
+        }
+        Option.None => {
+            log("No positive");
+        }
+    }
+
+    return;
+}

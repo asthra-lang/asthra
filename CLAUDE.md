@@ -83,14 +83,13 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 
 - Enum declarations, enum constructors, match statements
 - Fixed-size arrays (`[N]T`), array literals, indexing, `len()` builtin, element assignment
+- `Option<T>` built-in type (`Option.Some(x)`, `Option.None()`, match destructuring)
 
 ## Not Yet Implemented
 
+- `Result<T,E>` error handling
 - Slices (`[]T`)
 - Generics and type parameters
-- Pattern matching (`match`)
-- `Result<T,E>` / `Option<T>`
-- Slices and arrays
 - Tuples
 - FFI (`extern`, `unsafe`, pointer types)
 - `const` declarations and compile-time expressions
