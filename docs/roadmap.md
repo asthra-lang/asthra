@@ -50,18 +50,18 @@ Features defined in `grammar.txt` but not yet fully implemented, plus semantic a
 
 Closing remaining gaps between the grammar spec and implementation, plus compiler hardening.
 
-| # | Example | Features Unlocked |
-|---|---------|-------------------|
+| # | Example | Features Unlocked | Status |
+|---|---------|-------------------|--------|
 | 33 | `generic_impl.ast` | generic impl blocks: `impl Pair<T> { ... }` with monomorphized methods | Done |
 | 34 | `tuple_patterns.ast` | tuple patterns in match: `(a, b) => { ... }`, nested destructuring | Done |
 | 35 | `nested_enum_patterns.ast` | nested enum patterns: `Option.Some(Result.Ok(val)) => { ... }` | Done |
 | 36 | `string_escapes.ast` | escape sequence processing in string literals (`\n`, `\t`, `\\`, `\0`) | Done |
-| 37 | `else_if_chains.ast` | `else if` chains in if-let, match exhaustiveness warnings |
-| 38 | `multi_return.ast` | returning tuples and structs from functions, multi-value return patterns |
-| 39 | `for_arrays.ast` | `for` loops over arrays and slices (not just `range()`) |
-| 40 | `method_chaining.ast` | method call chains: `obj.method1().method2()` on return values |
-| 41 | `nested_structs.ast` | nested struct field access: `a.b.c`, nested struct assignment |
-| 42 | `const_exprs.ast` | binary/unary const expressions: `const X = 2 + 3;`, `const Y = X * 2;` |
+| 37 | `else_if_chains.ast` | `else if` chains in if-let, match exhaustiveness warnings | Done |
+| 38 | `multi_return.ast` | returning tuples and structs from functions, multi-value return patterns | Done |
+| 39 | `for_arrays.ast` | `for` loops over arrays and slices (not just `range()`) | Done |
+| 40 | `method_chaining.ast` | method call chains: `obj.method1().method2()` on return values | Done |
+| 41 | `nested_structs.ast` | nested struct field access: `a.b.c`, nested struct assignment | Done |
+| 42 | `const_exprs.ast` | binary/unary const expressions: `const X = 2 + 3;`, `const Y = X * 2;` | Done |
 | 43 | `error_messages.ast` | improved diagnostics: source context, multiple errors, suggestions |
 | 44 | `debug_info.ast` | DWARF debug info emission for lldb/gdb debugging |
 | 45 | `pthread_spawn.ast` | real pthread-based async: `spawn` creates OS threads, `await` joins |

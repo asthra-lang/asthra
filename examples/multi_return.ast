@@ -1,0 +1,15 @@
+package main;
+
+pub fn divide_with_remainder(a: i32, b: i32) -> (i32, i32) {
+    let quotient: i32 = a / b;
+    let remainder: i32 = a % b;
+    return (quotient, remainder);
+}
+
+pub fn main() -> void {
+    let result: (i32, i32) = divide_with_remainder(17, 5);
+    log(result.0);
+    log(result.1);
+
+    return;
+}

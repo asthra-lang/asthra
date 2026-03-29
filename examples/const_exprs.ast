@@ -1,0 +1,13 @@
+package main;
+
+pub const BASE: i32 = 10;
+pub const MULTIPLIER: i32 = 3;
+pub const RESULT: i32 = BASE * MULTIPLIER;
+pub const OFFSET: i32 = RESULT + 5;
+
+pub fn main() -> void {
+    log(RESULT);
+    log(OFFSET);
+
+    return;
+}

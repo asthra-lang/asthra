@@ -394,7 +394,26 @@ pub fn genIfLetStmt(self: *CodeGen, il_stmt: Ast.IfLetStmt, is_main: bool) CodeG
 pub fn genForStmt(self: *CodeGen, for_stmt: Ast.ForStmt, is_main: bool) CodeGen.GenError!void {
     const function = c.LLVMGetBasicBlockParent(c.LLVMGetInsertBlock(self.builder));
 
-    // Extract range(end) or range(start, end) arguments
+    // Check if the iterable is an array or slice variable
+    const iter_expr = self.ast.getExpr(for_stmt.iterable);
+    switch (iter_expr) {
+        .identifier => |name| {
+            if (self.named_values.get(name)) |nv| {
+                switch (nv.type_tag) {
+                    .array_type => |arr| {
+                        return genForArray(self, for_stmt, arr, nv.alloca, function, is_main);
+                    },
+                    .slice_type => |sl| {
+                        return genForSlice(self, for_stmt, sl, nv.alloca, function, is_main);
+                    },
+                    else => {},
+                }
+            }
+        },
+        else => {},
+    }
+
+    // Fall back to range() iteration
     const range_info = try extractRangeArgs(self, for_stmt.iterable);
 
     const iter_name_z = self.allocator.dupeZ(u8, for_stmt.iter_var) catch return error.CodeGenError;
@@ -439,6 +458,147 @@ pub fn genForStmt(self: *CodeGen, for_stmt: Ast.ForStmt, is_main: bool) CodeGen.
         c.LLVMBuildLoad2(self.builder, c.LLVMInt32TypeInContext(self.context), counter_alloca, "i.load"),
         c.LLVMConstInt(c.LLVMInt32TypeInContext(self.context), 1, 0),
         "inc",
+    );
+    _ = c.LLVMBuildStore(self.builder, next_val, counter_alloca);
+    _ = c.LLVMBuildBr(self.builder, cond_bb);
+
+    c.LLVMPositionBuilderAtEnd(self.builder, exit_bb);
+}
+
+pub fn genForArray(self: *CodeGen, for_stmt: Ast.ForStmt, arr: CodeGen.ArrayTypeTag, array_alloca: c.LLVMValueRef, function: c.LLVMValueRef, is_main: bool) CodeGen.GenError!void {
+    const elem_type = arr.element_type.*;
+    const elem_llvm = self.typeTagToLLVM(elem_type);
+    const array_llvm = self.typeTagToLLVM(.{ .array_type = arr });
+    const count = arr.count;
+
+    // Counter variable (hidden index)
+    const counter_alloca = c.LLVMBuildAlloca(self.builder, c.LLVMInt32TypeInContext(self.context), "for_idx");
+    _ = c.LLVMBuildStore(self.builder, c.LLVMConstInt(c.LLVMInt32TypeInContext(self.context), 0, 0), counter_alloca);
+
+    // Iteration variable (the element)
+    const iter_name_z = self.allocator.dupeZ(u8, for_stmt.iter_var) catch return error.CodeGenError;
+    defer self.allocator.free(iter_name_z);
+    const iter_alloca = c.LLVMBuildAlloca(self.builder, elem_llvm, iter_name_z.ptr);
+
+    self.named_values.put(for_stmt.iter_var, .{
+        .alloca = iter_alloca,
+        .is_mutable = false,
+        .type_tag = elem_type,
+    }) catch {};
+
+    const cond_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "forarr.cond");
+    const body_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "forarr.body");
+    const inc_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "forarr.inc");
+    const exit_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "forarr.exit");
+
+    _ = c.LLVMBuildBr(self.builder, cond_bb);
+
+    c.LLVMPositionBuilderAtEnd(self.builder, cond_bb);
+    const idx_val = c.LLVMBuildLoad2(self.builder, c.LLVMInt32TypeInContext(self.context), counter_alloca, "idx");
+    const cond = c.LLVMBuildICmp(self.builder, c.LLVMIntSLT, idx_val, c.LLVMConstInt(c.LLVMInt32TypeInContext(self.context), count, 0), "arr_cmp");
+    _ = c.LLVMBuildCondBr(self.builder, cond, body_bb, exit_bb);
+
+    try self.loop_stack.append(self.allocator, .{
+        .continue_bb = inc_bb,
+        .break_bb = exit_bb,
+    });
+    defer _ = self.loop_stack.pop();
+
+    c.LLVMPositionBuilderAtEnd(self.builder, body_bb);
+    // Load the current element from the array
+    const cur_idx = c.LLVMBuildLoad2(self.builder, c.LLVMInt32TypeInContext(self.context), counter_alloca, "cur_idx");
+    var gep_idx = [_]c.LLVMValueRef{
+        c.LLVMConstInt(c.LLVMInt64TypeInContext(self.context), 0, 0),
+        cur_idx,
+    };
+    const elem_ptr = c.LLVMBuildGEP2(self.builder, array_llvm, array_alloca, &gep_idx, 2, "arr_elem_ptr");
+    const elem_val = c.LLVMBuildLoad2(self.builder, elem_llvm, elem_ptr, "arr_elem");
+    _ = c.LLVMBuildStore(self.builder, elem_val, iter_alloca);
+
+    try genBlock(self, for_stmt.body, is_main);
+    if (c.LLVMGetBasicBlockTerminator(c.LLVMGetInsertBlock(self.builder)) == null) {
+        _ = c.LLVMBuildBr(self.builder, inc_bb);
+    }
+
+    c.LLVMPositionBuilderAtEnd(self.builder, inc_bb);
+    const next_val = c.LLVMBuildAdd(
+        self.builder,
+        c.LLVMBuildLoad2(self.builder, c.LLVMInt32TypeInContext(self.context), counter_alloca, "idx.load"),
+        c.LLVMConstInt(c.LLVMInt32TypeInContext(self.context), 1, 0),
+        "arr_inc",
+    );
+    _ = c.LLVMBuildStore(self.builder, next_val, counter_alloca);
+    _ = c.LLVMBuildBr(self.builder, cond_bb);
+
+    c.LLVMPositionBuilderAtEnd(self.builder, exit_bb);
+}
+
+pub fn genForSlice(self: *CodeGen, for_stmt: Ast.ForStmt, sl: CodeGen.SliceTypeTag, slice_alloca: c.LLVMValueRef, function: c.LLVMValueRef, is_main: bool) CodeGen.GenError!void {
+    const elem_type = sl.element_type.*;
+    const elem_llvm = self.typeTagToLLVM(elem_type);
+    const slice_llvm = self.sliceLLVMType();
+
+    // Counter variable (hidden index)
+    const counter_alloca = c.LLVMBuildAlloca(self.builder, c.LLVMInt32TypeInContext(self.context), "for_idx");
+    _ = c.LLVMBuildStore(self.builder, c.LLVMConstInt(c.LLVMInt32TypeInContext(self.context), 0, 0), counter_alloca);
+
+    // Load the slice length
+    const len_ptr = c.LLVMBuildStructGEP2(self.builder, slice_llvm, slice_alloca, 1, "slice_len_ptr");
+    const len_val = c.LLVMBuildLoad2(self.builder, c.LLVMInt32TypeInContext(self.context), len_ptr, "slice_len");
+
+    // Load the slice data pointer
+    const ptr_field = c.LLVMBuildStructGEP2(self.builder, slice_llvm, slice_alloca, 0, "slice_ptr_field");
+    const data_ptr = c.LLVMBuildLoad2(self.builder, c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0), ptr_field, "slice_ptr");
+    const typed_data_ptr = c.LLVMBuildBitCast(self.builder, data_ptr, c.LLVMPointerType(elem_llvm, 0), "typed_data_ptr");
+
+    // Iteration variable (the element)
+    const iter_name_z = self.allocator.dupeZ(u8, for_stmt.iter_var) catch return error.CodeGenError;
+    defer self.allocator.free(iter_name_z);
+    const iter_alloca = c.LLVMBuildAlloca(self.builder, elem_llvm, iter_name_z.ptr);
+
+    self.named_values.put(for_stmt.iter_var, .{
+        .alloca = iter_alloca,
+        .is_mutable = false,
+        .type_tag = elem_type,
+    }) catch {};
+
+    const cond_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "forslice.cond");
+    const body_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "forslice.body");
+    const inc_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "forslice.inc");
+    const exit_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "forslice.exit");
+
+    _ = c.LLVMBuildBr(self.builder, cond_bb);
+
+    c.LLVMPositionBuilderAtEnd(self.builder, cond_bb);
+    const idx_val = c.LLVMBuildLoad2(self.builder, c.LLVMInt32TypeInContext(self.context), counter_alloca, "idx");
+    const cond = c.LLVMBuildICmp(self.builder, c.LLVMIntSLT, idx_val, len_val, "slice_cmp");
+    _ = c.LLVMBuildCondBr(self.builder, cond, body_bb, exit_bb);
+
+    try self.loop_stack.append(self.allocator, .{
+        .continue_bb = inc_bb,
+        .break_bb = exit_bb,
+    });
+    defer _ = self.loop_stack.pop();
+
+    c.LLVMPositionBuilderAtEnd(self.builder, body_bb);
+    // Load the current element from the slice
+    const cur_idx = c.LLVMBuildLoad2(self.builder, c.LLVMInt32TypeInContext(self.context), counter_alloca, "cur_idx");
+    var gep_idx = [_]c.LLVMValueRef{cur_idx};
+    const elem_ptr = c.LLVMBuildGEP2(self.builder, elem_llvm, typed_data_ptr, &gep_idx, 1, "slice_elem_ptr");
+    const elem_val = c.LLVMBuildLoad2(self.builder, elem_llvm, elem_ptr, "slice_elem");
+    _ = c.LLVMBuildStore(self.builder, elem_val, iter_alloca);
+
+    try genBlock(self, for_stmt.body, is_main);
+    if (c.LLVMGetBasicBlockTerminator(c.LLVMGetInsertBlock(self.builder)) == null) {
+        _ = c.LLVMBuildBr(self.builder, inc_bb);
+    }
+
+    c.LLVMPositionBuilderAtEnd(self.builder, inc_bb);
+    const next_val = c.LLVMBuildAdd(
+        self.builder,
+        c.LLVMBuildLoad2(self.builder, c.LLVMInt32TypeInContext(self.context), counter_alloca, "idx.load"),
+        c.LLVMConstInt(c.LLVMInt32TypeInContext(self.context), 1, 0),
+        "slice_inc",
     );
     _ = c.LLVMBuildStore(self.builder, next_val, counter_alloca);
     _ = c.LLVMBuildBr(self.builder, cond_bb);
@@ -881,6 +1041,60 @@ pub fn evalConstExpr(self: *CodeGen, expr_idx: Ast.ExprIndex, type_tag: CodeGen.
                 }
             }
             return null;
+        },
+        .identifier => |name| {
+            // Look up previously defined constants
+            if (self.const_values.get(name)) |cv| {
+                const loaded_type = self.typeTagToLLVM(cv.type_tag);
+                // Global constants have an initializer we can use directly
+                const init = c.LLVMGetInitializer(cv.alloca);
+                if (init != null) return init;
+                // Fallback: load from the global (shouldn't happen for constants)
+                _ = loaded_type;
+            }
+            return null;
+        },
+        .binary => |bin| {
+            const lhs_val = evalConstExpr(self, bin.lhs, type_tag) orelse return null;
+            const rhs_val = evalConstExpr(self, bin.rhs, type_tag) orelse return null;
+            const is_float = CodeGen.isTypeTag(type_tag, .f64_type);
+            if (is_float) {
+                // Extract float values, compute in Zig, create new constant
+                var loses_info: c.LLVMBool = 0;
+                const lhs_f = c.LLVMConstRealGetDouble(lhs_val, &loses_info);
+                const rhs_f = c.LLVMConstRealGetDouble(rhs_val, &loses_info);
+                const result_f: f64 = switch (bin.op) {
+                    .add => lhs_f + rhs_f,
+                    .sub => lhs_f - rhs_f,
+                    .mul => lhs_f * rhs_f,
+                    .div => lhs_f / rhs_f,
+                    else => return null,
+                };
+                return c.LLVMConstReal(c.LLVMDoubleTypeInContext(self.context), result_f);
+            }
+            // Integer constant operations
+            return switch (bin.op) {
+                .add => c.LLVMConstAdd(lhs_val, rhs_val),
+                .sub => c.LLVMConstSub(lhs_val, rhs_val),
+                .mul => c.LLVMConstMul(lhs_val, rhs_val),
+                .bit_xor => c.LLVMConstXor(lhs_val, rhs_val),
+                .div, .mod, .bit_and, .bit_or, .shift_left, .shift_right => {
+                    // Extract integer values, compute in Zig, create new constant
+                    const lhs_i = c.LLVMConstIntGetSExtValue(lhs_val);
+                    const rhs_i = c.LLVMConstIntGetSExtValue(rhs_val);
+                    const result_i: i64 = switch (bin.op) {
+                        .div => @divTrunc(lhs_i, rhs_i),
+                        .mod => @rem(lhs_i, rhs_i),
+                        .bit_and => lhs_i & rhs_i,
+                        .bit_or => lhs_i | rhs_i,
+                        .shift_left => lhs_i << @intCast(rhs_i),
+                        .shift_right => lhs_i >> @intCast(rhs_i),
+                        else => unreachable,
+                    };
+                    return c.LLVMConstInt(self.typeTagToLLVM(type_tag), @bitCast(result_i), 0);
+                },
+                else => null,
+            };
         },
         else => return null,
     }

@@ -1,0 +1,20 @@
+package main;
+
+pub fn main() -> void {
+    let a: Option<i32> = Option.None();
+    let b: Option<i32> = Option.Some(99);
+
+    if let Option.Some(x) = a {
+        log(x);
+    } else {
+        log("a is None, checking b");
+        if let Option.Some(y) = b {
+            log("b has value:");
+            log(y);
+        } else {
+            log("both None");
+        }
+    }
+
+    return;
+}

@@ -1,0 +1,26 @@
+package main;
+
+pub struct Builder {
+    pub value: i32
+}
+
+pub impl Builder {
+    pub fn new(v: i32) -> Builder {
+        return Builder { value: v };
+    }
+
+    pub fn add(self, n: i32) -> Builder {
+        return Builder { value: self.value + n };
+    }
+
+    pub fn get(self) -> i32 {
+        return self.value;
+    }
+}
+
+pub fn main() -> void {
+    let result: i32 = Builder::new(10).add(5).add(3).get();
+    log(result);
+
+    return;
+}
