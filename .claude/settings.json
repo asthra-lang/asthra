@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git commit:*)",
+            "command": "zig build 2>&1 || echo '{\"decision\":\"block\",\"reason\":\"zig build failed — fix compilation errors before committing\"}'",
+            "timeout": 120,
+            "statusMessage": "Running zig build..."
+          }
+        ]
+      }
+    ]
+  }
+}
