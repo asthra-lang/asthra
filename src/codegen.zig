@@ -36,6 +36,8 @@ pub const CodeGen = struct {
     strlen_fn: c.LLVMValueRef,
     malloc_fn: c.LLVMValueRef,
     sprintf_fn: c.LLVMValueRef,
+    exit_fn: c.LLVMValueRef,
+    fmt_panic: c.LLVMValueRef,
 
     const StructTypeInfo = struct {
         llvm_type: c.LLVMTypeRef,
@@ -120,6 +122,11 @@ pub const CodeGen = struct {
         const sprintf_type = c.LLVMFunctionType(c.LLVMInt32TypeInContext(context), @constCast(&sprintf_param_types), 2, 1);
         const sprintf_fn = c.LLVMAddFunction(module, "sprintf", sprintf_type);
 
+        // Declare exit: void exit(i32) — noreturn
+        const exit_param_types = [_]c.LLVMTypeRef{c.LLVMInt32TypeInContext(context)};
+        const exit_type = c.LLVMFunctionType(c.LLVMVoidTypeInContext(context), @constCast(&exit_param_types), 1, 0);
+        const exit_fn = c.LLVMAddFunction(module, "exit", exit_type);
+
         // Create format strings — need a temp function to position the builder
         const init_fn_type = c.LLVMFunctionType(c.LLVMVoidTypeInContext(context), null, 0, 0);
         const init_fn = c.LLVMAddFunction(module, "__asthra_init_strings", init_fn_type);
@@ -132,6 +139,7 @@ pub const CodeGen = struct {
         const fmt_char = c.LLVMBuildGlobalStringPtr(builder, "%c\n", "fmt_char");
         const fmt_bool_true = c.LLVMBuildGlobalStringPtr(builder, "true\n", "fmt_bool_true");
         const fmt_bool_false = c.LLVMBuildGlobalStringPtr(builder, "false\n", "fmt_bool_false");
+        const fmt_panic = c.LLVMBuildGlobalStringPtr(builder, "panic: %s\n", "fmt_panic");
 
         // Clean up the init function
         _ = c.LLVMBuildRetVoid(builder);
@@ -160,6 +168,8 @@ pub const CodeGen = struct {
             .strlen_fn = strlen_fn,
             .malloc_fn = malloc_fn,
             .sprintf_fn = sprintf_fn,
+            .exit_fn = exit_fn,
+            .fmt_panic = fmt_panic,
         };
     }
 
@@ -2201,6 +2211,14 @@ pub const CodeGen = struct {
             return self.genLenCall(call_expr);
         }
 
+        if (std.mem.eql(u8, name, "panic")) {
+            return self.genPanicCall(call_expr);
+        }
+
+        if (std.mem.eql(u8, name, "exit")) {
+            return self.genExitCall(call_expr);
+        }
+
         if (std.mem.eql(u8, name, "range")) {
             self.diagnostics.report(.@"error", 0, "range() can only be used in for loops", .{});
             return error.CodeGenError;
@@ -2281,6 +2299,52 @@ pub const CodeGen = struct {
             self.diagnostics.report(.@"error", 0, "cannot log this type", .{});
             return error.CodeGenError;
         }
+
+        return .{ .value = c.LLVMGetUndef(c.LLVMVoidTypeInContext(self.context)), .type_tag = .void_type };
+    }
+
+    fn genPanicCall(self: *CodeGen, call_expr: Ast.CallExpr) GenError!ExprResult {
+        if (call_expr.args.items.len != 1) {
+            self.diagnostics.report(.@"error", 0, "panic() takes exactly 1 argument", .{});
+            return error.CodeGenError;
+        }
+
+        const arg = try self.genExpr(call_expr.args.items[0]);
+        if (!isTypeTag(arg.type_tag, .string_type)) {
+            self.diagnostics.report(.@"error", 0, "panic() requires a string argument", .{});
+            return error.CodeGenError;
+        }
+
+        // Print "panic: <message>\n" via printf
+        const printf_type = c.LLVMGlobalGetValueType(self.printf_fn);
+        const args_arr = [_]c.LLVMValueRef{ self.fmt_panic, arg.value };
+        _ = c.LLVMBuildCall2(self.builder, printf_type, self.printf_fn, @constCast(&args_arr), 2, "");
+
+        // Call exit(1)
+        const exit_type = c.LLVMGlobalGetValueType(self.exit_fn);
+        const exit_args = [_]c.LLVMValueRef{c.LLVMConstInt(c.LLVMInt32TypeInContext(self.context), 1, 0)};
+        _ = c.LLVMBuildCall2(self.builder, exit_type, self.exit_fn, @constCast(&exit_args), 1, "");
+        _ = c.LLVMBuildUnreachable(self.builder);
+
+        return .{ .value = c.LLVMGetUndef(c.LLVMVoidTypeInContext(self.context)), .type_tag = .void_type };
+    }
+
+    fn genExitCall(self: *CodeGen, call_expr: Ast.CallExpr) GenError!ExprResult {
+        if (call_expr.args.items.len != 1) {
+            self.diagnostics.report(.@"error", 0, "exit() takes exactly 1 argument", .{});
+            return error.CodeGenError;
+        }
+
+        const arg = try self.genExpr(call_expr.args.items[0]);
+        if (!isTypeTag(arg.type_tag, .i32_type)) {
+            self.diagnostics.report(.@"error", 0, "exit() requires an i32 argument", .{});
+            return error.CodeGenError;
+        }
+
+        const exit_type = c.LLVMGlobalGetValueType(self.exit_fn);
+        const exit_args = [_]c.LLVMValueRef{arg.value};
+        _ = c.LLVMBuildCall2(self.builder, exit_type, self.exit_fn, @constCast(&exit_args), 1, "");
+        _ = c.LLVMBuildUnreachable(self.builder);
 
         return .{ .value = c.LLVMGetUndef(c.LLVMVoidTypeInContext(self.context)), .type_tag = .void_type };
     }

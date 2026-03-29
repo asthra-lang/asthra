@@ -1,0 +1,17 @@
+package main;
+
+pub fn check_positive(x: i32) -> void {
+    if x < 0 {
+        panic("Value must be positive!");
+    }
+    log("Value is positive");
+    return;
+}
+
+pub fn main() -> void {
+    check_positive(42);
+
+    // Test exit
+    log("About to exit");
+    exit(0);
+}
