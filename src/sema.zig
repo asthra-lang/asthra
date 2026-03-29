@@ -120,6 +120,7 @@ pub const SemanticAnalyzer = struct {
                         }) catch {};
                     }
                 },
+                .trait_decl => {},
             }
         }
 

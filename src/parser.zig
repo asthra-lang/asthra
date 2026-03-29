@@ -175,6 +175,16 @@ pub const Parser = struct {
             };
         }
 
+        if (self.current.tag == .keyword_trait) {
+            const trait_decl = try self.parseTraitDecl();
+            return .{
+                .visibility = visibility,
+                .decl = .{ .trait_decl = trait_decl },
+                .start = start,
+                .annotations = annotations,
+            };
+        }
+
         if (self.current.tag == .keyword_enum) {
             const enum_decl = try self.parseEnumDecl();
             return .{
@@ -467,9 +477,20 @@ pub const Parser = struct {
     fn parseImplDecl(self: *Parser) ParseError!Ast.ImplDecl {
         self.advance(); // consume 'impl'
 
-        const name_token = self.current;
+        const first_name_token = self.current;
         try self.expect(.identifier);
-        const type_name = name_token.slice(self.source);
+        const first_name = first_name_token.slice(self.source);
+
+        // Check for `impl Trait for Type` syntax
+        var type_name: []const u8 = first_name;
+        var trait_name: ?[]const u8 = null;
+        if (self.current.tag == .keyword_for) {
+            self.advance(); // consume 'for'
+            trait_name = first_name;
+            const type_token = self.current;
+            try self.expect(.identifier);
+            type_name = type_token.slice(self.source);
+        }
 
         try self.expect(.lbrace);
         var methods = std.ArrayList(Ast.MethodDecl){};
@@ -526,7 +547,65 @@ pub const Parser = struct {
         }
 
         try self.expect(.rbrace);
-        return .{ .type_name = type_name, .methods = methods };
+        return .{ .type_name = type_name, .trait_name = trait_name, .methods = methods };
+    }
+
+    fn parseTraitDecl(self: *Parser) ParseError!Ast.TraitDecl {
+        self.advance(); // consume 'trait'
+
+        const name_token = self.current;
+        try self.expect(.identifier);
+        const name = name_token.slice(self.source);
+
+        try self.expect(.lbrace);
+        var methods = std.ArrayList(Ast.TraitMethodSig){};
+
+        while (self.current.tag != .rbrace and self.current.tag != .eof) {
+            try self.expect(.keyword_fn);
+            const method_name_token = self.current;
+            try self.expect(.identifier);
+            const method_name = method_name_token.slice(self.source);
+
+            try self.expect(.lparen);
+            var has_self = false;
+            var params = std.ArrayList(Ast.Param){};
+
+            if (self.current.tag == .keyword_self) {
+                has_self = true;
+                self.advance();
+                if (self.current.tag == .comma) {
+                    self.advance();
+                    while (self.current.tag != .rparen) {
+                        const param = try self.parseParam();
+                        try params.append(self.ast.allocator, param);
+                        if (self.current.tag != .comma) break;
+                        self.advance();
+                    }
+                }
+            } else if (self.current.tag != .rparen) {
+                while (true) {
+                    const param = try self.parseParam();
+                    try params.append(self.ast.allocator, param);
+                    if (self.current.tag != .comma) break;
+                    self.advance();
+                }
+            }
+            try self.expect(.rparen);
+
+            try self.expect(.arrow);
+            const return_type = try self.parseType();
+            try self.expect(.semicolon);
+
+            try methods.append(self.ast.allocator, .{
+                .name = method_name,
+                .has_self = has_self,
+                .params = params,
+                .return_type = return_type,
+            });
+        }
+
+        try self.expect(.rbrace);
+        return .{ .name = name, .methods = methods };
     }
 
     fn parseParam(self: *Parser) ParseError!Ast.Param {

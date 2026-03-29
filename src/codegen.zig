@@ -419,6 +419,7 @@ pub const CodeGen = struct {
                 .extern_decl => {},
                 .const_decl => {},
                 .type_alias => {},
+                .trait_decl => {}, // Traits are compile-time only; no codegen needed
             }
         }
 

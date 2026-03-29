@@ -45,6 +45,7 @@ pub const Ast = struct {
         extern_decl: ExternDecl,
         const_decl: ConstDecl,
         type_alias: TypeAliasDecl,
+        trait_decl: TraitDecl,
     };
 
     pub const TypeAliasDecl = struct {
@@ -78,7 +79,20 @@ pub const Ast = struct {
 
     pub const ImplDecl = struct {
         type_name: []const u8,
+        trait_name: ?[]const u8 = null,
         methods: std.ArrayList(MethodDecl),
+    };
+
+    pub const TraitDecl = struct {
+        name: []const u8,
+        methods: std.ArrayList(TraitMethodSig),
+    };
+
+    pub const TraitMethodSig = struct {
+        name: []const u8,
+        has_self: bool,
+        params: std.ArrayList(Param),
+        return_type: TypeExpr,
     };
 
     pub const MethodDecl = struct {

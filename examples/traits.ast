@@ -1,0 +1,37 @@
+package main;
+
+pub trait Shape {
+    fn area(self) -> f64;
+}
+
+pub struct Circle {
+    pub radius: f64
+}
+
+pub struct Rect {
+    pub width: f64,
+    pub height: f64
+}
+
+pub impl Shape for Circle {
+    pub fn area(self) -> f64 {
+        return 3.14159 * self.radius * self.radius;
+    }
+}
+
+pub impl Shape for Rect {
+    pub fn area(self) -> f64 {
+        return self.width * self.height;
+    }
+}
+
+pub fn main() -> void {
+    let c: Circle = Circle { radius: 5.0 };
+    log(c.area());
+
+    let r: Rect = Rect { width: 4.0, height: 3.0 };
+    log(r.area());
+
+    log("traits: all tests passed");
+    return;
+}

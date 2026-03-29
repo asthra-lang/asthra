@@ -55,8 +55,12 @@ TypeParams     <- '<' TypeParam (',' TypeParam)* '>'        # Generic type param
 TypeParam      <- SimpleIdent                               # Type parameter name
 TypeList       <- Type (',' Type)*                          # Comma-separated type list
 
+# Trait declarations (compile-time interface contracts)
+TraitDecl      <- 'trait' SimpleIdent '{' TraitMethodSig* '}'  # Trait with required method signatures
+TraitMethodSig <- 'fn' SimpleIdent '(' MethodParamList ')' '->' Type ';'  # Method signature (no body)
+
 # Implementation blocks for struct methods (object-oriented features)
-ImplDecl       <- 'impl' SimpleIdent '{' MethodDecl* '}'    # Method implementations for structs (requires visibility modifier)
+ImplDecl       <- 'impl' SimpleIdent ('for' SimpleIdent)? '{' MethodDecl* '}'  # Inherent impl or trait impl: impl Trait for Type { }
 MethodDecl     <- VisibilityModifier 'fn' SimpleIdent '(' MethodParamList ')' '->' Type Block  # Instance methods with explicit parameters required
 MethodParamList<- SelfParam (',' Param)* / ParamList        # Methods with 'self' or regular functions
 SelfParam      <- 'self'                                    # Instance method self parameter (always immutable)
