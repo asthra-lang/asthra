@@ -17,6 +17,12 @@ for src in "$EXAMPLES_DIR"/*.ast; do
     name=$(basename "$src" .ast)
     out="/tmp/asthra_test_${name}_$$"
 
+    # Skip library files (non-main packages) — they are imported by other examples
+    if ! grep -q '^package main;' "$src"; then
+        printf "%-20s SKIP (library)\n" "$name"
+        continue
+    fi
+
     printf "%-20s " "$name"
 
     # Compile

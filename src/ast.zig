@@ -12,6 +12,7 @@ pub const Ast = struct {
         package_name: []const u8 = "",
         imports: std.ArrayList(ImportDecl) = .{},
         decls: std.ArrayList(TopLevelDecl) = .{},
+        import_aliases: std.ArrayList([]const u8) = .{},
     };
 
     pub const ImportDecl = struct {

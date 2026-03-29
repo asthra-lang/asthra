@@ -38,6 +38,7 @@ pub const CodeGen = struct {
     sprintf_fn: c.LLVMValueRef,
     exit_fn: c.LLVMValueRef,
     fmt_panic: c.LLVMValueRef,
+    imported_fn_return_types: std.StringHashMap(TypeTag),
 
     const StructTypeInfo = struct {
         llvm_type: c.LLVMTypeRef,
@@ -170,6 +171,7 @@ pub const CodeGen = struct {
             .sprintf_fn = sprintf_fn,
             .exit_fn = exit_fn,
             .fmt_panic = fmt_panic,
+            .imported_fn_return_types = std.StringHashMap(TypeTag).init(allocator),
         };
     }
 
@@ -201,6 +203,7 @@ pub const CodeGen = struct {
         }
         self.enum_types.deinit();
         self.generic_enum_decls.deinit();
+        self.imported_fn_return_types.deinit();
     }
 
     pub fn generate(self: *CodeGen) GenError!void {
@@ -242,6 +245,30 @@ pub const CodeGen = struct {
             });
             c.LLVMDisposeMessage(err_msg);
             return error.CodeGenError;
+        }
+    }
+
+    /// Generate code for an imported module's public functions.
+    /// Temporarily swaps the AST pointer so genFunction can resolve expressions.
+    pub fn generateImportedModule(self: *CodeGen, imported_ast: *const Ast) GenError!void {
+        const saved_ast = self.ast;
+        self.ast = imported_ast;
+        defer self.ast = saved_ast;
+
+        // Generate public functions from the imported module
+        for (imported_ast.program.decls.items) |decl| {
+            if (decl.visibility != .public) continue;
+            switch (decl.decl) {
+                .function => |fn_decl| {
+                    // Skip main functions from imported modules
+                    if (std.mem.eql(u8, fn_decl.name, "main")) continue;
+                    // Record the return type for lookups
+                    const ret_tag = self.resolveTypeExpr(fn_decl.return_type);
+                    self.imported_fn_return_types.put(fn_decl.name, ret_tag) catch {};
+                    try self.genFunction(&fn_decl);
+                },
+                else => {},
+            }
         }
     }
 
@@ -2038,6 +2065,10 @@ pub const CodeGen = struct {
                 if (self.enum_types.contains(name) or self.generic_enum_decls.contains(name)) {
                     return self.genEnumConstructor(name, mc.method, &mc.args);
                 }
+                // Check if this is an import alias call: alias.function(args)
+                if (self.isImportAlias(name)) {
+                    return self.genImportCall(mc.method, &mc.args);
+                }
             },
             else => {},
         }
@@ -2087,6 +2118,45 @@ pub const CodeGen = struct {
             const result = c.LLVMBuildCall2(self.builder, fn_type, function, args.items.ptr, @intCast(args.items.len), "mcall");
             // Look up method return type from AST
             const ret_tag = self.lookupMethodReturnType(struct_name, mc.method);
+            return .{ .value = result, .type_tag = ret_tag };
+        }
+    }
+
+    fn isImportAlias(self: *const CodeGen, name: []const u8) bool {
+        for (self.ast.program.import_aliases.items) |alias| {
+            if (std.mem.eql(u8, alias, name)) return true;
+        }
+        return false;
+    }
+
+    fn genImportCall(self: *CodeGen, func_name: []const u8, call_args: *const std.ArrayList(Ast.ExprIndex)) GenError!ExprResult {
+        const name_z = self.allocator.dupeZ(u8, func_name) catch return error.CodeGenError;
+        defer self.allocator.free(name_z);
+
+        const function = c.LLVMGetNamedFunction(self.module, name_z.ptr);
+        if (function == null) {
+            self.diagnostics.report(.@"error", 0, "undefined imported function '{s}'", .{func_name});
+            return error.CodeGenError;
+        }
+
+        var args = std.ArrayList(c.LLVMValueRef){};
+        defer args.deinit(self.allocator);
+        for (call_args.items) |arg_idx| {
+            const arg_val = try self.genExpr(arg_idx);
+            try args.append(self.allocator, arg_val.value);
+        }
+
+        const fn_type = c.LLVMGlobalGetValueType(function);
+        const ret_type = c.LLVMGetReturnType(fn_type);
+        const is_void = c.LLVMGetTypeKind(ret_type) == c.LLVMVoidTypeKind;
+
+        if (is_void) {
+            _ = c.LLVMBuildCall2(self.builder, fn_type, function, args.items.ptr, @intCast(args.items.len), "");
+            return .{ .value = c.LLVMGetUndef(c.LLVMVoidTypeInContext(self.context)), .type_tag = .void_type };
+        } else {
+            const result = c.LLVMBuildCall2(self.builder, fn_type, function, args.items.ptr, @intCast(args.items.len), "icall");
+            // Look up return type from imported function map, fallback to i32
+            const ret_tag = self.imported_fn_return_types.get(func_name) orelse self.lookupFunctionReturnType(func_name);
             return .{ .value = result, .type_tag = ret_tag };
         }
     }

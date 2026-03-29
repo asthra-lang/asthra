@@ -1,0 +1,13 @@
+package main;
+
+import "./math_lib" as math;
+
+pub fn main() -> void {
+    let s: i32 = math.square(5);
+    log(s);
+
+    let c: i32 = math.cube(3);
+    log(c);
+
+    return;
+}

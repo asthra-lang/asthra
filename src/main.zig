@@ -70,9 +70,31 @@ pub fn main() !void {
         std.process.exit(1);
     }
 
+    // Resolve imports: parse imported files into separate ASTs
+    var imported_modules = std.ArrayList(ImportedModule){};
+    defer imported_modules.deinit(allocator);
+
+    resolveImports(allocator, ast_allocator, &ast, &diagnostics, source_path, &imported_modules) catch |err| {
+        writeAll("error: import resolution failed: {}\n", .{err});
+        std.process.exit(1);
+    };
+
+    if (diagnostics.hasErrors()) {
+        diagnostics.printAll();
+        std.process.exit(1);
+    }
+
     // Codegen
     var codegen = CodeGen.init(allocator, "asthra_module", &diagnostics, &ast);
     defer codegen.deinit();
+
+    // Generate code for imported modules first
+    for (imported_modules.items) |mod| {
+        codegen.generateImportedModule(mod.ast) catch {
+            diagnostics.printAll();
+            std.process.exit(1);
+        };
+    }
 
     codegen.generate() catch {
         diagnostics.printAll();
@@ -112,4 +134,59 @@ pub fn main() !void {
     std.fs.cwd().deleteFile(obj_path) catch {};
 
     writeOut("Compiled successfully: {s}\n", .{output_path});
+}
+
+const ImportedModule = struct {
+    alias: []const u8,
+    ast: *Ast,
+    source: []const u8,
+};
+
+fn resolveImports(gpa: std.mem.Allocator, ast_allocator: std.mem.Allocator, ast: *Ast, diagnostics: *Diagnostics, source_path: []const u8, imported_modules: *std.ArrayList(ImportedModule)) !void {
+    // Get the directory of the source file
+    const source_dir = std.fs.path.dirname(source_path) orelse ".";
+
+    for (ast.program.imports.items) |import_decl| {
+        const path = import_decl.path;
+
+        // Only handle relative imports (starting with ./)
+        if (!std.mem.startsWith(u8, path, "./")) {
+            continue;
+        }
+
+        // Build the full file path: source_dir + relative_path + .ast
+        const import_path = try std.fmt.allocPrint(gpa, "{s}/{s}.ast", .{ source_dir, path });
+        defer gpa.free(import_path);
+
+        // Read the imported file — keep source alive for the AST (arena allocated)
+        const import_source = std.fs.cwd().readFileAlloc(ast_allocator, import_path, 1024 * 1024) catch |err| {
+            diagnostics.report(.@"error", 0, "cannot read imported file '{s}': {}", .{ import_path, err });
+            return;
+        };
+
+        // Parse the imported file
+        var import_diagnostics = Diagnostics.init(gpa, import_source, import_path);
+        defer import_diagnostics.deinit();
+
+        const import_ast = try ast_allocator.create(Ast);
+        import_ast.* = Ast.init(ast_allocator);
+        var import_parser = Parser.init(import_source, import_ast, &import_diagnostics);
+        import_parser.parse() catch {};
+
+        if (import_diagnostics.hasErrors()) {
+            import_diagnostics.printAll();
+            diagnostics.report(.@"error", 0, "errors in imported file '{s}'", .{import_path});
+            return;
+        }
+
+        // Register the import alias
+        const alias = import_decl.alias orelse std.fs.path.stem(path[2..]); // strip "./" prefix for stem
+        try ast.program.import_aliases.append(ast_allocator, alias);
+
+        try imported_modules.append(gpa, .{
+            .alias = alias,
+            .ast = import_ast,
+            .source = import_source,
+        });
+    }
 }
