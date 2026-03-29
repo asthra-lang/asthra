@@ -490,6 +490,16 @@ pub const CodeGen = struct {
             return error.CodeGenError;
         }
 
+        // Type conversion calls: i32(expr), f64(expr), etc.
+        if (self.getTypeConversion(name)) |target_type| {
+            if (call_expr.args.items.len != 1) {
+                self.diagnostics.report(.@"error", 0, "type conversion takes exactly 1 argument", .{});
+                return error.CodeGenError;
+            }
+            const arg = try self.genExpr(call_expr.args.items[0]);
+            return self.genTypeConversion(arg, target_type);
+        }
+
         const name_z = self.allocator.dupeZ(u8, name) catch return error.CodeGenError;
         defer self.allocator.free(name_z);
 
@@ -553,6 +563,50 @@ pub const CodeGen = struct {
         }
 
         return .{ .value = c.LLVMGetUndef(c.LLVMVoidTypeInContext(self.context)), .type_tag = .void_type };
+    }
+
+    fn getTypeConversion(_: *const CodeGen, name: []const u8) ?TypeTag {
+        if (std.mem.eql(u8, name, "i32")) return .i32_type;
+        if (std.mem.eql(u8, name, "i64")) return .i64_type;
+        if (std.mem.eql(u8, name, "f64")) return .f64_type;
+        if (std.mem.eql(u8, name, "bool")) return .bool_type;
+        return null;
+    }
+
+    fn genTypeConversion(self: *CodeGen, src: ExprResult, target: TypeTag) GenError!ExprResult {
+        if (src.type_tag == target) return src;
+
+        const value = switch (target) {
+            .f64_type => switch (src.type_tag) {
+                .i32_type, .i64_type => c.LLVMBuildSIToFP(self.builder, src.value, c.LLVMDoubleTypeInContext(self.context), "sitofp"),
+                else => {
+                    self.diagnostics.report(.@"error", 0, "cannot convert to f64", .{});
+                    return error.CodeGenError;
+                },
+            },
+            .i32_type => switch (src.type_tag) {
+                .f64_type => c.LLVMBuildFPToSI(self.builder, src.value, c.LLVMInt32TypeInContext(self.context), "fptosi"),
+                .i64_type => c.LLVMBuildTrunc(self.builder, src.value, c.LLVMInt32TypeInContext(self.context), "trunc"),
+                else => {
+                    self.diagnostics.report(.@"error", 0, "cannot convert to i32", .{});
+                    return error.CodeGenError;
+                },
+            },
+            .i64_type => switch (src.type_tag) {
+                .f64_type => c.LLVMBuildFPToSI(self.builder, src.value, c.LLVMInt64TypeInContext(self.context), "fptosi"),
+                .i32_type => c.LLVMBuildSExt(self.builder, src.value, c.LLVMInt64TypeInContext(self.context), "sext"),
+                else => {
+                    self.diagnostics.report(.@"error", 0, "cannot convert to i64", .{});
+                    return error.CodeGenError;
+                },
+            },
+            else => {
+                self.diagnostics.report(.@"error", 0, "unsupported type conversion", .{});
+                return error.CodeGenError;
+            },
+        };
+
+        return .{ .value = value, .type_tag = target };
     }
 
     fn typeTagToLLVM(self: *const CodeGen, tag: TypeTag) c.LLVMTypeRef {

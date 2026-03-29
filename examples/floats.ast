@@ -1,0 +1,45 @@
+package main;
+
+pub fn main() -> void {
+    // Float literals
+    let pi: f64 = 3.14159;
+    let half: f64 = 0.5;
+    log(pi);
+    log(half);
+
+    // Float arithmetic
+    let sum: f64 = pi + half;
+    log(sum);
+
+    let product: f64 = pi * 2.0;
+    log(product);
+
+    let diff: f64 = pi - half;
+    log(diff);
+
+    let quotient: f64 = pi / 2.0;
+    log(quotient);
+
+    // Type conversion: int to float
+    let x: i32 = 42;
+    let x_float: f64 = f64(x);
+    log(x_float);
+
+    // Type conversion: float to int (truncates)
+    let y: f64 = 3.99;
+    let y_int: i32 = i32(y);
+    log(y_int);
+
+    // Float comparison
+    let a: f64 = 1.5;
+    let b: f64 = 2.5;
+    if a < b {
+        log("a is less than b");
+    }
+
+    // Float negation
+    let neg: f64 = -pi;
+    log(neg);
+
+    return;
+}

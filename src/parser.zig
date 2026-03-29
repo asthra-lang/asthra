@@ -832,3 +832,53 @@ test "parse continue statement" {
         },
     }
 }
+
+test "parse float literal" {
+    var result = try testParse("package main;\npub fn main() -> void { let x: f64 = 3.14; return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("x", vd.name);
+                    try testing.expectEqual(Ast.BuiltinType.f64_type, vd.type_expr.builtin);
+                    const expr = result.ast.getExpr(vd.init_expr);
+                    switch (expr) {
+                        .float_literal => |val| try testing.expectApproxEqAbs(3.14, val, 0.001),
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
+
+test "parse type conversion call" {
+    var result = try testParse("package main;\npub fn main() -> void { let x: f64 = f64(42); return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    const expr = result.ast.getExpr(vd.init_expr);
+                    switch (expr) {
+                        .call => |call| {
+                            const callee = result.ast.getExpr(call.callee);
+                            switch (callee) {
+                                .identifier => |name| try testing.expectEqualStrings("f64", name),
+                                else => return error.TestUnexpectedResult,
+                            }
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+    }
+}
