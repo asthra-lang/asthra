@@ -356,6 +356,20 @@ pub const Parser = struct {
         try self.expect(.identifier);
         const name = name_token.slice(self.source);
 
+        // Parse optional type parameters: <T, U, ...>
+        var type_params = std.ArrayList([]const u8){};
+        if (self.current.tag == .less) {
+            self.advance(); // consume '<'
+            while (true) {
+                const tp_token = self.current;
+                try self.expect(.identifier);
+                try type_params.append(self.ast.allocator, tp_token.slice(self.source));
+                if (self.current.tag != .comma) break;
+                self.advance(); // consume ','
+            }
+            try self.expect(.greater);
+        }
+
         try self.expect(.lbrace);
         var variants = std.ArrayList(Ast.EnumVariant){};
 
@@ -398,7 +412,7 @@ pub const Parser = struct {
         }
 
         try self.expect(.rbrace);
-        return .{ .name = name, .variants = variants };
+        return .{ .name = name, .type_params = type_params, .variants = variants };
     }
 
     fn parseConstDecl(self: *Parser) ParseError!Ast.ConstDecl {
@@ -3005,5 +3019,89 @@ test "parse if let with Result.Ok" {
                 else => return error.TestUnexpectedResult,
             }
         },
+    }
+}
+
+test "parse generic enum declaration" {
+    var result = try testParse("package main;\npub enum Either<L, R> { pub Left(L), pub Right(R) }\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    try testing.expectEqual(@as(usize, 2), result.ast.program.decls.items.len);
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .enum_decl => |ed| {
+            try testing.expectEqualStrings("Either", ed.name);
+            try testing.expectEqual(@as(usize, 2), ed.type_params.items.len);
+            try testing.expectEqualStrings("L", ed.type_params.items[0]);
+            try testing.expectEqualStrings("R", ed.type_params.items[1]);
+            try testing.expectEqual(@as(usize, 2), ed.variants.items.len);
+            try testing.expectEqualStrings("Left", ed.variants.items[0].name);
+            try testing.expectEqualStrings("Right", ed.variants.items[1].name);
+            try testing.expectEqual(@as(usize, 1), ed.variants.items[0].data_types.items.len);
+            try testing.expectEqual(@as(usize, 1), ed.variants.items[1].data_types.items.len);
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse generic enum with single type param" {
+    var result = try testParse("package main;\npub enum Wrapper<T> { pub Value(T), pub Empty }\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .enum_decl => |ed| {
+            try testing.expectEqualStrings("Wrapper", ed.name);
+            try testing.expectEqual(@as(usize, 1), ed.type_params.items.len);
+            try testing.expectEqualStrings("T", ed.type_params.items[0]);
+            try testing.expectEqual(@as(usize, 2), ed.variants.items.len);
+            try testing.expectEqualStrings("Value", ed.variants.items[0].name);
+            try testing.expectEqual(@as(usize, 1), ed.variants.items[0].data_types.items.len);
+            try testing.expectEqualStrings("Empty", ed.variants.items[1].name);
+            try testing.expectEqual(@as(usize, 0), ed.variants.items[1].data_types.items.len);
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse non-generic enum still works" {
+    var result = try testParse("package main;\npub enum Color { pub Red, pub Green, pub Blue }\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .enum_decl => |ed| {
+            try testing.expectEqualStrings("Color", ed.name);
+            try testing.expectEqual(@as(usize, 0), ed.type_params.items.len);
+            try testing.expectEqual(@as(usize, 3), ed.variants.items.len);
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse generic enum type in variable declaration" {
+    var result = try testParse("package main;\npub fn main() -> void { let a: Either<i32, string> = Either.Left(42); return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            switch (f.body.stmts.items[0]) {
+                .var_decl => |vd| {
+                    try testing.expectEqualStrings("a", vd.name);
+                    switch (vd.type_expr) {
+                        .generic_type => |gt| {
+                            try testing.expectEqualStrings("Either", gt.name);
+                            try testing.expectEqual(@as(usize, 2), gt.type_args.items.len);
+                            try testing.expectEqual(Ast.BuiltinType.i32_type, gt.type_args.items[0].builtin);
+                            try testing.expectEqual(Ast.BuiltinType.string_type, gt.type_args.items[1].builtin);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
     }
 }

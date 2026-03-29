@@ -31,6 +31,7 @@ pub const CodeGen = struct {
     generic_struct_decls: std.StringHashMap(*const Ast.StructDecl),
     monomorphized_names: std.ArrayList([]const u8) = .{},
     enum_types: std.StringHashMap(EnumTypeInfo),
+    generic_enum_decls: std.StringHashMap(*const Ast.EnumDecl),
     strlen_fn: c.LLVMValueRef,
     malloc_fn: c.LLVMValueRef,
     sprintf_fn: c.LLVMValueRef,
@@ -142,6 +143,7 @@ pub const CodeGen = struct {
             .struct_types = std.StringHashMap(StructTypeInfo).init(allocator),
             .generic_struct_decls = std.StringHashMap(*const Ast.StructDecl).init(allocator),
             .enum_types = std.StringHashMap(EnumTypeInfo).init(allocator),
+            .generic_enum_decls = std.StringHashMap(*const Ast.EnumDecl).init(allocator),
             .diagnostics = diagnostics,
             .allocator = allocator,
             .ast = ast,
@@ -184,6 +186,7 @@ pub const CodeGen = struct {
             self.allocator.free(entry.value_ptr.variant_data_types);
         }
         self.enum_types.deinit();
+        self.generic_enum_decls.deinit();
     }
 
     pub fn generate(self: *CodeGen) GenError!void {
@@ -326,6 +329,83 @@ pub const CodeGen = struct {
         return mangled_name;
     }
 
+    fn monomorphizeEnum(self: *CodeGen, generic_name: []const u8, type_args: []const Ast.TypeExpr) GenError![]const u8 {
+        // Build the mangled name: e.g., "Either_i32_string"
+        var name_buf = std.ArrayList(u8){};
+        defer name_buf.deinit(self.allocator);
+        name_buf.appendSlice(self.allocator, generic_name) catch return error.CodeGenError;
+        for (type_args) |ta| {
+            name_buf.append(self.allocator, '_') catch return error.CodeGenError;
+            const type_name = self.typeExprName(ta);
+            name_buf.appendSlice(self.allocator, type_name) catch return error.CodeGenError;
+        }
+        // Check if already monomorphized
+        if (self.enum_types.getKey(name_buf.items)) |existing_key| {
+            return existing_key;
+        }
+
+        const mangled_name = self.allocator.dupe(u8, name_buf.items) catch return error.CodeGenError;
+        self.monomorphized_names.append(self.allocator, mangled_name) catch {};
+
+        // Look up the generic enum declaration
+        const ed = self.generic_enum_decls.get(generic_name) orelse {
+            self.diagnostics.report(.@"error", 0, "undefined generic enum '{s}'", .{generic_name});
+            return error.CodeGenError;
+        };
+
+        // Build type parameter substitution map
+        var type_map = std.StringHashMap(TypeTag).init(self.allocator);
+        defer type_map.deinit();
+        for (ed.type_params.items, 0..) |tp, i| {
+            if (i < type_args.len) {
+                const resolved = self.resolveTypeExpr(type_args[i]);
+                type_map.put(tp, resolved) catch return error.CodeGenError;
+            }
+        }
+
+        // Generate the concrete enum type with substituted variant data types
+        const variant_count: usize = ed.variants.items.len;
+        var variant_names = self.allocator.alloc([]const u8, variant_count) catch return error.CodeGenError;
+        var variant_data_types = self.allocator.alloc([]const TypeTag, variant_count) catch return error.CodeGenError;
+
+        var max_payload_size: usize = 0;
+        for (ed.variants.items, 0..) |variant, i| {
+            variant_names[i] = variant.name;
+            const dt_count = variant.data_types.items.len;
+            var dts = self.allocator.alloc(TypeTag, dt_count) catch return error.CodeGenError;
+            var size: usize = 0;
+            for (variant.data_types.items, 0..) |dt, j| {
+                dts[j] = self.resolveTypeExprWithSubst(dt, &type_map);
+                size += 8;
+            }
+            variant_data_types[i] = dts;
+            if (size > max_payload_size) max_payload_size = size;
+        }
+
+        // Enum LLVM type: { i32 tag, [max_payload_size x i8] data }
+        var field_types: [2]c.LLVMTypeRef = undefined;
+        field_types[0] = c.LLVMInt32TypeInContext(self.context);
+        if (max_payload_size > 0) {
+            field_types[1] = c.LLVMArrayType(c.LLVMInt8TypeInContext(self.context), @intCast(max_payload_size));
+        } else {
+            field_types[1] = c.LLVMArrayType(c.LLVMInt8TypeInContext(self.context), 0);
+        }
+
+        const name_z = self.allocator.dupeZ(u8, mangled_name) catch return error.CodeGenError;
+        defer self.allocator.free(name_z);
+
+        const enum_type = c.LLVMStructCreateNamed(self.context, name_z.ptr);
+        c.LLVMStructSetBody(enum_type, &field_types, 2, 0);
+
+        self.enum_types.put(mangled_name, .{
+            .llvm_type = enum_type,
+            .variant_names = variant_names,
+            .variant_data_types = variant_data_types,
+        }) catch {};
+
+        return mangled_name;
+    }
+
     fn typeExprName(_: *CodeGen, type_expr: Ast.TypeExpr) []const u8 {
         return switch (type_expr) {
             .builtin => |b| switch (b) {
@@ -448,6 +528,13 @@ pub const CodeGen = struct {
     }
 
     fn genEnumType(self: *CodeGen, ed: *const Ast.EnumDecl) GenError!void {
+        // If this enum has type parameters, it's a generic enum template.
+        // Don't generate an LLVM type yet - it will be monomorphized on demand.
+        if (ed.type_params.items.len > 0) {
+            self.generic_enum_decls.put(ed.name, ed) catch {};
+            return;
+        }
+
         const name_z = self.allocator.dupeZ(u8, ed.name) catch return error.CodeGenError;
         defer self.allocator.free(name_z);
 
@@ -564,7 +651,53 @@ pub const CodeGen = struct {
     }
 
     fn genEnumConstructor(self: *CodeGen, enum_name: []const u8, variant_name: []const u8, args: *const std.ArrayList(Ast.ExprIndex)) GenError!ExprResult {
-        const info = self.enum_types.get(enum_name) orelse {
+        // Generate all arg values upfront (needed for type inference with generic enums)
+        var arg_vals = std.ArrayList(ExprResult){};
+        defer arg_vals.deinit(self.allocator);
+        for (args.items) |arg_idx| {
+            const val = try self.genExpr(arg_idx);
+            try arg_vals.append(self.allocator, val);
+        }
+
+        // For generic enums, resolve to the correct monomorphized version
+        const resolved_name = if (self.enum_types.contains(enum_name))
+            enum_name
+        else if (self.generic_enum_decls.contains(enum_name)) blk: {
+            // Search through monomorphized enum types to find a match
+            var it = self.enum_types.iterator();
+            while (it.next()) |entry| {
+                const key = entry.key_ptr.*;
+                if (std.mem.startsWith(u8, key, enum_name) and key.len > enum_name.len and key[enum_name.len] == '_') {
+                    const einfo = entry.value_ptr.*;
+                    // Find the variant in this instantiation
+                    for (einfo.variant_names, 0..) |vn, vi| {
+                        if (std.mem.eql(u8, vn, variant_name)) {
+                            const data_types = einfo.variant_data_types[vi];
+                            if (data_types.len == arg_vals.items.len) {
+                                var match = true;
+                                for (data_types, 0..) |dt, di| {
+                                    const dt_tag: @typeInfo(TypeTag).@"union".tag_type.? = dt;
+                                    const arg_tag: @typeInfo(TypeTag).@"union".tag_type.? = arg_vals.items[di].type_tag;
+                                    if (dt_tag != arg_tag) {
+                                        match = false;
+                                        break;
+                                    }
+                                }
+                                if (match) break :blk key;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            self.diagnostics.report(.@"error", 0, "generic enum '{s}' has not been instantiated with matching type arguments", .{enum_name});
+            return error.CodeGenError;
+        } else {
+            self.diagnostics.report(.@"error", 0, "undefined enum '{s}'", .{enum_name});
+            return error.CodeGenError;
+        };
+
+        const info = self.enum_types.get(resolved_name) orelse {
             self.diagnostics.report(.@"error", 0, "undefined enum '{s}'", .{enum_name});
             return error.CodeGenError;
         };
@@ -591,15 +724,14 @@ pub const CodeGen = struct {
 
         // Store data fields if any
         const data_types = info.variant_data_types[idx];
-        if (data_types.len > 0 and args.items.len > 0) {
+        if (data_types.len > 0 and arg_vals.items.len > 0) {
             const data_ptr = c.LLVMBuildStructGEP2(self.builder, info.llvm_type, alloca, 1, "data_ptr");
             // Cast data array to pointer
             const data_byte_ptr = c.LLVMBuildBitCast(self.builder, data_ptr, c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0), "data_bytes");
 
             var offset: u64 = 0;
-            for (args.items, 0..) |arg_idx, i| {
+            for (arg_vals.items, 0..) |val, i| {
                 if (i >= data_types.len) break;
-                const val = try self.genExpr(arg_idx);
                 const field_type = self.typeTagToLLVM(data_types[i]);
                 var gep_indices = [_]c.LLVMValueRef{c.LLVMConstInt(c.LLVMInt64TypeInContext(self.context), offset, 0)};
                 const field_ptr = c.LLVMBuildGEP2(
@@ -617,7 +749,7 @@ pub const CodeGen = struct {
         }
 
         const loaded = c.LLVMBuildLoad2(self.builder, info.llvm_type, alloca, "enum_val");
-        return .{ .value = loaded, .type_tag = .{ .enum_type = enum_name } };
+        return .{ .value = loaded, .type_tag = .{ .enum_type = resolved_name } };
     }
 
     fn resolveTypeExpr(self: *CodeGen, type_expr: Ast.TypeExpr) TypeTag {
@@ -680,6 +812,11 @@ pub const CodeGen = struct {
                 return .{ .tuple_type = .{ .element_types = elem_tags, .llvm_type = llvm_type } };
             },
             .generic_type => |gt| {
+                // Check if it's a generic enum first, then try generic struct
+                if (self.generic_enum_decls.contains(gt.name)) {
+                    const mangled_name = self.monomorphizeEnum(gt.name, gt.type_args.items) catch return .i32_type;
+                    return .{ .enum_type = mangled_name };
+                }
                 // Monomorphize the generic struct with concrete type args
                 const mangled_name = self.monomorphizeStruct(gt.name, gt.type_args.items) catch return .i32_type;
                 return .{ .struct_type = mangled_name };
@@ -1730,7 +1867,7 @@ pub const CodeGen = struct {
         const obj_expr = self.ast.getExpr(fa.object);
         switch (obj_expr) {
             .identifier => |name| {
-                if (self.enum_types.contains(name)) {
+                if (self.enum_types.contains(name) or self.generic_enum_decls.contains(name)) {
                     // This is an enum constructor without args: EnumName.VariantName
                     return self.genEnumConstructor(name, fa.field, &.{});
                 }
@@ -1855,7 +1992,7 @@ pub const CodeGen = struct {
         const mc_obj_expr = self.ast.getExpr(mc.object);
         switch (mc_obj_expr) {
             .identifier => |name| {
-                if (self.enum_types.contains(name)) {
+                if (self.enum_types.contains(name) or self.generic_enum_decls.contains(name)) {
                     return self.genEnumConstructor(name, mc.method, &mc.args);
                 }
             },

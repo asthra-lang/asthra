@@ -35,7 +35,7 @@ Features defined in `grammar.txt` but not yet fully implemented, plus semantic a
 | 20 | `string_ops.ast` | string concatenation (`+`), `len()` for strings, escape sequence processing | Done |
 | 21 | `type_inference.ast` | type inference in `let` declarations (omit type annotation when inferable) | Done |
 | 22 | `semantic_checks.ast` | semantic analysis pass: type checking, mutability enforcement, undefined variable detection | Done |
-| 23 | `generic_enums.ast` | generic enums with type parameters, generic impl blocks |
+| 23 | `generic_enums.ast` | generic enums with type parameters, generic impl blocks | Done |
 | 24 | `associated_funcs.ast` | associated functions via `::` syntax: `Type::new()`, `Type<T>::create()` |
 | 25 | `nested_match.ast` | nested patterns, tuple patterns in match, wildcard `_` pattern |
 | 26 | `char_type.ast` | `char` type, char literals, char-to-int conversion |

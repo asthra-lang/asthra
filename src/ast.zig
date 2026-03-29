@@ -59,6 +59,7 @@ pub const Ast = struct {
 
     pub const EnumDecl = struct {
         name: []const u8,
+        type_params: std.ArrayList([]const u8),
         variants: std.ArrayList(EnumVariant),
     };
 

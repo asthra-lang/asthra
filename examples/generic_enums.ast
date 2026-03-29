@@ -1,0 +1,34 @@
+package main;
+
+pub enum Either<L, R> {
+    pub Left(L),
+    pub Right(R)
+}
+
+pub fn main() -> void {
+    let a: Either<i32, string> = Either.Left(42);
+    let b: Either<i32, string> = Either.Right("hello");
+
+    match a {
+        Either.Left(val) => {
+            log("Left:");
+            log(val);
+        }
+        Either.Right(val) => {
+            log("Right:");
+            log(val);
+        }
+    }
+
+    match b {
+        Either.Left(val) => {
+            log(val);
+        }
+        Either.Right(val) => {
+            log("Right:");
+            log(val);
+        }
+    }
+
+    return;
+}
