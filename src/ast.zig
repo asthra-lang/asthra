@@ -29,6 +29,13 @@ pub const Ast = struct {
         struct_decl: StructDecl,
         impl_decl: ImplDecl,
         enum_decl: EnumDecl,
+        extern_decl: ExternDecl,
+    };
+
+    pub const ExternDecl = struct {
+        name: []const u8,
+        params: std.ArrayList(Param),
+        return_type: TypeExpr,
     };
 
     pub const EnumDecl = struct {
@@ -93,6 +100,7 @@ pub const Ast = struct {
         break_stmt,
         continue_stmt,
         match_stmt: MatchStmt,
+        unsafe_block: *Block,
     };
 
     pub const MatchStmt = struct {

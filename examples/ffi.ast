@@ -1,0 +1,17 @@
+package main;
+
+pub extern fn abs(x: i32) -> i32;
+pub extern fn atoi(s: string) -> i32;
+
+pub fn main() -> void {
+    unsafe {
+        let neg: i32 = -42;
+        let pos: i32 = abs(neg);
+        log(pos);
+
+        let num: i32 = atoi("123");
+        log(num);
+    }
+
+    return;
+}

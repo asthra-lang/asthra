@@ -153,13 +153,22 @@ pub const CodeGen = struct {
             }
         }
 
-        // Second pass: generate functions and methods
+        // Second pass: declare extern functions
+        for (self.ast.program.decls.items) |decl| {
+            switch (decl.decl) {
+                .extern_decl => |ed| try self.genExternDecl(&ed),
+                else => {},
+            }
+        }
+
+        // Third pass: generate functions and methods
         for (self.ast.program.decls.items) |decl| {
             switch (decl.decl) {
                 .function => |fn_decl| try self.genFunction(&fn_decl),
                 .struct_decl => {},
                 .impl_decl => |impl_decl| try self.genImplDecl(&impl_decl),
                 .enum_decl => {},
+                .extern_decl => {},
             }
         }
 
@@ -510,6 +519,25 @@ pub const CodeGen = struct {
         };
     }
 
+    fn genExternDecl(self: *CodeGen, ed: *const Ast.ExternDecl) GenError!void {
+        const return_type_tag = self.resolveTypeExpr(ed.return_type);
+        const llvm_return_type = self.typeTagToLLVM(return_type_tag);
+
+        var param_types = std.ArrayList(c.LLVMTypeRef){};
+        defer param_types.deinit(self.allocator);
+        for (ed.params.items) |param| {
+            const pt = self.resolveTypeExpr(param.type_expr);
+            try param_types.append(self.allocator, self.typeTagToLLVM(pt));
+        }
+
+        const fn_type = c.LLVMFunctionType(llvm_return_type, param_types.items.ptr, @intCast(param_types.items.len), 0);
+
+        const name_z = self.allocator.dupeZ(u8, ed.name) catch return error.CodeGenError;
+        defer self.allocator.free(name_z);
+
+        _ = c.LLVMAddFunction(self.module, name_z.ptr, fn_type);
+    }
+
     fn genFunction(self: *CodeGen, fn_decl: *const Ast.FnDecl) GenError!void {
         const is_main = std.mem.eql(u8, fn_decl.name, "main");
         const return_type_tag = self.resolveTypeExpr(fn_decl.return_type);
@@ -676,6 +704,11 @@ pub const CodeGen = struct {
                 }
                 const loop_ctx = self.loop_stack.items[self.loop_stack.items.len - 1];
                 _ = c.LLVMBuildBr(self.builder, loop_ctx.continue_bb);
+            },
+            .unsafe_block => |block| {
+                // For now, unsafe blocks just execute their statements
+                // (no safety checks to disable yet)
+                try self.genBlock(block, is_main);
             },
         }
     }
@@ -1480,6 +1513,11 @@ pub const CodeGen = struct {
                 .function => |fn_decl| {
                     if (std.mem.eql(u8, fn_decl.name, name)) {
                         return self.resolveTypeExpr(fn_decl.return_type);
+                    }
+                },
+                .extern_decl => |ed| {
+                    if (std.mem.eql(u8, ed.name, name)) {
+                        return self.resolveTypeExpr(ed.return_type);
                     }
                 },
                 else => {},

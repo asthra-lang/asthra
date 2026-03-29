@@ -55,6 +55,15 @@ pub const Parser = struct {
         const start = self.current.loc.start;
         const visibility = try self.parseVisibility();
 
+        if (self.current.tag == .keyword_extern) {
+            const extern_decl = try self.parseExternDecl();
+            return .{
+                .visibility = visibility,
+                .decl = .{ .extern_decl = extern_decl },
+                .start = start,
+            };
+        }
+
         if (self.current.tag == .keyword_fn) {
             const fn_decl = try self.parseFnDecl();
             return .{
@@ -140,6 +149,48 @@ pub const Parser = struct {
             .params = params,
             .return_type = return_type,
             .body = body,
+        };
+    }
+
+    fn parseExternDecl(self: *Parser) ParseError!Ast.ExternDecl {
+        self.advance(); // consume 'extern'
+
+        // Optional link name string (e.g., extern "c" fn ...)
+        // Grammar: ExternDecl <- 'extern' STRING? 'fn' ...
+        if (self.current.tag == .string_literal) {
+            self.advance(); // consume link name string (ignored for now)
+        }
+
+        try self.expect(.keyword_fn);
+
+        const name_token = self.current;
+        try self.expect(.identifier);
+        const name = name_token.slice(self.source);
+
+        try self.expect(.lparen);
+        var params = std.ArrayList(Ast.Param){};
+
+        if (self.current.tag == .keyword_none) {
+            self.advance();
+        } else if (self.current.tag != .rparen) {
+            while (true) {
+                const param = try self.parseParam();
+                try params.append(self.ast.allocator, param);
+                if (self.current.tag != .comma) break;
+                self.advance();
+            }
+        }
+        try self.expect(.rparen);
+
+        try self.expect(.arrow);
+        const return_type = try self.parseType();
+
+        try self.expect(.semicolon);
+
+        return .{
+            .name = name,
+            .params = params,
+            .return_type = return_type,
         };
     }
 
@@ -452,6 +503,7 @@ pub const Parser = struct {
                 return .continue_stmt;
             },
             .keyword_match => return self.parseMatchStmt(),
+            .keyword_unsafe => return self.parseUnsafeBlock(),
             .identifier => {
                 // Check for assignment: ident = expr;
                 // We need to peek ahead
@@ -689,6 +741,13 @@ pub const Parser = struct {
         }
 
         return .{ .identifier = first_name };
+    }
+
+    fn parseUnsafeBlock(self: *Parser) ParseError!Ast.Stmt {
+        self.advance(); // consume 'unsafe'
+        const block = try self.ast.allocator.create(Ast.Block);
+        block.* = try self.parseBlock();
+        return .{ .unsafe_block = block };
     }
 
     fn parseExprStmt(self: *Parser) ParseError!Ast.Stmt {
@@ -1655,5 +1714,76 @@ test "parse grouped expression still works" {
                 else => return error.TestUnexpectedResult,
             }
         },
+    }
+}
+
+test "parse extern function declaration" {
+    var result = try testParse("package main;\npub extern fn abs(x: i32) -> i32;\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    try testing.expectEqual(@as(usize, 2), result.ast.program.decls.items.len);
+    const decl = result.ast.program.decls.items[0];
+    try testing.expectEqual(Ast.Visibility.public, decl.visibility);
+    switch (decl.decl) {
+        .extern_decl => |ed| {
+            try testing.expectEqualStrings("abs", ed.name);
+            try testing.expectEqual(@as(usize, 1), ed.params.items.len);
+            try testing.expectEqualStrings("x", ed.params.items[0].name);
+            try testing.expectEqual(Ast.BuiltinType.i32_type, ed.return_type.builtin);
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse extern function with string parameter" {
+    var result = try testParse("package main;\npub extern fn atoi(s: string) -> i32;\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .extern_decl => |ed| {
+            try testing.expectEqualStrings("atoi", ed.name);
+            try testing.expectEqual(@as(usize, 1), ed.params.items.len);
+            try testing.expectEqual(Ast.BuiltinType.string_type, ed.params.items[0].type_expr.builtin);
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse unsafe block" {
+    var result = try testParse("package main;\npub fn main() -> void { unsafe { let x: i32 = 42; } return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .function => |f| {
+            try testing.expectEqual(@as(usize, 2), f.body.stmts.items.len);
+            switch (f.body.stmts.items[0]) {
+                .unsafe_block => |block| {
+                    try testing.expectEqual(@as(usize, 1), block.stmts.items.len);
+                    switch (block.stmts.items[0]) {
+                        .var_decl => |vd| {
+                            try testing.expectEqualStrings("x", vd.name);
+                        },
+                        else => return error.TestUnexpectedResult,
+                    }
+                },
+                else => return error.TestUnexpectedResult,
+            }
+        },
+        else => return error.TestUnexpectedResult,
+    }
+}
+
+test "parse extern with link name" {
+    var result = try testParse("package main;\npub extern \"c\" fn puts(s: string) -> i32;\npub fn main() -> void { return; }");
+    defer result.diag.deinit();
+    try testing.expect(!result.diag.hasErrors());
+    const decl = result.ast.program.decls.items[0];
+    switch (decl.decl) {
+        .extern_decl => |ed| {
+            try testing.expectEqualStrings("puts", ed.name);
+        },
+        else => return error.TestUnexpectedResult,
     }
 }
