@@ -1,0 +1,18 @@
+package main;
+
+pub fn main() -> void {
+    // os.getenv - existing variable
+    let home: string = os.getenv("HOME");
+    log(str.starts_with(home, "/"));
+
+    // os.getenv - non-existent variable returns empty string
+    let missing: string = os.getenv("ASTHRA_NONEXISTENT_VAR_12345");
+    log(str.starts_with(missing, "/"));
+
+    // os.clock - returns elapsed CPU time in seconds
+    let t: f64 = os.clock();
+    log(t >= 0.0);
+
+    log("stdlib_os: all tests passed");
+    return;
+}

@@ -347,6 +347,11 @@ pub const SemanticAnalyzer = struct {
                     // Also allow well-known type names: Option, Result
                     if (std.mem.eql(u8, name, "Option")) return;
                     if (std.mem.eql(u8, name, "Result")) return;
+                    // Allow stdlib namespace identifiers
+                    if (std.mem.eql(u8, name, "math")) return;
+                    if (std.mem.eql(u8, name, "str")) return;
+                    if (std.mem.eql(u8, name, "io")) return;
+                    if (std.mem.eql(u8, name, "os")) return;
                     self.reportErrorWithName(0, "undefined variable", name);
                 }
             },

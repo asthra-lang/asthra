@@ -1,0 +1,33 @@
+package main;
+
+pub fn main() -> void {
+    // str.upper / str.lower
+    log(str.upper("hello"));
+    log(str.lower("WORLD"));
+
+    // str.contains
+    log(str.contains("hello world", "world"));
+    log(str.contains("hello world", "xyz"));
+
+    // str.starts_with / str.ends_with
+    log(str.starts_with("hello world", "hello"));
+    log(str.starts_with("hello world", "world"));
+    log(str.ends_with("hello world", "world"));
+    log(str.ends_with("hello world", "hello"));
+
+    // str.trim
+    log(str.trim("  hello  "));
+
+    // str.to_int / str.to_float
+    let n: i32 = str.to_int("42");
+    log(n);
+    let f: f64 = str.to_float("3.14");
+    log(f);
+
+    // str.from_int / str.from_float
+    log(str.from_int(123));
+    log(str.from_float(2.718));
+
+    log("stdlib_strings: all tests passed");
+    return;
+}

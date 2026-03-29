@@ -45,6 +45,30 @@ pub const CodeGen = struct {
     fmt_panic: c.LLVMValueRef,
     imported_fn_return_types: std.StringHashMap(TypeTag),
     type_aliases: std.StringHashMap(Ast.TypeExpr),
+    // Stdlib C function refs
+    sqrt_fn: c.LLVMValueRef,
+    pow_fn: c.LLVMValueRef,
+    fabs_fn: c.LLVMValueRef,
+    floor_fn: c.LLVMValueRef,
+    ceil_fn: c.LLVMValueRef,
+    fmin_fn: c.LLVMValueRef,
+    fmax_fn: c.LLVMValueRef,
+    toupper_fn: c.LLVMValueRef,
+    tolower_fn: c.LLVMValueRef,
+    strstr_fn: c.LLVMValueRef,
+    strncmp_fn: c.LLVMValueRef,
+    memcpy_fn: c.LLVMValueRef,
+    atoi_fn: c.LLVMValueRef,
+    atof_fn: c.LLVMValueRef,
+    puts_fn: c.LLVMValueRef,
+    getenv_fn: c.LLVMValueRef,
+    clock_fn: c.LLVMValueRef,
+    isspace_fn: c.LLVMValueRef,
+    // Stdlib format strings (no newline)
+    fmt_int_raw: c.LLVMValueRef,
+    fmt_str_raw: c.LLVMValueRef,
+    fmt_float_raw: c.LLVMValueRef,
+    fmt_char_raw: c.LLVMValueRef,
 
     pub const StructTypeInfo = struct {
         llvm_type: c.LLVMTypeRef,
@@ -149,6 +173,70 @@ pub const CodeGen = struct {
         const exit_type = c.LLVMFunctionType(c.LLVMVoidTypeInContext(context), @constCast(&exit_param_types), 1, 0);
         const exit_fn = c.LLVMAddFunction(module, "exit", exit_type);
 
+        // Declare stdlib C functions
+        const double_type = c.LLVMDoubleTypeInContext(context);
+        const i32_type_llvm = c.LLVMInt32TypeInContext(context);
+        const i64_type_llvm = c.LLVMInt64TypeInContext(context);
+        const i8ptr_type = c.LLVMPointerType(c.LLVMInt8TypeInContext(context), 0);
+
+        // Math functions: f64 -> f64
+        const math_f64_f64_params = [_]c.LLVMTypeRef{double_type};
+        const math_f64_f64_type = c.LLVMFunctionType(double_type, @constCast(&math_f64_f64_params), 1, 0);
+        const sqrt_fn = c.LLVMAddFunction(module, "sqrt", math_f64_f64_type);
+        const fabs_fn = c.LLVMAddFunction(module, "fabs", math_f64_f64_type);
+        const floor_fn = c.LLVMAddFunction(module, "floor", math_f64_f64_type);
+        const ceil_fn = c.LLVMAddFunction(module, "ceil", math_f64_f64_type);
+
+        // Math functions: (f64, f64) -> f64
+        const math_f64_f64_f64_params = [_]c.LLVMTypeRef{ double_type, double_type };
+        const math_f64_f64_f64_type = c.LLVMFunctionType(double_type, @constCast(&math_f64_f64_f64_params), 2, 0);
+        const pow_fn = c.LLVMAddFunction(module, "pow", math_f64_f64_f64_type);
+        const fmin_fn = c.LLVMAddFunction(module, "fmin", math_f64_f64_f64_type);
+        const fmax_fn = c.LLVMAddFunction(module, "fmax", math_f64_f64_f64_type);
+
+        // String C functions: toupper/tolower: i32 -> i32
+        const i32_i32_params = [_]c.LLVMTypeRef{i32_type_llvm};
+        const i32_i32_type = c.LLVMFunctionType(i32_type_llvm, @constCast(&i32_i32_params), 1, 0);
+        const toupper_fn = c.LLVMAddFunction(module, "toupper", i32_i32_type);
+        const tolower_fn = c.LLVMAddFunction(module, "tolower", i32_i32_type);
+        const isspace_fn = c.LLVMAddFunction(module, "isspace", i32_i32_type);
+
+        // strstr: (i8*, i8*) -> i8*
+        const two_str_params = [_]c.LLVMTypeRef{ i8ptr_type, i8ptr_type };
+        const strstr_type = c.LLVMFunctionType(i8ptr_type, @constCast(&two_str_params), 2, 0);
+        const strstr_fn = c.LLVMAddFunction(module, "strstr", strstr_type);
+
+        // strncmp: (i8*, i8*, i64) -> i32
+        const strncmp_params = [_]c.LLVMTypeRef{ i8ptr_type, i8ptr_type, i64_type_llvm };
+        const strncmp_type = c.LLVMFunctionType(i32_type_llvm, @constCast(&strncmp_params), 3, 0);
+        const strncmp_fn = c.LLVMAddFunction(module, "strncmp", strncmp_type);
+
+        // memcpy: (i8*, i8*, i64) -> i8*
+        const memcpy_params = [_]c.LLVMTypeRef{ i8ptr_type, i8ptr_type, i64_type_llvm };
+        const memcpy_type = c.LLVMFunctionType(i8ptr_type, @constCast(&memcpy_params), 3, 0);
+        const memcpy_fn = c.LLVMAddFunction(module, "memcpy", memcpy_type);
+
+        // atoi: (i8*) -> i32
+        const atoi_params = [_]c.LLVMTypeRef{i8ptr_type};
+        const atoi_type = c.LLVMFunctionType(i32_type_llvm, @constCast(&atoi_params), 1, 0);
+        const atoi_fn = c.LLVMAddFunction(module, "atoi", atoi_type);
+
+        // atof: (i8*) -> f64
+        const atof_type = c.LLVMFunctionType(double_type, @constCast(&atoi_params), 1, 0);
+        const atof_fn = c.LLVMAddFunction(module, "atof", atof_type);
+
+        // puts: (i8*) -> i32
+        const puts_type = c.LLVMFunctionType(i32_type_llvm, @constCast(&atoi_params), 1, 0);
+        const puts_fn = c.LLVMAddFunction(module, "puts", puts_type);
+
+        // getenv: (i8*) -> i8*
+        const getenv_type = c.LLVMFunctionType(i8ptr_type, @constCast(&atoi_params), 1, 0);
+        const getenv_fn = c.LLVMAddFunction(module, "getenv", getenv_type);
+
+        // clock: () -> i64
+        const clock_type = c.LLVMFunctionType(i64_type_llvm, null, 0, 0);
+        const clock_fn = c.LLVMAddFunction(module, "clock", clock_type);
+
         // Create format strings — need a temp function to position the builder
         const init_fn_type = c.LLVMFunctionType(c.LLVMVoidTypeInContext(context), null, 0, 0);
         const init_fn = c.LLVMAddFunction(module, "__asthra_init_strings", init_fn_type);
@@ -162,6 +250,10 @@ pub const CodeGen = struct {
         const fmt_bool_true = c.LLVMBuildGlobalStringPtr(builder, "true\n", "fmt_bool_true");
         const fmt_bool_false = c.LLVMBuildGlobalStringPtr(builder, "false\n", "fmt_bool_false");
         const fmt_panic = c.LLVMBuildGlobalStringPtr(builder, "panic: %s\n", "fmt_panic");
+        const fmt_int_raw = c.LLVMBuildGlobalStringPtr(builder, "%d", "fmt_int_raw");
+        const fmt_str_raw = c.LLVMBuildGlobalStringPtr(builder, "%s", "fmt_str_raw");
+        const fmt_float_raw = c.LLVMBuildGlobalStringPtr(builder, "%f", "fmt_float_raw");
+        const fmt_char_raw = c.LLVMBuildGlobalStringPtr(builder, "%c", "fmt_char_raw");
 
         // Clean up the init function
         _ = c.LLVMBuildRetVoid(builder);
@@ -196,7 +288,36 @@ pub const CodeGen = struct {
             .fmt_panic = fmt_panic,
             .imported_fn_return_types = std.StringHashMap(TypeTag).init(allocator),
             .type_aliases = std.StringHashMap(Ast.TypeExpr).init(allocator),
+            .sqrt_fn = sqrt_fn,
+            .pow_fn = pow_fn,
+            .fabs_fn = fabs_fn,
+            .floor_fn = floor_fn,
+            .ceil_fn = ceil_fn,
+            .fmin_fn = fmin_fn,
+            .fmax_fn = fmax_fn,
+            .toupper_fn = toupper_fn,
+            .tolower_fn = tolower_fn,
+            .strstr_fn = strstr_fn,
+            .strncmp_fn = strncmp_fn,
+            .memcpy_fn = memcpy_fn,
+            .atoi_fn = atoi_fn,
+            .atof_fn = atof_fn,
+            .puts_fn = puts_fn,
+            .getenv_fn = getenv_fn,
+            .clock_fn = clock_fn,
+            .isspace_fn = isspace_fn,
+            .fmt_int_raw = fmt_int_raw,
+            .fmt_str_raw = fmt_str_raw,
+            .fmt_float_raw = fmt_float_raw,
+            .fmt_char_raw = fmt_char_raw,
         };
+    }
+
+    pub fn isStdlibNamespace(name: []const u8) bool {
+        return std.mem.eql(u8, name, "math") or
+            std.mem.eql(u8, name, "str") or
+            std.mem.eql(u8, name, "io") or
+            std.mem.eql(u8, name, "os");
     }
 
     pub fn deinit(self: *CodeGen) void {

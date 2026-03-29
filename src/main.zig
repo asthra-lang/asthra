@@ -131,7 +131,7 @@ pub fn main() !void {
     // Link with cc
     const result = std.process.Child.run(.{
         .allocator = allocator,
-        .argv = &.{ "cc", obj_path, "-o", output_path },
+        .argv = &.{ "cc", obj_path, "-o", output_path, "-lm" },
     }) catch |err| {
         writeAll("error: linking failed: {}\n", .{err});
         std.process.exit(1);

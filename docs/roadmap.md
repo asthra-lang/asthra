@@ -68,3 +68,14 @@ Closing remaining gaps between the grammar spec and implementation, plus compile
 | 46 | `type_aliases.ast` | type aliases: `type Name = ExistingType;` resolved in codegen | Done |
 | 47 | `while_loops.ast` | `while condition { ... }` loops with break/continue support | Done |
 | 48 | `closures.ast` | closure syntax planned; using named functions for now | Done |
+
+## Phase 4: Standard Library
+
+Built-in namespaced modules (`math`, `str`, `io`, `os`) available without imports.
+
+| # | Example | Features Unlocked | Status |
+|---|---------|-------------------|--------|
+| 49 | `stdlib_math.ast` | `math.sqrt`, `pow`, `abs`, `min`, `max`, `floor`, `ceil`, `PI`, `E` | Done |
+| 50 | `stdlib_strings.ast` | `str.upper`, `lower`, `contains`, `starts_with`, `ends_with`, `trim`, `to_int`, `to_float`, `from_int`, `from_float` | Done |
+| 51 | `stdlib_io.ast` | `io.print` (no newline), `io.println` (with newline), `io.read_line` | Done |
+| 52 | `stdlib_os.ast` | `os.getenv`, `os.clock` | Done |

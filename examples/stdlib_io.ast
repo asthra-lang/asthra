@@ -1,0 +1,28 @@
+package main;
+
+pub fn main() -> void {
+    // io.print - no newline
+    io.print("Hello");
+    io.print(" ");
+    io.print("World");
+    io.print("\n");
+
+    // io.println - with newline
+    io.println("Hello from io.println");
+
+    // io.print with different types
+    io.print("num: ");
+    io.println(42);
+
+    io.print("float: ");
+    io.println(3.14);
+
+    io.print("bool: ");
+    io.println(true);
+
+    io.print("char: ");
+    io.println('A');
+
+    log("stdlib_io: all tests passed");
+    return;
+}
