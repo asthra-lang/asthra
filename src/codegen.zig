@@ -10,6 +10,7 @@ pub const c = @cImport({
     @cInclude("llvm-c/Analysis.h");
     @cInclude("llvm-c/Target.h");
     @cInclude("llvm-c/TargetMachine.h");
+    @cInclude("llvm-c/DebugInfo.h");
 });
 
 pub const CodeGen = struct {
@@ -54,6 +55,13 @@ pub const CodeGen = struct {
     // Global variables for argc/argv (set in main entry)
     argc_global: c.LLVMValueRef,
     argv_global: c.LLVMValueRef,
+    // Debug info
+    debug_enabled: bool = false,
+    di_builder: ?c.LLVMDIBuilderRef = null,
+    di_file: ?c.LLVMMetadataRef = null,
+    di_compile_unit: ?c.LLVMMetadataRef = null,
+    source: []const u8 = "",
+    source_path: []const u8 = "",
     // Stdlib C function refs
     sqrt_fn: c.LLVMValueRef,
     pow_fn: c.LLVMValueRef,
@@ -367,6 +375,90 @@ pub const CodeGen = struct {
             .trait_decls = std.StringHashMap(*const Ast.TraitDecl).init(allocator),
             .vtable_globals = std.StringHashMap(c.LLVMValueRef).init(allocator),
         };
+    }
+
+    pub fn initDebug(self: *CodeGen, source: []const u8, source_path: []const u8) void {
+        self.debug_enabled = true;
+        self.source = source;
+        self.source_path = source_path;
+
+        self.di_builder = c.LLVMCreateDIBuilder(self.module);
+
+        // Extract filename and directory from source_path
+        const filename = std.fs.path.basename(source_path);
+        const directory = std.fs.path.dirname(source_path) orelse ".";
+
+        self.di_file = c.LLVMDIBuilderCreateFile(
+            self.di_builder.?,
+            filename.ptr,
+            filename.len,
+            directory.ptr,
+            directory.len,
+        );
+
+        self.di_compile_unit = c.LLVMDIBuilderCreateCompileUnit(
+            self.di_builder.?,
+            c.LLVMDWARFSourceLanguageC, // DW_LANG_C (closest to Asthra)
+            self.di_file.?,
+            "asthra",
+            6, // producer name length
+            0, // isOptimized
+            "", // flags
+            0, // flags length
+            0, // runtime version
+            null, // split name
+            0, // split name length
+            c.LLVMDWARFEmissionFull,
+            0, // DWOId
+            0, // splitDebugInlining
+            0, // debugInfoForProfiling
+            "", // sysroot
+            0, // sysroot length
+            "", // SDK
+            0, // SDK length
+        );
+
+        // Add module flags for debug info
+        c.LLVMAddModuleFlag(
+            self.module,
+            c.LLVMModuleFlagBehaviorWarning,
+            "Debug Info Version",
+            18, // length
+            c.LLVMValueAsMetadata(c.LLVMConstInt(c.LLVMInt32TypeInContext(self.context), 3, 0)),
+        );
+        c.LLVMAddModuleFlag(
+            self.module,
+            c.LLVMModuleFlagBehaviorWarning,
+            "Dwarf Version",
+            13, // length
+            c.LLVMValueAsMetadata(c.LLVMConstInt(c.LLVMInt32TypeInContext(self.context), 4, 0)),
+        );
+    }
+
+    pub fn getLineFromOffset(self: *const CodeGen, byte_offset: u32) u32 {
+        var line: u32 = 1;
+        const end = @min(byte_offset, @as(u32, @intCast(self.source.len)));
+        for (self.source[0..end]) |ch| {
+            if (ch == '\n') line += 1;
+        }
+        return line;
+    }
+
+    pub fn setDebugLocation(self: *CodeGen, line: u32) void {
+        if (!self.debug_enabled) return;
+        if (self.di_builder == null) return;
+        // Get current function's DISubprogram as scope
+        const current_fn = c.LLVMGetBasicBlockParent(c.LLVMGetInsertBlock(self.builder));
+        const subprogram = c.LLVMGetSubprogram(current_fn);
+        if (subprogram == null) return;
+        const loc = c.LLVMDIBuilderCreateDebugLocation(
+            self.context,
+            line,
+            0, // column
+            subprogram,
+            null, // inlined at
+        );
+        c.LLVMSetCurrentDebugLocation2(self.builder, loc);
     }
 
     pub fn isStdlibNamespace(name: []const u8) bool {
@@ -1016,6 +1108,11 @@ pub const CodeGen = struct {
     }
 
     pub fn emitObjectFile(self: *CodeGen, path: []const u8) GenError!void {
+        // Finalize debug info before emission
+        if (self.di_builder) |dib| {
+            c.LLVMDIBuilderFinalize(dib);
+        }
+
         c.LLVMInitializeAllTargetInfos();
         c.LLVMInitializeAllTargets();
         c.LLVMInitializeAllTargetMCs();

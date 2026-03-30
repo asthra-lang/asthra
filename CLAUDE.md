@@ -113,9 +113,10 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 - Dynamic dispatch: `dyn Trait` type for trait objects with vtable-based indirect method calls
 - Generic functions: `fn<T>(x: T) -> T` with on-demand monomorphization
 
+- DWARF debug info via `-g` flag: compile unit, function DISubprogram, line-level locations for lldb/gdb
+
 ## Not Yet Implemented
 
-- DWARF debug info for lldb/gdb
 - Real pthread-based async runtime
 
 ## Development Strategy: Example-Driven

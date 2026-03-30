@@ -39,6 +39,43 @@ pub fn genFunctionWithName(self: *CodeGen, fn_decl: *const Ast.FnDecl, llvm_name
     defer self.allocator.free(name_z);
 
     const function = c.LLVMAddFunction(self.module, name_z.ptr, fn_type);
+
+    // Attach debug info (DISubprogram) if debug is enabled
+    if (self.debug_enabled and self.di_builder != null and self.di_file != null) {
+        // Find function line number by searching source for function name
+        const line = blk: {
+            if (std.mem.indexOf(u8, self.source, fn_decl.name)) |pos| {
+                break :blk self.getLineFromOffset(@intCast(pos));
+            }
+            break :blk @as(u32, 1);
+        };
+        // Create subroutine type (void for now — no parameter debug types in v1)
+        const subroutine_type = c.LLVMDIBuilderCreateSubroutineType(
+            self.di_builder.?,
+            self.di_file.?,
+            null, // parameter types
+            0, // num params
+            c.LLVMDIFlagZero,
+        );
+        const subprogram = c.LLVMDIBuilderCreateFunction(
+            self.di_builder.?,
+            self.di_file.?, // scope
+            fn_decl.name.ptr,
+            fn_decl.name.len,
+            name_z.ptr,
+            name_z.len,
+            self.di_file.?,
+            line,
+            subroutine_type,
+            0, // isLocalToUnit
+            1, // isDefinition
+            line, // scopeLine
+            c.LLVMDIFlagZero,
+            0, // isOptimized
+        );
+        c.LLVMSetSubprogram(function, subprogram);
+    }
+
     const entry = c.LLVMAppendBasicBlockInContext(self.context, function, "entry");
     c.LLVMPositionBuilderAtEnd(self.builder, entry);
 
@@ -88,6 +125,12 @@ pub fn genBlock(self: *CodeGen, block: *const Ast.Block, is_main: bool) CodeGen.
 }
 
 pub fn genStmt(self: *CodeGen, stmt: Ast.Stmt, is_main: bool) CodeGen.GenError!void {
+    // Set debug location for statements that have source position
+    switch (stmt) {
+        .var_decl => |vd| { if (vd.start > 0) self.setDebugLocation(self.getLineFromOffset(vd.start)); },
+        .assign => |a| { if (a.start > 0) self.setDebugLocation(self.getLineFromOffset(a.start)); },
+        else => {},
+    }
     switch (stmt) {
         .return_stmt => |ret| {
             if (is_main) {

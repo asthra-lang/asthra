@@ -55,6 +55,7 @@ pub fn main() !void {
     const source_path = first_arg;
     var output_path: []const u8 = "output";
     var emit_ir = false;
+    var debug_enabled = false;
 
     var i: usize = 2;
     while (i < args.len) : (i += 1) {
@@ -64,8 +65,7 @@ pub fn main() !void {
         } else if (std.mem.eql(u8, args[i], "--emit-ir")) {
             emit_ir = true;
         } else if (std.mem.eql(u8, args[i], "-g") or std.mem.eql(u8, args[i], "--debug")) {
-            // Debug info emission planned for future release
-            writeAll("note: -g flag recognized; DWARF debug info not yet implemented\n", .{});
+            debug_enabled = true;
         }
     }
 
@@ -143,6 +143,9 @@ pub fn main() !void {
     // Codegen
     var codegen = CodeGen.init(allocator, "asthra_module", &diagnostics, &ast);
     defer codegen.deinit();
+    if (debug_enabled) {
+        codegen.initDebug(source, source_path);
+    }
 
     // Generate code for imported modules first
     for (imported_modules.items) |mod| {
@@ -171,9 +174,13 @@ pub fn main() !void {
     };
 
     // Link with cc
+    const link_argv: []const []const u8 = if (debug_enabled)
+        &.{ "cc", obj_path, "-o", output_path, "-lm", "-g" }
+    else
+        &.{ "cc", obj_path, "-o", output_path, "-lm" };
     const result = std.process.Child.run(.{
         .allocator = allocator,
-        .argv = &.{ "cc", obj_path, "-o", output_path, "-lm" },
+        .argv = link_argv,
     }) catch |err| {
         writeAll("error: linking failed: {}\n", .{err});
         std.process.exit(1);
