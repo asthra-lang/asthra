@@ -27,6 +27,9 @@ pub const CodeGen = struct {
     ast: *const Ast,
     printf_fn: c.LLVMValueRef,
     fmt_int: c.LLVMValueRef,
+    fmt_uint: c.LLVMValueRef,
+    fmt_long: c.LLVMValueRef,
+    fmt_ulong: c.LLVMValueRef,
     fmt_str: c.LLVMValueRef,
     fmt_float: c.LLVMValueRef,
     fmt_char: c.LLVMValueRef,
@@ -91,6 +94,9 @@ pub const CodeGen = struct {
     isspace_fn: c.LLVMValueRef,
     // Stdlib format strings (no newline)
     fmt_int_raw: c.LLVMValueRef,
+    fmt_uint_raw: c.LLVMValueRef,
+    fmt_long_raw: c.LLVMValueRef,
+    fmt_ulong_raw: c.LLVMValueRef,
     fmt_str_raw: c.LLVMValueRef,
     fmt_float_raw: c.LLVMValueRef,
     fmt_char_raw: c.LLVMValueRef,
@@ -124,8 +130,16 @@ pub const CodeGen = struct {
     };
 
     pub const TypeTag = union(enum) {
+        i8_type,
+        i16_type,
         i32_type,
         i64_type,
+        i128_type,
+        u8_type,
+        u16_type,
+        u32_type,
+        u64_type,
+        u128_type,
         f64_type,
         bool_type,
         char_type,
@@ -297,6 +311,9 @@ pub const CodeGen = struct {
         c.LLVMPositionBuilderAtEnd(builder, init_bb);
 
         const fmt_int = c.LLVMBuildGlobalStringPtr(builder, "%d\n", "fmt_int");
+        const fmt_uint = c.LLVMBuildGlobalStringPtr(builder, "%u\n", "fmt_uint");
+        const fmt_long = c.LLVMBuildGlobalStringPtr(builder, "%ld\n", "fmt_long");
+        const fmt_ulong = c.LLVMBuildGlobalStringPtr(builder, "%lu\n", "fmt_ulong");
         const fmt_str = c.LLVMBuildGlobalStringPtr(builder, "%s\n", "fmt_str");
         const fmt_float = c.LLVMBuildGlobalStringPtr(builder, "%f\n", "fmt_float");
         const fmt_char = c.LLVMBuildGlobalStringPtr(builder, "%c\n", "fmt_char");
@@ -304,6 +321,9 @@ pub const CodeGen = struct {
         const fmt_bool_false = c.LLVMBuildGlobalStringPtr(builder, "false\n", "fmt_bool_false");
         const fmt_panic = c.LLVMBuildGlobalStringPtr(builder, "panic: %s\n", "fmt_panic");
         const fmt_int_raw = c.LLVMBuildGlobalStringPtr(builder, "%d", "fmt_int_raw");
+        const fmt_uint_raw = c.LLVMBuildGlobalStringPtr(builder, "%u", "fmt_uint_raw");
+        const fmt_long_raw = c.LLVMBuildGlobalStringPtr(builder, "%ld", "fmt_long_raw");
+        const fmt_ulong_raw = c.LLVMBuildGlobalStringPtr(builder, "%lu", "fmt_ulong_raw");
         const fmt_str_raw = c.LLVMBuildGlobalStringPtr(builder, "%s", "fmt_str_raw");
         const fmt_float_raw = c.LLVMBuildGlobalStringPtr(builder, "%f", "fmt_float_raw");
         const fmt_char_raw = c.LLVMBuildGlobalStringPtr(builder, "%c", "fmt_char_raw");
@@ -330,6 +350,9 @@ pub const CodeGen = struct {
             .ast = ast,
             .printf_fn = printf_fn,
             .fmt_int = fmt_int,
+            .fmt_uint = fmt_uint,
+            .fmt_long = fmt_long,
+            .fmt_ulong = fmt_ulong,
             .fmt_str = fmt_str,
             .fmt_float = fmt_float,
             .fmt_char = fmt_char,
@@ -368,6 +391,9 @@ pub const CodeGen = struct {
             .clock_fn = clock_fn,
             .isspace_fn = isspace_fn,
             .fmt_int_raw = fmt_int_raw,
+            .fmt_uint_raw = fmt_uint_raw,
+            .fmt_long_raw = fmt_long_raw,
+            .fmt_ulong_raw = fmt_ulong_raw,
             .fmt_str_raw = fmt_str_raw,
             .fmt_float_raw = fmt_float_raw,
             .fmt_char_raw = fmt_char_raw,
@@ -872,8 +898,16 @@ pub const CodeGen = struct {
             .builtin => |b| switch (b) {
                 .void => .void_type,
                 .bool_type => .bool_type,
+                .i8_type => .i8_type,
+                .i16_type => .i16_type,
                 .i32_type, .int_type => .i32_type,
                 .i64_type => .i64_type,
+                .i128_type => .i128_type,
+                .u8_type => .u8_type,
+                .u16_type => .u16_type,
+                .u32_type => .u32_type,
+                .u64_type => .u64_type,
+                .u128_type => .u128_type,
                 .f64_type, .float_type => .f64_type,
                 .string_type => .string_type,
                 .char_type => .char_type,
@@ -972,13 +1006,48 @@ pub const CodeGen = struct {
         return @as(@typeInfo(TypeTag).@"union".tag_type.?, tag) == expected;
     }
 
+    pub fn isUnsignedInt(tag: TypeTag) bool {
+        return switch (tag) {
+            .u8_type, .u16_type, .u32_type, .u64_type, .u128_type => true,
+            else => false,
+        };
+    }
+
+    pub fn isIntegerType(tag: TypeTag) bool {
+        return switch (tag) {
+            .i8_type, .i16_type, .i32_type, .i64_type, .i128_type,
+            .u8_type, .u16_type, .u32_type, .u64_type, .u128_type,
+            => true,
+            else => false,
+        };
+    }
+
     pub fn getTypeConversion(_: *const CodeGen, name: []const u8) ?TypeTag {
+        if (std.mem.eql(u8, name, "i8")) return .i8_type;
+        if (std.mem.eql(u8, name, "i16")) return .i16_type;
         if (std.mem.eql(u8, name, "i32")) return .i32_type;
         if (std.mem.eql(u8, name, "i64")) return .i64_type;
+        if (std.mem.eql(u8, name, "i128")) return .i128_type;
+        if (std.mem.eql(u8, name, "u8")) return .u8_type;
+        if (std.mem.eql(u8, name, "u16")) return .u16_type;
+        if (std.mem.eql(u8, name, "u32")) return .u32_type;
+        if (std.mem.eql(u8, name, "u64")) return .u64_type;
+        if (std.mem.eql(u8, name, "u128")) return .u128_type;
         if (std.mem.eql(u8, name, "f64")) return .f64_type;
         if (std.mem.eql(u8, name, "bool")) return .bool_type;
         if (std.mem.eql(u8, name, "char")) return .char_type;
         return null;
+    }
+
+    fn intBitWidth(tag: TypeTag) ?u32 {
+        return switch (tag) {
+            .i8_type, .u8_type, .char_type => 8,
+            .i16_type, .u16_type => 16,
+            .i32_type, .u32_type => 32,
+            .i64_type, .u64_type => 64,
+            .i128_type, .u128_type => 128,
+            else => null,
+        };
     }
 
     pub fn genTypeConversion(self: *CodeGen, src: ExprResult, target: TypeTag) GenError!ExprResult {
@@ -986,45 +1055,58 @@ pub const CodeGen = struct {
         const tgt_tag: @typeInfo(TypeTag).@"union".tag_type.? = target;
         if (src_tag == tgt_tag) return src;
 
+        const target_llvm = self.typeTagToLLVM(target);
+        const src_is_unsigned = isUnsignedInt(src.type_tag);
+        const tgt_is_unsigned = isUnsignedInt(target);
+
         const value: c.LLVMValueRef = if (isTypeTag(target, .f64_type)) blk: {
-            if (isTypeTag(src.type_tag, .i32_type) or isTypeTag(src.type_tag, .i64_type)) {
-                break :blk c.LLVMBuildSIToFP(self.builder, src.value, c.LLVMDoubleTypeInContext(self.context), "sitofp");
-            }
-            if (isTypeTag(src.type_tag, .char_type)) {
-                // char (i8) -> f64: sign-extend to i32 first, then convert
-                const ext = c.LLVMBuildSExt(self.builder, src.value, c.LLVMInt32TypeInContext(self.context), "char_ext");
-                break :blk c.LLVMBuildSIToFP(self.builder, ext, c.LLVMDoubleTypeInContext(self.context), "sitofp");
+            // Any integer/char -> f64
+            if (isIntegerType(src.type_tag) or isTypeTag(src.type_tag, .char_type)) {
+                if (src_is_unsigned) {
+                    break :blk c.LLVMBuildUIToFP(self.builder, src.value, target_llvm, "uitofp");
+                } else {
+                    break :blk c.LLVMBuildSIToFP(self.builder, src.value, target_llvm, "sitofp");
+                }
             }
             self.diagnostics.report(.@"error", 0, "cannot convert to f64", .{});
             return error.CodeGenError;
-        } else if (isTypeTag(target, .i32_type)) blk: {
+        } else if (isIntegerType(target) or isTypeTag(target, .char_type)) blk: {
+            // f64 -> integer
             if (isTypeTag(src.type_tag, .f64_type)) {
-                break :blk c.LLVMBuildFPToSI(self.builder, src.value, c.LLVMInt32TypeInContext(self.context), "fptosi");
+                if (tgt_is_unsigned) {
+                    break :blk c.LLVMBuildFPToUI(self.builder, src.value, target_llvm, "fptoui");
+                } else {
+                    break :blk c.LLVMBuildFPToSI(self.builder, src.value, target_llvm, "fptosi");
+                }
             }
-            if (isTypeTag(src.type_tag, .i64_type)) {
-                break :blk c.LLVMBuildTrunc(self.builder, src.value, c.LLVMInt32TypeInContext(self.context), "trunc");
+            // integer/char -> integer/char: compare bit widths
+            const src_width = intBitWidth(src.type_tag) orelse {
+                self.diagnostics.report(.@"error", 0, "cannot convert to integer", .{});
+                return error.CodeGenError;
+            };
+            const tgt_width = intBitWidth(target) orelse {
+                self.diagnostics.report(.@"error", 0, "cannot convert to integer", .{});
+                return error.CodeGenError;
+            };
+            if (src_width == tgt_width) {
+                // Same width (e.g., i32 -> u32): no LLVM instruction needed
+                break :blk src.value;
+            } else if (tgt_width > src_width) {
+                // Widening
+                if (src_is_unsigned or isTypeTag(src.type_tag, .char_type)) {
+                    break :blk c.LLVMBuildZExt(self.builder, src.value, target_llvm, "zext");
+                } else {
+                    break :blk c.LLVMBuildSExt(self.builder, src.value, target_llvm, "sext");
+                }
+            } else {
+                // Narrowing
+                break :blk c.LLVMBuildTrunc(self.builder, src.value, target_llvm, "trunc");
             }
-            if (isTypeTag(src.type_tag, .char_type)) {
-                // char (i8) -> i32: sign-extend
-                break :blk c.LLVMBuildSExt(self.builder, src.value, c.LLVMInt32TypeInContext(self.context), "char_to_i32");
+        } else if (isTypeTag(target, .bool_type)) blk: {
+            if (isIntegerType(src.type_tag)) {
+                break :blk c.LLVMBuildICmp(self.builder, c.LLVMIntNE, src.value, c.LLVMConstInt(self.typeTagToLLVM(src.type_tag), 0, 0), "to_bool");
             }
-            self.diagnostics.report(.@"error", 0, "cannot convert to i32", .{});
-            return error.CodeGenError;
-        } else if (isTypeTag(target, .char_type)) blk: {
-            if (isTypeTag(src.type_tag, .i32_type) or isTypeTag(src.type_tag, .i64_type)) {
-                // i32/i64 -> char (i8): truncate
-                break :blk c.LLVMBuildTrunc(self.builder, src.value, c.LLVMInt8TypeInContext(self.context), "to_char");
-            }
-            self.diagnostics.report(.@"error", 0, "cannot convert to char", .{});
-            return error.CodeGenError;
-        } else if (isTypeTag(target, .i64_type)) blk: {
-            if (isTypeTag(src.type_tag, .f64_type)) {
-                break :blk c.LLVMBuildFPToSI(self.builder, src.value, c.LLVMInt64TypeInContext(self.context), "fptosi");
-            }
-            if (isTypeTag(src.type_tag, .i32_type)) {
-                break :blk c.LLVMBuildSExt(self.builder, src.value, c.LLVMInt64TypeInContext(self.context), "sext");
-            }
-            self.diagnostics.report(.@"error", 0, "cannot convert to i64", .{});
+            self.diagnostics.report(.@"error", 0, "unsupported type conversion", .{});
             return error.CodeGenError;
         } else {
             self.diagnostics.report(.@"error", 0, "unsupported type conversion", .{});
@@ -1036,8 +1118,11 @@ pub const CodeGen = struct {
 
     pub fn typeTagToLLVM(self: *const CodeGen, tag: TypeTag) c.LLVMTypeRef {
         return switch (tag) {
-            .i32_type => c.LLVMInt32TypeInContext(self.context),
-            .i64_type => c.LLVMInt64TypeInContext(self.context),
+            .i8_type, .u8_type => c.LLVMInt8TypeInContext(self.context),
+            .i16_type, .u16_type => c.LLVMInt16TypeInContext(self.context),
+            .i32_type, .u32_type => c.LLVMInt32TypeInContext(self.context),
+            .i64_type, .u64_type => c.LLVMInt64TypeInContext(self.context),
+            .i128_type, .u128_type => c.LLVMInt128TypeInContext(self.context),
             .f64_type => c.LLVMDoubleTypeInContext(self.context),
             .bool_type => c.LLVMInt1TypeInContext(self.context),
             .char_type => c.LLVMInt8TypeInContext(self.context),

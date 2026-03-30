@@ -1,0 +1,83 @@
+package main;
+
+pub fn main() -> void {
+    // --- i8: signed 8-bit ---
+    let a: i8 = i8(42);
+    log(a);
+
+    // --- u8: unsigned 8-bit ---
+    let b: u8 = u8(255);
+    log(b);
+
+    // --- i16: signed 16-bit ---
+    let c: i16 = i16(1000);
+    log(c);
+
+    // --- u16: unsigned 16-bit ---
+    let d: u16 = u16(65535);
+    log(d);
+
+    // --- u32: unsigned 32-bit ---
+    let e: u32 = u32(100);
+    log(e);
+
+    // --- u64: unsigned 64-bit ---
+    let f: u64 = u64(123456);
+    log(f);
+
+    // --- i128: signed 128-bit (truncated to 64-bit for display) ---
+    let g: i128 = i128(999999);
+    log(g);
+
+    // --- u128: unsigned 128-bit (truncated to 64-bit for display) ---
+    let h: u128 = u128(888888);
+    log(h);
+
+    // --- Arithmetic ---
+    let x: u16 = u16(100);
+    let y: u16 = u16(200);
+    let sum: u16 = x + y;
+    log(sum);
+
+    let p: i8 = i8(50);
+    let q: i8 = i8(30);
+    let diff: i8 = p - q;
+    log(diff);
+
+    // --- Unsigned division (should use UDiv) ---
+    let ua: u32 = u32(100);
+    let ub: u32 = u32(7);
+    let udiv: u32 = ua / ub;
+    log(udiv);
+
+    // --- Unsigned modulo (should use URem) ---
+    let umod: u32 = ua % ub;
+    log(umod);
+
+    // --- Unsigned comparison ---
+    let cmp: bool = u8(200) > u8(100);
+    log(cmp);
+
+    // --- Type conversions: widening ---
+    let small: i8 = i8(42);
+    let wide: i64 = i64(small);
+    log(wide);
+
+    // --- Type conversions: narrowing ---
+    let big: i32 = 1000;
+    let narrow: i8 = i8(big);
+    log(narrow);
+
+    // --- Type conversions: signed to unsigned (same width) ---
+    let signed: i32 = 42;
+    let unsigned: u32 = u32(signed);
+    log(unsigned);
+
+    // --- Unsigned to float ---
+    let uval: u32 = u32(42);
+    let fval: f64 = f64(uval);
+    log(fval);
+
+    log("int_types: all tests passed");
+    return;
+}

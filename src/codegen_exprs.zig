@@ -718,25 +718,26 @@ pub fn genBinaryOp(self: *CodeGen, op: Ast.BinaryOp, lhs: CodeGen.ExprResult, rh
     }
 
     const is_float = CodeGen.isTypeTag(lhs.type_tag, .f64_type);
+    const is_unsigned = CodeGen.isUnsignedInt(lhs.type_tag);
     const value = switch (op) {
         .add => if (is_float) c.LLVMBuildFAdd(self.builder, lhs.value, rhs.value, "fadd") else c.LLVMBuildAdd(self.builder, lhs.value, rhs.value, "add"),
         .sub => if (is_float) c.LLVMBuildFSub(self.builder, lhs.value, rhs.value, "fsub") else c.LLVMBuildSub(self.builder, lhs.value, rhs.value, "sub"),
         .mul => if (is_float) c.LLVMBuildFMul(self.builder, lhs.value, rhs.value, "fmul") else c.LLVMBuildMul(self.builder, lhs.value, rhs.value, "mul"),
-        .div => if (is_float) c.LLVMBuildFDiv(self.builder, lhs.value, rhs.value, "fdiv") else c.LLVMBuildSDiv(self.builder, lhs.value, rhs.value, "sdiv"),
-        .mod => c.LLVMBuildSRem(self.builder, lhs.value, rhs.value, "mod"),
+        .div => if (is_float) c.LLVMBuildFDiv(self.builder, lhs.value, rhs.value, "fdiv") else if (is_unsigned) c.LLVMBuildUDiv(self.builder, lhs.value, rhs.value, "udiv") else c.LLVMBuildSDiv(self.builder, lhs.value, rhs.value, "sdiv"),
+        .mod => if (is_unsigned) c.LLVMBuildURem(self.builder, lhs.value, rhs.value, "umod") else c.LLVMBuildSRem(self.builder, lhs.value, rhs.value, "mod"),
         .eq => if (is_float) c.LLVMBuildFCmp(self.builder, c.LLVMRealOEQ, lhs.value, rhs.value, "feq") else c.LLVMBuildICmp(self.builder, c.LLVMIntEQ, lhs.value, rhs.value, "eq"),
         .neq => if (is_float) c.LLVMBuildFCmp(self.builder, c.LLVMRealONE, lhs.value, rhs.value, "fne") else c.LLVMBuildICmp(self.builder, c.LLVMIntNE, lhs.value, rhs.value, "ne"),
-        .lt => if (is_float) c.LLVMBuildFCmp(self.builder, c.LLVMRealOLT, lhs.value, rhs.value, "flt") else c.LLVMBuildICmp(self.builder, c.LLVMIntSLT, lhs.value, rhs.value, "lt"),
-        .le => if (is_float) c.LLVMBuildFCmp(self.builder, c.LLVMRealOLE, lhs.value, rhs.value, "fle") else c.LLVMBuildICmp(self.builder, c.LLVMIntSLE, lhs.value, rhs.value, "le"),
-        .gt => if (is_float) c.LLVMBuildFCmp(self.builder, c.LLVMRealOGT, lhs.value, rhs.value, "fgt") else c.LLVMBuildICmp(self.builder, c.LLVMIntSGT, lhs.value, rhs.value, "gt"),
-        .ge => if (is_float) c.LLVMBuildFCmp(self.builder, c.LLVMRealOGE, lhs.value, rhs.value, "fge") else c.LLVMBuildICmp(self.builder, c.LLVMIntSGE, lhs.value, rhs.value, "ge"),
+        .lt => if (is_float) c.LLVMBuildFCmp(self.builder, c.LLVMRealOLT, lhs.value, rhs.value, "flt") else c.LLVMBuildICmp(self.builder, if (is_unsigned) c.LLVMIntULT else c.LLVMIntSLT, lhs.value, rhs.value, "lt"),
+        .le => if (is_float) c.LLVMBuildFCmp(self.builder, c.LLVMRealOLE, lhs.value, rhs.value, "fle") else c.LLVMBuildICmp(self.builder, if (is_unsigned) c.LLVMIntULE else c.LLVMIntSLE, lhs.value, rhs.value, "le"),
+        .gt => if (is_float) c.LLVMBuildFCmp(self.builder, c.LLVMRealOGT, lhs.value, rhs.value, "fgt") else c.LLVMBuildICmp(self.builder, if (is_unsigned) c.LLVMIntUGT else c.LLVMIntSGT, lhs.value, rhs.value, "gt"),
+        .ge => if (is_float) c.LLVMBuildFCmp(self.builder, c.LLVMRealOGE, lhs.value, rhs.value, "fge") else c.LLVMBuildICmp(self.builder, if (is_unsigned) c.LLVMIntUGE else c.LLVMIntSGE, lhs.value, rhs.value, "ge"),
         .logic_and => c.LLVMBuildAnd(self.builder, lhs.value, rhs.value, "and"),
         .logic_or => c.LLVMBuildOr(self.builder, lhs.value, rhs.value, "or"),
         .bit_and => c.LLVMBuildAnd(self.builder, lhs.value, rhs.value, "bitand"),
         .bit_or => c.LLVMBuildOr(self.builder, lhs.value, rhs.value, "bitor"),
         .bit_xor => c.LLVMBuildXor(self.builder, lhs.value, rhs.value, "xor"),
         .shift_left => c.LLVMBuildShl(self.builder, lhs.value, rhs.value, "shl"),
-        .shift_right => c.LLVMBuildAShr(self.builder, lhs.value, rhs.value, "shr"),
+        .shift_right => if (is_unsigned) c.LLVMBuildLShr(self.builder, lhs.value, rhs.value, "lshr") else c.LLVMBuildAShr(self.builder, lhs.value, rhs.value, "shr"),
     };
 
     const result_type: CodeGen.TypeTag = switch (op) {
@@ -890,8 +891,32 @@ pub fn genLogCall(self: *CodeGen, call_expr: Ast.CallExpr) CodeGen.GenError!Code
     const arg = try genExpr(self, call_expr.args.items[0]);
     const printf_type = c.LLVMGlobalGetValueType(self.printf_fn);
 
-    if (CodeGen.isTypeTag(arg.type_tag, .i32_type) or CodeGen.isTypeTag(arg.type_tag, .i64_type)) {
-        const args_arr = [_]c.LLVMValueRef{ self.fmt_int, arg.value };
+    if (CodeGen.isIntegerType(arg.type_tag)) {
+        // Pick the right format string and value based on type
+        const fmt_and_val = switch (arg.type_tag) {
+            .i8_type, .i16_type => .{
+                self.fmt_int,
+                c.LLVMBuildSExt(self.builder, arg.value, c.LLVMInt32TypeInContext(self.context), "sext_log"),
+            },
+            .u8_type, .u16_type => .{
+                self.fmt_uint,
+                c.LLVMBuildZExt(self.builder, arg.value, c.LLVMInt32TypeInContext(self.context), "zext_log"),
+            },
+            .i32_type => .{ self.fmt_int, arg.value },
+            .u32_type => .{ self.fmt_uint, arg.value },
+            .i64_type => .{ self.fmt_long, arg.value },
+            .u64_type => .{ self.fmt_ulong, arg.value },
+            .i128_type => .{
+                self.fmt_long,
+                c.LLVMBuildTrunc(self.builder, arg.value, c.LLVMInt64TypeInContext(self.context), "trunc_log"),
+            },
+            .u128_type => .{
+                self.fmt_ulong,
+                c.LLVMBuildTrunc(self.builder, arg.value, c.LLVMInt64TypeInContext(self.context), "trunc_log"),
+            },
+            else => unreachable,
+        };
+        const args_arr = [_]c.LLVMValueRef{ fmt_and_val[0], fmt_and_val[1] };
         _ = c.LLVMBuildCall2(self.builder, printf_type, self.printf_fn, @constCast(&args_arr), 2, "");
     } else if (CodeGen.isTypeTag(arg.type_tag, .char_type)) {
         // Print char using %c format - need to extend i8 to i32 for printf

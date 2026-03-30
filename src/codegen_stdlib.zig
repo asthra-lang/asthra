@@ -5,6 +5,33 @@ const CodeGen = codegen_mod.CodeGen;
 const c = codegen_mod.c;
 const codegen_exprs = @import("codegen_exprs.zig");
 
+// Helper: pick the right printf format string and value for an integer type
+fn intFmtAndVal(self: *CodeGen, arg: CodeGen.ExprResult, with_newline: bool) struct { c.LLVMValueRef, c.LLVMValueRef } {
+    return switch (arg.type_tag) {
+        .i8_type, .i16_type => .{
+            if (with_newline) self.fmt_int else self.fmt_int_raw,
+            c.LLVMBuildSExt(self.builder, arg.value, c.LLVMInt32TypeInContext(self.context), "sext_pr"),
+        },
+        .u8_type, .u16_type => .{
+            if (with_newline) self.fmt_uint else self.fmt_uint_raw,
+            c.LLVMBuildZExt(self.builder, arg.value, c.LLVMInt32TypeInContext(self.context), "zext_pr"),
+        },
+        .i32_type => .{ if (with_newline) self.fmt_int else self.fmt_int_raw, arg.value },
+        .u32_type => .{ if (with_newline) self.fmt_uint else self.fmt_uint_raw, arg.value },
+        .i64_type => .{ if (with_newline) self.fmt_long else self.fmt_long_raw, arg.value },
+        .u64_type => .{ if (with_newline) self.fmt_ulong else self.fmt_ulong_raw, arg.value },
+        .i128_type => .{
+            if (with_newline) self.fmt_long else self.fmt_long_raw,
+            c.LLVMBuildTrunc(self.builder, arg.value, c.LLVMInt64TypeInContext(self.context), "trunc_pr"),
+        },
+        .u128_type => .{
+            if (with_newline) self.fmt_ulong else self.fmt_ulong_raw,
+            c.LLVMBuildTrunc(self.builder, arg.value, c.LLVMInt64TypeInContext(self.context), "trunc_pr"),
+        },
+        else => .{ if (with_newline) self.fmt_int else self.fmt_int_raw, arg.value },
+    };
+}
+
 pub fn genStdlibCall(self: *CodeGen, namespace: []const u8, func: []const u8, args: *const std.ArrayList(Ast.ExprIndex)) CodeGen.GenError!CodeGen.ExprResult {
     if (std.mem.eql(u8, namespace, "math")) {
         return genMathCall(self, func, args);
@@ -36,9 +63,11 @@ pub fn genMathConstant(self: *CodeGen, field: []const u8) CodeGen.GenError!CodeG
 }
 
 pub fn ensureF64(self: *CodeGen, result: CodeGen.ExprResult) c.LLVMValueRef {
+    if (CodeGen.isUnsignedInt(result.type_tag)) {
+        return c.LLVMBuildUIToFP(self.builder, result.value, c.LLVMDoubleTypeInContext(self.context), "u2f");
+    }
     return switch (result.type_tag) {
-        .i32_type => c.LLVMBuildSIToFP(self.builder, result.value, c.LLVMDoubleTypeInContext(self.context), "i2f"),
-        .i64_type => c.LLVMBuildSIToFP(self.builder, result.value, c.LLVMDoubleTypeInContext(self.context), "i64_2f"),
+        .i8_type, .i16_type, .i32_type, .i64_type, .i128_type => c.LLVMBuildSIToFP(self.builder, result.value, c.LLVMDoubleTypeInContext(self.context), "i2f"),
         else => result.value,
     };
 }
@@ -177,7 +206,8 @@ fn genStrCall(self: *CodeGen, func: []const u8, args: *const std.ArrayList(Ast.E
         var malloc_args = [_]c.LLVMValueRef{buf_size};
         const buf = c.LLVMBuildCall2(self.builder, malloc_fn_type, self.malloc_fn, &malloc_args, 1, "buf");
         const sprintf_fn_type = c.LLVMGlobalGetValueType(self.sprintf_fn);
-        var sprintf_args = [_]c.LLVMValueRef{ buf, self.fmt_int_raw, arg.value };
+        const fmt_val = intFmtAndVal(self, arg, false);
+        var sprintf_args = [_]c.LLVMValueRef{ buf, fmt_val[0], fmt_val[1] };
         _ = c.LLVMBuildCall2(self.builder, sprintf_fn_type, self.sprintf_fn, &sprintf_args, 3, "");
         return .{ .value = buf, .type_tag = .string_type };
     } else if (std.mem.eql(u8, func, "from_float")) {
@@ -698,9 +728,13 @@ pub fn genIoCall(self: *CodeGen, func: []const u8, args: *const std.ArrayList(As
         const arg = try codegen_exprs.genExpr(self, args.items[0]);
         // Use printf with newline format string (same as log)
         const printf_fn_type = c.LLVMGlobalGetValueType(self.printf_fn);
+        if (CodeGen.isIntegerType(arg.type_tag)) {
+            const fmt_and_val = intFmtAndVal(self, arg, true);
+            var print_args = [_]c.LLVMValueRef{ fmt_and_val[0], fmt_and_val[1] };
+            _ = c.LLVMBuildCall2(self.builder, printf_fn_type, self.printf_fn, &print_args, 2, "");
+            return .{ .value = void_val, .type_tag = .void_type };
+        }
         const fmt = switch (arg.type_tag) {
-            .i32_type => self.fmt_int,
-            .i64_type => self.fmt_int,
             .f64_type => self.fmt_float,
             .string_type => self.fmt_str,
             .char_type => self.fmt_char,
@@ -723,9 +757,13 @@ pub fn genIoCall(self: *CodeGen, func: []const u8, args: *const std.ArrayList(As
         const arg = try codegen_exprs.genExpr(self, args.items[0]);
         // Use printf with no-newline format string
         const printf_fn_type = c.LLVMGlobalGetValueType(self.printf_fn);
+        if (CodeGen.isIntegerType(arg.type_tag)) {
+            const fmt_and_val = intFmtAndVal(self, arg, false);
+            var print_args = [_]c.LLVMValueRef{ fmt_and_val[0], fmt_and_val[1] };
+            _ = c.LLVMBuildCall2(self.builder, printf_fn_type, self.printf_fn, &print_args, 2, "");
+            return .{ .value = void_val, .type_tag = .void_type };
+        }
         const fmt = switch (arg.type_tag) {
-            .i32_type => self.fmt_int_raw,
-            .i64_type => self.fmt_int_raw,
             .f64_type => self.fmt_float_raw,
             .string_type => self.fmt_str_raw,
             .char_type => self.fmt_char_raw,

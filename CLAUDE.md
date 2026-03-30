@@ -72,7 +72,7 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 - Package declarations
 - Functions with params and return values
 - `let` / `let mut` variable declarations and assignment
-- Integer types (`i32`) and arithmetic (`+`, `-`, `*`, `/`, `%`)
+- Integer types (`i8`, `i16`, `i32`, `i64`, `i128`, `u8`, `u16`, `u32`, `u64`, `u128`) and arithmetic (`+`, `-`, `*`, `/`, `%`) with correct signed/unsigned semantics
 - Comparison operators (`==`, `!=`, `<`, `<=`, `>`, `>=`)
 - Logical operators (`&&`, `||`, `!`)
 - `if`/`else` statements (including nested)

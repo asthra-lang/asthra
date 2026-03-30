@@ -104,3 +104,16 @@ Anonymous functions with variable capture via lambda lifting.
 | 62 | `dyn_trait.ast` | `dyn Trait` type, vtable generation, dynamic dispatch via fat pointers | Done |
 | 63 | `generic_functions.ast` | generic functions `fn<T>(x: T)` with on-demand monomorphization | Done |
 | 59 | `higher_order_arrays.ast` | `map`, `filter`, `reduce` builtin functions on arrays | Done |
+
+## Phase 7: Type System Completeness & Runtime
+
+Implementing all grammar-defined types in codegen and building the real async runtime. No grammar changes required.
+
+| # | Example | Features Unlocked | Status |
+|---|---------|-------------------|--------|
+| 64 | `int_types.ast` | Full integer type support in codegen: `i8`, `u8`, `i16`, `u16`, `u32`, `i64`, `u64`, `i128`, `u128` with arithmetic, conversions, and `log()` | Done |
+| 65 | `platform_types.ast` | `usize`, `isize` types mapped to platform pointer width (64-bit on arm64/x86_64) | Pending |
+| 66 | `f32_type.ast` | `f32` single-precision floats, `f32`/`f64` conversions, math stdlib support | Pending |
+| 67 | `never_type.ast` | `Never` type for `panic()` and `exit()`, exhaustiveness in match arms | Pending |
+| 68 | `infinite_iter.ast` | `infinite()` predeclared iterator with `#[non_deterministic]` annotation, `break` required | Pending |
+| 69 | `async_pthread.ast` | Real pthread-based `spawn`/`await` runtime: thread creation, join, handle results | Pending |
