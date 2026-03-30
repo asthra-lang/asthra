@@ -38,7 +38,7 @@ UnaryConstExpr <- UnaryOp ConstExpr                                 # Unary oper
 MutModifier    <- 'mut'                                             # Mutability keyword for local variables only
 
 # Function and external function declarations
-FunctionDecl   <- 'fn' SimpleIdent '(' ParamList ')' '->' SafeFFIAnnotation? Type Block  # Function with explicit parameter list required
+FunctionDecl   <- 'fn' SimpleIdent TypeParams? '(' ParamList ')' '->' SafeFFIAnnotation? Type Block  # Function with optional generic type params
 ExternDecl     <- 'extern' STRING? 'fn' SimpleIdent '(' ExternParamList ')' '->' SafeFFIAnnotation? Type ';'  # Foreign function interface with explicit parameters
 StructDecl     <- OwnershipTag? 'struct' SimpleIdent TypeParams? '{' StructContent '}'  # Struct with explicit content required
 StructContent  <- StructFieldList / 'none'                  # Explicit struct content: fields or none marker

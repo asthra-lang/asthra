@@ -118,6 +118,7 @@ pub const Ast = struct {
 
     pub const FnDecl = struct {
         name: []const u8,
+        type_params: std.ArrayList([]const u8) = .{},
         params: std.ArrayList(Param),
         return_type: TypeExpr,
         body: Block,

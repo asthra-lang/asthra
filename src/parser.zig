@@ -240,6 +240,20 @@ pub const Parser = struct {
         try self.expect(.identifier);
         const name = name_token.slice(self.source);
 
+        // Parse optional type parameters: <T, U, ...>
+        var type_params = std.ArrayList([]const u8){};
+        if (self.current.tag == .less) {
+            self.advance(); // consume '<'
+            while (true) {
+                const tp_token = self.current;
+                try self.expect(.identifier);
+                try type_params.append(self.ast.allocator, tp_token.slice(self.source));
+                if (self.current.tag != .comma) break;
+                self.advance();
+            }
+            try self.expect(.greater);
+        }
+
         try self.expect(.lparen);
         var params = std.ArrayList(Ast.Param){};
 
@@ -262,6 +276,7 @@ pub const Parser = struct {
 
         return .{
             .name = name,
+            .type_params = type_params,
             .params = params,
             .return_type = return_type,
             .body = body,

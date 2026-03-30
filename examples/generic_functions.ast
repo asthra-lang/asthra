@@ -1,0 +1,22 @@
+package main;
+
+pub fn identity<T>(x: T) -> T {
+    return x;
+}
+
+pub fn add<T>(a: T, b: T) -> T {
+    return a + b;
+}
+
+pub fn main() -> void {
+    // identity monomorphized for i32 and f64
+    log(identity(42));
+    log(identity(3.14));
+
+    // add monomorphized for i32 and f64
+    log(add(10, 20));
+    log(add(1.5, 2.5));
+
+    log("generic_functions: all tests passed");
+    return;
+}

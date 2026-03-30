@@ -811,10 +811,16 @@ pub fn genCallExpr(self: *CodeGen, call_expr: Ast.CallExpr) CodeGen.GenError!Cod
     const name_z = self.allocator.dupeZ(u8, name) catch return error.CodeGenError;
     defer self.allocator.free(name_z);
 
-    const function = c.LLVMGetNamedFunction(self.module, name_z.ptr);
+    var function = c.LLVMGetNamedFunction(self.module, name_z.ptr);
     if (function == null) {
-        self.diagnostics.report(.@"error", 0, "undefined function '{s}'", .{name});
-        return error.CodeGenError;
+        // Check for generic function — monomorphize on demand
+        if (self.generic_fn_decls.get(name)) |gen_fn| {
+            function = try monomorphizeGenericFn(self, gen_fn, &call_expr.args);
+        }
+        if (function == null) {
+            self.diagnostics.report(.@"error", 0, "undefined function '{s}'", .{name});
+            return error.CodeGenError;
+        }
     }
 
     // Look up function parameter types from AST for auto-upcast
@@ -861,8 +867,9 @@ pub fn genCallExpr(self: *CodeGen, call_expr: Ast.CallExpr) CodeGen.GenError!Cod
         return .{ .value = c.LLVMGetUndef(c.LLVMVoidTypeInContext(self.context)), .type_tag = .void_type };
     } else {
         const result = c.LLVMBuildCall2(self.builder, fn_type, function, args.items.ptr, @intCast(args.items.len), "call");
-        // Look up return type from AST
-        const ret_tag = lookupFunctionReturnType(self, name);
+        // Look up return type: check registered return types first, then AST
+        const fn_llvm_name = std.mem.span(c.LLVMGetValueName(function));
+        const ret_tag = self.imported_fn_return_types.get(fn_llvm_name) orelse lookupFunctionReturnType(self, name);
         return .{ .value = result, .type_tag = ret_tag };
     }
 }
@@ -1961,6 +1968,170 @@ fn genOsCall(self: *CodeGen, func: []const u8, args: *const std.ArrayList(Ast.Ex
     }
     self.diagnostics.report(.@"error", 0, "unknown os function '{s}'", .{func});
     return error.CodeGenError;
+}
+
+// ── Generic Function Monomorphization ─────────────────────────────────────
+
+fn monomorphizeGenericFn(self: *CodeGen, gen_fn: *const Ast.FnDecl, call_args: *const std.ArrayList(Ast.ExprIndex)) CodeGen.GenError!c.LLVMValueRef {
+    const codegen_stmts = @import("codegen_stmts.zig");
+    const codegen_types = @import("codegen_types.zig");
+
+    // Infer type arguments from call arguments by peeking at arg expressions
+    // (don't generate code — just determine types)
+    var type_map = std.StringHashMap(CodeGen.TypeTag).init(self.allocator);
+    defer type_map.deinit();
+
+    var arg_types = std.ArrayList(CodeGen.TypeTag){};
+    defer arg_types.deinit(self.allocator);
+    for (call_args.items) |arg_idx| {
+        const arg_type = inferExprType(self, arg_idx);
+        arg_types.append(self.allocator, arg_type) catch {};
+    }
+
+    // Match parameter type expressions against actual argument types to infer T
+    for (gen_fn.params.items, 0..) |param, i| {
+        if (i >= arg_types.items.len) break;
+        switch (param.type_expr) {
+            .named => |param_type_name| {
+                // Check if this is a type parameter
+                for (gen_fn.type_params.items) |tp| {
+                    if (std.mem.eql(u8, param_type_name, tp)) {
+                        type_map.put(tp, arg_types.items[i]) catch {};
+                        break;
+                    }
+                }
+            },
+            else => {},
+        }
+    }
+
+    // Build mangled name: fn_name_Type1_Type2
+    var mangled_parts = std.ArrayList(u8){};
+    defer mangled_parts.deinit(self.allocator);
+    mangled_parts.appendSlice(self.allocator, gen_fn.name) catch {};
+    for (gen_fn.type_params.items) |tp| {
+        mangled_parts.append(self.allocator, '_') catch {};
+        const resolved = type_map.get(tp) orelse CodeGen.TypeTag.i32_type;
+        const type_str = typeTagName(resolved);
+        mangled_parts.appendSlice(self.allocator, type_str) catch {};
+    }
+
+    const mangled_name = mangled_parts.items;
+    const mangled_z = self.allocator.dupeZ(u8, mangled_name) catch return error.CodeGenError;
+    defer self.allocator.free(mangled_z);
+
+    // Check if already monomorphized
+    const existing = c.LLVMGetNamedFunction(self.module, mangled_z.ptr);
+    if (existing != null) return existing;
+
+    // Generate monomorphized function
+    const saved_block = c.LLVMGetInsertBlock(self.builder);
+    const saved_values = self.named_values;
+    self.named_values = std.StringHashMap(CodeGen.NamedValue).init(self.allocator);
+
+    // Resolve return type with substitution
+    const ret_tag = codegen_types.resolveTypeExprWithSubst(self, gen_fn.return_type, &type_map);
+    const ret_llvm = self.typeTagToLLVM(ret_tag);
+
+    // Build param types with substitution
+    var param_types = std.ArrayList(c.LLVMTypeRef){};
+    defer param_types.deinit(self.allocator);
+    var param_tags = std.ArrayList(CodeGen.TypeTag){};
+    defer param_tags.deinit(self.allocator);
+    for (gen_fn.params.items) |param| {
+        const pt = codegen_types.resolveTypeExprWithSubst(self, param.type_expr, &type_map);
+        param_types.append(self.allocator, self.typeTagToLLVM(pt)) catch {};
+        param_tags.append(self.allocator, pt) catch {};
+    }
+
+    const fn_type = c.LLVMFunctionType(ret_llvm, param_types.items.ptr, @intCast(param_types.items.len), 0);
+    const mangled_name_duped = self.allocator.dupe(u8, mangled_name) catch return error.CodeGenError;
+    self.monomorphized_names.append(self.allocator, mangled_name_duped) catch {};
+    const mangled_name_z = self.allocator.dupeZ(u8, mangled_name) catch return error.CodeGenError;
+    defer self.allocator.free(mangled_name_z);
+    const function = c.LLVMAddFunction(self.module, mangled_name_z.ptr, fn_type);
+
+    const entry_bb = c.LLVMAppendBasicBlockInContext(self.context, function, "entry");
+    c.LLVMPositionBuilderAtEnd(self.builder, entry_bb);
+
+    // Register params
+    for (gen_fn.params.items, 0..) |param, i| {
+        const llvm_param = c.LLVMGetParam(function, @intCast(i));
+        const pt = param_tags.items[i];
+        const pname_z = self.allocator.dupeZ(u8, param.name) catch return error.CodeGenError;
+        defer self.allocator.free(pname_z);
+        const alloca = c.LLVMBuildAlloca(self.builder, param_types.items[i], pname_z.ptr);
+        _ = c.LLVMBuildStore(self.builder, llvm_param, alloca);
+        self.named_values.put(param.name, .{
+            .alloca = alloca,
+            .is_mutable = false,
+            .type_tag = pt,
+        }) catch {};
+    }
+
+    // Generate body
+    codegen_stmts.genBlock(self, &gen_fn.body, false) catch {};
+
+    // Add terminator if missing
+    const current_bb = c.LLVMGetInsertBlock(self.builder);
+    if (c.LLVMGetBasicBlockTerminator(current_bb) == null) {
+        if (CodeGen.isTypeTag(ret_tag, .void_type)) {
+            _ = c.LLVMBuildRetVoid(self.builder);
+        }
+    }
+
+    // Restore state
+    self.named_values.deinit();
+    self.named_values = saved_values;
+    c.LLVMPositionBuilderAtEnd(self.builder, saved_block);
+
+    // Register return type for the monomorphized function so call sites can look it up
+    const mangled_key = self.allocator.dupe(u8, mangled_name) catch return error.CodeGenError;
+    self.monomorphized_names.append(self.allocator, mangled_key) catch {};
+    self.imported_fn_return_types.put(mangled_key, ret_tag) catch {};
+
+    return function;
+}
+
+fn inferExprType(self: *CodeGen, expr_idx: Ast.ExprIndex) CodeGen.TypeTag {
+    if (expr_idx >= self.ast.exprs.items.len) return .i32_type;
+    const expr = self.ast.getExpr(expr_idx);
+    return switch (expr) {
+        .int_literal => .i32_type,
+        .float_literal => .f64_type,
+        .bool_literal => .bool_type,
+        .char_literal => .char_type,
+        .string_literal => .string_type,
+        .identifier => |name| blk: {
+            if (self.named_values.get(name)) |nv| break :blk nv.type_tag;
+            if (self.const_values.get(name)) |cv| break :blk cv.type_tag;
+            break :blk .i32_type;
+        },
+        .call => |call| blk: {
+            const callee = self.ast.getExpr(call.callee);
+            switch (callee) {
+                .identifier => |fn_name| {
+                    break :blk lookupFunctionReturnType(self, fn_name);
+                },
+                else => break :blk .i32_type,
+            }
+        },
+        else => .i32_type,
+    };
+}
+
+fn typeTagName(tag: CodeGen.TypeTag) []const u8 {
+    return switch (tag) {
+        .i32_type => "i32",
+        .i64_type => "i64",
+        .f64_type => "f64",
+        .bool_type => "bool",
+        .char_type => "char",
+        .string_type => "string",
+        .struct_type => |name| name,
+        .enum_type => |name| name,
+        else => "unknown",
+    };
 }
 
 // ── Dynamic Dispatch (dyn Trait) ──────────────────────────────────────────

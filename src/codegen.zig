@@ -46,6 +46,8 @@ pub const CodeGen = struct {
     imported_fn_return_types: std.StringHashMap(TypeTag),
     type_aliases: std.StringHashMap(Ast.TypeExpr),
     closure_counter: u32 = 0,
+    // Generic function templates
+    generic_fn_decls: std.StringHashMap(*const Ast.FnDecl),
     // Trait vtable infrastructure
     trait_decls: std.StringHashMap(*const Ast.TraitDecl),
     vtable_globals: std.StringHashMap(c.LLVMValueRef), // "TraitName_TypeName" -> global vtable
@@ -361,6 +363,7 @@ pub const CodeGen = struct {
             .fmt_char_raw = fmt_char_raw,
             .argc_global = argc_global,
             .argv_global = argv_global,
+            .generic_fn_decls = std.StringHashMap(*const Ast.FnDecl).init(allocator),
             .trait_decls = std.StringHashMap(*const Ast.TraitDecl).init(allocator),
             .vtable_globals = std.StringHashMap(c.LLVMValueRef).init(allocator),
         };
@@ -405,6 +408,7 @@ pub const CodeGen = struct {
         self.generic_enum_decls.deinit();
         self.imported_fn_return_types.deinit();
         self.type_aliases.deinit();
+        self.generic_fn_decls.deinit();
         self.trait_decls.deinit();
         self.vtable_globals.deinit();
     }
@@ -452,10 +456,16 @@ pub const CodeGen = struct {
         // Fourth pass: generate vtables (after methods exist, before functions that call them)
         try self.generateVtables();
 
-        // Fifth pass: generate functions
-        for (self.ast.program.decls.items) |decl| {
+        // Fifth pass: generate functions (skip generic ones — they're monomorphized on demand)
+        for (self.ast.program.decls.items) |*decl| {
             switch (decl.decl) {
-                .function => |fn_decl| try self.genFunction(&fn_decl),
+                .function => |*fn_decl| {
+                    if (fn_decl.type_params.items.len > 0) {
+                        self.generic_fn_decls.put(fn_decl.name, fn_decl) catch {};
+                    } else {
+                        try self.genFunction(fn_decl);
+                    }
+                },
                 else => {},
             }
         }
