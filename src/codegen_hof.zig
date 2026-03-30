@@ -490,7 +490,7 @@ pub fn genMapCall(self: *CodeGen, call_expr: Ast.CallExpr) CodeGen.GenError!Code
     c.LLVMPositionBuilderAtEnd(self.builder, loop_end);
     const result = c.LLVMBuildLoad2(self.builder, out_array_llvm, out_alloca, "map_result");
 
-    const out_elem_ptr = self.allocator.create(CodeGen.TypeTag) catch return error.CodeGenError;
+    const out_elem_ptr = self.type_tag_arena.allocator().create(CodeGen.TypeTag) catch return error.CodeGenError;
     out_elem_ptr.* = out_elem_type;
     return .{ .value = result, .type_tag = .{ .array_type = .{ .element_type = out_elem_ptr, .count = count } } };
 }
@@ -657,7 +657,7 @@ pub fn genFilterCall(self: *CodeGen, call_expr: Ast.CallExpr) CodeGen.GenError!C
     _ = c.LLVMBuildStore(self.builder, j_phi, len_field);
     const slice_val = c.LLVMBuildLoad2(self.builder, slice_llvm, slice_alloca, "filter_result");
 
-    const elem_ptr = self.allocator.create(CodeGen.TypeTag) catch return error.CodeGenError;
+    const elem_ptr = self.type_tag_arena.allocator().create(CodeGen.TypeTag) catch return error.CodeGenError;
     elem_ptr.* = elem_type;
     return .{ .value = slice_val, .type_tag = .{ .slice_type = .{ .element_type = elem_ptr } } };
 }

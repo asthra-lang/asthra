@@ -159,11 +159,11 @@ pub fn genClosureExpr(self: *CodeGen, cl: Ast.ClosureExpr) CodeGen.GenError!Code
     const desc_val = c.LLVMBuildLoad2(self.builder, desc_struct_type, desc_alloca, "closure_desc_val");
 
     // Build fn_type TypeTag
-    const param_tags = self.allocator.alloc(CodeGen.TypeTag, cl.params.items.len) catch return error.CodeGenError;
+    const param_tags = self.type_tag_arena.allocator().alloc(CodeGen.TypeTag, cl.params.items.len) catch return error.CodeGenError;
     for (cl.params.items, 0..) |param, i| {
         param_tags[i] = self.resolveTypeExpr(param.type_expr);
     }
-    const ret_tag_ptr = self.allocator.create(CodeGen.TypeTag) catch return error.CodeGenError;
+    const ret_tag_ptr = self.type_tag_arena.allocator().create(CodeGen.TypeTag) catch return error.CodeGenError;
     ret_tag_ptr.* = return_type_tag;
 
     return .{

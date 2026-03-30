@@ -130,7 +130,7 @@ pub fn genAddressOf(self: *CodeGen, operand_idx: Ast.ExprIndex) CodeGen.GenError
                 return error.CodeGenError;
             };
             // Return the alloca as a pointer value
-            const pointee_ptr = self.allocator.create(CodeGen.TypeTag) catch return error.CodeGenError;
+            const pointee_ptr = self.type_tag_arena.allocator().create(CodeGen.TypeTag) catch return error.CodeGenError;
             pointee_ptr.* = nv.type_tag;
             return .{
                 .value = nv.alloca,
@@ -197,7 +197,7 @@ pub fn genArrayLiteral(self: *CodeGen, al: Ast.ArrayLiteralExpr) CodeGen.GenErro
     // Load the full array value
     const loaded = c.LLVMBuildLoad2(self.builder, array_llvm, alloca, "arr_val");
 
-    const elem_ptr = self.allocator.create(CodeGen.TypeTag) catch return error.CodeGenError;
+    const elem_ptr = self.type_tag_arena.allocator().create(CodeGen.TypeTag) catch return error.CodeGenError;
     elem_ptr.* = elem_type_tag;
     return .{ .value = loaded, .type_tag = .{ .array_type = .{ .element_type = elem_ptr, .count = count } } };
 }
@@ -234,7 +234,7 @@ pub fn genRepeatedArray(self: *CodeGen, ra: Ast.RepeatedArrayExpr) CodeGen.GenEr
     // Load the full array value
     const loaded = c.LLVMBuildLoad2(self.builder, array_llvm, alloca, "rep_arr_val");
 
-    const elem_type_ptr = self.allocator.create(CodeGen.TypeTag) catch return error.CodeGenError;
+    const elem_type_ptr = self.type_tag_arena.allocator().create(CodeGen.TypeTag) catch return error.CodeGenError;
     elem_type_ptr.* = elem_type_tag;
     return .{ .value = loaded, .type_tag = .{ .array_type = .{ .element_type = elem_type_ptr, .count = count } } };
 }
@@ -250,7 +250,7 @@ pub fn genTupleLiteral(self: *CodeGen, tl: Ast.TupleLiteralExpr) CodeGen.GenErro
     // Generate all element values and collect types
     var elem_vals = self.allocator.alloc(CodeGen.ExprResult, count) catch return error.CodeGenError;
     defer self.allocator.free(elem_vals);
-    var elem_tags = self.allocator.alloc(CodeGen.TypeTag, count) catch return error.CodeGenError;
+    var elem_tags = self.type_tag_arena.allocator().alloc(CodeGen.TypeTag, count) catch return error.CodeGenError;
     var elem_llvm_types = self.allocator.alloc(c.LLVMTypeRef, count) catch return error.CodeGenError;
     defer self.allocator.free(elem_llvm_types);
 
@@ -385,7 +385,7 @@ pub fn genSliceFromArray(self: *CodeGen, array_alloca: c.LLVMValueRef, arr: Code
     const loaded = c.LLVMBuildLoad2(self.builder, slice_llvm, alloca, "slice_val");
 
     // Create slice type tag with element type
-    const elem_ptr_tag = self.allocator.create(CodeGen.TypeTag) catch return error.CodeGenError;
+    const elem_ptr_tag = self.type_tag_arena.allocator().create(CodeGen.TypeTag) catch return error.CodeGenError;
     elem_ptr_tag.* = arr.element_type.*;
     _ = elem_llvm;
 

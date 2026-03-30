@@ -20,7 +20,7 @@ pub fn genStructType(self: *CodeGen, sd: *const Ast.StructDecl) CodeGen.GenError
     defer self.allocator.free(field_llvm_types);
 
     var field_names = self.allocator.alloc([]const u8, field_count) catch return error.CodeGenError;
-    var field_type_tags = self.allocator.alloc(CodeGen.TypeTag, field_count) catch return error.CodeGenError;
+    var field_type_tags = self.type_tag_arena.allocator().alloc(CodeGen.TypeTag, field_count) catch return error.CodeGenError;
 
     for (sd.fields.items, 0..) |field, i| {
         const ft = self.resolveTypeExpr(field.type_expr);
@@ -78,7 +78,7 @@ pub fn monomorphizeStruct(self: *CodeGen, generic_name: []const u8, type_args: [
     var field_llvm_types = self.allocator.alloc(c.LLVMTypeRef, field_count) catch return error.CodeGenError;
     defer self.allocator.free(field_llvm_types);
     var field_names = self.allocator.alloc([]const u8, field_count) catch return error.CodeGenError;
-    var field_type_tags = self.allocator.alloc(CodeGen.TypeTag, field_count) catch return error.CodeGenError;
+    var field_type_tags = self.type_tag_arena.allocator().alloc(CodeGen.TypeTag, field_count) catch return error.CodeGenError;
 
     for (sd.fields.items, 0..) |field, i| {
         const ft = resolveTypeExprWithSubst(self, field.type_expr, &type_map);
@@ -150,13 +150,13 @@ pub fn monomorphizeEnum(self: *CodeGen, generic_name: []const u8, type_args: []c
     // Generate the concrete enum type with substituted variant data types
     const variant_count: usize = ed.variants.items.len;
     var variant_names = self.allocator.alloc([]const u8, variant_count) catch return error.CodeGenError;
-    var variant_data_types = self.allocator.alloc([]const CodeGen.TypeTag, variant_count) catch return error.CodeGenError;
+    var variant_data_types = self.type_tag_arena.allocator().alloc([]const CodeGen.TypeTag, variant_count) catch return error.CodeGenError;
 
     var max_payload_size: usize = 0;
     for (ed.variants.items, 0..) |variant, i| {
         variant_names[i] = variant.name;
         const dt_count = variant.data_types.items.len;
-        var dts = self.allocator.alloc(CodeGen.TypeTag, dt_count) catch return error.CodeGenError;
+        var dts = self.type_tag_arena.allocator().alloc(CodeGen.TypeTag, dt_count) catch return error.CodeGenError;
         var size: usize = 0;
         for (variant.data_types.items, 0..) |dt, j| {
             dts[j] = resolveTypeExprWithSubst(self, dt, &type_map);
@@ -216,14 +216,14 @@ pub fn genEnumType(self: *CodeGen, ed: *const Ast.EnumDecl) CodeGen.GenError!voi
 
     const variant_count: usize = ed.variants.items.len;
     var variant_names = self.allocator.alloc([]const u8, variant_count) catch return error.CodeGenError;
-    var variant_data_types = self.allocator.alloc([]const CodeGen.TypeTag, variant_count) catch return error.CodeGenError;
+    var variant_data_types = self.type_tag_arena.allocator().alloc([]const CodeGen.TypeTag, variant_count) catch return error.CodeGenError;
 
     // Calculate max payload size
     var max_payload_size: usize = 0;
     for (ed.variants.items, 0..) |variant, i| {
         variant_names[i] = variant.name;
         const dt_count = variant.data_types.items.len;
-        var dts = self.allocator.alloc(CodeGen.TypeTag, dt_count) catch return error.CodeGenError;
+        var dts = self.type_tag_arena.allocator().alloc(CodeGen.TypeTag, dt_count) catch return error.CodeGenError;
         var size: usize = 0;
         for (variant.data_types.items, 0..) |dt, j| {
             dts[j] = self.resolveTypeExpr(dt);
@@ -260,15 +260,15 @@ pub fn ensureOptionType(self: *CodeGen, inner_tag: CodeGen.TypeTag) void {
     variant_names[0] = "Some";
     variant_names[1] = "None";
 
-    var variant_data_types = self.allocator.alloc([]const CodeGen.TypeTag, 2) catch return;
+    var variant_data_types = self.type_tag_arena.allocator().alloc([]const CodeGen.TypeTag, 2) catch return;
 
     // Some variant has one data field of the inner type
-    var some_types = self.allocator.alloc(CodeGen.TypeTag, 1) catch return;
+    var some_types = self.type_tag_arena.allocator().alloc(CodeGen.TypeTag, 1) catch return;
     some_types[0] = inner_tag;
     variant_data_types[0] = some_types;
 
     // None variant has no data
-    var none_types = self.allocator.alloc(CodeGen.TypeTag, 0) catch return;
+    var none_types = self.type_tag_arena.allocator().alloc(CodeGen.TypeTag, 0) catch return;
     variant_data_types[1] = none_types;
     _ = &none_types;
 
@@ -297,15 +297,15 @@ pub fn ensureResultType(self: *CodeGen, ok_tag: CodeGen.TypeTag, err_tag: CodeGe
     variant_names[0] = "Ok";
     variant_names[1] = "Err";
 
-    var variant_data_types = self.allocator.alloc([]const CodeGen.TypeTag, 2) catch return;
+    var variant_data_types = self.type_tag_arena.allocator().alloc([]const CodeGen.TypeTag, 2) catch return;
 
     // Ok variant has one data field of the ok type
-    var ok_types = self.allocator.alloc(CodeGen.TypeTag, 1) catch return;
+    var ok_types = self.type_tag_arena.allocator().alloc(CodeGen.TypeTag, 1) catch return;
     ok_types[0] = ok_tag;
     variant_data_types[0] = ok_types;
 
     // Err variant has one data field of the err type
-    var err_types = self.allocator.alloc(CodeGen.TypeTag, 1) catch return;
+    var err_types = self.type_tag_arena.allocator().alloc(CodeGen.TypeTag, 1) catch return;
     err_types[0] = err_tag;
     variant_data_types[1] = err_types;
 

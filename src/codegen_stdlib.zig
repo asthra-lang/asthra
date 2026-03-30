@@ -686,7 +686,7 @@ fn genStrSplit(self: *CodeGen, text: c.LLVMValueRef, delimiter: c.LLVMValueRef) 
     _ = c.LLVMBuildStore(self.builder, num_segments, sl_len_field);
     const slice_val = c.LLVMBuildLoad2(self.builder, slice_llvm, slice_alloca, "split_result");
 
-    const elem_ptr = self.allocator.create(CodeGen.TypeTag) catch return error.CodeGenError;
+    const elem_ptr = self.type_tag_arena.allocator().create(CodeGen.TypeTag) catch return error.CodeGenError;
     elem_ptr.* = .string_type;
     return .{ .value = slice_val, .type_tag = .{ .slice_type = .{ .element_type = elem_ptr } } };
 }
@@ -832,7 +832,7 @@ pub fn genOsCall(self: *CodeGen, func: []const u8, args: *const std.ArrayList(As
         const len_field = c.LLVMBuildStructGEP2(self.builder, slice_llvm, slice_alloca, 1, "args_len_f");
         _ = c.LLVMBuildStore(self.builder, argc, len_field);
         const slice_val = c.LLVMBuildLoad2(self.builder, slice_llvm, slice_alloca, "args_val");
-        const elem_ptr = self.allocator.create(CodeGen.TypeTag) catch return error.CodeGenError;
+        const elem_ptr = self.type_tag_arena.allocator().create(CodeGen.TypeTag) catch return error.CodeGenError;
         elem_ptr.* = .string_type;
         return .{ .value = slice_val, .type_tag = .{ .slice_type = .{ .element_type = elem_ptr } } };
     }

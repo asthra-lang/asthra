@@ -23,6 +23,7 @@ pub const CodeGen = struct {
     const_values: std.StringHashMap(NamedValue),
     diagnostics: *Diagnostics,
     allocator: std.mem.Allocator,
+    type_tag_arena: std.heap.ArenaAllocator,
     ast: *const Ast,
     printf_fn: c.LLVMValueRef,
     fmt_int: c.LLVMValueRef,
@@ -325,6 +326,7 @@ pub const CodeGen = struct {
             .generic_enum_decls = std.StringHashMap(*const Ast.EnumDecl).init(allocator),
             .diagnostics = diagnostics,
             .allocator = allocator,
+            .type_tag_arena = std.heap.ArenaAllocator.init(allocator),
             .ast = ast,
             .printf_fn = printf_fn,
             .fmt_int = fmt_int,
@@ -469,6 +471,7 @@ pub const CodeGen = struct {
     }
 
     pub fn deinit(self: *CodeGen) void {
+        self.type_tag_arena.deinit();
         c.LLVMDisposeBuilder(self.builder);
         c.LLVMDisposeModule(self.module);
         c.LLVMContextDispose(self.context);
@@ -478,7 +481,6 @@ pub const CodeGen = struct {
         var it = self.struct_types.iterator();
         while (it.next()) |entry| {
             self.allocator.free(entry.value_ptr.field_names);
-            self.allocator.free(entry.value_ptr.field_types);
         }
         self.struct_types.deinit();
         self.generic_struct_decls.deinit();
@@ -490,11 +492,7 @@ pub const CodeGen = struct {
         self.monomorphized_names.deinit(self.allocator);
         var eit = self.enum_types.iterator();
         while (eit.next()) |entry| {
-            for (entry.value_ptr.variant_data_types) |dt| {
-                self.allocator.free(dt);
-            }
             self.allocator.free(entry.value_ptr.variant_names);
-            self.allocator.free(entry.value_ptr.variant_data_types);
         }
         self.enum_types.deinit();
         self.generic_enum_decls.deinit();
@@ -896,13 +894,13 @@ pub const CodeGen = struct {
             },
             .array_type => |arr| {
                 const elem_tag = self.resolveTypeExpr(arr.element_type.*);
-                const elem_ptr = self.allocator.create(TypeTag) catch return .i32_type;
+                const elem_ptr = self.type_tag_arena.allocator().create(TypeTag) catch return .i32_type;
                 elem_ptr.* = elem_tag;
                 return .{ .array_type = .{ .element_type = elem_ptr, .count = arr.size } };
             },
             .slice_type => |sl| {
                 const elem_tag = self.resolveTypeExpr(sl.element_type.*);
-                const elem_ptr = self.allocator.create(TypeTag) catch return .i32_type;
+                const elem_ptr = self.type_tag_arena.allocator().create(TypeTag) catch return .i32_type;
                 elem_ptr.* = elem_tag;
                 return .{ .slice_type = .{ .element_type = elem_ptr } };
             },
@@ -921,7 +919,7 @@ pub const CodeGen = struct {
             },
             .tuple_type => |tt| {
                 const count = tt.element_types.items.len;
-                var elem_tags = self.allocator.alloc(TypeTag, count) catch return .i32_type;
+                var elem_tags = self.type_tag_arena.allocator().alloc(TypeTag, count) catch return .i32_type;
                 var elem_llvm_types = self.allocator.alloc(c.LLVMTypeRef, count) catch return .i32_type;
                 defer self.allocator.free(elem_llvm_types);
 
@@ -945,7 +943,7 @@ pub const CodeGen = struct {
             },
             .ptr_type => |pt| {
                 const pointee_tag = self.resolveTypeExpr(pt.pointee.*);
-                const pointee_ptr = self.allocator.create(TypeTag) catch return .i32_type;
+                const pointee_ptr = self.type_tag_arena.allocator().create(TypeTag) catch return .i32_type;
                 pointee_ptr.* = pointee_tag;
                 return .{ .ptr_type = .{ .pointee = pointee_ptr, .is_mutable = pt.is_mutable } };
             },
@@ -954,12 +952,12 @@ pub const CodeGen = struct {
             },
             .fn_type => |ft| {
                 const count = ft.param_types.items.len;
-                const param_tags = self.allocator.alloc(TypeTag, count) catch return .i32_type;
+                const param_tags = self.type_tag_arena.allocator().alloc(TypeTag, count) catch return .i32_type;
                 for (ft.param_types.items, 0..) |pt, i| {
                     param_tags[i] = self.resolveTypeExpr(pt);
                 }
                 const ret_tag = self.resolveTypeExpr(ft.return_type.*);
-                const ret_ptr = self.allocator.create(TypeTag) catch return .i32_type;
+                const ret_ptr = self.type_tag_arena.allocator().create(TypeTag) catch return .i32_type;
                 ret_ptr.* = ret_tag;
                 return .{ .fn_type = .{ .param_types = param_tags, .return_type = ret_ptr } };
             },
