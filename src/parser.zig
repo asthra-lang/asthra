@@ -1019,4 +1019,6 @@ pub fn parseIntLiteral(text: []const u8) i64 {
 
 test {
     _ = @import("parser_tests.zig");
+    _ = @import("parser_tests_exprs.zig");
+    _ = @import("parser_tests_stmts.zig");
 }
