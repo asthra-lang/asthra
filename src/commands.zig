@@ -181,11 +181,72 @@ pub fn install(allocator: std.mem.Allocator) void {
         if (needs_free) allocator.free(resolved_commit);
     }
 
+    // Resolve transitive dependencies (BFS)
+    resolveTransitiveDeps(allocator, &new_lockfile);
+
     // Write lockfile
     new_lockfile.writeToFile("asthra.lock") catch {
         writeErr("error: could not write asthra.lock\n", .{});
     };
     writeOut("Wrote asthra.lock\n", .{});
+}
+
+fn resolveTransitiveDeps(allocator: std.mem.Allocator, lockfile: *package.Lockfile) void {
+    // Track visited git URLs to prevent cycles and duplicates
+    var visited = std.StringHashMap(void).init(allocator);
+    defer visited.deinit();
+
+    // Mark all direct deps as visited
+    for (lockfile.packages.items) |pkg| {
+        visited.put(pkg.git_url, {}) catch {};
+    }
+
+    // BFS: process each package's dependencies
+    var idx: usize = 0;
+    while (idx < lockfile.packages.items.len) : (idx += 1) {
+        const pkg = lockfile.packages.items[idx];
+
+        // Construct path to the package's asthra.toml
+        const cache_path = fetcher.getCachePath(allocator, pkg.git_url, pkg.commit) catch continue;
+        defer allocator.free(cache_path);
+
+        const toml_path = std.fmt.allocPrint(allocator, "{s}/asthra.toml", .{cache_path}) catch continue;
+        defer allocator.free(toml_path);
+
+        // Try to parse the package's manifest (it may not have one)
+        var dep_manifest = package.PackageManifest.parseFromFile(allocator, toml_path) catch continue;
+        defer dep_manifest.deinit();
+
+        // Process each transitive dependency
+        for (dep_manifest.dependencies.items) |dep| {
+            // Skip if already visited (dedup + cycle prevention)
+            if (visited.contains(dep.git_url)) continue;
+            visited.put(dep.git_url, {}) catch {};
+
+            // Resolve commit
+            var needs_free = false;
+            const resolved_commit = resolveCommit(allocator, dep, &needs_free);
+            const resolved_tag: ?[]const u8 = dep.tag;
+
+            // Fetch
+            const dep_cache = fetcher.fetchPackage(allocator, dep.git_url, resolved_commit) catch {
+                writeErr("error: failed to fetch transitive dep {s}\n", .{dep.git_url});
+                continue;
+            };
+            allocator.free(dep_cache);
+            writeOut("Installed (transitive) {s}\n", .{dep.name});
+
+            // Add to lockfile
+            lockfile.packages.append(allocator, .{
+                .name = allocator.dupe(u8, dep.name) catch continue,
+                .git_url = allocator.dupe(u8, dep.git_url) catch continue,
+                .commit = allocator.dupe(u8, resolved_commit) catch continue,
+                .tag = if (resolved_tag) |t| (allocator.dupe(u8, t) catch null) else null,
+            }) catch {};
+
+            if (needs_free) allocator.free(resolved_commit);
+        }
+    }
 }
 
 fn resolveCommit(allocator: std.mem.Allocator, dep: package.Dependency, needs_free: *bool) []const u8 {
