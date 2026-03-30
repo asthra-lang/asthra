@@ -69,4 +69,15 @@ pub fn build(b: *std.Build) void {
     });
     const run_pkg_tests = b.addRunArtifact(pkg_tests);
     test_step.dependOn(&run_pkg_tests.step);
+
+    // Semver tests (no LLVM dependency)
+    const semver_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/semver.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    const run_semver_tests = b.addRunArtifact(semver_tests);
+    test_step.dependOn(&run_semver_tests.step);
 }

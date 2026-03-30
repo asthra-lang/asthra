@@ -6,6 +6,7 @@ pub const Dependency = struct {
     git_url: []const u8,
     tag: ?[]const u8,
     commit: ?[]const u8,
+    version: ?[]const u8,
 };
 
 pub const PackageManifest = struct {
@@ -55,6 +56,7 @@ pub const PackageManifest = struct {
                             .git_url = try allocator.dupe(u8, git_url),
                             .tag = if (dep_table.get("tag")) |t| try allocator.dupe(u8, t) else null,
                             .commit = if (dep_table.get("commit")) |c| try allocator.dupe(u8, c) else null,
+                            .version = if (dep_table.get("version")) |v| try allocator.dupe(u8, v) else null,
                         });
                     },
                     .string => {},
@@ -73,6 +75,7 @@ pub const PackageManifest = struct {
             self.allocator.free(dep.git_url);
             if (dep.tag) |t| self.allocator.free(t);
             if (dep.commit) |c| self.allocator.free(c);
+            if (dep.version) |v| self.allocator.free(v);
         }
         self.dependencies.deinit(self.allocator);
     }

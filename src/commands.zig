@@ -45,6 +45,7 @@ pub fn add(allocator: std.mem.Allocator, args: []const []const u8) void {
     const git_url = args[0];
     var tag: ?[]const u8 = null;
     var commit: ?[]const u8 = null;
+    var version: ?[]const u8 = null;
 
     var i: usize = 1;
     while (i < args.len) : (i += 1) {
@@ -52,7 +53,19 @@ pub fn add(allocator: std.mem.Allocator, args: []const []const u8) void {
             tag = args[i][6..];
         } else if (std.mem.startsWith(u8, args[i], "--commit=")) {
             commit = args[i][9..];
+        } else if (std.mem.startsWith(u8, args[i], "--version=")) {
+            version = args[i]["--version=".len..];
         }
+    }
+
+    // Resolve version range to tag+commit
+    if (version != null and tag == null and commit == null) {
+        const resolved = fetcher.resolveVersionRange(allocator, git_url, version.?) catch {
+            writeErr("error: could not resolve version '{s}' for {s}\n", .{ version.?, git_url });
+            std.process.exit(1);
+        };
+        tag = resolved.tag;
+        commit = resolved.commit;
     }
 
     // Resolve tag to commit if needed
@@ -187,7 +200,15 @@ fn resolveCommit(allocator: std.mem.Allocator, dep: package.Dependency, needs_fr
             std.process.exit(1);
         };
     }
-    writeErr("error: dependency {s} has no tag or commit\n", .{dep.name});
+    if (dep.version) |v| {
+        needs_free.* = true;
+        const resolved = fetcher.resolveVersionRange(allocator, dep.git_url, v) catch {
+            writeErr("error: could not resolve version '{s}' for {s}\n", .{ v, dep.git_url });
+            std.process.exit(1);
+        };
+        return resolved.commit;
+    }
+    writeErr("error: dependency {s} has no tag, commit, or version\n", .{dep.name});
     std.process.exit(1);
 }
 

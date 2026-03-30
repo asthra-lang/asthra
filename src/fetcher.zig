@@ -117,6 +117,82 @@ pub fn fetchPackage(allocator: std.mem.Allocator, git_url: []const u8, commit: [
     return cache_path;
 }
 
+/// Resolve a semver version range to the best matching tag and commit.
+/// Returns: struct { tag, commit } for the highest matching version.
+pub fn resolveVersionRange(allocator: std.mem.Allocator, git_url: []const u8, version_range: []const u8) !struct { tag: []const u8, commit: []const u8 } {
+    const semver = @import("semver.zig");
+    const range = semver.Range.parse(version_range) orelse {
+        std.debug.print("error: invalid version range '{s}'\n", .{version_range});
+        return error.GitError;
+    };
+
+    const https_url = try std.fmt.allocPrint(allocator, "https://{s}", .{git_url});
+    defer allocator.free(https_url);
+
+    // List all tags via git ls-remote
+    const result = std.process.Child.run(.{
+        .allocator = allocator,
+        .argv = &.{ "git", "ls-remote", "--tags", https_url },
+    }) catch |err| {
+        std.debug.print("error: git ls-remote failed: {}\n", .{err});
+        return error.GitError;
+    };
+    defer allocator.free(result.stdout);
+    defer allocator.free(result.stderr);
+
+    if (result.term.Exited != 0) {
+        std.debug.print("error: git ls-remote failed for {s}\n", .{git_url});
+        return error.GitError;
+    }
+
+    // Parse tags and find best matching version
+    var best_version: ?semver.Version = null;
+    var best_tag: ?[]const u8 = null;
+    var best_commit: ?[]const u8 = null;
+
+    var lines = std.mem.splitScalar(u8, result.stdout, '\n');
+    while (lines.next()) |line| {
+        if (line.len == 0) continue;
+        // Format: "<sha>\trefs/tags/<tagname>"
+        const tab_pos = std.mem.indexOf(u8, line, "\t") orelse continue;
+        const sha = line[0..tab_pos];
+        const ref = line[tab_pos + 1 ..];
+
+        // Skip "refs/tags/" prefix
+        const tag_prefix = "refs/tags/";
+        if (!std.mem.startsWith(u8, ref, tag_prefix)) continue;
+        const tag_name = ref[tag_prefix.len..];
+
+        // Skip ^{} dereferenced tags
+        if (std.mem.endsWith(u8, tag_name, "^{}")) continue;
+
+        const version = semver.Version.parse(tag_name) orelse continue;
+        if (!version.satisfies(range)) continue;
+
+        if (best_version) |bv| {
+            if (version.compare(bv) == .gt) {
+                best_version = version;
+                best_tag = tag_name;
+                best_commit = sha;
+            }
+        } else {
+            best_version = version;
+            best_tag = tag_name;
+            best_commit = sha;
+        }
+    }
+
+    if (best_tag == null or best_commit == null) {
+        std.debug.print("error: no tag matching '{s}' found in {s}\n", .{ version_range, git_url });
+        return error.TagNotFound;
+    }
+
+    return .{
+        .tag = try allocator.dupe(u8, best_tag.?),
+        .commit = try allocator.dupe(u8, best_commit.?),
+    };
+}
+
 pub const FetcherError = error{
     GitError,
     TagNotFound,
