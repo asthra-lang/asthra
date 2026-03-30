@@ -640,6 +640,14 @@ pub const Parser = struct {
             return .{ .ptr_type = .{ .is_mutable = is_mutable, .pointee = pointee_ptr } };
         }
 
+        // Handle dyn Trait type
+        if (tag == .keyword_dyn) {
+            self.advance(); // consume 'dyn'
+            const trait_name_token = self.current;
+            try self.expect(.identifier);
+            return .{ .dyn_type = trait_name_token.slice(self.source) };
+        }
+
         // Handle function type: fn(T1, T2) -> R
         if (tag == .keyword_fn) {
             self.advance(); // consume 'fn'

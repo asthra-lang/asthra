@@ -46,6 +46,9 @@ pub const CodeGen = struct {
     imported_fn_return_types: std.StringHashMap(TypeTag),
     type_aliases: std.StringHashMap(Ast.TypeExpr),
     closure_counter: u32 = 0,
+    // Trait vtable infrastructure
+    trait_decls: std.StringHashMap(*const Ast.TraitDecl),
+    vtable_globals: std.StringHashMap(c.LLVMValueRef), // "TraitName_TypeName" -> global vtable
     // Global variables for argc/argv (set in main entry)
     argc_global: c.LLVMValueRef,
     argv_global: c.LLVMValueRef,
@@ -125,6 +128,7 @@ pub const CodeGen = struct {
         ptr_type: PtrTypeTag,
         closure_type: ClosureTypeTag,
         fn_type: FnTypeTag,
+        trait_type: []const u8,
     };
 
     pub const FnTypeTag = struct {
@@ -357,6 +361,8 @@ pub const CodeGen = struct {
             .fmt_char_raw = fmt_char_raw,
             .argc_global = argc_global,
             .argv_global = argv_global,
+            .trait_decls = std.StringHashMap(*const Ast.TraitDecl).init(allocator),
+            .vtable_globals = std.StringHashMap(c.LLVMValueRef).init(allocator),
         };
     }
 
@@ -399,6 +405,8 @@ pub const CodeGen = struct {
         self.generic_enum_decls.deinit();
         self.imported_fn_return_types.deinit();
         self.type_aliases.deinit();
+        self.trait_decls.deinit();
+        self.vtable_globals.deinit();
     }
 
     pub fn generate(self: *CodeGen) GenError!void {
@@ -430,17 +438,25 @@ pub const CodeGen = struct {
             }
         }
 
-        // Third pass: generate functions and methods
+        // Third pass: register traits and generate impl methods (before functions that use them)
+        for (self.ast.program.decls.items) |decl| {
+            switch (decl.decl) {
+                .trait_decl => |td| {
+                    self.trait_decls.put(td.name, &td) catch {};
+                },
+                .impl_decl => |impl_decl| try self.genImplDecl(&impl_decl),
+                else => {},
+            }
+        }
+
+        // Fourth pass: generate vtables (after methods exist, before functions that call them)
+        try self.generateVtables();
+
+        // Fifth pass: generate functions
         for (self.ast.program.decls.items) |decl| {
             switch (decl.decl) {
                 .function => |fn_decl| try self.genFunction(&fn_decl),
-                .struct_decl => {},
-                .impl_decl => |impl_decl| try self.genImplDecl(&impl_decl),
-                .enum_decl => {},
-                .extern_decl => {},
-                .const_decl => {},
-                .type_alias => {},
-                .trait_decl => {}, // Traits are compile-time only; no codegen needed
+                else => {},
             }
         }
 
@@ -452,6 +468,116 @@ pub const CodeGen = struct {
             });
             c.LLVMDisposeMessage(err_msg);
             return error.CodeGenError;
+        }
+    }
+
+    /// Generate vtables for all trait implementations.
+    fn generateVtables(self: *CodeGen) GenError!void {
+        const i8ptr_ty = c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0);
+
+        for (self.ast.program.decls.items) |decl| {
+            switch (decl.decl) {
+                .impl_decl => |impl_decl| {
+                    const trait_name = impl_decl.trait_name orelse continue;
+                    const type_name = impl_decl.type_name;
+                    const td = self.trait_decls.get(trait_name) orelse continue;
+
+                    const struct_info = self.struct_types.get(type_name) orelse continue;
+                    const method_count = td.methods.items.len;
+
+                    // Build vtable struct type: { fn_ptr, fn_ptr, ... }
+                    var vtable_field_types = std.ArrayList(c.LLVMTypeRef){};
+                    defer vtable_field_types.deinit(self.allocator);
+
+                    // Build vtable function type and wrapper for each trait method
+                    var vtable_values = std.ArrayList(c.LLVMValueRef){};
+                    defer vtable_values.deinit(self.allocator);
+
+                    for (td.methods.items) |trait_method| {
+                        // Wrapper function type: ret_type(i8*, param_types...)
+                        const ret_tag = self.resolveTypeExpr(trait_method.return_type);
+                        const ret_llvm = self.typeTagToLLVM(ret_tag);
+
+                        var wrapper_param_types = std.ArrayList(c.LLVMTypeRef){};
+                        defer wrapper_param_types.deinit(self.allocator);
+                        wrapper_param_types.append(self.allocator, i8ptr_ty) catch {}; // self as i8*
+                        for (trait_method.params.items) |param| {
+                            const pt = self.resolveTypeExpr(param.type_expr);
+                            wrapper_param_types.append(self.allocator, self.typeTagToLLVM(pt)) catch {};
+                        }
+                        const wrapper_fn_type = c.LLVMFunctionType(ret_llvm, wrapper_param_types.items.ptr, @intCast(wrapper_param_types.items.len), 0);
+                        vtable_field_types.append(self.allocator, c.LLVMPointerType(wrapper_fn_type, 0)) catch {};
+
+                        // Generate wrapper function
+                        const wrapper_name = std.fmt.allocPrint(self.allocator, "__vtable_{s}_{s}_{s}", .{ trait_name, type_name, trait_method.name }) catch return error.CodeGenError;
+                        self.monomorphized_names.append(self.allocator, wrapper_name) catch {};
+                        const wrapper_name_z = self.allocator.dupeZ(u8, wrapper_name) catch return error.CodeGenError;
+                        defer self.allocator.free(wrapper_name_z);
+
+                        const wrapper_fn = c.LLVMAddFunction(self.module, wrapper_name_z.ptr, wrapper_fn_type);
+                        const wrapper_entry = c.LLVMAppendBasicBlockInContext(self.context, wrapper_fn, "entry");
+
+                        const saved_block = c.LLVMGetInsertBlock(self.builder);
+                        c.LLVMPositionBuilderAtEnd(self.builder, wrapper_entry);
+
+                        // Bitcast i8* self to struct pointer, load it
+                        const self_param = c.LLVMGetParam(wrapper_fn, 0);
+                        const typed_ptr = c.LLVMBuildBitCast(self.builder, self_param, c.LLVMPointerType(struct_info.llvm_type, 0), "typed_self");
+                        const loaded_self = c.LLVMBuildLoad2(self.builder, struct_info.llvm_type, typed_ptr, "self_val");
+
+                        // Look up the real method
+                        const real_name = std.fmt.allocPrint(self.allocator, "{s}_{s}", .{ type_name, trait_method.name }) catch return error.CodeGenError;
+                        defer self.allocator.free(real_name);
+                        const real_name_z = self.allocator.dupeZ(u8, real_name) catch return error.CodeGenError;
+                        defer self.allocator.free(real_name_z);
+                        const real_fn = c.LLVMGetNamedFunction(self.module, real_name_z.ptr) orelse {
+                            self.diagnostics.report(.@"error", 0, "method '{s}' not found for vtable", .{real_name});
+                            return error.CodeGenError;
+                        };
+
+                        // Call real method with loaded self + forwarded params
+                        var call_args = std.ArrayList(c.LLVMValueRef){};
+                        defer call_args.deinit(self.allocator);
+                        call_args.append(self.allocator, loaded_self) catch {};
+                        var pi: u32 = 1;
+                        while (pi < @as(u32, @intCast(wrapper_param_types.items.len))) : (pi += 1) {
+                            call_args.append(self.allocator, c.LLVMGetParam(wrapper_fn, pi)) catch {};
+                        }
+
+                        const real_fn_type = c.LLVMGlobalGetValueType(real_fn);
+                        const is_void = c.LLVMGetTypeKind(ret_llvm) == c.LLVMVoidTypeKind;
+                        if (is_void) {
+                            _ = c.LLVMBuildCall2(self.builder, real_fn_type, real_fn, call_args.items.ptr, @intCast(call_args.items.len), "");
+                            _ = c.LLVMBuildRetVoid(self.builder);
+                        } else {
+                            const result = c.LLVMBuildCall2(self.builder, real_fn_type, real_fn, call_args.items.ptr, @intCast(call_args.items.len), "vtable_call");
+                            _ = c.LLVMBuildRet(self.builder, result);
+                        }
+
+                        c.LLVMPositionBuilderAtEnd(self.builder, saved_block);
+                        vtable_values.append(self.allocator, wrapper_fn) catch {};
+                    }
+
+                    // Create vtable struct type
+                    const vtable_struct_type = c.LLVMStructTypeInContext(self.context, vtable_field_types.items.ptr, @intCast(method_count), 0);
+
+                    // Create global vtable constant
+                    const vtable_global_name = std.fmt.allocPrint(self.allocator, "__vtable_{s}_{s}", .{ trait_name, type_name }) catch return error.CodeGenError;
+                    self.monomorphized_names.append(self.allocator, vtable_global_name) catch {};
+                    const vtable_global_name_z = self.allocator.dupeZ(u8, vtable_global_name) catch return error.CodeGenError;
+                    defer self.allocator.free(vtable_global_name_z);
+
+                    const vtable_const = c.LLVMConstStructInContext(self.context, vtable_values.items.ptr, @intCast(method_count), 0);
+                    const vtable_global = c.LLVMAddGlobal(self.module, vtable_struct_type, vtable_global_name_z.ptr);
+                    c.LLVMSetInitializer(vtable_global, vtable_const);
+                    c.LLVMSetGlobalConstant(vtable_global, 1);
+
+                    const key = std.fmt.allocPrint(self.allocator, "{s}_{s}", .{ trait_name, type_name }) catch return error.CodeGenError;
+                    self.monomorphized_names.append(self.allocator, key) catch {};
+                    self.vtable_globals.put(key, vtable_global) catch {};
+                },
+                else => {},
+            }
         }
     }
 
@@ -678,6 +804,9 @@ pub const CodeGen = struct {
                 pointee_ptr.* = pointee_tag;
                 return .{ .ptr_type = .{ .pointee = pointee_ptr, .is_mutable = pt.is_mutable } };
             },
+            .dyn_type => |trait_name| {
+                return .{ .trait_type = trait_name };
+            },
             .fn_type => |ft| {
                 const count = ft.param_types.items.len;
                 const param_tags = self.allocator.alloc(TypeTag, count) catch return .i32_type;
@@ -808,6 +937,12 @@ pub const CodeGen = struct {
             },
             .fn_type => {
                 // Closure descriptor: { fn_ptr: ptr, env_ptr: ptr }
+                const ptr_ty = c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0);
+                var field_types_arr = [_]c.LLVMTypeRef{ ptr_ty, ptr_ty };
+                return c.LLVMStructTypeInContext(self.context, &field_types_arr, 2, 0);
+            },
+            .trait_type => {
+                // Trait object fat pointer: { data_ptr: ptr, vtable_ptr: ptr }
                 const ptr_ty = c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0);
                 var field_types_arr = [_]c.LLVMTypeRef{ ptr_ty, ptr_ty };
                 return c.LLVMStructTypeInContext(self.context, &field_types_arr, 2, 0);

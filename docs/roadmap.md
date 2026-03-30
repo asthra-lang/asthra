@@ -101,4 +101,5 @@ Anonymous functions with variable capture via lambda lifting.
 | 58 | `higher_order.ast` | `fn(T) -> R` as parameter type, closure descriptors, indirect calls | Done |
 | 60 | `try_expr.ast` | `try` expression: unwrap Result/Option with automatic error propagation | Done |
 | 61 | `traits.ast` | trait declarations, `impl Trait for Type`, compile-time interface validation | Done |
+| 62 | `dyn_trait.ast` | `dyn Trait` type, vtable generation, dynamic dispatch via fat pointers | Done |
 | 59 | `higher_order_arrays.ast` | `map`, `filter`, `reduce` builtin functions on arrays | Done |

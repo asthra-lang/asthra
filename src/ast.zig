@@ -387,6 +387,7 @@ pub const Ast = struct {
         generic_type: GenericTypeExpr,
         ptr_type: PtrTypeExpr,
         fn_type: FnTypeExpr,
+        dyn_type: []const u8,
         inferred,
     };
 

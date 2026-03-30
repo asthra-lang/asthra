@@ -109,6 +109,7 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 - `map(arr, fn)`, `filter(arr, fn)`, `reduce(arr, init, fn)`, `forEach(arr, fn)` builtin functions on arrays
 - `try` expression for error handling: unwraps `Result.Ok`/`Option.Some`, early-returns on error
 - Traits: `trait Shape { fn area(self) -> f64; }` with `impl Shape for Circle { ... }` (compile-time validation, static dispatch)
+- Dynamic dispatch: `dyn Trait` type for trait objects with vtable-based indirect method calls
 
 ## Not Yet Implemented
 

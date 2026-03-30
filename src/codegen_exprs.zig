@@ -543,6 +543,14 @@ pub fn genMethodCall(self: *CodeGen, mc: Ast.MethodCallExpr) CodeGen.GenError!Co
     // Get the object value
     const obj = try genExpr(self, mc.object);
 
+    // Handle trait object method calls (dynamic dispatch)
+    switch (obj.type_tag) {
+        .trait_type => |trait_name| {
+            return genTraitMethodCall(self, obj, trait_name, mc.method, &mc.args);
+        },
+        else => {},
+    }
+
     // Determine the struct type
     const struct_name = switch (obj.type_tag) {
         .struct_type => |name| name,
@@ -809,10 +817,38 @@ pub fn genCallExpr(self: *CodeGen, call_expr: Ast.CallExpr) CodeGen.GenError!Cod
         return error.CodeGenError;
     }
 
+    // Look up function parameter types from AST for auto-upcast
+    var param_type_tags = std.ArrayList(CodeGen.TypeTag){};
+    defer param_type_tags.deinit(self.allocator);
+    for (self.ast.program.decls.items) |decl| {
+        switch (decl.decl) {
+            .function => |fn_decl| {
+                if (std.mem.eql(u8, fn_decl.name, name)) {
+                    for (fn_decl.params.items) |param| {
+                        param_type_tags.append(self.allocator, self.resolveTypeExpr(param.type_expr)) catch {};
+                    }
+                    break;
+                }
+            },
+            else => {},
+        }
+    }
+
     var args = std.ArrayList(c.LLVMValueRef){};
     defer args.deinit(self.allocator);
-    for (call_expr.args.items) |arg_idx| {
+    for (call_expr.args.items, 0..) |arg_idx, arg_i| {
         const arg_val = try genExpr(self, arg_idx);
+        // Auto-upcast: if param expects trait_type and arg is struct_type, build fat pointer
+        if (arg_i < param_type_tags.items.len) {
+            switch (param_type_tags.items[arg_i]) {
+                .trait_type => |trait_name| {
+                    const upcast_val = try buildTraitUpcast(self, arg_val, arg_idx, trait_name);
+                    try args.append(self.allocator, upcast_val);
+                    continue;
+                },
+                else => {},
+            }
+        }
         try args.append(self.allocator, arg_val.value);
     }
 
@@ -1925,6 +1961,143 @@ fn genOsCall(self: *CodeGen, func: []const u8, args: *const std.ArrayList(Ast.Ex
     }
     self.diagnostics.report(.@"error", 0, "unknown os function '{s}'", .{func});
     return error.CodeGenError;
+}
+
+// ── Dynamic Dispatch (dyn Trait) ──────────────────────────────────────────
+
+fn buildTraitUpcast(self: *CodeGen, arg_val: CodeGen.ExprResult, arg_idx: Ast.ExprIndex, trait_name: []const u8) CodeGen.GenError!c.LLVMValueRef {
+    const struct_name = switch (arg_val.type_tag) {
+        .struct_type => |sn| sn,
+        else => {
+            self.diagnostics.report(.@"error", 0, "cannot upcast non-struct to dyn {s}", .{trait_name});
+            return error.CodeGenError;
+        },
+    };
+
+    const i8ptr_ty = c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0);
+
+    // Get the struct alloca for data_ptr
+    const arg_expr = self.ast.getExpr(arg_idx);
+    const data_ptr = switch (arg_expr) {
+        .identifier => |id_name| blk: {
+            const nv = self.named_values.get(id_name) orelse {
+                self.diagnostics.report(.@"error", 0, "undefined variable for upcast", .{});
+                return error.CodeGenError;
+            };
+            break :blk c.LLVMBuildBitCast(self.builder, nv.alloca, i8ptr_ty, "data_ptr");
+        },
+        else => blk: {
+            // Store value to temp alloca
+            const struct_info = self.struct_types.get(struct_name) orelse return error.CodeGenError;
+            const tmp = c.LLVMBuildAlloca(self.builder, struct_info.llvm_type, "upcast_tmp");
+            _ = c.LLVMBuildStore(self.builder, arg_val.value, tmp);
+            break :blk c.LLVMBuildBitCast(self.builder, tmp, i8ptr_ty, "data_ptr");
+        },
+    };
+
+    // Look up vtable global
+    const vtable_key = std.fmt.allocPrint(self.allocator, "{s}_{s}", .{ trait_name, struct_name }) catch return error.CodeGenError;
+    defer self.allocator.free(vtable_key);
+    const vtable_global = self.vtable_globals.get(vtable_key) orelse {
+        self.diagnostics.report(.@"error", 0, "no vtable for {s} implementing {s}", .{ struct_name, trait_name });
+        return error.CodeGenError;
+    };
+    const vtable_ptr = c.LLVMBuildBitCast(self.builder, vtable_global, i8ptr_ty, "vtable_ptr");
+
+    // Build fat pointer { data_ptr, vtable_ptr }
+    var fat_fields = [_]c.LLVMTypeRef{ i8ptr_ty, i8ptr_ty };
+    const fat_type = c.LLVMStructTypeInContext(self.context, &fat_fields, 2, 0);
+    const fat_alloca = c.LLVMBuildAlloca(self.builder, fat_type, "trait_obj");
+    const data_field = c.LLVMBuildStructGEP2(self.builder, fat_type, fat_alloca, 0, "data_f");
+    _ = c.LLVMBuildStore(self.builder, data_ptr, data_field);
+    const vtable_field = c.LLVMBuildStructGEP2(self.builder, fat_type, fat_alloca, 1, "vtable_f");
+    _ = c.LLVMBuildStore(self.builder, vtable_ptr, vtable_field);
+
+    return c.LLVMBuildLoad2(self.builder, fat_type, fat_alloca, "trait_obj_val");
+}
+
+fn genTraitMethodCall(self: *CodeGen, obj: CodeGen.ExprResult, trait_name: []const u8, method_name: []const u8, call_args: *const std.ArrayList(Ast.ExprIndex)) CodeGen.GenError!CodeGen.ExprResult {
+    const i8ptr_ty = c.LLVMPointerType(c.LLVMInt8TypeInContext(self.context), 0);
+
+    // Look up trait declaration for method index and signature
+    const td = self.trait_decls.get(trait_name) orelse {
+        self.diagnostics.report(.@"error", 0, "undefined trait '{s}'", .{trait_name});
+        return error.CodeGenError;
+    };
+
+    var method_idx: ?usize = null;
+    var method_sig: ?Ast.TraitMethodSig = null;
+    for (td.methods.items, 0..) |m, i| {
+        if (std.mem.eql(u8, m.name, method_name)) {
+            method_idx = i;
+            method_sig = m;
+            break;
+        }
+    }
+    const sig = method_sig orelse {
+        self.diagnostics.report(.@"error", 0, "method '{s}' not in trait '{s}'", .{ method_name, trait_name });
+        return error.CodeGenError;
+    };
+
+    // Fat pointer is stored on stack — get its alloca
+    var fat_fields = [_]c.LLVMTypeRef{ i8ptr_ty, i8ptr_ty };
+    const fat_type = c.LLVMStructTypeInContext(self.context, &fat_fields, 2, 0);
+
+    // Store the fat pointer value to access via GEP
+    const fat_alloca = c.LLVMBuildAlloca(self.builder, fat_type, "dyn_obj");
+    _ = c.LLVMBuildStore(self.builder, obj.value, fat_alloca);
+
+    // Extract data_ptr and vtable_ptr
+    const data_field = c.LLVMBuildStructGEP2(self.builder, fat_type, fat_alloca, 0, "dyn_data_f");
+    const data_ptr = c.LLVMBuildLoad2(self.builder, i8ptr_ty, data_field, "dyn_data");
+    const vtable_field = c.LLVMBuildStructGEP2(self.builder, fat_type, fat_alloca, 1, "dyn_vtable_f");
+    const vtable_raw = c.LLVMBuildLoad2(self.builder, i8ptr_ty, vtable_field, "dyn_vtable");
+
+    // Build the wrapper function type for this method: ret(i8*, params...)
+    const ret_tag = self.resolveTypeExpr(sig.return_type);
+    const ret_llvm = self.typeTagToLLVM(ret_tag);
+
+    var fn_param_types = std.ArrayList(c.LLVMTypeRef){};
+    defer fn_param_types.deinit(self.allocator);
+    fn_param_types.append(self.allocator, i8ptr_ty) catch {}; // self
+    for (sig.params.items) |param| {
+        const pt = self.resolveTypeExpr(param.type_expr);
+        fn_param_types.append(self.allocator, self.typeTagToLLVM(pt)) catch {};
+    }
+    const wrapper_fn_type = c.LLVMFunctionType(ret_llvm, fn_param_types.items.ptr, @intCast(fn_param_types.items.len), 0);
+
+    // Build vtable struct type (array of function pointers)
+    var vtable_field_types = std.ArrayList(c.LLVMTypeRef){};
+    defer vtable_field_types.deinit(self.allocator);
+    for (td.methods.items) |_| {
+        vtable_field_types.append(self.allocator, c.LLVMPointerType(wrapper_fn_type, 0)) catch {};
+    }
+    const vtable_struct_type = c.LLVMStructTypeInContext(self.context, vtable_field_types.items.ptr, @intCast(td.methods.items.len), 0);
+
+    // Bitcast vtable_raw to vtable struct pointer
+    const vtable_typed = c.LLVMBuildBitCast(self.builder, vtable_raw, c.LLVMPointerType(vtable_struct_type, 0), "vtable_typed");
+
+    // GEP to get the function pointer at method_idx
+    const fn_ptr_field = c.LLVMBuildStructGEP2(self.builder, vtable_struct_type, vtable_typed, @intCast(method_idx.?), "fn_ptr_field");
+    const fn_ptr = c.LLVMBuildLoad2(self.builder, c.LLVMPointerType(wrapper_fn_type, 0), fn_ptr_field, "fn_ptr");
+
+    // Build call args: data_ptr + user args
+    var fn_call_args = std.ArrayList(c.LLVMValueRef){};
+    defer fn_call_args.deinit(self.allocator);
+    fn_call_args.append(self.allocator, data_ptr) catch {};
+    for (call_args.items) |arg_idx| {
+        const arg_val = try genExpr(self, arg_idx);
+        fn_call_args.append(self.allocator, arg_val.value) catch {};
+    }
+
+    const is_void = c.LLVMGetTypeKind(ret_llvm) == c.LLVMVoidTypeKind;
+    if (is_void) {
+        _ = c.LLVMBuildCall2(self.builder, wrapper_fn_type, fn_ptr, fn_call_args.items.ptr, @intCast(fn_call_args.items.len), "");
+        return .{ .value = c.LLVMGetUndef(c.LLVMVoidTypeInContext(self.context)), .type_tag = .void_type };
+    } else {
+        const result = c.LLVMBuildCall2(self.builder, wrapper_fn_type, fn_ptr, fn_call_args.items.ptr, @intCast(fn_call_args.items.len), "dyn_call");
+        return .{ .value = result, .type_tag = ret_tag };
+    }
 }
 
 // ── Try Expression ────────────────────────────────────────────────────────

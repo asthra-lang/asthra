@@ -72,7 +72,8 @@ ExternParamList<- ExternParam (',' ExternParam)* / 'none'  # External function p
 ExternParam    <- SafeFFIAnnotation? SimpleIdent ':' Type  # External parameter with single FFI annotation (no MutModifier allowed)
 
 # Type system with built-in and composite types
-Type           <- BaseType / SliceType / FixedArrayType / StructType / EnumType / PtrType / ResultType / OptionType / TupleType / NeverType / FnType  # All supported types
+Type           <- BaseType / SliceType / FixedArrayType / StructType / EnumType / PtrType / ResultType / OptionType / TupleType / NeverType / FnType / DynType  # All supported types
+DynType        <- 'dyn' SimpleIdent                            # Trait object: dyn Shape (fat pointer with vtable)
 FnType         <- 'fn' '(' TypeList ')' '->' Type              # Function type: fn(i32, i32) -> i32
 TypeList       <- Type (',' Type)* / &')'                      # Comma-separated type list (empty allowed)
 TupleType      <- '(' Type ',' Type (',' Type)* ')'       # Tuple types: (T, U) or (T, U, V) - minimum 2 elements
