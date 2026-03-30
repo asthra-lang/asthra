@@ -599,17 +599,60 @@ pub const CodeGen = struct {
         self.ast = imported_ast;
         defer self.ast = saved_ast;
 
-        // Generate public functions from the imported module
+        // Pass 1: Register type aliases from imported module
+        for (imported_ast.program.decls.items) |decl| {
+            if (decl.visibility != .public) continue;
+            switch (decl.decl) {
+                .type_alias => |ta| { self.type_aliases.put(ta.name, ta.target) catch {}; },
+                else => {},
+            }
+        }
+
+        // Pass 2: Register struct and enum types
+        for (imported_ast.program.decls.items) |decl| {
+            if (decl.visibility != .public) continue;
+            switch (decl.decl) {
+                .struct_decl => |sd| try self.genStructType(&sd),
+                .enum_decl => |ed| try self.genEnumType(&ed),
+                else => {},
+            }
+        }
+
+        // Pass 3: Generate constants
+        for (imported_ast.program.decls.items) |decl| {
+            if (decl.visibility != .public) continue;
+            switch (decl.decl) {
+                .const_decl => |cd| try self.genConstDecl(&cd),
+                else => {},
+            }
+        }
+
+        // Pass 4: Generate impl methods (for methods on imported structs)
+        for (imported_ast.program.decls.items) |decl| {
+            if (decl.visibility != .public) continue;
+            switch (decl.decl) {
+                .impl_decl => |impl_decl| {
+                    try self.genImplDecl(&impl_decl);
+                    // Register method return types so lookupMethodReturnType can find them
+                    for (impl_decl.methods.items) |method| {
+                        const mangled = std.fmt.allocPrint(self.allocator, "{s}_{s}", .{ impl_decl.type_name, method.name }) catch continue;
+                        self.monomorphized_names.append(self.allocator, mangled) catch {};
+                        const ret_tag = self.resolveTypeExpr(method.return_type);
+                        self.imported_fn_return_types.put(mangled, ret_tag) catch {};
+                    }
+                },
+                else => {},
+            }
+        }
+
+        // Pass 5: Generate public functions (with name mangling)
         for (imported_ast.program.decls.items) |decl| {
             if (decl.visibility != .public) continue;
             switch (decl.decl) {
                 .function => |fn_decl| {
-                    // Skip main functions from imported modules
                     if (std.mem.eql(u8, fn_decl.name, "main")) continue;
-                    // Mangle function name for namespace isolation
                     const mangled = std.fmt.allocPrint(self.allocator, "__pkg_{s}_{s}", .{ package_name, fn_decl.name }) catch return error.CodeGenError;
                     self.monomorphized_names.append(self.allocator, mangled) catch {};
-                    // Record the return type with mangled name
                     const ret_tag = self.resolveTypeExpr(fn_decl.return_type);
                     self.imported_fn_return_types.put(mangled, ret_tag) catch {};
                     try self.genFunctionWithName(&fn_decl, mangled);

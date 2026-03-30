@@ -704,6 +704,10 @@ pub fn lookupMethodReturnType(self: *CodeGen, type_name: []const u8, method_name
             }
         }
     }
+    // Fallback: check imported method return types
+    const mangled = std.fmt.allocPrint(self.allocator, "{s}_{s}", .{ type_name, method_name }) catch return .i32_type;
+    defer self.allocator.free(mangled);
+    if (self.imported_fn_return_types.get(mangled)) |ret_tag| return ret_tag;
     return .i32_type;
 }
 

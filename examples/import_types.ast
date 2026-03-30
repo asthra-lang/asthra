@@ -1,0 +1,15 @@
+package main;
+
+import "./point_lib" as geo;
+
+pub fn main() -> void {
+    // Use imported struct
+    let p: Point = Point { x: 3.0, y: 4.0 };
+    log(p.magnitude());
+
+    // Use imported constant
+    log(ORIGIN_X);
+
+    log("import_types: all tests passed");
+    return;
+}

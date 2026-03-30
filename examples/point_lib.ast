@@ -1,0 +1,14 @@
+package geometry;
+
+pub struct Point {
+    pub x: f64,
+    pub y: f64
+}
+
+pub const ORIGIN_X: f64 = 0.0;
+
+pub impl Point {
+    pub fn magnitude(self) -> f64 {
+        return math.sqrt(self.x * self.x + self.y * self.y);
+    }
+}

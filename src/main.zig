@@ -118,6 +118,21 @@ pub fn main() !void {
     // Semantic analysis
     var sema = SemanticAnalyzer.init(allocator, &ast, &diagnostics);
     defer sema.deinit();
+    // Register public declarations from imported modules
+    for (imported_modules.items) |mod| {
+        for (mod.ast.program.decls.items) |decl| {
+            if (decl.visibility != .public) continue;
+            switch (decl.decl) {
+                .struct_decl => |s| { sema.struct_names.put(s.name, {}) catch {}; },
+                .enum_decl => |e| { sema.enum_names.put(e.name, {}) catch {}; },
+                .const_decl => |cn| { sema.const_names.put(cn.name, {}) catch {}; },
+                .function => |f| {
+                    sema.functions.put(f.name, .{ .param_count = @intCast(f.params.items.len) }) catch {};
+                },
+                else => {},
+            }
+        }
+    }
     sema.analyze();
 
     if (diagnostics.hasErrors()) {

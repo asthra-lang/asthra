@@ -103,6 +103,7 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
   - Global cache at `~/.asthra/cache/`
   - Namespace isolation via function name mangling (`__pkg_{pkg}_{fn}`)
   - Import paths: `./relative`, `github.com/user/repo`, `gitlab.com/user/repo`
+  - Import structs, enums, constants, and impl blocks from packages (not just functions)
 
 - Closures / anonymous functions with variable capture: `fn(x: i32) -> i32 { return x * captured; }`
 - Higher-order functions: `fn(i32) -> i32` as parameter types, indirect calls through closure descriptors
