@@ -1,0 +1,26 @@
+package main;
+
+pub trait Shape {
+    fn area(self) -> f64;
+}
+
+pub struct Circle {
+    pub radius: f64
+}
+
+pub impl Shape for Circle {
+    pub fn area(self) -> f64 {
+        return 3.14159 * self.radius * self.radius;
+    }
+}
+
+pub fn print_area<T: Shape>(s: T) -> f64 {
+    return s.area();
+}
+
+pub fn main() -> void {
+    let c: Circle = Circle { radius: 5.0 };
+    log(print_area(c));
+    log("trait_bounds: all tests passed");
+    return;
+}

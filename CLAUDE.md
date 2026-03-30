@@ -111,7 +111,7 @@ No intermediate representation between AST and LLVM IR. LLVM handles optimizatio
 - `try` expression for error handling: unwraps `Result.Ok`/`Option.Some`, early-returns on error
 - Traits: `trait Shape { fn area(self) -> f64; }` with `impl Shape for Circle { ... }` (compile-time validation, static dispatch)
 - Dynamic dispatch: `dyn Trait` type for trait objects with vtable-based indirect method calls
-- Generic functions: `fn<T>(x: T) -> T` with on-demand monomorphization
+- Generic functions: `fn<T>(x: T) -> T` with on-demand monomorphization and trait bounds (`fn<T: Shape>(x: T)`)
 
 - DWARF debug info via `-g` flag: compile unit, function DISubprogram, line-level locations for lldb/gdb
 

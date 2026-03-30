@@ -69,7 +69,7 @@ pub fn monomorphizeStruct(self: *CodeGen, generic_name: []const u8, type_args: [
     for (sd.type_params.items, 0..) |tp, i| {
         if (i < type_args.len) {
             const resolved = self.resolveTypeExpr(type_args[i]);
-            type_map.put(tp, resolved) catch return error.CodeGenError;
+            type_map.put(tp.name, resolved) catch return error.CodeGenError;
         }
     }
 
@@ -143,7 +143,7 @@ pub fn monomorphizeEnum(self: *CodeGen, generic_name: []const u8, type_args: []c
     for (ed.type_params.items, 0..) |tp, i| {
         if (i < type_args.len) {
             const resolved = self.resolveTypeExpr(type_args[i]);
-            type_map.put(tp, resolved) catch return error.CodeGenError;
+            type_map.put(tp.name, resolved) catch return error.CodeGenError;
         }
     }
 
@@ -339,7 +339,7 @@ pub fn genGenericImplMethods(
     for (sd.type_params.items, 0..) |tp, i| {
         if (i < type_args.len) {
             const resolved = self.resolveTypeExpr(type_args[i]);
-            type_map.put(tp, resolved) catch return error.CodeGenError;
+            type_map.put(tp.name, resolved) catch return error.CodeGenError;
         }
     }
 

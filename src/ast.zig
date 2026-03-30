@@ -67,7 +67,7 @@ pub const Ast = struct {
 
     pub const EnumDecl = struct {
         name: []const u8,
-        type_params: std.ArrayList([]const u8),
+        type_params: std.ArrayList(TypeParam),
         variants: std.ArrayList(EnumVariant),
     };
 
@@ -104,9 +104,14 @@ pub const Ast = struct {
         body: Block,
     };
 
+    pub const TypeParam = struct {
+        name: []const u8,
+        bound: ?[]const u8 = null,
+    };
+
     pub const StructDecl = struct {
         name: []const u8,
-        type_params: std.ArrayList([]const u8),
+        type_params: std.ArrayList(TypeParam),
         fields: std.ArrayList(StructField),
     };
 
@@ -118,7 +123,7 @@ pub const Ast = struct {
 
     pub const FnDecl = struct {
         name: []const u8,
-        type_params: std.ArrayList([]const u8) = .{},
+        type_params: std.ArrayList(TypeParam) = .{},
         params: std.ArrayList(Param),
         return_type: TypeExpr,
         body: Block,

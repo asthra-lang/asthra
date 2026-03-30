@@ -693,7 +693,7 @@ pub fn lookupMethodReturnType(self: *CodeGen, type_name: []const u8, method_name
                 for (sd.type_params.items, 0..) |tp, i| {
                     if (i < origin.type_args.len) {
                         const resolved = self.resolveTypeExpr(origin.type_args[i]);
-                        type_map.put(tp, resolved) catch {};
+                        type_map.put(tp.name, resolved) catch {};
                     }
                 }
                 for (impl_decl.methods.items) |method| {

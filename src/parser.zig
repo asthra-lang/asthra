@@ -242,14 +242,22 @@ pub const Parser = struct {
         try self.expect(.identifier);
         const name = name_token.slice(self.source);
 
-        // Parse optional type parameters: <T, U, ...>
-        var type_params = std.ArrayList([]const u8){};
+        // Parse optional type parameters: <T, U, ...> or <T: Bound, U, ...>
+        var type_params = std.ArrayList(Ast.TypeParam){};
         if (self.current.tag == .less) {
-            self.advance(); // consume '<'
+            self.advance();
             while (true) {
                 const tp_token = self.current;
                 try self.expect(.identifier);
-                try type_params.append(self.ast.allocator, tp_token.slice(self.source));
+                const tp_name = tp_token.slice(self.source);
+                var bound: ?[]const u8 = null;
+                if (self.current.tag == .colon) {
+                    self.advance();
+                    const bound_token = self.current;
+                    try self.expect(.identifier);
+                    bound = bound_token.slice(self.source);
+                }
+                try type_params.append(self.ast.allocator, .{ .name = tp_name, .bound = bound });
                 if (self.current.tag != .comma) break;
                 self.advance();
             }
@@ -335,15 +343,15 @@ pub const Parser = struct {
         const name = name_token.slice(self.source);
 
         // Parse optional type parameters: <T, U, ...>
-        var type_params = std.ArrayList([]const u8){};
+        var type_params = std.ArrayList(Ast.TypeParam){};
         if (self.current.tag == .less) {
-            self.advance(); // consume '<'
+            self.advance();
             while (true) {
                 const tp_token = self.current;
                 try self.expect(.identifier);
-                try type_params.append(self.ast.allocator, tp_token.slice(self.source));
+                try type_params.append(self.ast.allocator, .{ .name = tp_token.slice(self.source) });
                 if (self.current.tag != .comma) break;
-                self.advance(); // consume ','
+                self.advance();
             }
             try self.expect(.greater);
         }
@@ -395,15 +403,15 @@ pub const Parser = struct {
         const name = name_token.slice(self.source);
 
         // Parse optional type parameters: <T, U, ...>
-        var type_params = std.ArrayList([]const u8){};
+        var type_params = std.ArrayList(Ast.TypeParam){};
         if (self.current.tag == .less) {
-            self.advance(); // consume '<'
+            self.advance();
             while (true) {
                 const tp_token = self.current;
                 try self.expect(.identifier);
-                try type_params.append(self.ast.allocator, tp_token.slice(self.source));
+                try type_params.append(self.ast.allocator, .{ .name = tp_token.slice(self.source) });
                 if (self.current.tag != .comma) break;
-                self.advance(); // consume ','
+                self.advance();
             }
             try self.expect(.greater);
         }

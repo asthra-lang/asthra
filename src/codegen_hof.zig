@@ -31,13 +31,33 @@ pub fn monomorphizeGenericFn(self: *CodeGen, gen_fn: *const Ast.FnDecl, call_arg
             .named => |param_type_name| {
                 // Check if this is a type parameter
                 for (gen_fn.type_params.items) |tp| {
-                    if (std.mem.eql(u8, param_type_name, tp)) {
-                        type_map.put(tp, arg_types.items[i]) catch {};
+                    if (std.mem.eql(u8, param_type_name, tp.name)) {
+                        type_map.put(tp.name, arg_types.items[i]) catch {};
                         break;
                     }
                 }
             },
             else => {},
+        }
+    }
+
+    // Validate trait bounds
+    for (gen_fn.type_params.items) |tp| {
+        if (tp.bound) |trait_name| {
+            const concrete = type_map.get(tp.name) orelse continue;
+            const struct_name = switch (concrete) {
+                .struct_type => |sn| sn,
+                else => {
+                    self.diagnostics.report(.@"error", 0, "type does not implement trait '{s}'", .{trait_name});
+                    return error.CodeGenError;
+                },
+            };
+            const vtable_key = std.fmt.allocPrint(self.allocator, "{s}_{s}", .{ trait_name, struct_name }) catch return error.CodeGenError;
+            defer self.allocator.free(vtable_key);
+            if (!self.vtable_globals.contains(vtable_key)) {
+                self.diagnostics.report(.@"error", 0, "'{s}' does not implement trait '{s}'", .{ struct_name, trait_name });
+                return error.CodeGenError;
+            }
         }
     }
 
@@ -47,7 +67,7 @@ pub fn monomorphizeGenericFn(self: *CodeGen, gen_fn: *const Ast.FnDecl, call_arg
     mangled_parts.appendSlice(self.allocator, gen_fn.name) catch {};
     for (gen_fn.type_params.items) |tp| {
         mangled_parts.append(self.allocator, '_') catch {};
-        const resolved = type_map.get(tp) orelse CodeGen.TypeTag.i32_type;
+        const resolved = type_map.get(tp.name) orelse CodeGen.TypeTag.i32_type;
         const type_str = typeTagName(resolved);
         mangled_parts.appendSlice(self.allocator, type_str) catch {};
     }
